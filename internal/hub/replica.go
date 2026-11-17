@@ -201,7 +201,8 @@ func (h *Hub) onTrunkRecord(tc *trunkConn, f wire.Frame) error {
 	if err := wire.VerifyBlock(f, key, &rec); err != nil {
 		return err
 	}
-	if !wire.ValidID(rec.StreamID) || rec.Version < 1 || !wire.ValidListing(rec.Listing) || rec.Prepared || rec.HomeHub == "" {
+	if !wire.ValidID(rec.StreamID) || rec.Version < 1 || !wire.ValidListing(rec.Listing) || rec.Prepared || rec.HomeHub == "" ||
+		(rec.Private && rec.Listing != wire.ListingUnlisted) {
 		return wire.Errf(wire.EBadFrame, "The channel record is malformed.")
 	}
 	// A record comes from the side of the hub that signed it; one that hands

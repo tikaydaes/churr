@@ -41,7 +41,7 @@ func TestHubRestart(t *testing.T) {
 	// The restarted hub still owns the channel: its record is there, the
 	// log goes on from where it was, and a moderator's action is answered.
 	list, err := l.Hub.Hub.Channels()
-	if err != nil || len(list) != 1 || list[0].ID != stream || len(list[0].Servers) != 3 || len(list[0].Moderators) != 1 {
+	if err != nil || len(list) != 1 || list[0].ID != stream || len(list[0].Servers) != 3 || len(list[0].Managers) != 1 {
 		t.Fatalf("the restarted hub's channels: %+v %v", list, err)
 	}
 	testkit.Eventually(t, "the log holds the two more", func() bool { return l.Hub.Hub.TestStored(stream) == held+2 })
@@ -155,7 +155,7 @@ func TestMoveSurvivesAHubThatLostThePreparedChannel(t *testing.T) {
 	for _, c := range list {
 		if c.ID == f.stream {
 			found = true
-			if len(c.Servers) != 2 || len(c.Moderators) == 0 {
+			if len(c.Servers) != 2 || len(c.Managers) == 0 {
 				t.Fatalf("the channel as prepared again: %+v", c)
 			}
 		}

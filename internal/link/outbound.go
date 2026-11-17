@@ -985,9 +985,10 @@ func (s *Service) toWire(ctx context.Context, a store.Areas, st store.Stream, co
 			// Only the owner server can remove a message for everyone.
 			return wireEvent{Type: evMessageRemoved, Fields: map[string]any{"message_id": msg.ID, "removed_by_id": msg.DeletedByID,
 				"removed_at": msg.DeletedAt}}, nil
-		case s.moderates(ctx, a, st, msg.DeletedByID, s.id.Name):
-			// In a channel a hub owns, a moderator can: every server checks
-			// the account against the list the hub signed. The moderator's
+		case s.keeps(ctx, a, st, msg.DeletedByID, s.id.Name):
+			// In a channel a hub owns, a manager or moderator can: every
+			// instance checks the account against the lists the hub
+			// signed. Their
 			// profile goes with it, for a server that has not met them.
 			fields := map[string]any{"message_id": msg.ID, "removed_by_id": msg.DeletedByID, "removed_at": msg.DeletedAt}
 			if acc, err := a.Accounts().Get(ctx, msg.DeletedByID); err == nil {
@@ -1126,7 +1127,7 @@ func (s *Service) toWire(ctx context.Context, a store.Areas, st store.Stream, co
 
 // managersHeld refuses a change to who is a manager of a channel on the
 // server that has agreed to its move onto a hub, from its agreement until
-// the move is over. The managers it signed for become moderators at the
+// the move is over. The managers it signed for become managers at the
 // commit; they must still be the managers then (section 21a).
 func (s *Service) managersHeld(ctx context.Context, a store.Areas, st store.Stream, events []model.Event) error {
 	touches := false
@@ -1150,7 +1151,7 @@ func (s *Service) managersHeld(ctx context.Context, a store.Areas, st store.Stre
 			return errMoving
 		case model.EventMemberLeft:
 			who := fmt.Sprint(e.Payload["account_id"])
-			if (wire.ChannelRecord{Moderators: acc.Managers}).Moderates(who, s.id.Name) {
+			if (wire.ChannelRecord{Managers: acc.Managers}).Manages(who, s.id.Name) {
 				return errMoving
 			}
 		}

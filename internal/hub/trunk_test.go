@@ -29,7 +29,7 @@ func shared(t *testing.T, name string, sims ...*sim) string {
 	for _, s := range sims[1:] {
 		s := s
 		testkit.Eventually(t, "the hub takes the invitation of "+s.name, func() bool {
-			code := owner.act(id, wire.ModInvite, func(a *wire.ModAction) { a.Server = s.name })
+			code := owner.act(id, wire.ActInvite, func(a *wire.ChannelAction) { a.Server = s.name })
 			return code == "" && (has(owner.record(id).Invited, s.name) || owner.record(id).Has(s.name))
 		})
 		testkit.Eventually(t, "the invitation reaches "+s.name, func() bool { return has(s.record(id).Invited, s.name) || s.record(id).Has(s.name) })
@@ -177,7 +177,7 @@ func TestNoDeliveryToAHubWithNoMemberBehindIt(t *testing.T) {
 			}
 			testkit.Eventually(t, "both servers have the other's ten", func() bool { return a.count(id) >= 10 && b.count(id) >= 10 })
 			// The record changes too, and still does not go to c.
-			if code := a.act(id, wire.ModDescribe, func(m *wire.ModAction) { d := "still nobody's business"; m.Description = &d }); code != "" {
+			if code := a.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { d := "still nobody's business"; m.Description = &d }); code != "" {
 				t.Fatal(code)
 			}
 			testkit.Eventually(t, "b sees the description", func() bool { return b.record(id).Description == "still nobody's business" })

@@ -17,6 +17,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/config"
 	"github.com/tikaydaes/churr/internal/hub"
+	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/version"
 )
 
@@ -31,9 +32,9 @@ const usage = `churr-hub relays shared channels between Churr servers. It cannot
   churr-hub servers                    list the servers on the hub, each with its measured clock
   churr-hub remove NAME                remove a server
   churr-hub streams                    list the streams it carries, each with its home hub
-  churr-hub channels                   list the channels it owns: name, description, listing, servers, moderators
-  churr-hub appoint STREAM ACCOUNT-ID USERNAME@SERVER   make an account a moderator of a channel
-  churr-hub dismiss STREAM ACCOUNT-ID  take an account off a channel's moderators
+  churr-hub channels                   list the channels it owns: name, description, listing, servers, managers, moderators
+  churr-hub appoint STREAM ACCOUNT-ID USERNAME@SERVER   make an account a manager of a channel
+  churr-hub dismiss STREAM ACCOUNT-ID  take an account off a channel's managers
   churr-hub expel STREAM SERVER        remove a server from one channel
   churr-hub limits [NAME] [--submits N] [--blob-bytes N] [--streams N]
                                        show or set limits, for one server or as the default
@@ -226,14 +227,21 @@ func run(command string, args []string) error {
 			return err
 		}
 		for _, c := range list {
-			var mods []string
-			for _, m := range c.Moderators {
-				mods = append(mods, m.Username+"@"+m.Server+" ("+m.AccountID+")")
+			people := func(list []wire.ChannelAccount) string {
+				var out []string
+				for _, m := range list {
+					out = append(out, m.Username+"@"+m.Server+" ("+m.AccountID+")")
+				}
+				return strings.Join(out, ", ")
 			}
 			// A channel whose home is another hub of the cluster is listed
 			// too, with its home: this hub carries it or lists it.
-			fmt.Printf("%s  %q  %s  home %s  servers %s  moderators %s  invited %s  asking %s  key-maker %s  carried %d\n    %s\n", c.ID, c.Name, c.Listing, c.Home,
-				strings.Join(c.Servers, ","), strings.Join(mods, ", "), strings.Join(c.Invited, ","), strings.Join(c.Requests, ","), c.KeyMaker, c.Cursor, c.Description)
+			listing := c.Listing
+			if c.Private {
+				listing += " (private)"
+			}
+			fmt.Printf("%s  %q  %s  home %s  servers %s  managers %s  moderators %s  invited %s  asking %s  key-maker %s  carried %d\n    %s\n", c.ID, c.Name, listing, c.Home,
+				strings.Join(c.Servers, ","), people(c.Managers), people(c.Moderators), strings.Join(c.Invited, ","), strings.Join(c.Requests, ","), c.KeyMaker, c.Cursor, c.Description)
 		}
 	case "appoint":
 		if len(positional) != 3 {

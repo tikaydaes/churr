@@ -4603,6 +4603,20 @@ class ModerateHubChannelRequestAction extends $pb.ProtobufEnum {
               ? ''
               : 'MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_SERVER');
   static const ModerateHubChannelRequestAction
+      MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MANAGER =
+      ModerateHubChannelRequestAction._(
+          10,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MANAGER');
+  static const ModerateHubChannelRequestAction
+      MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MANAGER =
+      ModerateHubChannelRequestAction._(
+          11,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MANAGER');
+  static const ModerateHubChannelRequestAction
       MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MODERATOR =
       ModerateHubChannelRequestAction._(
           5,
@@ -4639,6 +4653,8 @@ class ModerateHubChannelRequestAction extends $pb.ProtobufEnum {
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_APPROVE,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_DECLINE,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_SERVER,
+    MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MANAGER,
+    MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MANAGER,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MODERATOR,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MODERATOR,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_DESCRIBE,
@@ -4647,7 +4663,7 @@ class ModerateHubChannelRequestAction extends $pb.ProtobufEnum {
   ];
 
   static final $core.List<ModerateHubChannelRequestAction?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 11);
   static ModerateHubChannelRequestAction? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -4692,6 +4708,52 @@ class ModerateHubChannelRequestListing extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const ModerateHubChannelRequestListing._(super.value, super.name);
+}
+
+class ModerateHubChannelMemberRequestAction extends $pb.ProtobufEnum {
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_UNSPECIFIED =
+      ModerateHubChannelMemberRequestAction._(
+          0,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_UNSPECIFIED');
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_ADMIT =
+      ModerateHubChannelMemberRequestAction._(
+          1,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_ADMIT');
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_DECLINE =
+      ModerateHubChannelMemberRequestAction._(
+          2,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_DECLINE');
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_REMOVE =
+      ModerateHubChannelMemberRequestAction._(
+          3,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_REMOVE');
+
+  static const $core.List<ModerateHubChannelMemberRequestAction> values =
+      <ModerateHubChannelMemberRequestAction>[
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_UNSPECIFIED,
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_ADMIT,
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_DECLINE,
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_REMOVE,
+  ];
+
+  static final $core.List<ModerateHubChannelMemberRequestAction?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ModerateHubChannelMemberRequestAction? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ModerateHubChannelMemberRequestAction._(super.value, super.name);
 }
 
 class AuditEntryActorKind extends $pb.ProtobufEnum {

@@ -18,9 +18,9 @@ import (
 
 // This file is the hub as the owner of the channels it carries (section 23
 // of docs/LINK-PROTOCOL.md, ruling R56). The hub keeps one record per
-// channel (name, description, listing mode, member servers, moderators) and
+// channel (name, description, listing mode, member servers, managers) and
 // is the only party that signs a change to it. Servers ask for changes: a
-// moderator's action signed by the moderator's home server, a server's own
+// manager's action signed by the manager's home server, a server's own
 // wish to join or leave. The hub checks who asks, changes the record, signs
 // it whole and sends it to the channel's servers. It never holds a stream
 // key: on every change to the server list it names one member server to make
@@ -136,8 +136,11 @@ func (h *Hub) saveChannel(tx *sql.Tx, c *channel, also []string) error {
 			*l = []string{}
 		}
 	}
+	if c.rec.Managers == nil {
+		c.rec.Managers = []wire.ChannelAccount{}
+	}
 	if c.rec.Moderators == nil {
-		c.rec.Moderators = []wire.Moderator{}
+		c.rec.Moderators = []wire.ChannelAccount{}
 	}
 	// Who was named to make each of the last few keys.
 	if c.rec.Makers == nil {
@@ -193,7 +196,7 @@ func (h *Hub) saveChannel(tx *sql.Tx, c *channel, also []string) error {
 
 // relist is a change to the server list: a new epoch, a key-maker, and what
 // the change was. prefer is the server the rule names (the home server of
-// the moderator who approved or invited); when it is not a member, or for an
+// the manager who approved or invited); when it is not a member, or for an
 // open join, the longest-standing member makes the key.
 //
 // If the epoch the record called for never began, what that change was is
@@ -255,19 +258,32 @@ func has(list []string, v string) bool {
 }
 
 // dropServer takes a server out of a record: its place in the list, an
-// invitation or a request, and its accounts' places among the moderators,
-// who cannot act through a server that is not there.
+// invitation or a request, and its accounts' places among the managers and
+// the moderators, who cannot act through a server that is not there.
 func dropServer(c *channel, name string) {
 	c.rec.Servers, c.rec.Invited, c.rec.Requests = without(c.rec.Servers, name), without(c.rec.Invited, name), without(c.rec.Requests, name)
 	delete(c.inviters, name)
 	delete(c.joinedHave, name)
-	mods := []wire.Moderator{}
-	for _, m := range c.rec.Moderators {
-		if m.Server != name {
-			mods = append(mods, m)
+	for _, list := range []*[]wire.ChannelAccount{&c.rec.Managers, &c.rec.Moderators} {
+		kept := []wire.ChannelAccount{}
+		for _, m := range *list {
+			if m.Server != name {
+				kept = append(kept, m)
+			}
+		}
+		*list = kept
+	}
+}
+
+// dropAccount is a list of a record's accounts without one of them.
+func dropAccount(list []wire.ChannelAccount, accountID, server string) []wire.ChannelAccount {
+	out := []wire.ChannelAccount{}
+	for _, m := range list {
+		if m.AccountID != accountID || m.Server != server {
+			out = append(out, m)
 		}
 	}
-	c.rec.Moderators = mods
+	return out
 }
 
 // recordFrame signs a channel's record as it stands. Beside it, unsigned,
@@ -480,10 +496,10 @@ func validText(name, description string) error {
 
 // channelCreate records a channel a server shares to the hub. The hub owns
 // it from the first moment; the person who shared it is its first
-// moderator.
+// manager.
 //
 // A channel moved from a direct link (section 21a) arrives with both of its
-// servers, its moderators, and the other server's signed agreement. The hub
+// servers, its managers, and the other server's signed agreement. The hub
 // only prepares it: it is recorded, nobody but the sender is told, and
 // nothing is carried in it, until the sender's signed channel_commit
 // arrives. The sender may close it again until then.
@@ -498,12 +514,28 @@ func (h *Hub) channelCreate(sc *serverConn, f wire.Frame) error {
 	if err := validText(cc.Name, cc.Description); err != nil {
 		return err
 	}
-	servers, mods, epoch := []string{sc.name}, []wire.Moderator{cc.Creator}, int64(1)
+	if cc.Private && cc.Listing != wire.ListingUnlisted {
+		// A private channel is never listed (ruling R94).
+		return wire.Errf(wire.EBadFrame, "A private channel is shared unlisted, and stays so.")
+	}
+	servers, mods, epoch := []string{sc.name}, []wire.ChannelAccount{cc.Creator}, int64(1)
 	moved := cc.MoveID != ""
+	if !moved {
+		// The channel comes to the hub with its managers: each becomes a
+		// manager. They are accounts of the server that shares it.
+		for _, m := range cc.Managers {
+			if !wire.ValidID(m.AccountID) || m.Server != sc.name {
+				return wire.Errf(wire.EBadFrame, "A manager of a channel shared here is an account of the server that shares it.")
+			}
+			if !(wire.ChannelRecord{Managers: mods}).Manages(m.AccountID, m.Server) {
+				mods = append(mods, m)
+			}
+		}
+	}
 	if moved {
 		// Exactly its two servers, the sender on this hub and the other on
 		// it or on another hub of its cluster; the other one's signed
-		// agreement to this move onto this hub; and moderators who are
+		// agreement to this move onto this hub; and managers who are
 		// accounts of one or the other, those of the other server being
 		// exactly the managers it signed for.
 		if !wire.ValidID(cc.MoveID) || len(cc.Servers) != 2 || cc.Servers[0] == cc.Servers[1] || !has(cc.Servers, sc.name) || cc.Epoch < 2 {
@@ -526,22 +558,22 @@ func (h *Hub) channelCreate(sc *serverConn, f wire.Frame) error {
 			return wire.Errf(wire.EConflict, "The agreement to the move has expired.")
 		}
 		theirs := 0
-		for _, m := range cc.Moderators {
+		for _, m := range cc.Managers {
 			switch {
 			case !wire.ValidID(m.AccountID) || !has(cc.Servers, m.Server):
-				return wire.Errf(wire.EBadFrame, "A moderator is an account of a server in the channel.")
+				return wire.Errf(wire.EBadFrame, "A manager is an account of a server in the channel.")
 			case m.Server == other:
 				theirs++
-				if !(wire.ChannelRecord{Moderators: acc.Managers}).Moderates(m.AccountID, other) {
+				if !(wire.ChannelRecord{Managers: acc.Managers}).Manages(m.AccountID, other) {
 					return wire.Errf(wire.EForbidden, "%s did not name that account as a manager.", other)
 				}
 			}
 		}
 		if theirs != len(acc.Managers) {
-			return wire.Errf(wire.EForbidden, "Every manager %s named becomes a moderator.", other)
+			return wire.Errf(wire.EForbidden, "Every manager %s named stays a manager.", other)
 		}
 		// The sender first: it is named to make the first key here.
-		servers, mods, epoch = []string{sc.name, other}, append([]wire.Moderator{}, cc.Moderators...), cc.Epoch
+		servers, mods, epoch = []string{sc.name, other}, append([]wire.ChannelAccount{}, cc.Managers...), cc.Epoch
 	}
 	lim, err := h.Limits(sc.name)
 	if err != nil {
@@ -587,8 +619,8 @@ func (h *Hub) channelCreate(sc *serverConn, f wire.Frame) error {
 			return err
 		}
 		c := channel{creator: sc.name, moveID: cc.MoveID, inviters: map[string]string{}, rec: wire.ChannelRecord{StreamID: cc.StreamID, Name: cc.Name,
-			Description: cc.Description, Listing: cc.Listing, Servers: servers, Moderators: mods, Epoch: epoch, KeyMaker: sc.name,
-			Joined: []string{}, Prepared: moved}}
+			Description: cc.Description, Listing: cc.Listing, Servers: servers, Managers: mods, Epoch: epoch, KeyMaker: sc.name,
+			Joined: []string{}, Prepared: moved, Private: cc.Private}}
 		return h.saveChannel(tx, &c, nil)
 	})
 	m.Unlock()
@@ -665,25 +697,25 @@ func (h *Hub) channelCommitAs(sender string, f wire.Frame) error {
 		if _, err := tx.Exec(`UPDATE streams SET epoch = ? WHERE id = ?`, mc.Epoch, c.rec.StreamID); err != nil {
 			return err
 		}
-		// The moderators are every manager of the channel on either server
+		// The managers are every manager of the channel on either server
 		// at the commit: the other server's as it signed for them when it
 		// agreed (checked when the channel was prepared), the committing
 		// server's as it read them in the transaction that committed.
-		mods := []wire.Moderator{}
-		for _, m := range c.rec.Moderators {
+		mods := []wire.ChannelAccount{}
+		for _, m := range c.rec.Managers {
 			if m.Server != c.creator {
 				mods = append(mods, m)
 			}
 		}
-		for _, m := range mc.Moderators {
-			if m.Server == c.creator && wire.ValidID(m.AccountID) && !(wire.ChannelRecord{Moderators: mods}).Moderates(m.AccountID, m.Server) {
+		for _, m := range mc.Managers {
+			if m.Server == c.creator && wire.ValidID(m.AccountID) && !(wire.ChannelRecord{Managers: mods}).Manages(m.AccountID, m.Server) {
 				mods = append(mods, m)
 			}
 		}
 		if len(mods) == 0 {
-			return wire.Errf(wire.EBadFrame, "A channel has at least one moderator.")
+			return wire.Errf(wire.EBadFrame, "A channel has at least one manager.")
 		}
-		c.rec.Moderators = mods
+		c.rec.Managers = mods
 		c.rec.Prepared = false
 		c.rec.Epoch, c.rec.KeyMaker = mc.Epoch+1, c.creator
 		c.rec.Joined, c.rec.Left = []string{}, []string{}
@@ -702,7 +734,7 @@ func (h *Hub) channelCommitAs(sender string, f wire.Frame) error {
 // holds it, from two things only the move itself could have produced: the
 // prepared record this hub signed (its own signature is the proof that it
 // prepared exactly this channel, for these two servers, with these
-// moderators), and the former owner server's signed commit of the move. The
+// managers), and the former owner server's signed commit of the move. The
 // caller then activates it as if it had never been lost.
 //
 // It is refused for a stream this hub holds in any state, for a record that
@@ -751,19 +783,19 @@ func (h *Hub) restorePrepared(tx *sql.Tx, sender string, f wire.Frame, mc wire.M
 		return err
 	}
 	c := channel{creator: creator, moveID: mc.MoveID, inviters: map[string]string{}, rec: wire.ChannelRecord{StreamID: rec.StreamID, Name: rec.Name,
-		Description: rec.Description, Listing: rec.Listing, Servers: rec.Servers, Moderators: rec.Moderators, Epoch: rec.Epoch, KeyMaker: creator,
-		Joined: []string{}, Prepared: true}}
+		Description: rec.Description, Listing: rec.Listing, Servers: rec.Servers, Managers: rec.Managers, Epoch: rec.Epoch, KeyMaker: creator,
+		Joined: []string{}, Prepared: true, Private: rec.Private}}
 	h.log.Warn("a moved channel this hub had prepared and no longer held was prepared again from its own record and the move's commit",
 		"stream", rec.StreamID, "by", sender, "move", mc.MoveID)
 	return h.saveChannel(tx, &c, nil)
 }
 
-// channelAction is a moderator's action (mod_action) or a server's wish to
+// channelAction is a manager's action (channel_action) or a server's wish to
 // join (join). Both are signed by the server on this connection; a
-// moderator's is accepted only when its account is on the channel's
-// moderator list as an account of that server.
+// manager's is accepted only when its account is on the channel's
+// manager list as an account of that server.
 func (h *Hub) channelAction(sc *serverConn, f wire.Frame, raw []byte) error {
-	var a wire.ModAction
+	var a wire.ChannelAction
 	if err := wire.VerifyBlock(f, sc.key, &a); err != nil {
 		return err
 	}
@@ -779,7 +811,7 @@ func (h *Hub) channelAction(sc *serverConn, f wire.Frame, raw []byte) error {
 // of this hub's own, or one of another hub's whose request was carried here.
 func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error {
 	sc := &serverConn{name: actor, key: actorKey}
-	var a wire.ModAction
+	var a wire.ChannelAction
 	if err := wire.VerifyBlock(f, sc.key, &a); err != nil {
 		return err
 	}
@@ -803,7 +835,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			// Prepared for a move and not yet committed: the server that
 			// brought it may take it away again, and nothing else is done
 			// to it.
-			if f.Frame == wire.FModAction && a.Action == wire.ModClose && c.creator == sc.name {
+			if f.Frame == wire.FChannelAction && a.Action == wire.ActClose && c.creator == sc.name {
 				c.rec.Closed, c.deadline = true, 0
 				return h.saveChannel(tx, &c, nil)
 			}
@@ -812,8 +844,8 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 		if f.Frame == wire.FJoin {
 			return h.join(tx, &c, sc.name)
 		}
-		if a.By.Server != sc.name || !c.rec.Moderates(a.By.AccountID, sc.name) {
-			return wire.Errf(wire.EForbidden, "That account is not a moderator of the channel.")
+		if a.By.Server != sc.name || !c.rec.Manages(a.By.AccountID, sc.name) {
+			return wire.Errf(wire.EForbidden, "That account is not a manager of the channel.")
 		}
 		onHub := func(name string) error {
 			if _, ok := h.serverKeyIn(tx, name); !ok || name == "" {
@@ -823,7 +855,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 		}
 		var also []string
 		switch a.Action {
-		case wire.ModInvite:
+		case wire.ActInvite:
 			if err := onHub(a.Server); err != nil {
 				return err
 			}
@@ -836,12 +868,12 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			}
 			c.rec.Invited = append(c.rec.Invited, a.Server)
 			c.inviters[a.Server] = sc.name
-		case wire.ModApprove:
+		case wire.ActApprove:
 			if !has(c.rec.Requests, a.Server) {
 				return wire.Errf(wire.ENotFound, "%s has not asked to join.", a.Server)
 			}
 			return h.admit(tx, &c, a.Server, sc.name)
-		case wire.ModDecline:
+		case wire.ActDecline:
 			if !has(c.rec.Requests, a.Server) {
 				return wire.Errf(wire.ENotFound, "%s has not asked to join.", a.Server)
 			}
@@ -850,7 +882,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			if !h.remote(declined) && h.connOf(declined) == nil && !has(c.declined, declined) {
 				c.declined = append(c.declined, declined) // told when it next connects
 			}
-		case wire.ModRemoveServer:
+		case wire.ActRemoveServer:
 			switch {
 			case c.rec.Has(a.Server):
 				dropServer(&c, a.Server)
@@ -862,7 +894,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			default:
 				return wire.Errf(wire.ENotFound, "%s is not in the channel.", a.Server)
 			}
-		case wire.ModDescribe:
+		case wire.ActDescribe:
 			name, description := c.rec.Name, c.rec.Description
 			if a.Name != nil {
 				name = *a.Name
@@ -874,33 +906,39 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 				return err
 			}
 			c.rec.Name, c.rec.Description = name, description
-		case wire.ModSetListing:
+		case wire.ActSetListing:
 			if !wire.ValidListing(a.Listing) {
 				return wire.Errf(wire.EBadFrame, "The listing mode is unlisted, request or open.")
 			}
+			if c.rec.Private && a.Listing != wire.ListingUnlisted {
+				// Not by any manager, nor by anyone else (ruling R94).
+				return wire.Errf(wire.EForbidden, "A private channel is never listed.")
+			}
 			c.rec.Listing = a.Listing
-		case wire.ModAddModerator:
-			if a.Moderator == nil || !wire.ValidID(a.Moderator.AccountID) || !c.rec.Has(a.Moderator.Server) {
-				return wire.Errf(wire.EBadFrame, "A moderator is an account of a server in the channel.")
+		case wire.ActAddManager, wire.ActAddModerator:
+			if a.Account == nil || !wire.ValidID(a.Account.AccountID) || !c.rec.Has(a.Account.Server) {
+				return wire.Errf(wire.EBadFrame, "A manager or moderator is an account of an instance in the channel.")
 			}
-			if !c.rec.Moderates(a.Moderator.AccountID, a.Moderator.Server) {
-				c.rec.Moderators = append(c.rec.Moderators, *a.Moderator)
+			list := &c.rec.Managers
+			if a.Action == wire.ActAddModerator {
+				list = &c.rec.Moderators
 			}
-		case wire.ModRemoveModerator:
-			if a.Moderator == nil || !c.rec.Moderates(a.Moderator.AccountID, a.Moderator.Server) {
-				return wire.Errf(wire.ENotFound, "That account is not a moderator of the channel.")
+			if !(wire.ChannelRecord{Managers: *list}).Manages(a.Account.AccountID, a.Account.Server) {
+				*list = append(*list, *a.Account)
 			}
-			if len(c.rec.Moderators) == 1 {
-				return wire.Errf(wire.EConflict, "A channel keeps at least one moderator.")
+		case wire.ActRemoveManager, wire.ActRemoveModerator:
+			list := &c.rec.Managers
+			if a.Action == wire.ActRemoveModerator {
+				list = &c.rec.Moderators
 			}
-			mods := []wire.Moderator{}
-			for _, m := range c.rec.Moderators {
-				if m.AccountID != a.Moderator.AccountID || m.Server != a.Moderator.Server {
-					mods = append(mods, m)
-				}
+			if a.Account == nil || !(wire.ChannelRecord{Managers: *list}).Manages(a.Account.AccountID, a.Account.Server) {
+				return wire.Errf(wire.ENotFound, "That account is not on that list of the channel.")
 			}
-			c.rec.Moderators = mods
-		case wire.ModClose:
+			if a.Action == wire.ActRemoveManager && len(c.rec.Managers) == 1 {
+				return wire.Errf(wire.EConflict, "A channel keeps at least one manager.")
+			}
+			*list = dropAccount(*list, a.Account.AccountID, a.Account.Server)
+		case wire.ActClose:
 			c.rec.Closed, c.deadline = true, 0
 		default:
 			return wire.Errf(wire.EBadFrame, "Unknown action %q.", a.Action)
@@ -956,7 +994,7 @@ func (h *Hub) join(tx *sql.Tx, c *channel, name string) error {
 		_, err := tx.Exec(`UPDATE channels SET told = 0 WHERE stream_id = ?`, c.rec.StreamID)
 		return err
 	case has(c.rec.Invited, name):
-		// The home server of the moderator who invited it makes the key.
+		// The home server of the manager who invited it makes the key.
 		return h.admit(tx, c, name, c.inviters[name])
 	case c.rec.Listing == wire.ListingOpen:
 		// The longest-standing member server makes the key.
@@ -969,7 +1007,7 @@ func (h *Hub) join(tx *sql.Tx, c *channel, name string) error {
 		c.declined = without(c.declined, name)
 		return h.saveChannel(tx, c, nil)
 	}
-	return wire.Errf(wire.EForbidden, "That channel is joined by a moderator's invitation.")
+	return wire.Errf(wire.EForbidden, "That channel is joined by a manager's invitation.")
 }
 
 // channelLeave takes a server that asked to leave out of a channel: out of
@@ -995,7 +1033,7 @@ func (h *Hub) channelLeave(name, stream string) error {
 
 // directory answers a server with the channels it may see without being
 // invited: those listed as request or open. For each: name, description,
-// listing mode, moderators and how many servers are in it, and the asking
+// listing mode, managers and how many servers are in it, and the asking
 // server's own place in it.
 func (h *Hub) directory(sc *serverConn, f wire.Frame) error {
 	d := wire.Directory{Hub: h.id.Name, HubKey: wire.Bytes(h.keys.SignPublic()), At: h.now(), Channels: []wire.DirectoryEntry{}}
@@ -1004,11 +1042,11 @@ func (h *Hub) directory(sc *serverConn, f wire.Frame) error {
 		return err
 	}
 	for _, c := range infos {
-		if c.Listing == wire.ListingUnlisted {
+		if c.Listing == wire.ListingUnlisted || c.Private {
 			continue
 		}
 		e := wire.DirectoryEntry{StreamID: c.ID, Name: c.Name, Description: c.Description, Listing: c.Listing,
-			Moderators: c.Moderators, Servers: len(c.Servers)}
+			Managers: c.Managers, Servers: len(c.Servers)}
 		switch {
 		case has(c.Servers, sc.name):
 			e.Yours = "member"
@@ -1034,7 +1072,7 @@ func (h *Hub) directory(sc *serverConn, f wire.Frame) error {
 type ChannelInfo struct {
 	ID, Name, Description, Listing string
 	Servers, Invited, Requests     []string
-	Moderators                     []wire.Moderator
+	Managers, Moderators           []wire.ChannelAccount
 	KeyMaker                       string
 	Epoch, Version                 int64
 	// Cursor is the last position written to the channel's log: a count
@@ -1043,6 +1081,8 @@ type ChannelInfo struct {
 	// Home is the channel's home hub: this hub for a channel it owns,
 	// another hub of the cluster for one it only carries or lists.
 	Home string
+	// Private: the channel is private for good, and never listed.
+	Private bool
 }
 
 // Channels lists the open channels the hub owns and, with Home naming
@@ -1073,8 +1113,8 @@ func (h *Hub) Channels() ([]ChannelInfo, error) {
 			return nil, err
 		}
 		out = append(out, ChannelInfo{ID: r.id, Name: c.rec.Name, Description: c.rec.Description, Listing: c.rec.Listing, Servers: c.rec.Servers,
-			Invited: c.rec.Invited, Requests: c.rec.Requests, Moderators: c.rec.Moderators, KeyMaker: c.rec.KeyMaker, Epoch: c.rec.Epoch,
-			Version: c.rec.Version, Cursor: r.next - 1, Home: c.rec.HomeHub})
+			Invited: c.rec.Invited, Requests: c.rec.Requests, Managers: c.rec.Managers, Moderators: c.rec.Moderators, KeyMaker: c.rec.KeyMaker, Epoch: c.rec.Epoch,
+			Version: c.rec.Version, Cursor: r.next - 1, Home: c.rec.HomeHub, Private: c.rec.Private})
 	}
 	return out, nil
 }
@@ -1101,8 +1141,8 @@ func (h *Hub) operate(stream string, fn func(c *channel) ([]string, error)) erro
 	})
 }
 
-// Appoint makes an account a moderator of a channel: the operator's last
-// resort when a channel has no moderator who will act. who is
+// Appoint makes an account a manager of a channel: the operator's last
+// resort when a channel has no manager who will act. who is
 // username@server; the server must be in the channel.
 func (h *Hub) Appoint(stream, accountID, who string) error {
 	username, server, ok := strings.Cut(strings.ToLower(who), "@")
@@ -1113,18 +1153,18 @@ func (h *Hub) Appoint(stream, accountID, who string) error {
 		if !c.rec.Has(server) {
 			return nil, fmt.Errorf("%s is not in that channel", server)
 		}
-		if !c.rec.Moderates(accountID, server) {
-			c.rec.Moderators = append(c.rec.Moderators, wire.Moderator{AccountID: accountID, Server: server, Username: username})
+		if !c.rec.Manages(accountID, server) {
+			c.rec.Managers = append(c.rec.Managers, wire.ChannelAccount{AccountID: accountID, Server: server, Username: username})
 		}
 		return nil, nil
 	})
 }
 
-// Dismiss takes an account off a channel's moderator list.
+// Dismiss takes an account off a channel's manager list.
 func (h *Hub) Dismiss(stream, accountID string) error {
 	return h.operate(stream, func(c *channel) ([]string, error) {
-		mods, found := []wire.Moderator{}, false
-		for _, m := range c.rec.Moderators {
+		mods, found := []wire.ChannelAccount{}, false
+		for _, m := range c.rec.Managers {
 			if m.AccountID == accountID {
 				found = true
 				continue
@@ -1132,9 +1172,9 @@ func (h *Hub) Dismiss(stream, accountID string) error {
 			mods = append(mods, m)
 		}
 		if !found {
-			return nil, errors.New("that account is not a moderator of the channel")
+			return nil, errors.New("that account is not a manager of the channel")
 		}
-		c.rec.Moderators = mods
+		c.rec.Managers = mods
 		return nil, nil
 	})
 }

@@ -99,9 +99,10 @@ tags:
   description: Peers and streams for sharing channels with other servers (LINK-PROTOCOL.md). Owner only. Every one
     of these is written to the audit log.
 - name: Channels on a hub
-  description: A channel shared through a hub is owned by the hub (LINK-PROTOCOL.md section 23a). Its moderators
-    are accounts, named in the record the hub signs; their authority reaches every server in the channel and does
-    not depend on their role or level on their own server.
+  description: 'A channel shared through a hub is owned by the hub (LINK-PROTOCOL.md section 23a). Its managers
+    and moderators are accounts, named in the record the hub signs; their authority reaches every instance in the
+    channel and does not depend on their role or level on their own instance. Managers hold the channel as an owner
+    would; moderators keep the peace: they admit and remove people and remove messages.'
 - name: 'Admin: records'
   description: The audit log, the export and server status.
 - name: Themes
@@ -18559,7 +18560,7 @@ paths:
       description: |-
         **Who:** The owner only. The channel must be a named channel the owner can read.
 
-        Over a direct link this server owns the stream and sends the other server an offer; an offer nobody answers lapses after seven days. Over a hub the hub owns the channel from the start (LINK-PROTOCOL.md section 23a): the caller becomes its first moderator, the channel's name and topic become the name and description the hub records, and each server named is invited in the caller's name. Sharing over a hub that is not connected answers `conflict`.
+        Over a direct link this server owns the stream and sends the other server an offer; an offer nobody answers lapses after seven days. Over a hub the hub owns the channel from the start (LINK-PROTOCOL.md section 23a): the caller becomes its first manager, the channel's name and topic become the name and description the hub records, and each server named is invited in the caller's name. Sharing over a hub that is not connected answers `conflict`.
       requestBody:
         required: true
         content:
@@ -18659,7 +18660,7 @@ paths:
       description: |-
         **Who:** The owner only.
 
-        The accepting owner picks its local name, which need not be unique, its section, and whether it is public or private here. An offer of a channel on a hub is a moderator's invitation: accepting it joins the channel. If the other side refuses the acceptance, the answer is `conflict`.
+        The accepting owner picks its local name, which need not be unique, its section, and whether it is public or private here. An offer of a channel on a hub is a manager's invitation: accepting it joins the channel. If the other side refuses the acceptance, the answer is `conflict`.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -18897,7 +18898,7 @@ paths:
       tags: ['Admin: linked servers']
       summary: Offer a shared channel to another server
       description: '**Who:** The owner of the server that owns the stream. For a channel on a hub: an owner who
-        is one of the channel''s moderators; it is that moderator''s invitation (`moderateHubChannel`).'
+        is one of the channel''s managers; it is that manager''s invitation (`moderateHubChannel`).'
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathServerId'
@@ -18957,7 +18958,7 @@ paths:
       tags: ['Admin: linked servers']
       summary: Remove a server from a shared channel
       description: |-
-        **Who:** The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel's moderators.
+        **Who:** The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel's managers.
 
         Starts a new key epoch. The removed server is sent nothing further.
       parameters:
@@ -19171,7 +19172,7 @@ paths:
       tags: ['Admin: linked servers']
       summary: Stop sharing a channel with every server
       description: |-
-        **Who:** The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel's moderators.
+        **Who:** The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel's managers.
 
         Every server detaches and keeps its copy.
       parameters:
@@ -19222,7 +19223,7 @@ paths:
       description: |-
         **Who:** The owner only.
 
-        The channels on the hub whose listing mode is `request` or `open`, as the hub signs them: name, description, listing mode, moderators and the number of servers. Unlisted channels are never in it. The peer must be a hub and connected.
+        The channels on the hub whose listing mode is `request` or `open`, as the hub signs them: name, description, listing mode, managers and the number of servers. Unlisted channels are never in it. The peer must be a hub and connected.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -19282,7 +19283,7 @@ paths:
       description: |-
         **Who:** The owner only.
 
-        Makes a new local channel for it, as `acceptStream` does. An `open` channel is joined at once. For a `request` channel the hub records the request and the stream stays `offered` here until a moderator approves it; if a moderator declines, the stream becomes `removed` and the local channel stays as an archived local channel.
+        Makes a new local channel for it, as `acceptStream` does. An `open` channel is joined at once. For a `request` channel the hub records the request and the stream stays `offered` here until a manager approves it; if a manager declines, the stream becomes `removed` and the local channel stays as an archived local channel.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -19502,7 +19503,7 @@ paths:
       description: |-
         **Who:** The owner of the stream's other server.
 
-        Signs this server's agreement, naming the hub by name and key and the managers of the local channel, who become moderators at the commit. This server must itself be on that hub.
+        Signs this server's agreement, naming the hub by name and key and the managers of the local channel, who become managers at the commit. This server must itself be on that hub.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -19674,8 +19675,8 @@ paths:
       operationId: getHubChannel
       tags: [Channels on a hub]
       summary: Get the hub's record of a channel
-      description: '**Who:** A member of the local channel, one of the channel''s moderators, or the owner. Only
-        moderators and the owner see which servers are invited or asking to join.'
+      description: '**Who:** A member of the local channel, one of the channel''s managers, or the owner. Only managers
+        and the owner see which servers are invited or asking to join.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -19685,10 +19686,13 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [channel, moderator]
+                required: [channel, manager, moderator]
                 properties:
                   channel:
                     $ref: '#/components/schemas/HubChannel'
+                  manager:
+                    type: boolean
+                    description: Whether the caller is one of its managers.
                   moderator:
                     type: boolean
                     description: Whether the caller is one of its moderators.
@@ -19724,11 +19728,11 @@ paths:
     post:
       operationId: moderateHubChannel
       tags: [Channels on a hub]
-      summary: Act as a moderator of a channel on a hub
+      summary: Act as a manager of a channel on a hub
       description: |-
-        **Who:** One of the channel's moderators whose account is on this server.
+        **Who:** One of the channel's managers whose account is on this server.
 
-        This server signs the action and the hub applies it if the account is on the channel's moderator list; the answer is the record as the hub signed it afterwards. `invite`, `approve`, `decline` and `remove_server` name a server; `add_moderator` and `remove_moderator` name an account, which must belong to a server in the channel; `describe` changes the name, the description or both; `set_listing` the listing mode; `close` ends the channel for every server. Deleting a message for everyone is not an action here: a moderator deletes it with `deleteMessage`.
+        This server signs the action and the hub applies it if the account is on the channel's manager list; the answer is the record as the hub signed it afterwards. `invite`, `approve`, `decline` and `remove_server` name a server; `add_manager`, `remove_manager`, `add_moderator` and `remove_moderator` name an account, which must belong to an instance in the channel (a channel keeps at least one manager); `describe` changes the name, the description or both; `set_listing` the listing mode, which a private channel never changes; `close` ends the channel for every instance. Deleting a message for everyone is not an action here: a manager or moderator deletes it with `deleteMessage`; people are admitted and removed with `moderateHubChannelMember`.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -19746,6 +19750,8 @@ paths:
                   - approve
                   - decline
                   - remove_server
+                  - add_manager
+                  - remove_manager
                   - add_moderator
                   - remove_moderator
                   - describe
@@ -19790,6 +19796,250 @@ paths:
                 type: string
                 format: binary
               x-protobuf-message: churr.v1.ModerateHubChannelResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+          description: 'Codes: `unavailable`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+      - unavailable
+  /api/v1/streams/{id}/channel/requests:
+    post:
+      operationId: askToJoinHubChannel
+      tags: [Channels on a hub]
+      summary: Ask to be admitted to a private channel on a hub
+      description: |-
+        **Who:** Owner, admin and member accounts of an instance in the channel that are not in it. Nobody outside a private channel sees it: a moderator or manager gives the person its identifier, the join code.
+
+        The request travels to every instance in the channel, where its moderators and managers see it (`listHubChannelRequests`). Asking again while a request waits changes nothing. Ten requests an hour that were not accepted, counted with knocks.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [request]
+                properties:
+                  request:
+                    $ref: '#/components/schemas/HubPerson'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AskToJoinHubChannelResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+    get:
+      operationId: listHubChannelRequests
+      tags: [Channels on a hub]
+      summary: List the requests to join a private channel on a hub
+      description: |-
+        **Who:** One of the channel's moderators or managers whose account is on this instance.
+
+        The requests made on every instance in the channel and not yet answered, oldest first.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requests]
+                properties:
+                  requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HubPerson'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListHubChannelRequestsResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/streams/{id}/channel/candidates:
+    get:
+      operationId: listHubChannelCandidates
+      tags: [Channels on a hub]
+      summary: List the people a moderator or manager can admit to a private channel on a hub
+      description: |-
+        **Who:** One of the channel's moderators or managers whose account is on this instance.
+
+        The active accounts this instance knows, of the instances in the channel, that are not in it: every person of this instance, and those of other instances this one has met in a shared conversation. Anyone else asks to join with the join code. At most 50.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - name: q
+        in: query
+        description: Match on username or display name.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [people]
+                properties:
+                  people:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HubPerson'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListHubChannelCandidatesResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/streams/{id}/channel/members:
+    post:
+      operationId: moderateHubChannelMember
+      tags: [Channels on a hub]
+      summary: Admit, decline or remove someone in a channel on a hub
+      description: |-
+        **Who:** One of the channel's moderators or managers whose account is on this instance. The account may be of any instance in it.
+
+        `admit` lets the person into a private channel: their own instance adds them to its copy, and their arrival is announced on every instance. `decline` answers their request to join one. `remove` takes them out on every instance, in any channel on a hub. Each instance checks for itself that the acting account is on the moderator or the manager list the hub signed. In a private channel on a hub nobody else adds people: not a local manager who is not on the lists, not an admin.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, account_id]
+              properties:
+                action:
+                  type: string
+                  enum: [admit, decline, remove]
+                account_id:
+                  type: string
+                  format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ModerateHubChannelMemberRequest
+      responses:
+        '204':
+          description: Done. No content.
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -25448,9 +25698,9 @@ components:
         created_at:
           type: string
           format: date-time
-    HubModerator:
+    HubAccount:
       type: object
-      description: 'A moderator of a channel a hub owns: an account, and the server it belongs to.'
+      description: 'A manager or moderator of a channel a hub owns: an account, and the instance it belongs to.'
       required: [account_id, server, username]
       properties:
         account_id:
@@ -25471,11 +25721,13 @@ components:
       - description
       - listing
       - servers
+      - managers
       - moderators
       - invited
       - requests
       - key_maker
       - closed
+      - private
       - updated_at
       properties:
         stream_id:
@@ -25495,40 +25747,74 @@ components:
         listing:
           type: string
           enum: [unlisted, request, open]
-          description: '`unlisted`: servers join only by a moderator''s invitation. `request`: every server on the
-            hub sees it in the directory and may ask; a moderator approves. `open`: every server on the hub may
-            join.'
+          description: '`unlisted`: instances join only by a manager''s invitation. `request`: every instance on
+            the hub sees it in the directory and may ask; a manager approves. `open`: every instance on the hub
+            may join. A private channel is unlisted for good.'
         servers:
           type: array
           items:
             type: string
-          description: The names of the servers in it, longest-standing first.
+          description: The names of the instances in it, longest-standing first.
+        managers:
+          type: array
+          items:
+            $ref: '#/components/schemas/HubAccount'
+          description: 'Who holds the channel as an owner would: its instances, its name and description, its managers
+            and moderators, closing it. At least one.'
         moderators:
           type: array
           items:
-            $ref: '#/components/schemas/HubModerator'
+            $ref: '#/components/schemas/HubAccount'
+          description: 'Who keeps the peace: admits and removes people and removes messages, on every instance.
+            A manager may do all a moderator may.'
         invited:
           type: array
           items:
             type: string
-          description: Servers invited and not yet in. Empty for a caller who is neither a moderator nor the owner.
+          description: Instances invited and not yet in. Empty for a caller who is neither a manager, a moderator
+            nor the owner.
         requests:
           type: array
           items:
             type: string
-          description: Servers asking to join. Empty for a caller who is neither a moderator nor the owner.
+          description: Instances asking to join. Empty for a caller who is neither a manager, a moderator nor the
+            owner.
         key_maker:
           type: string
-          description: The server the hub named to make the current stream key. The hub never holds a key.
+          description: The instance the hub named to make the current stream key. The hub never holds a key.
         closed:
           type: boolean
+        private:
+          type: boolean
+          description: 'Private for good: never listed, joined by instances a manager invites, and its people on
+            every instance admitted by its moderators and managers.'
         updated_at:
           type: string
           format: date-time
+    HubPerson:
+      type: object
+      description: 'Someone of an instance in a private channel on a hub: one who asks to join, or one a moderator
+        may admit.'
+      required: [account_id, username, display_name, server]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        display_name:
+          type: string
+        server:
+          type: string
+          description: Their home instance.
+        requested_at:
+          type: string
+          format: date-time
+          description: When they asked to join. Absent for someone who has not.
     HubDirectoryEntry:
       type: object
       description: One channel in a hub's directory.
-      required: [stream_id, name, description, listing, moderators, servers, state]
+      required: [stream_id, name, description, listing, managers, servers, state]
       properties:
         stream_id:
           type: string
@@ -25540,18 +25826,18 @@ components:
         listing:
           type: string
           enum: [request, open]
-        moderators:
+        managers:
           type: array
           items:
-            $ref: '#/components/schemas/HubModerator'
+            $ref: '#/components/schemas/HubAccount'
         servers:
           type: integer
           format: int64
-          description: How many servers are in it.
+          description: How many instances are in it.
         state:
           type: string
           enum: [none, invited, requested, member]
-          description: This server's own place in it.
+          description: This instance's own place in it.
     StreamMove:
       type: object
       description: One attempt to move a channel shared over a direct link onto a hub, as this server knows it.

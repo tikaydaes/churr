@@ -68,7 +68,7 @@ func TestRehomeOfferLost(t *testing.T) {
 		t.Fatalf("with its offer unanswered, hub a takes the home to be %q", got)
 	}
 	text := "changed while the offer was out"
-	if code := a1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }); code != wire.EUnavailable {
+	if code := a1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }); code != wire.EUnavailable {
 		t.Fatalf("a change while the home is on offer was answered %q, want unavailable", code)
 	}
 	// No answer comes. Hub a calls the offer off; hub b says it is dead.
@@ -86,7 +86,7 @@ func TestRehomeOfferLost(t *testing.T) {
 	// The channel has its home: a moderator's action is answered, by hub a.
 	text = "changed after the failed move"
 	testkit.Eventually(t, "the old home signs for the channel again", func() bool {
-		return a1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }) == "" && b1.record(id).Description == text
+		return a1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }) == "" && b1.record(id).Description == text
 	})
 	if rec := b1.record(id); rec.Hub != a.Name || rec.HomeHub != a.Name {
 		t.Fatalf("the record after the failed move is signed by %s for home %s", rec.Hub, rec.HomeHub)
@@ -143,10 +143,10 @@ func TestRehomeAnswerLost(t *testing.T) {
 	if err := b.Hub.Appoint(id, "01940000-0000-7000-8000-000000000001", "bo@b1.sim"); err != nil {
 		t.Fatalf("the new home's operator: %v", err)
 	}
-	testkit.Eventually(t, "the new home's change reaches its server", func() bool { return len(b1.record(id).Moderators) == 2 })
+	testkit.Eventually(t, "the new home's change reaches its server", func() bool { return len(b1.record(id).Managers) == 2 })
 	// Hub a has not heard. It signs nothing: its server's request is put off.
 	text := "from the old home's side"
-	if code := a1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }); code != wire.EUnavailable {
+	if code := a1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }); code != wire.EUnavailable {
 		t.Fatalf("the old home, not knowing, answered a change %q, want unavailable", code)
 	}
 	if rec := a1.record(id); rec.Version != before || rec.Hub != a.Name {
@@ -166,9 +166,9 @@ func TestRehomeAnswerLost(t *testing.T) {
 	// Its server follows the chain: the handover hub a signed, then hub b's.
 	testkit.Eventually(t, "the old home's server holds the new home's record", func() bool {
 		rec := a1.record(id)
-		return rec.Hub == b.Name && len(rec.Moderators) == 2
+		return rec.Hub == b.Name && len(rec.Managers) == 2
 	})
 	testkit.Eventually(t, "a change asked on the old home's side is made by the new home", func() bool {
-		return a1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }) == "" && b1.record(id).Description == text
+		return a1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }) == "" && b1.record(id).Description == text
 	})
 }

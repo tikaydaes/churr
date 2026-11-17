@@ -258,8 +258,8 @@ func (s *sim) ask(f wire.Frame, wait time.Duration) (wire.Frame, bool) {
 	}
 }
 
-func (s *sim) me() wire.Moderator {
-	return wire.Moderator{AccountID: "0193d100-0000-7000-8000-" + fmt.Sprintf("%012x", len(s.name)*7919+int(s.name[0])), Server: s.name, Username: "owner"}
+func (s *sim) me() wire.ChannelAccount {
+	return wire.ChannelAccount{AccountID: "0193d100-0000-7000-8000-" + fmt.Sprintf("%012x", len(s.name)*7919+int(s.name[0])), Server: s.name, Username: "owner"}
 }
 
 // create shares a channel to the sim's hub and waits for its record.
@@ -288,13 +288,13 @@ func (s *sim) record(stream string) wire.ChannelRecord {
 
 // act sends a moderator's action and returns the hub's refusal, if it
 // refuses: "" means the hub did not say no within the wait.
-func (s *sim) act(stream, action string, fill func(a *wire.ModAction)) string {
+func (s *sim) act(stream, action string, fill func(a *wire.ChannelAction)) string {
 	s.t.Helper()
-	a := wire.ModAction{StreamID: stream, ActionID: model.NewID[string](), Action: action, By: s.me(), At: model.Now()}
+	a := wire.ChannelAction{StreamID: stream, ActionID: model.NewID[string](), Action: action, By: s.me(), At: model.Now()}
 	if fill != nil {
 		fill(&a)
 	}
-	f, err := wire.SignBlock(wire.FModAction, a, s.keys)
+	f, err := wire.SignBlock(wire.FChannelAction, a, s.keys)
 	if err != nil {
 		s.t.Fatal(err)
 	}
@@ -307,7 +307,7 @@ func (s *sim) act(stream, action string, fill func(a *wire.ModAction)) string {
 // join asks to be in a channel and returns the hub's refusal, if any.
 func (s *sim) join(stream string) string {
 	s.t.Helper()
-	f, err := wire.SignBlock(wire.FJoin, wire.ModAction{StreamID: stream, ActionID: model.NewID[string](), Server: s.name, At: model.Now()}, s.keys)
+	f, err := wire.SignBlock(wire.FJoin, wire.ChannelAction{StreamID: stream, ActionID: model.NewID[string](), Server: s.name, At: model.Now()}, s.keys)
 	if err != nil {
 		s.t.Fatal(err)
 	}

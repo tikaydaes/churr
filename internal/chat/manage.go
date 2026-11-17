@@ -440,6 +440,17 @@ func (s *Service) SetMemberLevel(ctx context.Context, actor model.Account, id mo
 	if err := perm.CheckSetLevel(st, target, level); err != nil {
 		return model.Member{}, err
 	}
+	if st.HubOwned {
+		// Someone on the hub's manager list is a manager of the copy for
+		// as long as the list names them (section 14.1).
+		if rec, err := s.store.Streams().Channel(ctx, st.Conversation.StreamID); err == nil {
+			for _, m := range rec.Managers {
+				if m == account {
+					return model.Member{}, model.ErrConflict.With("A manager on the hub's list is a manager of this copy: take them off the channel's managers first.")
+				}
+			}
+		}
+	}
 	var out model.Member
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		res, err := tx.Members().SetDirectLevel(ctx, id, account, level)

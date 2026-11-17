@@ -19,10 +19,10 @@ import (
 // This file is a server's side of channels a hub owns (section 23a of
 // docs/LINK-PROTOCOL.md, rulings R56 and R59). On a hub, a shared channel
 // belongs to the hub: the hub keeps its record (name, description, listing
-// mode, member servers, moderators) and is the only party whose signature
+// mode, member servers, managers) and is the only party whose signature
 // changes it. A server holds the newest record it has been sent, takes the
-// server list, the moderators and the key-makers from it and from nowhere
-// else, and asks the hub for changes in the name of a moderator who is one
+// server list, the managers and the key-makers from it and from nowhere
+// else, and asks the hub for changes in the name of a manager who is one
 // of its own accounts.
 //
 // Ad-hoc channels and sealed chats that cross a hub are not channels in this
@@ -33,7 +33,7 @@ import (
 // hub keeps of it has changed.
 const EventChannelChanged = "stream.channel_changed"
 
-// actionWait is how long a moderator's action waits for the hub to answer.
+// actionWait is how long a manager's action waits for the hub to answer.
 const actionWait = 5 * time.Second
 
 // hubOwned reports whether a stream is a channel a hub owns.
@@ -111,19 +111,30 @@ func (s *Service) keyMakerOf(ctx context.Context, a store.Areas, id model.Stream
 	return makers[strconv.FormatInt(epoch, 10)]
 }
 
-// moderates reports whether an account of a named server is on the
-// hub-signed moderator list of a stream.
-func (s *Service) moderates(ctx context.Context, a store.Areas, st store.Stream, account model.AccountID, server string) bool {
+// manages reports whether an account of a named instance is on the
+// hub-signed manager list of a stream.
+func (s *Service) manages(ctx context.Context, a store.Areas, st store.Stream, account model.AccountID, server string) bool {
 	if !hubOwned(st) || account == "" {
 		return false
 	}
 	rec, _, err := s.channelOf(ctx, a, st.ID)
-	return err == nil && rec.Moderates(string(account), server)
+	return err == nil && rec.Manages(string(account), server)
+}
+
+// keeps reports whether an account of a named instance is on the
+// hub-signed manager list of a stream or on its moderator list: who may
+// remove messages and people on every instance.
+func (s *Service) keeps(ctx context.Context, a store.Areas, st store.Stream, account model.AccountID, server string) bool {
+	if !hubOwned(st) || account == "" {
+		return false
+	}
+	rec, _, err := s.channelOf(ctx, a, st.ID)
+	return err == nil && rec.Keeps(string(account), server)
 }
 
 // storeChannel keeps a record that has been verified: the signed bytes, the
-// key-makers it names, and which of its moderators are accounts of this
-// server (internal/perm reads those).
+// key-makers it names, and which of its managers and moderators are
+// accounts of this server (internal/perm reads those).
 func (s *Service) storeChannel(ctx context.Context, a store.Areas, signed, sig []byte, rec wire.ChannelRecord) error {
 	_, makers, _ := s.channelOf(ctx, a, model.StreamID(rec.StreamID))
 	for epoch, name := range rec.Makers {
@@ -132,58 +143,75 @@ func (s *Service) storeChannel(ctx context.Context, a store.Areas, signed, sig [
 	if rec.KeyMaker != "" {
 		makers[strconv.FormatInt(rec.Epoch, 10)] = rec.KeyMaker
 	}
-	var mine []model.AccountID
-	for _, m := range rec.Moderators {
-		if m.Server == s.id.Name {
-			mine = append(mine, model.AccountID(m.AccountID))
+	mine := func(list []wire.ChannelAccount) []model.AccountID {
+		var out []model.AccountID
+		for _, m := range list {
+			if m.Server == s.id.Name {
+				out = append(out, model.AccountID(m.AccountID))
+			}
 		}
+		return out
 	}
 	return a.Streams().PutChannel(ctx, store.ChannelRecord{StreamID: model.StreamID(rec.StreamID), Version: rec.Version, HomeHub: rec.HomeHub,
-		Record: signed, Sig: sig, Makers: mustJSON(makers), Moderators: mine})
+		Record: signed, Sig: sig, Makers: mustJSON(makers), Managers: mine(rec.Managers), Moderators: mine(rec.Moderators), Private: rec.Private})
 }
 
 // HubChannel is a hub-owned channel as the API shows it (schema HubChannel).
 type HubChannel struct {
-	StreamID    model.StreamID   `json:"stream_id"`
-	Hub         string           `json:"hub"`
-	Version     int64            `json:"version"`
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Listing     string           `json:"listing"`
-	Servers     []string         `json:"servers"`
-	Moderators  []wire.Moderator `json:"moderators"`
-	Invited     []string         `json:"invited"`
-	Requests    []string         `json:"requests"`
-	KeyMaker    string           `json:"key_maker"`
-	Closed      bool             `json:"closed"`
-	UpdatedAt   model.Time       `json:"updated_at"`
+	StreamID    model.StreamID        `json:"stream_id"`
+	Hub         string                `json:"hub"`
+	Version     int64                 `json:"version"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Listing     string                `json:"listing"`
+	Servers     []string              `json:"servers"`
+	Managers    []wire.ChannelAccount `json:"managers"`
+	Moderators  []wire.ChannelAccount `json:"moderators"`
+	Invited     []string              `json:"invited"`
+	Requests    []string              `json:"requests"`
+	KeyMaker    string                `json:"key_maker"`
+	Closed      bool                  `json:"closed"`
+	// Private: private for good, never listed, and its people admitted by
+	// its moderators (ruling R94).
+	Private   bool       `json:"private"`
+	UpdatedAt model.Time `json:"updated_at"`
 }
 
 func channelView(rec wire.ChannelRecord) HubChannel {
 	v := HubChannel{StreamID: model.StreamID(rec.StreamID), Hub: rec.Hub, Version: rec.Version, Name: rec.Name,
-		Description: rec.Description, Listing: rec.Listing, Servers: rec.Servers, Moderators: rec.Moderators, Invited: rec.Invited,
-		Requests: rec.Requests, KeyMaker: rec.KeyMaker, Closed: rec.Closed, UpdatedAt: rec.At}
+		Description: rec.Description, Listing: rec.Listing, Servers: rec.Servers, Managers: rec.Managers, Moderators: rec.Moderators, Invited: rec.Invited,
+		Requests: rec.Requests, KeyMaker: rec.KeyMaker, Closed: rec.Closed, Private: rec.Private, UpdatedAt: rec.At}
 	for _, l := range []*[]string{&v.Servers, &v.Invited, &v.Requests} {
 		if *l == nil {
 			*l = []string{}
 		}
 	}
+	if v.Managers == nil {
+		v.Managers = []wire.ChannelAccount{}
+	}
 	if v.Moderators == nil {
-		v.Moderators = []wire.Moderator{}
+		v.Moderators = []wire.ChannelAccount{}
 	}
 	return v
 }
 
-// isModerator reports whether an account may act as a moderator of a channel
+// isModerator reports whether an account may act as a manager of a channel
 // from this server: an active account of this server that the hub-signed
 // list names as one of this server's.
-func (s *Service) isModerator(by model.Account, rec wire.ChannelRecord) bool {
-	return by.Active() && by.Local() && by.Role != model.RoleBot && rec.Moderates(string(by.ID), s.id.Name)
+func (s *Service) isManager(by model.Account, rec wire.ChannelRecord) bool {
+	return by.Active() && by.Local() && by.Role != model.RoleBot && rec.Manages(string(by.ID), s.id.Name)
+}
+
+// isKeeper is isManager for the manager list or the moderator list: who
+// may admit, decline and remove people and remove messages from this
+// instance.
+func (s *Service) isKeeper(by model.Account, rec wire.ChannelRecord) bool {
+	return by.Active() && by.Local() && by.Role != model.RoleBot && rec.Keeps(string(by.ID), s.id.Name)
 }
 
 // Channel returns a hub-owned channel's record for one of its local members,
-// one of its moderators or the server's owner. The lists of servers invited
-// and asking are for moderators and the owner only.
+// one of its managers or the server's owner. The lists of servers invited
+// and asking are for managers and the owner only.
 func (s *Service) Channel(ctx context.Context, by model.Account, id model.StreamID) (HubChannel, error) {
 	st, err := s.store.Streams().Get(ctx, id)
 	if err != nil || !hubOwned(st) {
@@ -194,7 +222,7 @@ func (s *Service) Channel(ctx context.Context, by model.Account, id model.Stream
 		return HubChannel{}, model.ErrNotFound
 	}
 	v := channelView(rec)
-	if s.Allowed(ctx, by) != nil && !s.isModerator(by, rec) {
+	if s.Allowed(ctx, by) != nil && !s.isKeeper(by, rec) {
 		if st.ConversationID == "" {
 			return HubChannel{}, model.ErrNotFound
 		}
@@ -255,7 +283,7 @@ func frameError(f wire.Frame) error {
 	return model.ErrUnavailable.With(f.Message)
 }
 
-// ModerateInput is one moderator's action on a hub-owned channel.
+// ModerateInput is one manager's action on a hub-owned channel.
 type ModerateInput struct {
 	Action      string
 	Server      string // a server's name, for invite, approve, decline and remove_server
@@ -265,9 +293,9 @@ type ModerateInput struct {
 	Listing     string
 }
 
-// Moderate asks the hub, in the name of a moderator who is an account of
+// Moderate asks the hub, in the name of a manager who is an account of
 // this server, to change a channel. It returns the record as the hub signed
-// it after the change. The hub checks again that the account is a moderator;
+// it after the change. The hub checks again that the account is a manager;
 // this server checks first so that it never signs for an account that is
 // not.
 func (s *Service) Moderate(ctx context.Context, by model.Account, id model.StreamID, in ModerateInput) (HubChannel, error) {
@@ -279,25 +307,25 @@ func (s *Service) Moderate(ctx context.Context, by model.Account, id model.Strea
 	if err != nil {
 		return HubChannel{}, model.ErrNotFound
 	}
-	if !s.isModerator(by, rec) {
-		return HubChannel{}, model.ErrForbidden.With("Only a moderator of the channel can do that.")
+	if !s.isManager(by, rec) {
+		return HubChannel{}, model.ErrForbidden.With("Only a manager of the channel can do that.")
 	}
 	if st.State != store.StreamActive {
 		return HubChannel{}, model.ErrNotFound
 	}
-	a := wire.ModAction{StreamID: string(id), ActionID: newID(), Action: in.Action, Server: in.Server, Name: in.Name,
-		Description: in.Description, Listing: in.Listing, By: wire.Moderator{AccountID: string(by.ID), Server: s.id.Name, Username: by.Username}}
+	a := wire.ChannelAction{StreamID: string(id), ActionID: newID(), Action: in.Action, Server: in.Server, Name: in.Name,
+		Description: in.Description, Listing: in.Listing, By: wire.ChannelAccount{AccountID: string(by.ID), Server: s.id.Name, Username: by.Username}}
 	switch in.Action {
-	case wire.ModInvite, wire.ModApprove, wire.ModDecline, wire.ModRemoveServer:
-		if in.Server == "" || (in.Server == s.id.Name && in.Action != wire.ModRemoveServer) {
+	case wire.ActInvite, wire.ActApprove, wire.ActDecline, wire.ActRemoveServer:
+		if in.Server == "" || (in.Server == s.id.Name && in.Action != wire.ActRemoveServer) {
 			return HubChannel{}, model.Invalid("server", "Name the server.")
 		}
-		if in.Action == wire.ModInvite {
+		if in.Action == wire.ActInvite {
 			if sv, err := s.store.Peers().ServerByName(ctx, in.Server); err == nil && sv.Blocked() {
 				return HubChannel{}, model.ErrConflict.With(in.Server + " is blocked on this server.")
 			}
 		}
-	case wire.ModAddModerator, wire.ModRemoveModerator:
+	case wire.ActAddManager, wire.ActRemoveManager, wire.ActAddModerator, wire.ActRemoveModerator:
 		acc, err := s.store.Accounts().Get(ctx, in.AccountID)
 		if err != nil {
 			return HubChannel{}, model.Invalid("account_id", "There is no such account.")
@@ -309,19 +337,22 @@ func (s *Service) Moderate(ctx context.Context, by model.Account, id model.Strea
 				return HubChannel{}, model.Invalid("account_id", "There is no such account.")
 			}
 			home = sv.Name
-		} else if in.Action == wire.ModAddModerator && (!acc.Active() || acc.Role == model.RoleBot) {
-			return HubChannel{}, model.Invalid("account_id", "A moderator is a person's active account.")
+		} else if (in.Action == wire.ActAddManager || in.Action == wire.ActAddModerator) && (!acc.Active() || acc.Role == model.RoleBot) {
+			return HubChannel{}, model.Invalid("account_id", "A manager or moderator is a person's active account.")
 		}
-		a.Moderator = &wire.Moderator{AccountID: string(acc.ID), Server: home, Username: acc.Username}
-	case wire.ModDescribe:
+		a.Account = &wire.ChannelAccount{AccountID: string(acc.ID), Server: home, Username: acc.Username}
+	case wire.ActDescribe:
 		if in.Name == nil && in.Description == nil {
 			return HubChannel{}, model.Invalid("name", "Give a name, a description or both.")
 		}
-	case wire.ModSetListing:
+	case wire.ActSetListing:
 		if !wire.ValidListing(in.Listing) {
 			return HubChannel{}, model.Invalid("listing", "The listing mode is unlisted, request or open.")
 		}
-	case wire.ModClose:
+		if rec.Private && in.Listing != wire.ListingUnlisted {
+			return HubChannel{}, model.ErrForbidden.With("A private channel is never listed, not even by a manager.")
+		}
+	case wire.ActClose:
 	default:
 		return HubChannel{}, model.Invalid("action", "There is no such action.")
 	}
@@ -337,9 +368,9 @@ func (s *Service) Moderate(ctx context.Context, by model.Account, id model.Strea
 
 // sendModAction signs an action as this server, sends it to the hub and
 // waits until the hub has refused it or signed a newer record.
-func (s *Service) sendModAction(ctx context.Context, st store.Stream, a wire.ModAction, after int64) error {
+func (s *Service) sendModAction(ctx context.Context, st store.Stream, a wire.ChannelAction, after int64) error {
 	a.At = s.now()
-	f, err := wire.SignBlock(wire.FModAction, a, s.keys)
+	f, err := wire.SignBlock(wire.FChannelAction, a, s.keys)
 	if err != nil {
 		return err
 	}
@@ -381,7 +412,7 @@ func (s *Service) sendAndAwaitRecord(ctx context.Context, peer model.PeerID, id 
 }
 
 // shareToHub shares a channel to a hub: the hub is told (channel_create)
-// with the sharer as its first moderator, and owns the channel from the
+// with the sharer as its first manager, and owns the channel from the
 // moment it answers; then each server named is invited in the sharer's
 // name. Nothing is shared if the hub does not answer.
 func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.Peer, conv model.Conversation, in ShareInput, invited []store.Server) (store.Stream, error) {
@@ -412,8 +443,15 @@ func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.P
 		s.store.Streams().Delete(ctx, st.ID)
 		return st, err
 	}
-	me := wire.Moderator{AccountID: string(by.ID), Server: s.id.Name, Username: by.Username}
-	cc := wire.ChannelCreate{StreamID: string(st.ID), Name: conv.Name, Description: conv.Topic, Listing: in.Listing, Creator: me, At: now}
+	me := wire.ChannelAccount{AccountID: string(by.ID), Server: s.id.Name, Username: by.Username}
+	// Its managers come with it and stay its managers, now on the hub's
+	// list (section 23a).
+	managers, err := s.managersOf(ctx, s.store, conv.ID)
+	if err != nil {
+		return fail(err)
+	}
+	cc := wire.ChannelCreate{StreamID: string(st.ID), Name: conv.Name, Description: conv.Topic, Listing: in.Listing, Creator: me, At: now,
+		Private: conv.Private, Managers: managers}
 	f, err := wire.SignBlock(wire.FChannelCreate, cc, s.keys)
 	if err != nil {
 		return fail(err)
@@ -424,7 +462,7 @@ func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.P
 	// The conversation is marked only now: from here on its events are
 	// stamped and travel.
 	if err := s.chat.AttachStream(ctx, conv.ID, st.ID, false); err != nil {
-		s.sendModAction(ctx, st, wire.ModAction{StreamID: string(st.ID), ActionID: newID(), Action: wire.ModClose, By: me}, 1)
+		s.sendModAction(ctx, st, wire.ChannelAction{StreamID: string(st.ID), ActionID: newID(), Action: wire.ActClose, By: me}, 1)
 		return fail(err)
 	}
 	for _, sv := range invited {
@@ -432,7 +470,7 @@ func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.P
 		if err != nil {
 			return st, err
 		}
-		a := wire.ModAction{StreamID: string(st.ID), ActionID: newID(), Action: wire.ModInvite, Server: sv.Name, By: me}
+		a := wire.ChannelAction{StreamID: string(st.ID), ActionID: newID(), Action: wire.ActInvite, Server: sv.Name, By: me}
 		if err := s.sendModAction(ctx, st, a, rec.Version); err != nil {
 			return st, err
 		}
@@ -441,7 +479,7 @@ func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.P
 }
 
 // onChannel takes a channel record from a hub: the only way a hub-owned
-// channel's server list, moderators, listing mode, name or description
+// channel's server list, managers, listing mode, name or description
 // change on this server. A record that is not signed by a hub this server
 // accepts on that link changes nothing.
 func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) error {
@@ -451,7 +489,7 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 		s.audit(ctx, s.store, "", "link.record_refused", "peer", string(pc.peer.ID), map[string]any{"why": "the signature is not an accepted hub's"})
 		return err
 	}
-	if !wire.ValidID(rec.StreamID) || rec.Version < 1 || !wire.ValidListing(rec.Listing) {
+	if !wire.ValidID(rec.StreamID) || rec.Version < 1 || !wire.ValidListing(rec.Listing) || (rec.Private && rec.Listing != wire.ListingUnlisted) {
 		return wire.Errf(wire.EBadFrame, "The channel record is malformed.")
 	}
 	// The hub that signed is the neighbour, or a hub of its cluster, under
@@ -480,7 +518,7 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 		switch {
 		case rec.Closed || rec.Prepared:
 		case invited:
-			// A moderator invited this server: its owner sees an offer.
+			// A manager invited this server: its owner sees an offer.
 			hub, err := s.hubRow(ctx, s.store, pc.peer, rec.HomeHub)
 			if err != nil {
 				return err
@@ -538,6 +576,11 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 			st.HomeHub, st.OwnerServerID = rec.HomeHub, row.ID
 		}
 	}
+	if err == nil && have.Private && !rec.Private && have.Version < rec.Version {
+		// A private channel stays private (ruling R94).
+		s.audit(ctx, s.store, "", "link.record_refused", "stream", string(id), map[string]any{"why": "the record makes a private channel not private"})
+		return wire.Errf(wire.EForbidden, "That channel is private, and stays so.")
+	}
 	if err == nil && have.Version >= rec.Version {
 		// Nothing new. A key this server was named to make and has not
 		// made is made now all the same: the first try may have failed.
@@ -557,6 +600,9 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 	}
 	if err := s.storeChannel(ctx, s.store, f.Signed, f.Sig, rec); err != nil {
 		return err
+	}
+	if st.ConversationID != "" && member && !rec.Prepared {
+		s.syncManagers(ctx, st.ConversationID, rec)
 	}
 	if wasPrepared && !rec.Prepared && !rec.Closed && member {
 		// A channel moved here from a direct link has gone live on the hub.
@@ -608,7 +654,7 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 }
 
 // memberView is the record as every local member of the channel is told it:
-// without the servers invited and asking, which are its moderators' and the
+// without the servers invited and asking, which are its managers' and the
 // owner's to see (they read them with the operation).
 func memberView(rec wire.ChannelRecord) HubChannel {
 	v := channelView(rec)
@@ -980,19 +1026,19 @@ func (s *Service) keyFrom(ctx context.Context, st store.Stream, from store.Serve
 // DirectoryEntry is a channel in a hub's directory as the API shows it
 // (schema HubDirectoryEntry).
 type DirectoryEntry struct {
-	StreamID    model.StreamID   `json:"stream_id"`
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Listing     string           `json:"listing"`
-	Moderators  []wire.Moderator `json:"moderators"`
-	Servers     int              `json:"servers"`
+	StreamID    model.StreamID        `json:"stream_id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Listing     string                `json:"listing"`
+	Managers    []wire.ChannelAccount `json:"managers"`
+	Servers     int                   `json:"servers"`
 	// State is this server's place in it: none, invited, requested or
 	// member.
 	State string `json:"state"`
 }
 
 // Directory asks a hub for its directory: the channels listed as request or
-// open, with name, description, listing mode, moderators and the number of
+// open, with name, description, listing mode, managers and the number of
 // servers. The answer is taken only when an accepted hub key signed it.
 func (s *Service) Directory(ctx context.Context, peerID model.PeerID) ([]DirectoryEntry, error) {
 	peer, err := s.store.Peers().Get(ctx, peerID)
@@ -1027,9 +1073,9 @@ func (s *Service) Directory(ctx context.Context, peerID model.PeerID) ([]Directo
 	out := []DirectoryEntry{}
 	for _, c := range d.Channels {
 		e := DirectoryEntry{StreamID: model.StreamID(c.StreamID), Name: c.Name, Description: c.Description, Listing: c.Listing,
-			Moderators: c.Moderators, Servers: c.Servers, State: c.Yours}
-		if e.Moderators == nil {
-			e.Moderators = []wire.Moderator{}
+			Managers: c.Managers, Servers: c.Servers, State: c.Yours}
+		if e.Managers == nil {
+			e.Managers = []wire.ChannelAccount{}
 		}
 		if e.State == "" {
 			e.State = "none"
@@ -1040,7 +1086,7 @@ func (s *Service) Directory(ctx context.Context, peerID model.PeerID) ([]Directo
 }
 
 // JoinListed joins a channel from a hub's directory as a new local channel:
-// at once if it is open, and once a moderator approves if it is listed for
+// at once if it is open, and once a manager approves if it is listed for
 // requests. Until then the stream is `offered` here.
 func (s *Service) JoinListed(ctx context.Context, by model.Account, peerID model.PeerID, id model.StreamID, in AcceptInput) (Stream, model.Conversation, error) {
 	entries, err := s.Directory(ctx, peerID)
@@ -1088,7 +1134,7 @@ func (s *Service) JoinListed(ctx context.Context, by model.Account, peerID model
 // sendJoin tells the hub this server wishes to be in a channel: it was
 // invited, or the channel is open, or it is listed and this is a request.
 func (s *Service) sendJoin(st store.Stream) {
-	f, err := wire.SignBlock(wire.FJoin, wire.ModAction{StreamID: string(st.ID), ActionID: newID(), Server: s.id.Name, At: s.now()}, s.keys)
+	f, err := wire.SignBlock(wire.FJoin, wire.ChannelAction{StreamID: string(st.ID), ActionID: newID(), Server: s.id.Name, At: s.now()}, s.keys)
 	if err != nil {
 		return
 	}
@@ -1112,7 +1158,7 @@ func (s *Service) sendLeave(peer model.PeerID, id model.StreamID) {
 }
 
 // joinRefused is the hub's answer to a wish to join that it will not grant:
-// declined by a moderator, or the channel is not listed. The local channel
+// declined by a manager, or the channel is not listed. The local channel
 // made for it, if any, is left as an archived local channel.
 func (s *Service) joinRefused(ctx context.Context, pc *peerConn, f wire.Frame) {
 	st, err := s.store.Streams().Get(ctx, model.StreamID(f.StreamID))
@@ -1188,9 +1234,16 @@ func (s *Service) namedMaker(ctx context.Context, st store.Stream, name string) 
 	return false
 }
 
+// IsManager reports whether an account of this server is one of a
+// hub-owned channel's managers.
+func (s *Service) IsManager(ctx context.Context, by model.Account, id model.StreamID) bool {
+	rec, _, err := s.channelOf(ctx, s.store, id)
+	return err == nil && s.isManager(by, rec)
+}
+
 // IsModerator reports whether an account of this server is one of a
-// hub-owned channel's moderators.
+// hub-owned channel's moderators (not its managers, unless named on both lists).
 func (s *Service) IsModerator(ctx context.Context, by model.Account, id model.StreamID) bool {
 	rec, _, err := s.channelOf(ctx, s.store, id)
-	return err == nil && s.isModerator(by, rec)
+	return err == nil && by.Active() && by.Local() && rec.Moderates(string(by.ID), s.id.Name)
 }

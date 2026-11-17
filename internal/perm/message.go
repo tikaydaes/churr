@@ -93,9 +93,10 @@ func CheckMessage(st State, a MessageAction, m model.Message) error {
 		if c.Sealed() {
 			return forbidden("Only its author can delete a message in a sealed chat.")
 		}
-		if st.HubModerator {
-			// Section 14.1: a moderator of a hub-owned channel deletes any
-			// message in it, for every server, whatever their level here.
+		if st.HubManager || st.HubModerator {
+			// Section 14.1: a manager or moderator of a hub-owned channel
+			// deletes any message in it, for every instance, whatever
+			// their level here.
 			return moderatorMay(st)
 		}
 		return Check(st, DeleteOthersMessage)
@@ -163,6 +164,9 @@ func CheckSetLevel(st State, target model.Account, newLevel model.Level) error {
 	}
 	if target.Role == model.RoleRemote && newLevel == model.LevelManager {
 		return forbidden("Someone on another server cannot be a manager here.")
+	}
+	if st.HubOwned && newLevel == model.LevelManager {
+		return model.ErrConflict.With("The managers of a channel on a hub are those on the hub's manager list: make them a manager of the channel.")
 	}
 	return nil
 }
