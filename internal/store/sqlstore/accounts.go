@@ -61,9 +61,15 @@ func (q *queries) usernameFree(ctx context.Context, username string, taker model
 // usernameHeld says whether someone other than taker gave the name up by
 // renaming less than model.UsernameHold ago.
 func (q *queries) usernameHeld(ctx context.Context, username string, taker model.AccountID) (bool, error) {
+	query, args := `SELECT 1 FROM username_holds WHERE username = ? AND released_at >= ?`, []any{username, int64(model.Now().Add(-model.UsernameHold))}
+	if taker != "" {
+		// An account not made yet has no id to compare, and PostgreSQL
+		// will not compare a uuid with an empty string.
+		query += ` AND account_id <> ?`
+		args = append(args, string(taker))
+	}
 	var one int
-	err := q.wr.QueryRowContext(ctx, `SELECT 1 FROM username_holds WHERE username = ? AND account_id <> ? AND released_at >= ?`,
-		username, string(taker), int64(model.Now().Add(-model.UsernameHold))).Scan(&one)
+	err := q.wr.QueryRowContext(ctx, query, args...).Scan(&one)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
