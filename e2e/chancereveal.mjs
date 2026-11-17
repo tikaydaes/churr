@@ -163,6 +163,16 @@ const shown = (el) => !el.hidden;
   el.dispatch('click');
   check('inline dice pressed do not roll again', !el.classList.contains('spinning'));
 }
+{
+  // Inline dice are drawn as /roll's: a d20 on the fly; a d6 without its
+  // sprite (none here) keeps its number; the label is unchanged.
+  const e = { type: 'dice', at: 0, value: '1d20+1d6', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, count: 1, sides: 6, rolls: [3], value: 3 }], total: 20 };
+  const el = diceControl(e, '[[d20+d6]]', {});
+  const faces = el.querySelectorAll('.slot-face');
+  check('an inline d20 is drawn as a die', faces[0].classList.contains('art') && faces[0].classList.contains('art-die'));
+  check('an inline d6 without its sprite keeps its number', !faces[1].classList.contains('art') && faces[1].textContent === '3');
+  check('the inline label is as before: the expression, each die and the total', el.getAttribute('aria-label') === 'Dice [[d20+d6]]. Rolled 1d20+1d6: 17, 3; total 20', el.getAttribute('aria-label'));
+}
 
 // 3 and 5. /draw: face down, then turned over in order; no names listed.
 {

@@ -650,7 +650,8 @@ roll of dice it leaves exactly as they were (the same characters, in
 the same place among the message's dice); dice it writes or changes get
 `removed: true` and nothing rolled. Bots, webhooks, imports and commands
 get no inline dice, and a sealed chat has none: the text stays as
-typed. Clients draw the typed text, each die and the total in the
+typed. Clients draw the typed text, each die (drawn as a `/roll`
+result's, the height of the line: `ART.md`) and the total in the
 sentence, and spin the reels once when the message arrives live, the
 total shown once they stop, as for a `/roll` result; removed dice say "not rolled: written in an edit".
 A client recognises the shape for the composer with its own copy of the

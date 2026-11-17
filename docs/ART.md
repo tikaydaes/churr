@@ -221,7 +221,13 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   upside down in both clients, in the result as it stands and as it is
   turned face up. The "reversed" label and the words a screen reader
   reads stay as they are.
-- Inline dice in a sentence stay as text.
+- Inline dice in a sentence are drawn as a `/roll` result's are (a d6
+  from the cube sprite, any other die or a coin on the fly, a dropped one
+  faded and struck through), 1.35 times the text's size: the smallest at
+  which the pips and a two-figure number stay legible, and still inside
+  the line's height, so the lines are not pushed apart. A plain number
+  and the total stay text; without the cube sprite a d6 keeps its
+  number.
 
 ## Making the artwork
 

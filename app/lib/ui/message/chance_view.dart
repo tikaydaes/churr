@@ -752,7 +752,7 @@ class ChanceViewState extends State<ChanceView> {
                 Positioned.fill(
                   child: CustomPaint(
                     key: Key('struck-$i'),
-                    painter: _Strike(c.ink),
+                    painter: const DieStrike(),
                   ),
                 ),
               ],
@@ -1165,22 +1165,31 @@ class ChanceViewState extends State<ChanceView> {
   }
 }
 
-/// The line struck through a dropped die, corner to corner.
-class _Strike extends CustomPainter {
-  const _Strike(this.colour);
-  final Color colour;
+/// The line struck through a dropped die, corner to corner: the dice's
+/// own ink edged in paper, so it shows on the die and beside it in any
+/// theme.
+class DieStrike extends CustomPainter {
+  const DieStrike();
 
   @override
   void paint(Canvas canvas, Size size) {
+    final from = Offset(0, size.height), to = Offset(size.width, 0);
     canvas.drawLine(
-      Offset(0, size.height),
-      Offset(size.width, 0),
+      from,
+      to,
       Paint()
-        ..color = colour
+        ..color = CardColours.paper
+        ..strokeWidth = 4,
+    );
+    canvas.drawLine(
+      from,
+      to,
+      Paint()
+        ..color = CardColours.ink
         ..strokeWidth = 2,
     );
   }
 
   @override
-  bool shouldRepaint(_Strike old) => old.colour != colour;
+  bool shouldRepaint(DieStrike old) => false;
 }
