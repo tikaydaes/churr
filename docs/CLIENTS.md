@@ -1335,8 +1335,8 @@ screen. Each change is one `updateMembership` call.
 - **For everyone:** pins and files posted here (both also from
   buttons in the conversation's header: the pins as a list that opens
   each message in place, the files as a search with "has a file" set), "Request a webhook" (in
-  named channels), leave. Someone here through a group is told they
-  cannot leave and why. Leaving a locked channel warns that there is
+  named channels), leave. Someone here through a group may leave and
+  is told they can join again while the group has access. Leaving a locked channel warns that there is
   no way back. The last person leaving a private or ad-hoc channel is
   told that the channel and its content will be deleted.
 - **Requests to join** (knock channels, and private channels on a
@@ -1790,10 +1790,10 @@ out.
 - **Phones while locked** show, for a wake-up, only "You have a new
   notification" (`PUSH.md` section 8).
 
-### 9.28 Chat requests and closed chats
+### 9.28 Chat requests, invitations, offers and closed chats
 
-Rulings R77, R78 and R79; `FEATURES.md` section 20. The same in the
-apps and the web chat.
+Rulings R77, R78, R79 and R103; `FEATURES.md` sections 14.4 and 20.
+The same in the apps and the web chat.
 
 **Requests.** A "Requests" entry sits with Notifications, Threads and
 Bookmarks at the top of the sidebar, with the number waiting (across
@@ -1801,7 +1801,11 @@ servers in the apps). It opens the list: for each request the
 person's avatar, display name and `@username`, whether they ask for a
 direct or a sealed chat, and when; four buttons, Accept, Decline,
 Dismiss and Block; and one line saying that a decline is told and
-the other two are not. Accept opens the chat. Nothing else about the
+the other two are not. Accept opens the chat. A group chat request
+says who included the person and lists, by name, who is in it; a
+channel invitation names the channel with its topic and access, and
+says when it is an owner's override; a public one has Preview, which
+opens it to read without joining. Accept opens the conversation. Nothing else about the
 person or their intent is shown, because nothing else is sent. A
 `chat_request.received` with `notify` true shows a notification like
 a mention (the app's own switches and the server's mute apply), whose
@@ -1833,9 +1837,21 @@ first, saying both people keep the history and neither can write. In
 a chat that waits the same item is "Withdraw request…". `/close`
 anywhere else hides the conversation until something new arrives.
 
+**Invited, not yet joined.** A member list ends with the people
+invited who have not answered, marked "invited, not yet joined"; a
+group chat's title and people include them so marked.
+
+**Offers.** Channels offered through a group or as a default channel
+(`listChannelOffers`, `channel_offer.added`) sit in the left panel,
+each with Accept and Decline. Accept joins and opens the channel;
+Decline takes it out of the left panel. A public one opens to read
+before answering. Browse channels lists the channels the person may
+join this way, private ones included, with Join (never Ask to join).
+
 **Preferences.** "Auto approve new direct chats" and "Auto approve new
 sealed chats", both off, sit with the account's other preferences
-(the app's server settings, the account page in the browser).
+(the app's server settings, the account page in the browser). The
+first also governs being included in a group chat.
 
 ### 9.29 Approvals
 

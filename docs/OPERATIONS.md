@@ -463,6 +463,7 @@ and their own admin section.
 | `emoji.members_may_add` | `false` | Whether members, not only admins, can add custom emoji |
 | `blocking.enabled` | `true` | Whether people can block each other |
 | `webhooks.managers_may_approve` | `false` | Whether a channel's managers, not only admins, can approve webhook requests for it |
+| `channels.default` | the first `#general` | "Default channels". The named channels a new owner, admin or member joins at sign-up, at most 50. A channel added later is offered to the people already here; it is not joined for them (`docs/FEATURES.md` section 14) |
 | `channels.creation_approval` | `false` | "Creating a channel needs approval". On, a member who is not an owner, an admin or someone who may approve requests asks for a new channel, and it is made in their name when approved (`docs/FEATURES.md` section 31) |
 
 ### Files

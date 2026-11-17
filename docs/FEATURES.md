@@ -1969,19 +1969,26 @@ channel and a client shows it to a person when they join or are
 added, above the messages, until dismissed. It is not a message and
 nobody else sees that it was shown.
 
-**Starting channels.** There is no "default channels" setting. A
-channel that the built-in group `@everyone` has been added to is a
-channel every member is in.
+**Default channels.** The setting `channels.default` (admin console,
+Messages and channels: "Default channels") lists the named channels a
+new account joins at sign-up (ruling R103).
 
-- Adding `@everyone` to a channel is the ordinary request to add a
-  group at a level (section 14.4), by a manager of the channel.
-- When an account with the `member` role is created or claimed, it
-  is in `@everyone` and so gets a `members` row for each of those
-  channels, at the group's level, with mode `mentions` and
+- When an owner, admin or `member` account is created or claimed, it
+  gets a `members` row in each default channel that is not archived or
+  locked, at the channel's default level, with mode `mentions` and
   `read_seq` at the channel's latest, so it starts with nothing
-  unread.
-- A new guest or bot gets none of them.
-- A fresh server has one such channel, `#general` (section 26).
+  unread. That is the one time it applies: a default channel can be
+  left like any other.
+- A new guest or bot joins none of them.
+- A channel added to the list later is not joined for the people
+  already here: each is **offered** it, as a group's channel is
+  (section 14.4, source `default`), and may accept, decline, or join
+  later from Browse while it stays a default channel. Taking a channel
+  off the list takes away the offers that wait.
+- A fresh instance's `#general` is its one default channel (section
+  26).
+- A channel `@everyone` has been added to is offered to every owner,
+  admin and member (section 14.4), new accounts included.
 
 **Join notices.** Everyone who arrives in a private channel posts a
 `member_joined` system notice there, by whatever route: joining,
@@ -2048,36 +2055,57 @@ form button (7.4). Guests and bots are put in by an admin.
 
 The request names a channel, a group and a level: `reader`, `member`,
 `moderator` or `manager`. A group grants nothing by itself; adding it
-to a channel at a level is what gives its people that role there, and
-never the guest's: a guest account is a guest in every channel.
+to a channel at a level gives its people **access** at that role
+there, never above the guest's: a guest account is a guest in every
+channel. Access is not a place (ruling R103): nobody is put in a
+channel they did not accept.
 
 1. A `channel_groups` row is written.
-2. For every account in the group the store works out its `members`
-   row for that channel: created if missing, with `via_group` true;
-   `level` set to the highest of its direct level and all its group
-   levels there. A guest account is held to `member` at most, so a
-   group that gives moderators or managers gives a guest `member`; in
-   a channel shared with other servers a guest is never put in at
-   all.
-3. From then on every change to the group, to the row, or to an
+2. Every account in the group that is not in the channel is
+   **offered** it: a `channel_offers` row `offered`, and
+   `channel_offer.added`. Both clients show the offer in the left
+   panel with **Accept** and **Decline**; a public channel can be
+   opened and read from there before answering, a private or knock
+   channel cannot.
+3. **Accept** makes the account a member: its `members` row has
+   `via_group` true and `level` the highest of its direct level and
+   all its group levels there. **Decline** closes the offer and it
+   leaves the left panel. While a group gives access, the account may
+   still join later from Browse channels, whatever the channel's
+   access, without an invitation or knocking: Browse lists the
+   channel for it, private included.
+4. An account already in the channel takes the group's level at once
+   (it is there by its own choice).
+5. From then on every change to the group, to the row, or to an
    account's role runs the same working-out for the accounts
-   affected (SCHEMA section 5, `members`).
+   affected (SCHEMA section 5, `members`): someone newly in the group
+   is offered the channel, someone who left the group loses the offer.
+
+A guest is held to `member` at most, so a group that gives moderators
+or managers gives a guest `member`; in a channel shared with other
+servers a guest is offered nothing. A banned account is offered
+nothing.
 
 Consequences:
 
-- An account in a channel only through groups leaves it when its
-  last such group goes, and then loses its thread states and
-  mentions there like anyone who leaves.
-- An account in a channel through a group cannot leave it or be
-  removed from it one at a time. It can hide the channel from its
-  sidebar or set it to `nothing`, or leave the group if it is open.
+- When the last group that gives an account access goes, the account
+  loses its offer (whatever its answer was), and if it was in the
+  channel only through groups it leaves it, losing its thread states
+  and mentions there like anyone who leaves. A group that gives access
+  again later asks again.
+- An account in a channel through a group may leave it like anyone
+  (its offer counts as declined) and may join again while the access
+  lasts. It cannot be removed from it one at a time.
+- So the built-in group `@everyone` added to a channel offers it to
+  every owner, admin and member; nobody is made a member of it.
 - Groups are added to named channels only, and not to a locked one.
   Locking a channel detaches its groups and keeps their people
   (section 21.6).
 - Changing a group's level in a channel is the same request with a
   new level; removing it deletes the row.
 
-Stored: `groups`, `group_members`, `channel_groups`, `members`.
+Stored: `groups`, `group_members`, `channel_groups`, `members`,
+`channel_offers`.
 
 Events: `group.created`, `group.updated`, `group.deleted`,
 `group.member_added`, `group.member_removed` (to accounts that may
@@ -2314,9 +2342,12 @@ While X blocks Y:
   chat that appears open and that Y can write in. Either way it
   waits for ever, and X receives nothing: no request, no
   notification, no row in any list.
-- **Ad-hoc channels.** Y can start an ad-hoc channel that includes X,
-  or add X to one. To Y, X appears added; X is not added and not
-  told. The other members see who is really there.
+- **Group chats.** Y can start an ad-hoc channel that includes X, or
+  invite X to one. To everyone in it X appears invited, not yet joined,
+  for ever, as someone who never answers (20.2); X is not told. If X
+  would have been added at once (X approves new direct chats
+  automatically, or the two have an open direct chat), X appears added
+  to Y alone, and the other members see who is really there.
 - **Presence.** To Y, X is always online, with no status, no
   availability, no do not disturb mark, no call and no last seen
   other than "online", and Y is sent no change of any of them.
@@ -2358,15 +2389,67 @@ are refused with `feature_off`.
 What could not be made identical, and why:
 
 - In an ad-hoc channel of three or more that Y starts with X in it,
-  or adds X to, the other members are shown the truth, so they could
-  tell Y. Y is told live by a `conversation.updated` carrying the
+  or adds X to, where X would have been added at once, the other
+  members are shown the truth, so they could tell Y. Y is told live by a `conversation.updated` carrying the
   member list Y sees on a reload, in place of the `member.joined` a
   real addition sends; the channel's sequence numbers move as far as
   for a real addition. A client that looks for `member.joined`
   itself would see the difference.
 - What 20.4 says of other servers.
 
-### 20.2 Chat requests
+### 20.2 Chat requests and invitations
+
+**First contact** (ruling R103): nobody ends up in a conversation they
+did not accept, and until they accept nothing from it reaches them: no
+message, no notification other than the one request, and no ring for a
+call. A request has one of four kinds:
+
+| Kind | Made by | Opens at once when |
+|------|---------|--------------------|
+| `direct` | Starting a chat with one other person | They approve new direct chats automatically |
+| `sealed` | Starting a sealed chat | They approve new sealed chats automatically |
+| `group` | Including someone in a group chat (an ad-hoc channel of three or more), when it is started or later | They approve new direct chats automatically, or already have an open direct chat with whoever included them |
+| `channel` | A moderator or manager adding someone to a named channel (`/invite`, the member list, creating the channel with people), an owner's override or appointment from the admin console | Never |
+
+A group chat request and a channel invitation (together, invitations)
+work like a chat request, below, with these differences:
+
+- **The others** go on using the conversation. They see the person
+  invited as "invited, not yet joined" (`invited_ids`, and listed
+  `invited` after the members), until they accept or decline.
+  Removing them withdraws the invitation.
+- **The person invited** sees, under Requests, who invited them and to
+  what: for a group chat the names of who is in it, nothing more; for
+  a channel its name, topic and access, and whether it is an owner's
+  override. A public channel can be opened and read before answering;
+  a private or knock channel and a group chat cannot.
+- **Accept** makes them a member at the level the invitation brings.
+  In a group chat or a private channel they read from their join, not
+  earlier history, as a newcomer to a private channel does (ruling
+  R87): the people there spoke before they were in it. Joining by any
+  other route (a public channel, a knock answered) answers the
+  invitation too.
+- **Decline** takes them off the invited list; the one who invited
+  them may not invite them again for 24 hours. **Dismiss** and
+  **Block** leave them listed as invited, for ever, as someone who
+  never answers.
+- Someone who has blocked the one inviting is invited and never told:
+  invited for ever to everyone. Where they would have joined at once,
+  the one inviting is shown them joined (20.1).
+- One open invitation per person and conversation, whoever sent it.
+- The 24-hour wait applies after a decline of any request from the
+  same person. Group chat requests count with direct and sealed ones
+  for the caps below; channel invitations have a cap of their own: at
+  most 100 a rolling day that were not accepted.
+- Starting a group chat with the same people, by someone invited to
+  it, accepts the invitation.
+- Group chats that run between servers, and named channels shared
+  with other servers, take their people from other servers as before
+  (20.4); requests do not travel between servers.
+
+Joining a public channel oneself, knocking, approvals, and channels
+offered through a group or as a default channel (section 14.4) are
+not invitations.
 
 Each person has two preferences, both **off** by default:
 "Auto approve new direct chats" (`prefs.auto_approve_direct`) and
@@ -2414,7 +2497,8 @@ chats are not affected by any of this. A chat with oneself, with a
 bot, or with someone on another server opens as before (20.4).
 
 Stored: `chat_requests`, `ghost_members`, `conversations.request_state`,
-`prefs.auto_approve_direct`, `prefs.auto_approve_sealed`.
+`prefs.auto_approve_direct`, `prefs.auto_approve_sealed`;
+`chat_requests.level` and `override` for channel invitations.
 
 ### 20.3 Closing a chat
 
@@ -3378,8 +3462,8 @@ Events: none during the import. An audit row with `actor_kind`
    (`invites.members_may_invite`, off by default).
 6. **Finish.** In one transaction the server writes the settings,
    creates `#general` as a public channel with the owner as its
-   creator and manager, adds `@everyone` to it at level `member`,
-   deletes `setup.token_hash`, sets `setup.done_at`, and writes the
+   creator and manager, makes it the one default channel
+   (`channels.default`, section 14), deletes `setup.token_hash`, sets `setup.done_at`, and writes the
    first audit rows. The owner is signed in.
 7. **First invite.** The last page offers to make an invite link and
    points at the admin console and the apps.
