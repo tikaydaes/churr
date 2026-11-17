@@ -107,6 +107,141 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('invitations: a group chat and channels (R103)', (
+        tester,
+      ) async {
+        await sized(tester, size);
+        final (app, fakes) = await makeAccountApp(tester);
+        final s = app.servers[0];
+        Json channel(String id, String access) => {
+          'id': id,
+          'kind': 'channel',
+          'name': 'garden-$access',
+          'topic': 'Seeds and soil',
+          'access': access,
+          'private': access != 'public',
+          'member_count': 7,
+        };
+        await tester.runAsync(
+          () => s.db.putChatRequests([
+            ChatRequest.fromJson({
+              ...requestJson('g1', 'sam', kind: 'group'),
+              'conversation_id': 'gc',
+              'people': ['Sam Okafor', 'Ada Lovelace'],
+            }),
+            ChatRequest.fromJson({
+              ...requestJson('c1', 'ada', kind: 'channel'),
+              'conversation_id': 'pub',
+              'channel': channel('pub', 'public'),
+              'level': 'moderator',
+            }),
+            ChatRequest.fromJson({
+              ...requestJson('c2', 'bea', kind: 'channel'),
+              'conversation_id': 'priv',
+              'channel': channel('priv', 'private'),
+              'level': 'member',
+              'override': true,
+            }),
+          ]),
+        );
+        fakes[0].on('GET /api/v1/conversations/pub', {
+          'conversation': {...channel('pub', 'public'), 'last_seq': 3},
+        });
+        fakes[0].on('POST /api/v1/me/chat-requests/g1/accept', {
+          'conversation': {
+            ...chatJson('gc'),
+            'member_ids': ['me', 'sam', 'ada'],
+          },
+        });
+        await tester.pumpWidget(harness(app, RequestsScreen(onOpened: () {})));
+        await settleAll(tester);
+        Finder inside(String id, Finder f) =>
+            find.descendant(of: find.byKey(Key('request-$id')), matching: f);
+
+        expect(
+          inside('g1', find.textContaining('Included you in a group chat')),
+          findsOneWidget,
+        );
+        expect(
+          inside('g1', find.text('With Sam Okafor, Ada Lovelace')),
+          findsOneWidget,
+        );
+        expect(
+          inside('c1', find.textContaining('Invites you to a channel')),
+          findsOneWidget,
+        );
+        expect(inside('c1', find.text('#garden-public')), findsOneWidget);
+        expect(
+          inside('c1', find.text('Public channel · 7 members')),
+          findsOneWidget,
+        );
+        expect(inside('c1', find.text('Seeds and soil')), findsOneWidget);
+        expect(
+          inside('c1', find.text('You would join as moderator.')),
+          findsOneWidget,
+        );
+        expect(
+          inside('c2', find.text('Private channel · 7 members')),
+          findsOneWidget,
+        );
+        expect(
+          inside('c2', find.byKey(const Key('request-override'))),
+          findsOneWidget,
+        );
+        expect(
+          inside('c1', find.byKey(const Key('request-override'))),
+          findsNothing,
+        );
+        // Only the public channel can be read before accepting.
+        expect(
+          inside('c1', find.byKey(const Key('request-preview'))),
+          findsOneWidget,
+        );
+        expect(
+          inside('c2', find.byKey(const Key('request-preview'))),
+          findsNothing,
+        );
+        expect(
+          inside('g1', find.byKey(const Key('request-preview'))),
+          findsNothing,
+        );
+        // Four answers for every kind.
+        for (final id in ['g1', 'c1', 'c2']) {
+          for (final how in ['accept', 'decline', 'dismiss', 'block']) {
+            expect(inside(id, find.byKey(Key('request-$how'))), findsOneWidget);
+          }
+        }
+
+        final preview = inside('c1', find.byKey(const Key('request-preview')));
+        await tester.ensureVisible(preview);
+        await tester.tap(preview);
+        await settleAll(tester);
+        expect(fakes[0].calls, contains('GET /api/v1/conversations/pub'));
+        expect(app.open?.conversationId, 'pub');
+        expect(s.conversation('pub')?.membership, isNull);
+        expect(
+          [for (final r in s.chatRequests) r.id],
+          ['g1', 'c1', 'c2'],
+          reason: 'previewing answers nothing',
+        );
+
+        // Declining after a preview drops the channel read without joining.
+        final decline = inside('c1', find.byKey(const Key('request-decline')));
+        await tester.ensureVisible(decline);
+        await tester.tap(decline);
+        await settleAll(tester);
+        expect(s.conversation('pub'), isNull);
+
+        final accept = inside('g1', find.byKey(const Key('request-accept')));
+        await tester.ensureVisible(accept);
+        await tester.tap(accept);
+        await settleAll(tester);
+        expect(app.open?.conversationId, 'gc');
+        expect(s.conversation('gc'), isNotNull);
+        expect([for (final r in s.chatRequests) r.id], ['c2']);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('a waiting chat: no composer, and withdrawing', (
         tester,
       ) async {
@@ -195,6 +330,39 @@ void main() {
       Conversation.fromJson(chatJson('a', kind: 'sealed')).isDirect,
       isTrue,
     );
+  });
+
+  test('a request reads its kind and what comes with it (R103)', () {
+    final g = ChatRequest.fromJson({
+      ...requestJson('g', 'sam', kind: 'group'),
+      'conversation_id': 'gc',
+      'people': ['Sam', 'Ada'],
+    });
+    expect(g.isGroup, isTrue);
+    expect(g.conversationId, 'gc');
+    expect(g.people, ['Sam', 'Ada']);
+    expect(g.previewable, isFalse);
+    final c = ChatRequest.fromJson({
+      ...requestJson('c', 'sam', kind: 'channel'),
+      'conversation_id': 'ch',
+      'channel': {'id': 'ch', 'name': 'garden', 'access': 'public'},
+      'level': 'reader',
+      'override': true,
+    });
+    expect(c.isChannel, isTrue);
+    expect(c.channel?.name, 'garden');
+    expect(c.level, 'reader');
+    expect(c.override, isTrue);
+    expect(c.previewable, isTrue);
+    final k = ChatRequest.fromJson({
+      ...requestJson('k', 'sam', kind: 'channel'),
+      'channel': {'id': 'k', 'name': 'den', 'access': 'knock'},
+    });
+    expect(k.previewable, isFalse);
+    expect(k.override, isFalse);
+    final d = ChatRequest.fromJson(requestJson('d', 'sam'));
+    expect(d.channel, isNull);
+    expect(d.people, isEmpty);
   });
 
   test('sync keeps the requests and notifies once when told', () async {

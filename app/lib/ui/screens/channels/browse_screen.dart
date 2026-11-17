@@ -67,9 +67,10 @@ List<(Conversation, int)> browseTree(List<Conversation> all) {
   return out;
 }
 
-/// The channel browser: every public channel of the server and the
-/// person's own, as a tree, with the detail line under each and Join or
-/// Open.
+/// The channel browser: every public channel of the server, the
+/// person's own, and the private ones they may join without an
+/// invitation (ruling R103), as a tree, with the detail line under each
+/// and Join, Ask to join or Open.
 class BrowseScreen extends StatefulWidget {
   const BrowseScreen({super.key, required this.app, required this.server});
   final AppState app;
@@ -149,6 +150,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
     final tree = list == null
         ? const <(Conversation, int)>[]
         : browseTree(list);
+    final offered = {
+      for (final o in widget.server.channelOffers) o.conversationId,
+    };
     final names = <String, int>{};
     for (final (ch, _) in tree) {
       names.update(foldName(ch.name ?? ''), (n) => n + 1, ifAbsent: () => 1);
@@ -232,6 +236,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   itemBuilder: (context, i) {
                     final (ch, depth) = tree[i];
                     final joined = ch.membership != null;
+                    // A channel offered through a group or as a default
+                    // channel (R103) is joined, never asked to join; a
+                    // private one is listed to a non-member only then.
+                    final mayJoin = offered.contains(ch.id);
                     final same = (names[foldName(ch.name ?? '')] ?? 0) > 1;
                     final detail = channelDetail(
                       widget.server,
@@ -297,7 +305,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                                 child: Text(L10n.of(context).open),
                               )
                             // A knock channel is asked to join (R79).
-                            : ch.isKnock
+                            : ch.isKnock && !mayJoin
                             ? FilledButton(
                                 key: Key('knock-${ch.id}'),
                                 onPressed: busy.contains(ch.id)

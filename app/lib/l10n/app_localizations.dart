@@ -9954,7 +9954,7 @@ abstract class L10n {
   /// No description provided for @requestsEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No requests. When someone asks to start a chat with you, it waits here for your answer.'**
+  /// **'No requests. When someone asks to start a chat with you, includes you in a group chat or invites you to a channel, it waits here for your answer.'**
   String get requestsEmpty;
 
   /// No description provided for @requestAsksDirect.
@@ -9998,6 +9998,84 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Decline tells them; dismiss and block do not.'**
   String get requestAnswersNote;
+
+  /// No description provided for @requestIncludesGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Included you in a group chat'**
+  String get requestIncludesGroup;
+
+  /// No description provided for @requestGroupWith.
+  ///
+  /// In en, this message translates to:
+  /// **'With {names}'**
+  String requestGroupWith(String names);
+
+  /// No description provided for @requestInvitesChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invites you to a channel'**
+  String get requestInvitesChannel;
+
+  /// No description provided for @requestJoinsAs.
+  ///
+  /// In en, this message translates to:
+  /// **'You would join as {level}.'**
+  String requestJoinsAs(String level);
+
+  /// No description provided for @requestOverrideNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent by an owner from the admin console. If you accept, everyone in the channel is shown that an owner brought you in.'**
+  String get requestOverrideNote;
+
+  /// No description provided for @requestPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get requestPreview;
+
+  /// No description provided for @offersHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Offered to you'**
+  String get offersHeading;
+
+  /// No description provided for @offerThroughGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Through a group you are in'**
+  String get offerThroughGroup;
+
+  /// No description provided for @offerDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'A default channel of this instance'**
+  String get offerDefault;
+
+  /// No description provided for @invitedNotJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'invited, not yet joined'**
+  String get invitedNotJoined;
+
+  /// No description provided for @withdrawInvitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw invitation'**
+  String get withdrawInvitation;
+
+  /// No description provided for @notifyGroupRequestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'included you in a group chat'**
+  String get notifyGroupRequestBody;
+
+  /// No description provided for @notifyInvitationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'invited you to a channel'**
+  String get notifyInvitationBody;
 
   /// No description provided for @chatWaiting.
   ///

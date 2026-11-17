@@ -254,6 +254,12 @@ class Conversation {
   ];
   bool get isArchived => archivedAt != null;
 
+  /// Who has been invited and has not yet joined (ruling R103): not
+  /// members, and sent nothing from the conversation. Shown to members.
+  List<String> get invitedIds => [
+    for (final id in (raw['invited_ids'] as List? ?? const [])) '$id',
+  ];
+
   /// A direct or sealed chat that cannot be written in (rulings R78,
   /// R79): `waiting` while its request waits, `declined`, or `closed`.
   /// Null while it is open. It never says who closed it.
@@ -261,7 +267,9 @@ class Conversation {
 
   /// A direct chat (an ad-hoc channel with one other person) or a sealed
   /// chat: what either person can close.
-  bool get isDirect => isSealed || (isAdHoc && memberIds.length == 2);
+  /// A group chat with people still invited is not one.
+  bool get isDirect =>
+      isSealed || (isAdHoc && memberIds.length == 2 && invitedIds.isEmpty);
 
   /// Who may use `@channel`, `@here` and `@everyone` here: `server` (the
   /// server's settings decide), `anyone` or `managers` (ruling R64).

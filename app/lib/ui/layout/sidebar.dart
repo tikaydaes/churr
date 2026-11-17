@@ -22,6 +22,7 @@ import '../theme/shapes.dart';
 import '../widgets/controls.dart';
 import '../widgets/reconnect_countdown.dart';
 import 'account_entries.dart';
+import 'channel_offers.dart';
 import 'conversation_row.dart';
 import 'sidebar_arrange.dart';
 import '../widgets/avatar.dart';
@@ -94,6 +95,8 @@ class Sidebar extends StatelessWidget {
     final reordering = reorderingServer.value == s.localId;
     final out = <Widget>[];
     if (reordering) out.add(_ReorderBar(server: s));
+    // Channels offered through a group or as a default channel (R103).
+    out.add(ChannelOffersBlock(server: s, inset: inset));
     final groups = buildServerGroups(sidebarInput(app, s));
     final hereOf = {
       for (final g in groups)
@@ -111,7 +114,9 @@ class Sidebar extends StatelessWidget {
         highlighted: highlighted,
         onTap: () => app.prefs.setCollapsed(key, !folded),
         onMenu: (at) => showHeadingMenu(context, s, g, at),
-        onMoveBy: g.movable ? (by) => moveHeadingBy(context, s, g.key, by) : null,
+        onMoveBy: g.movable
+            ? (by) => moveHeadingBy(context, s, g.key, by)
+            : null,
       );
       out.add(
         // A row dropped on a heading goes in at its end; a heading dropped
@@ -127,11 +132,19 @@ class Sidebar extends StatelessWidget {
             _ => false,
           },
           onAcceptWithDetails: (d) => switch (d.data) {
-            RowDrag(:final conversationId) => _dropRow(context, s, groups, conversationId, g, g.tops.length),
+            RowDrag(:final conversationId) => _dropRow(
+              context,
+              s,
+              groups,
+              conversationId,
+              g,
+              g.tops.length,
+            ),
             HeadingDrag(key: final k) => _dropHeading(context, s, k, g.key),
             _ => null,
           },
-          builder: (context, candidates, _) => g.movable && (reordering || _pointerDrags)
+          builder: (context, candidates, _) =>
+              g.movable && (reordering || _pointerDrags)
               ? Draggable<HeadingDrag>(
                   data: HeadingDrag(s.localId, g.key),
                   feedback: _DragFeedback(g.title),
@@ -146,7 +159,10 @@ class Sidebar extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(inset + rowGutter, 0, 12, 6),
             child: Text(
               'Empty. Drag conversations here, or use Move… in a row’s menu.',
-              style: TextStyle(fontSize: 12, color: ChurrColors.of(context).faint),
+              style: TextStyle(
+                fontSize: 12,
+                color: ChurrColors.of(context).faint,
+              ),
             ),
           ),
         );
@@ -186,15 +202,28 @@ class Sidebar extends StatelessWidget {
       final at = target.tops.indexOf(id);
       final to = index > at ? index - 1 : index;
       if (to == at) return;
-      await sendLayout(context, s, reorderOps(target, id, to, s.layout),
-          () => placeText(context, s, id, name));
+      await sendLayout(
+        context,
+        s,
+        reorderOps(target, id, to, s.layout),
+        () => placeText(context, s, id, name),
+      );
     } else {
-      await sendLayout(context, s, moveOps(id, target, target.key, index, s.layout),
-          () => placeText(context, s, id, name));
+      await sendLayout(
+        context,
+        s,
+        moveOps(id, target, target.key, index, s.layout),
+        () => placeText(context, s, id, name),
+      );
     }
   }
 
-  Future<void> _dropHeading(BuildContext context, ServerState s, String key, String before) async {
+  Future<void> _dropHeading(
+    BuildContext context,
+    ServerState s,
+    String key,
+    String before,
+  ) async {
     final keys = [for (final h in channelHeadings(s)) h.$1]..remove(key);
     final index = keys.indexOf(before).clamp(0, keys.length);
     await sendLayout(context, s, [
@@ -255,7 +284,11 @@ class Sidebar extends StatelessWidget {
       // In reordering mode the handle on the row drags it (see
       // ConversationRowTile); otherwise a touch screen keeps its scroll.
       return reordering
-          ? DragHandleScope(data: RowDrag(s.localId, r.id), label: r.name, child: drop)
+          ? DragHandleScope(
+              data: RowDrag(s.localId, r.id),
+              label: r.name,
+              child: drop,
+            )
           : drop;
     }
     return Draggable<RowDrag>(
@@ -412,9 +445,8 @@ class _Top extends StatelessWidget {
                                   builder: (context, seconds) => statusLine(
                                     seconds == null
                                         ? status
-                                        : L10n.of(
-                                            context,
-                                          ).reconnectingIn(seconds),
+                                        : L10n.of(context)
+                                              .reconnectingIn(seconds),
                                   ),
                                 )
                               : statusLine(status),
@@ -512,10 +544,16 @@ class _Bottom extends StatelessWidget {
               child: Row(
                 children: [
                   ExcludeFocus(
-                    child: ChurrSwitch(value: app.prefs.showHidden, onChanged: (v) => app.prefs.showHidden = v),
+                    child: ChurrSwitch(
+                      value: app.prefs.showHidden,
+                      onChanged: (v) => app.prefs.showHidden = v,
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text('Show hidden', style: TextStyle(fontSize: 13, color: c.dim)),
+                  Text(
+                    'Show hidden',
+                    style: TextStyle(fontSize: 13, color: c.dim),
+                  ),
                 ],
               ),
             ),
@@ -528,12 +566,18 @@ class _Bottom extends StatelessWidget {
               IconButton(
                 tooltip: 'Browse channels',
                 icon: const Glyph(ChurrIcons.compass),
-                onPressed: () => openBrowse(context, server: rail ? app.selectedServer : null),
+                onPressed: () => openBrowse(
+                  context,
+                  server: rail ? app.selectedServer : null,
+                ),
               ),
               IconButton(
                 tooltip: 'New…',
                 icon: const Glyph(ChurrIcons.newChat),
-                onPressed: () => openNewMenu(context, server: rail ? app.selectedServer : null),
+                onPressed: () => openNewMenu(
+                  context,
+                  server: rail ? app.selectedServer : null,
+                ),
               ),
               const Spacer(),
               if (!rail)
@@ -660,7 +704,10 @@ class _GroupHeading extends StatelessWidget {
                     icon: Glyph(ChurrIcons.moreH, size: 14, color: c.dim),
                     onPressed: () {
                       final box = context.findRenderObject() as RenderBox?;
-                      onMenu!(box?.localToGlobal(Offset(0, box.size.height)) ?? Offset.zero);
+                      onMenu!(
+                        box?.localToGlobal(Offset(0, box.size.height)) ??
+                            Offset.zero,
+                      );
                     },
                   ),
                 ),
@@ -669,12 +716,16 @@ class _GroupHeading extends StatelessWidget {
         ),
       ),
     );
-    final framed = highlighted ? DashedBox(color: c.lavender, child: heading) : heading;
+    final framed = highlighted
+        ? DashedBox(color: c.lavender, child: heading)
+        : heading;
     if (onMoveBy == null) return framed;
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): () => onMoveBy!(-1),
-        const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): () => onMoveBy!(1),
+        const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): () =>
+            onMoveBy!(-1),
+        const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): () =>
+            onMoveBy!(1),
       },
       child: framed,
     );

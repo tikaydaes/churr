@@ -253,6 +253,21 @@ class CacheDb extends SqlDb {
 
   Stream<List<ChatRequest>> watchChatRequests() => watch({'me'}, chatRequests);
 
+  /// The channels offered to the account (ruling R103): fetched whole
+  /// after `ready`, and kept by channel_offer.added and .removed.
+  Future<List<ChannelOffer>> channelOffers() async => listOf(
+    (await _value('channel_offers') ?? const {})['offers'],
+    ChannelOffer.fromJson,
+  );
+
+  Future<void> putChannelOffers(Iterable<ChannelOffer> list) =>
+      _putValue('channel_offers', {
+        'offers': [for (final o in list) o.raw],
+      });
+
+  Stream<List<ChannelOffer>> watchChannelOffers() =>
+      watch({'me'}, channelOffers);
+
   // ---- per-server choices made on this device ----
 
   Future<String?> setting(String key) async {

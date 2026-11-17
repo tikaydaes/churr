@@ -13,7 +13,7 @@ const call = (page, method, path, body) => page.evaluate(async ([m, p, b]) => {
 }, [method, path, body]);
 
 // privacyFlow: the owner makes a private channel and talks in it alone,
-// then adds the second person. The owner sees "Sam Okafor was added by
+// then invites the second person, who accepts. The owner sees "Sam Okafor was added by
 // …"; the second person sees the notice and what came after, and nothing
 // from before, in the channel and in search.
 export async function privacyFlow(owner, second, origin) {
@@ -35,6 +35,12 @@ export async function privacyFlow(owner, second, origin) {
     const me = (await call(b, 'GET', '/api/v1/me')).body.account;
     const added = await call(a, 'POST', `/api/v1/conversations/${room}/members`, { account_ids: [me.id] });
     assert(added.status === 200, `adding sam: ${added.status} ${JSON.stringify(added.body)}`);
+    // Nobody is placed in a channel unasked (ruling R103): Sam is invited,
+    // and joins by accepting.
+    const asked = (await call(b, 'GET', '/api/v1/me/chat-requests')).body.requests.find((r) => r.conversation_id === room);
+    assert(asked && asked.kind === 'channel', 'sam has no invitation: ' + JSON.stringify(asked));
+    const accepted = await call(b, 'POST', `/api/v1/me/chat-requests/${asked.id}/accept`);
+    assert(accepted.status === 200, `sam accepting: ${accepted.status} ${JSON.stringify(accepted.body)}`);
     // The names come in as the page learns the accounts.
     await a.locator('#main .msg-system', { hasText: 'Sam Okafor was added by' }).waitFor();
     await shot(a, 'privacy-announced');

@@ -17,7 +17,7 @@ register('data:text/javascript,' + encodeURIComponent(`
 globalThis.window = { addEventListener() {} };
 globalThis.document = { addEventListener() {}, visibilityState: 'hidden' };
 
-const { store, apply, canPost, whyNoPost, isDirectChat } = await import('../internal/web/static/chat/store.js');
+const { store, apply, canPost, whyNoPost, isDirectChat, title, mayJoin, offerOf, invitationOf, isPublic } = await import('../internal/web/static/chat/store.js');
 
 let failures = 0, checks = 0;
 function check(name, ok, detail) {
@@ -25,7 +25,7 @@ function check(name, ok, detail) {
   if (!ok) { failures++; console.log(`FAIL requests: ${name}${detail ? '\n       ' + detail : ''}`); }
 }
 
-store.me = { id: 'me' };
+store.me = { id: 'me', role: 'member' };
 const at = '2026-11-16T09:00:00.000Z';
 const req = (id, who) => ({ id, kind: 'direct', account: { id: who, username: who, display_name: who.toUpperCase() }, created_at: at });
 let notified = [], redrawn = 0;
@@ -69,6 +69,45 @@ apply({ type: 'conversation.updated', at, conversation_id: 'c', seq: 3, conversa
 check('accepted: the state goes', !store.conversations.get('c').chat_state && canPost(store.conversations.get('c')));
 apply({ type: 'conversation.updated', at, conversation_id: 'c', seq: 4, conversation: { ...conv({ chat_state: 'closed' }), membership: undefined } });
 check('closed: the state arrives', store.conversations.get('c').chat_state === 'closed' && !canPost(store.conversations.get('c')));
+
+// First contact (ruling R103): invitations, offers, the invited.
+const offer = (id, extra) => ({ conversation_id: id, source: 'group', level: 'member', created_at: at, channel: { id, kind: 'channel', name: 'den-' + id, private: true, access: 'private', member_count: 3 }, ...extra });
+let offered = 0;
+store.on('offers', () => { offered++; });
+apply({ type: 'channel_offer.added', at, offer: offer('o1') });
+check('an offer is kept', store.offers.length === 1 && offerOf('o1') && offered === 1);
+apply({ type: 'channel_offer.added', at, offer: offer('o1') });
+check('the same offer twice is kept once', store.offers.length === 1);
+apply({ type: 'channel_offer.added', at, offer: offer('o2', { source: 'default' }) });
+check('a second offer is kept after the first', store.offers.map((o) => o.conversation_id).join() === 'o1,o2');
+apply({ type: 'channel_offer.removed', at, conversation_id: 'o1' });
+check('an offer goes with channel_offer.removed, named in the envelope', store.offers.map((o) => o.conversation_id).join() === 'o2' && !offerOf('o1'));
+check('an offered channel is joined, whatever its access', mayJoin({ id: 'o2', name: 'den', private: true, access: 'knock' }));
+check('a private channel Browse did not mark is not', !mayJoin({ id: 'x', name: 'x', private: true, access: 'private' }));
+check('a private channel Browse marked is', mayJoin({ id: 'x', name: 'x', private: true, access: 'private', joinable: true }));
+check('a knock channel not offered is asked to join', !mayJoin({ id: 'k', name: 'k', private: true, access: 'knock' }));
+check('a public channel is joined', mayJoin({ id: 'p', name: 'p', private: false, access: 'public' }));
+check('nothing is joined twice', !mayJoin({ id: 'p', name: 'p', access: 'public', membership: { level: 'member' } }));
+check('only a public channel is read before joining', isPublic({ access: 'public' }) && !isPublic({ access: 'knock', private: true }) && !isPublic({ access: 'private', private: true }));
+
+const invite = { id: 'r9', kind: 'channel', conversation_id: 'ch', account: { id: 'ana', username: 'ana' }, created_at: at, level: 'member', channel: { id: 'ch', name: 'den', access: 'public' } };
+apply({ type: 'chat_request.received', at, request: invite, notify: true });
+check('an invitation to a channel is found by the channel', invitationOf('ch') && invitationOf('ch').id === 'r9');
+check('a direct request is no invitation', !invitationOf('c'));
+apply({ type: 'chat_request.removed', at, id: 'r9' });
+check('an accepted invitation goes', !invitationOf('ch'));
+
+// A group chat with someone invited: named by them too, and not a direct chat.
+store.accounts.set('ana', { id: 'ana', display_name: 'Ana' });
+store.accounts.set('ben', { id: 'ben', display_name: 'Ben' });
+const group = { id: 'g', kind: 'channel', private: true, member_ids: ['me', 'ana'], invited_ids: ['ben'], membership: { level: 'member' }, member_count: 2 };
+check('a group chat names who was invited', title(group) === 'Ana, Ben', title(group));
+check('a chat with two members and one invited is a group chat', !isDirectChat(group));
+store.conversations.set('g', group);
+apply({ type: 'member.joined', at, conversation_id: 'g', seq: 9, member: { account_id: 'ben', level: 'member' } });
+const joined = store.conversations.get('g');
+check('someone invited who joins is a member, no longer invited', joined.member_ids.includes('ben') && !joined.invited_ids.includes('ben'));
+check('and the title stays the same', title(joined) === 'Ana, Ben', title(joined));
 
 console.log(`${failures ? 'FAIL' : 'ok  '} requests: ${checks} checks, ${failures} failure(s)`);
 process.exit(failures ? 1 : 0);

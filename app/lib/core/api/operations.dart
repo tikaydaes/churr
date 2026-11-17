@@ -47,7 +47,11 @@ abstract final class Ops {
   // Me.
   static const getMe = Op('getMe', 'GET', '/api/v1/me');
   static const getSidebar = Op('getSidebar', 'GET', '/api/v1/me/sidebar');
-  static const changeSidebar = Op('changeSidebar', 'POST', '/api/v1/me/sidebar');
+  static const changeSidebar = Op(
+    'changeSidebar',
+    'POST',
+    '/api/v1/me/sidebar',
+  );
   static const getStatusSummary = Op(
     'getStatusSummary',
     'GET',
@@ -354,7 +358,11 @@ abstract final class Ops {
     '/api/v1/conversations/{id}/sealed/epochs',
   );
   static const getBackup = Op('getBackup', 'GET', '/api/v1/me/backup');
-  static const getAccessKey = Op('getAccessKey', 'GET', '/api/v1/me/access-key');
+  static const getAccessKey = Op(
+    'getAccessKey',
+    'GET',
+    '/api/v1/me/access-key',
+  );
   static const createBackup = Op('createBackup', 'POST', '/api/v1/me/backup');
   static const addLockedCopy = Op(
     'addLockedCopy',
@@ -887,6 +895,23 @@ abstract final class Ops {
     'POST',
     '/api/v1/me/chat-requests/{id}/block',
   );
+  // Channels offered through a group or as a default channel (ruling
+  // R103): `id` is the channel.
+  static const listChannelOffers = Op(
+    'listChannelOffers',
+    'GET',
+    '/api/v1/me/channel-offers',
+  );
+  static const acceptChannelOffer = Op(
+    'acceptChannelOffer',
+    'POST',
+    '/api/v1/me/channel-offers/{id}/accept',
+  );
+  static const declineChannelOffer = Op(
+    'declineChannelOffer',
+    'POST',
+    '/api/v1/me/channel-offers/{id}/decline',
+  );
   // Approvals (docs/FEATURES.md section 31): the requests that wait for
   // whoever may decide them, and asking for a channel while new channels
   // wait for approval.
@@ -993,6 +1018,9 @@ abstract final class Ops {
     declineChatRequest,
     dismissChatRequest,
     blockChatRequester,
+    listChannelOffers,
+    acceptChannelOffer,
+    declineChannelOffer,
     getApprovalSummary,
     listApprovals,
     decideApproval,

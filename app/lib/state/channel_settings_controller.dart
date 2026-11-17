@@ -127,7 +127,7 @@ class ChannelSettingsController extends ChangeNotifier {
   /// The reader's own member row, when the list is loaded.
   Member? get mine {
     for (final m in members ?? const <Member>[]) {
-      if (m.accountId == server.me?.id) return m;
+      if (m.accountId == server.me?.id && !m.invited) return m;
     }
     return null;
   }
