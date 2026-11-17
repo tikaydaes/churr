@@ -235,6 +235,9 @@ func (s *Service) AppointManager(ctx context.Context, actor model.Account, id mo
 		out = m
 		return err
 	})
+	if err == nil && !found && !c.Public() && (!c.IsKnock() || c.Locked()) {
+		s.overrideUsed(ctx, actor.ID, id)
+	}
 	return out, hide(err)
 }
 
@@ -307,6 +310,9 @@ func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model
 		out = m
 		return err
 	})
+	if err == nil {
+		s.overrideUsed(ctx, actor.ID, id)
+	}
 	return out, hide(err)
 }
 
@@ -372,6 +378,19 @@ func (s *Service) DismissManager(ctx context.Context, actor model.Account, id mo
 		return err
 	})
 	return out, hide(err)
+}
+
+// SetOwnersTold sets how every Owner is told that an override was used
+// (review finding C1): kind, who did it, and the channel.
+func (s *Service) SetOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about string)) {
+	s.ownersTold = fn
+}
+
+// overrideUsed tells every Owner of an override, once it has happened.
+func (s *Service) overrideUsed(ctx context.Context, by model.AccountID, conv model.ConversationID) {
+	if s.ownersTold != nil {
+		s.ownersTold(ctx, "override_used", by, string(conv))
+	}
 }
 
 // AuditLog reads the audit log, newest first.

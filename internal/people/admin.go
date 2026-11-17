@@ -161,7 +161,7 @@ func (s *Service) SetRole(ctx context.Context, actor model.Account, id model.Acc
 			if err != nil {
 				return model.AdminAccount{}, err
 			}
-			s.tellOwners(ctx, "owner_promotion_waiting", actor.ID, id)
+			s.TellOwners(ctx, "owner_promotion_waiting", actor.ID, string(id))
 			break
 		}
 		if err := s.applyRole(ctx, actor.ID, target, role, nil); err != nil {
@@ -223,9 +223,9 @@ func (s *Service) applyRole(ctx context.Context, actor model.AccountID, target m
 	}
 	switch action {
 	case "owner.made":
-		s.tellOwners(ctx, "owner_made", actor, id)
+		s.TellOwners(ctx, "owner_made", actor, string(id))
 	case "owner.stepped_down":
-		s.tellOwners(ctx, "owner_stepped_down", actor, id)
+		s.TellOwners(ctx, "owner_stepped_down", actor, string(id))
 	}
 	return nil
 }
@@ -266,14 +266,15 @@ func (s *Service) ApplyPromotions(ctx context.Context) error {
 }
 
 // OnOwnersTold sets what is told of what every Owner must hear of.
-func (s *Service) OnOwnersTold(fn func(ctx context.Context, kind string, by, about model.AccountID)) {
+func (s *Service) OnOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about string)) {
 	s.ownersTold = fn
 }
 
-// tellOwners tells every Owner of the instance of something an Owner must
+// TellOwners tells every Owner of the instance of something an Owner must
 // hear of (review finding C1): an Owner made or stepping down, a promotion
-// waiting, the export, an override.
-func (s *Service) tellOwners(ctx context.Context, kind string, by, about model.AccountID) {
+// waiting, the export started or downloaded, an override used. by is who
+// did it; about the account or conversation it was done to, if any.
+func (s *Service) TellOwners(ctx context.Context, kind string, by model.AccountID, about string) {
 	if s.ownersTold != nil {
 		s.ownersTold(ctx, kind, by, about)
 	}

@@ -65,10 +65,12 @@ type Service struct {
 	store store.Store
 	perm  *perm.Checker
 	hub   Hub
-	blobs Blobs
-	mod   Moderator
-	log   *slog.Logger
-	now   func() model.Time
+	// ownersTold is told when an override is used (SetOwnersTold).
+	ownersTold func(ctx context.Context, kind string, by model.AccountID, about string)
+	blobs      Blobs
+	mod        Moderator
+	log        *slog.Logger
+	now        func() model.Time
 
 	// order makes events of one conversation reach the hub in seq order;
 	// see Recorder.

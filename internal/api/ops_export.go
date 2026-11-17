@@ -43,6 +43,9 @@ func (a *API) startExport(r *Request) error {
 	if err != nil {
 		return err
 	}
+	if a.People != nil {
+		a.People.TellOwners(r.Ctx(), "export_started", r.Actor().ID, st.ID)
+	}
 	return r.JSON(map[string]any{"export": st})
 }
 
@@ -73,6 +76,9 @@ func (a *API) createExportDownload(r *Request) error {
 		Action: "export.downloaded", TargetKind: "export", TargetID: st.ID, Detail: map[string]any{"size": st.Size}})
 	if err != nil {
 		return err
+	}
+	if a.People != nil {
+		a.People.TellOwners(r.Ctx(), "export_downloaded", r.Actor().ID, st.ID)
 	}
 	return r.JSON(map[string]any{"url": "/api/v1/admin/export/download?ticket=" + url.QueryEscape(value), "expires_at": model.FromTime(until)})
 }

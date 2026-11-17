@@ -30,6 +30,8 @@ func (s *Server) wirePeople() {
 	s.Live.Handle("presence.subscribe", s.People.PresenceFrame)
 	s.Chat.SetAccountShower(s.People.Show)
 	s.People.OnBlock(s.Chat.BlockChanged)
+	// An override is one of the things every Owner is told of.
+	s.Chat.SetOwnersTold(s.People.TellOwners)
 }
 
 // sweepEvery is how often state that changes with the clock alone is looked
