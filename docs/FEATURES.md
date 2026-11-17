@@ -1289,13 +1289,22 @@ Examples:
     {"every": "day" | "week" | "month",
      "days": "1111100", "at": "09:30", "time_zone": "Europe/Dublin"}
 
-| Typed                        | Stored                                       |
+with, for some kinds, `interval`, `day`, `week` and `weekday`:
+
+| Typed or chosen              | Stored                                       |
 |------------------------------|----------------------------------------------|
 | `every day`                  | `every: day`, `days: 1111111`                |
 | `every weekday`              | `every: day`, `days: 1111100`                |
 | `every monday,thursday`      | `every: day`, `days: 1001000`                |
 | `every week`                 | `every: week`. Runs on the weekday of the first run. |
+| Every 2 weeks on Monday and Wednesday (check-ins) | `every: week`, `days: 1010000`, `interval: 2`. Runs on those days every second week, counted from the week of the first run after the rule is set or changed. `interval` is 1 to 52; absent means 1. |
 | `every month`                | `every: month`. Runs on the day of the month of the first run, or the month's last day if it has no such day. |
+| Monthly on the 15th (check-ins) | `every: month`, `day: 15`. The month's last day if it has no such day. |
+| Monthly on the first Monday, the last Friday (check-ins) | `every: month`, `week: 1`, `weekday: 1`; `week: -1`, `weekday: 5`. `week` is 1 to 4 or -1 for the last; `weekday` 1 (Monday) to 7. |
+
+`days` goes only with `day` and `week`, `interval` only with `week`
+and `days`, and `day` or `week` with `weekday` only with `month`,
+never both.
 
 `next_run_at` is always the next moment the rule gives, worked out
 in the rule's time zone so that 09:30 stays 09:30 across a clock
@@ -1561,7 +1570,10 @@ with each person's answers in that day's thread.
 - **Setting up.** An account acting as manager, from the channel's
   settings: a title, 1 to 20 questions (text or long text, each
   optionally required), optional message text, and a schedule in the
-  repeat form of 9.3. Stored as a `scheduled` row of kind `form`
+  repeat form of 9.3: daily on chosen days, every N weeks on chosen
+  days, or monthly on a day of the month or an nth weekday ("first
+  Monday", "last Friday"), at a time in a time zone. Editing one keeps
+  its kind. Stored as a `scheduled` row of kind `form`
   whose `content` is a message with a `checkin` form, action
   `thread`, `one_answer` true.
 - **Each run** posts that message as the row's owner, with

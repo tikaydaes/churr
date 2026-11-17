@@ -21234,6 +21234,10 @@ class Repeat extends $pb.GeneratedMessage {
     $core.String? days,
     $core.String? at,
     $core.String? timeZone,
+    $fixnum.Int64? interval,
+    $fixnum.Int64? day,
+    $fixnum.Int64? week,
+    $fixnum.Int64? weekday,
   }) {
     final result = Repeat._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -21241,6 +21245,10 @@ class Repeat extends $pb.GeneratedMessage {
     if (days != null) result.days = days;
     if (at != null) result.at = at;
     if (timeZone != null) result.timeZone = timeZone;
+    if (interval != null) result.interval = interval;
+    if (day != null) result.day = day;
+    if (week != null) result.week = week;
+    if (weekday != null) result.weekday = weekday;
     return result;
   }
 
@@ -21263,6 +21271,10 @@ class Repeat extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'days')
     ..aOS(5, _omitFieldNames ? '' : 'at')
     ..aOS(6, _omitFieldNames ? '' : 'timeZone')
+    ..aInt64(7, _omitFieldNames ? '' : 'interval')
+    ..aInt64(8, _omitFieldNames ? '' : 'day')
+    ..aInt64(9, _omitFieldNames ? '' : 'week')
+    ..aInt64(10, _omitFieldNames ? '' : 'weekday')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -21323,6 +21335,42 @@ class Repeat extends $pb.GeneratedMessage {
   $core.bool hasTimeZone() => $_has(4);
   @$pb.TagNumber(6)
   void clearTimeZone() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get interval => $_getI64(5);
+  @$pb.TagNumber(7)
+  set interval($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasInterval() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearInterval() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get day => $_getI64(6);
+  @$pb.TagNumber(8)
+  set day($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasDay() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearDay() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get week => $_getI64(7);
+  @$pb.TagNumber(9)
+  set week($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasWeek() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearWeek() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get weekday => $_getI64(8);
+  @$pb.TagNumber(10)
+  set weekday($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(10)
+  $core.bool hasWeekday() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearWeekday() => $_clearField(10);
 }
 
 class ListConversationsResponse extends $pb.GeneratedMessage {

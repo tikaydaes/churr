@@ -1731,6 +1731,10 @@ message Repeat {
   repeated int32 null_fields = 2;
   optional RepeatEvery every = 3;
   optional string days = 4;
+  optional int64 interval = 7;
+  optional int64 day = 8;
+  optional int64 week = 9;
+  optional int64 weekday = 10;
   optional string at = 5;
   optional string time_zone = 6;
 }

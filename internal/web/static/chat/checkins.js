@@ -4,7 +4,7 @@
 
 import { get, post, patch, del } from '/shared/api.js';
 import { h, openDialog, button, toast, fill, check, dateTime, confirmDialog } from '/shared/dom.js';
-import { blank, problem, content, repeat, createBody, fromItem, repeatWords, DAY_NAMES, MAX_QUESTIONS } from '/shared/checkin.js';
+import { blank, problem, content, repeat, createBody, fromItem, repeatWords, DAY_NAMES, MAX_QUESTIONS, KINDS, WEEKS } from '/shared/checkin.js';
 import { needAccounts, nameOf } from './store.js';
 
 const zone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } };
@@ -60,8 +60,30 @@ function editCheckin(name, start, save) {
         button('Remove', () => { v.questions.splice(i, 1); drawQs(); }, 'small quiet'))));
     };
     drawQs();
-    const days = h('div', { class: 'row', role: 'group', 'aria-label': 'Days' }, DAY_NAMES.map((d, i) => check(d.slice(0, 3), h('input', { type: 'checkbox', 'aria-label': d, checked: v.days[i] === '1',
-      onchange: (e) => { v.days = v.days.slice(0, i) + (e.target.checked ? '1' : '0') + v.days.slice(i + 1); } }))));
+    // How often: daily on days, every N weeks on days, or monthly on a day
+    // or an nth weekday. Only the parts of the kind chosen are shown.
+    const often = h('div', { class: 'stack tight' });
+    const kind = h('select', { 'aria-label': 'Repeats', onchange: (e) => { v.kind = e.target.value; drawOften(); } },
+      KINDS.map(([k, t]) => h('option', { value: k, selected: v.kind === k }, t)));
+    const select = (label, options, value, set) => h('select', { 'aria-label': label, onchange: (e) => set(Number(e.target.value)) },
+      options.map(([k, t]) => h('option', { value: String(k), selected: value === k }, t)));
+    const drawOften = () => {
+      const days = h('div', { class: 'row', role: 'group', 'aria-label': 'Days' }, DAY_NAMES.map((d, i) => check(d.slice(0, 3), h('input', { type: 'checkbox', 'aria-label': d, checked: v.days[i] === '1',
+        onchange: (e) => { v.days = v.days.slice(0, i) + (e.target.checked ? '1' : '0') + v.days.slice(i + 1); } }))));
+      if (v.kind === 'weekly') {
+        const n = h('input', { type: 'number', min: 1, max: 52, step: 1, value: v.interval, style: { width: '5em' }, 'aria-label': 'Every how many weeks', oninput: (e) => { v.interval = Number(e.target.value); } });
+        fill(often, h('p', { class: 'row' }, 'Every', n, 'weeks, on'), days);
+      } else if (v.kind === 'monthly') {
+        const byDay = h('input', { type: 'radio', name: 'month-by', 'aria-label': 'On a day of the month', checked: v.monthBy === 'day', onchange: () => { v.monthBy = 'day'; } });
+        const byWeekday = h('input', { type: 'radio', name: 'month-by', 'aria-label': 'On a weekday of the month', checked: v.monthBy === 'weekday', onchange: () => { v.monthBy = 'weekday'; } });
+        const day = select('Day of the month', Array.from({ length: 31 }, (_, i) => [i + 1, String(i + 1)]), v.day, (x) => { v.day = x; byDay.checked = true; v.monthBy = 'day'; });
+        const week = select('Which', WEEKS, v.week, (x) => { v.week = x; byWeekday.checked = true; v.monthBy = 'weekday'; });
+        const weekday = select('Weekday', DAY_NAMES.map((d, i) => [i + 1, d]), v.weekday, (x) => { v.weekday = x; byWeekday.checked = true; v.monthBy = 'weekday'; });
+        fill(often, h('label', { class: 'row' }, byDay, 'On day', day, h('span', { class: 'dim small' }, '(the last day in a shorter month)')),
+          h('label', { class: 'row' }, byWeekday, 'On the', week, weekday));
+      } else fill(often, days);
+    };
+    drawOften();
     const at = h('input', { type: 'time', value: v.at, 'aria-label': 'At', oninput: (e) => { v.at = e.target.value; } });
     const tz = h('input', { type: 'text', value: v.zone, 'aria-label': 'Time zone', oninput: (e) => { v.zone = e.target.value.trim(); } });
     const label = (t, node) => h('label', { class: 'field' }, h('span', { class: 'label' }, t), node);
@@ -74,7 +96,7 @@ function editCheckin(name, start, save) {
     return {
       body: h('div', { class: 'stack' }, label('Title', title), label('Message with it (optional)', text),
         h('fieldset', { class: 'plain stack tight' }, h('legend', { class: 'label' }, 'Questions'), qs, h('p', { class: 'row' }, addQ)),
-        h('fieldset', { class: 'plain stack tight' }, h('legend', { class: 'label' }, 'When'), days, h('div', { class: 'row' }, label('At', at), label('Time zone', tz))),
+        h('fieldset', { class: 'plain stack tight' }, h('legend', { class: 'label' }, 'When'), label('Repeats', kind), often, h('div', { class: 'row' }, label('At', at), label('Time zone', tz))),
         err),
       foot: [button('Cancel', () => close(undefined)), saveBtn],
     };

@@ -1095,6 +1095,10 @@ final List<WireMessage> wireMessages = [
   WireMessage('Repeat', WireShape.object, 0, pb.Repeat.new, const [
     WireField('every', 3, WireKind.enum_, WireCard.one, 79),
     WireField('days', 4, WireKind.string, WireCard.one, 0),
+    WireField('interval', 7, WireKind.int_, WireCard.one, 0),
+    WireField('day', 8, WireKind.int_, WireCard.one, 0),
+    WireField('week', 9, WireKind.int_, WireCard.one, 0),
+    WireField('weekday', 10, WireKind.int_, WireCard.one, 0),
     WireField('at', 5, WireKind.string, WireCard.one, 0),
     WireField('time_zone', 6, WireKind.string, WireCard.one, 0),
   ]),

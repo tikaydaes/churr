@@ -47,6 +47,18 @@ func TestNext(t *testing.T) {
 		{"the wall clock holds when clocks go back", model.Repeat{Every: "day", Days: "1111111", At: "09:30", TimeZone: dublin}, "2026-10-24 10:00", "2026-10-25 09:30"},
 		{"the wall clock holds when clocks go forward", model.Repeat{Every: "day", Days: "1111111", At: "09:30", TimeZone: dublin}, "2027-03-27 10:00", "2027-03-28 09:30"},
 		{"new york, clocks forward", model.Repeat{Every: "day", Days: "1111111", At: "07:00", TimeZone: ny}, "2027-03-13 08:00", "2027-03-14 07:00"},
+		// The kinds a check-in offers (FEATURES.md 9.3, section 11).
+		{"weekly on chosen days", model.Repeat{Every: "week", Days: "1010000", At: "09:00", TimeZone: dublin}, "2026-11-16 10:00", "2026-11-18 09:00"},
+		{"every two weeks, an off week is skipped", model.Repeat{Every: "week", Days: "1010000", Interval: 2, At: "09:00", TimeZone: dublin, Anchor: mondayOf(2026, 11, 16)}, "2026-11-18 10:00", "2026-11-30 09:00"},
+		{"every two weeks, the rest of an on week", model.Repeat{Every: "week", Days: "1010000", Interval: 2, At: "09:00", TimeZone: dublin, Anchor: mondayOf(2026, 11, 16)}, "2026-11-30 10:00", "2026-12-02 09:00"},
+		{"every three weeks, counted from an old anchor", model.Repeat{Every: "week", Days: "0000100", Interval: 3, At: "09:00", TimeZone: dublin, Anchor: mondayOf(2026, 1, 5)}, "2026-11-20 10:00", "2026-12-11 09:00"},
+		{"every two weeks with no anchor yet runs on the next chosen day", model.Repeat{Every: "week", Days: "1000000", Interval: 2, At: "09:00", TimeZone: dublin}, "2026-11-13 10:00", "2026-11-16 09:00"},
+		{"monthly on a day", model.Repeat{Every: "month", Day: 15, At: "09:00", TimeZone: dublin}, "2026-11-16 10:00", "2026-12-15 09:00"},
+		{"monthly on the 31st in a short month", model.Repeat{Every: "month", Day: 31, At: "09:00", TimeZone: dublin}, "2027-02-01 10:00", "2027-02-28 09:00"},
+		{"the first monday", model.Repeat{Every: "month", Week: 1, Weekday: 1, At: "09:00", TimeZone: dublin}, "2026-11-13 10:00", "2026-12-07 09:00"},
+		{"the third wednesday", model.Repeat{Every: "month", Week: 3, Weekday: 3, At: "09:00", TimeZone: dublin}, "2026-11-13 10:00", "2026-11-18 09:00"},
+		{"the last friday", model.Repeat{Every: "month", Week: -1, Weekday: 5, At: "17:00", TimeZone: dublin}, "2026-11-13 10:00", "2026-11-27 17:00"},
+		{"the last sunday, into the next month", model.Repeat{Every: "month", Week: -1, Weekday: 7, At: "09:00", TimeZone: dublin}, "2026-11-29 10:00", "2026-12-27 09:00"},
 		{"a zone with a half-hour offset", model.Repeat{Every: "day", Days: "1111111", At: "06:15", TimeZone: kolkata}, "2026-11-13 06:15", "2026-11-14 06:15"},
 	}
 	for _, c := range cases {
@@ -100,6 +112,11 @@ func TestCheckRepeat(t *testing.T) {
 		{Every: "day", Days: "1000000", At: "00:00", TimeZone: "UTC"},
 		{Every: "week", At: "23:59", TimeZone: "Asia/Tokyo"},
 		{Every: "month", At: "12:00", TimeZone: "America/Sao_Paulo"},
+		{Every: "week", Days: "1010000", At: "09:00", TimeZone: "UTC"},
+		{Every: "week", Days: "1010000", Interval: 3, At: "09:00", TimeZone: "UTC"},
+		{Every: "month", Day: 31, At: "09:00", TimeZone: "UTC"},
+		{Every: "month", Week: 1, Weekday: 1, At: "09:00", TimeZone: "UTC"},
+		{Every: "month", Week: -1, Weekday: 5, At: "09:00", TimeZone: "UTC"},
 	}
 	for _, r := range good {
 		if err := checkRepeat(&r); err != nil {
@@ -125,14 +142,36 @@ func TestCheckRepeat(t *testing.T) {
 	for _, r := range []model.Repeat{
 		{Every: "day", Days: "11111", At: "09:30", TimeZone: "UTC"},
 		{Every: "day", Days: "11111x1", At: "09:30", TimeZone: "UTC"},
-		{Every: "week", Days: "1111111", At: "09:30", TimeZone: "UTC"},
 		{Every: "day", At: "24:00", TimeZone: "UTC"},
+		{Every: "day", Days: "1111111", Interval: 2, At: "09:30", TimeZone: "UTC"},
+		{Every: "week", Interval: 2, At: "09:30", TimeZone: "UTC"},
+		{Every: "week", Days: "1000000", Interval: 53, At: "09:30", TimeZone: "UTC"},
+		{Every: "week", Days: "0000000", Interval: 2, At: "09:30", TimeZone: "UTC"},
+		{Every: "week", Days: "1000000", Day: 3, At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Days: "1000000", At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Day: 32, At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Day: 3, Week: 1, Weekday: 1, At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Week: 1, At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Weekday: 1, At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Week: 5, Weekday: 1, At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Week: -2, Weekday: 1, At: "09:30", TimeZone: "UTC"},
+		{Every: "month", Week: 1, Weekday: 8, At: "09:30", TimeZone: "UTC"},
 		{Every: "day", At: "09:30"},
 		{Every: "day", At: "09:30", TimeZone: "Local"},
 	} {
 		if checkRepeat(&r) == nil {
 			t.Errorf("%+v was accepted", r)
 		}
+	}
+
+	fortnightly := model.Repeat{Every: "week", Days: "1010000", Interval: 2, At: "09:00", TimeZone: "Europe/Dublin"}
+	anchor(&fortnightly, at(t, "Europe/Dublin", "2026-11-18 09:00")) // a Wednesday
+	if fortnightly.Anchor != mondayOf(2026, 11, 16) {
+		t.Errorf("every two weeks anchored to %d, want the week of Monday 16 November", fortnightly.Anchor)
+	}
+	nth := model.Repeat{Every: "month", Week: 1, Weekday: 1, At: "09:00", TimeZone: "Europe/Dublin"}
+	if anchor(&nth, at(t, "Europe/Dublin", "2026-12-07 09:00")); nth.Anchor != 0 {
+		t.Errorf("an nth-weekday rule was anchored: %d", nth.Anchor)
 	}
 
 	weekly := model.Repeat{Every: "week", At: "09:00", TimeZone: "Europe/Dublin"}

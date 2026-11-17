@@ -1092,6 +1092,10 @@ var messages = []message{
 	{name: "Repeat", shape: shapeObject, extra: 0, fields: []field{
 		{"every", 3, kindEnum, cardOne, 79, ""},
 		{"days", 4, kindString, cardOne, 0, ""},
+		{"interval", 7, kindInt, cardOne, 0, ""},
+		{"day", 8, kindInt, cardOne, 0, ""},
+		{"week", 9, kindInt, cardOne, 0, ""},
+		{"weekday", 10, kindInt, cardOne, 0, ""},
 		{"at", 5, kindString, cardOne, 0, ""},
 		{"time_zone", 6, kindString, cardOne, 0, ""},
 	}},

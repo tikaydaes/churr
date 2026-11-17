@@ -1274,10 +1274,15 @@ screen. Each change is one `updateMembership` call.
   each with when it runs, how many questions, the next run or why it
   failed, and who set it up; "New check-in", Edit and Stop. The editor
   has a title, an optional message, up to 20 questions (each short or
-  long, optionally required), the days of the week, a time and a time
-  zone (the device's to start with). Whoever edits one becomes its
-  owner. A check-in that runs every week or month is shown as such and
-  becomes daily on the days chosen when edited.
+  long, optionally required), how often it repeats, a time and a time
+  zone (the device's to start with). How often is one of: daily, on
+  the days of the week chosen; every N weeks (1 to 52), on the days
+  chosen; or monthly, on a day of the month (1 to 31, the last day in
+  a shorter month) or on an nth weekday (first to fourth, or last:
+  "first Monday", "last Friday"). Editing one opens it in the kind it
+  was set up with; a weekly or monthly rule that names no day (from
+  `/remind`) opens on the weekday or day of its next run. Whoever
+  edits one becomes its owner.
 - **Make private** (managers and admins, public channels only). A
   dialog says: people who are not members lose the channel at once,
   its history and search results included, and a private channel can

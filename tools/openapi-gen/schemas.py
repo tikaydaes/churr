@@ -910,7 +910,12 @@ RAW('Event', {'type': 'object',
 
 S('Repeat', 'When a scheduled item runs again.', {
    'every': 'enum:day|week|month',
-   'days?': ('days', 'For `day`: which days of the week, Monday first.'),
+   'days?': ('days', 'For `day`, and for `week` on chosen days: which days of the week, Monday first.'),
+   'interval?': ('int', 'For `week` with `days`: every this many weeks, 1 to 52, counted from the week of the first run '
+                        'after the rule is set or changed. Absent means 1.'),
+   'day?': ('int', 'For `month`: the day of the month, 1 to 31, or the month\'s last day if it has no such day.'),
+   'week?': ('int', 'For `month`, with `weekday`: the nth such weekday of the month, 1 to 4, or -1 for the last.'),
+   'weekday?': ('int', 'For `month`, with `week`: 1 (Monday) to 7 (Sunday).'),
    'at': 'hhmm',
    'time_zone': ('str', 'IANA name.')})
 

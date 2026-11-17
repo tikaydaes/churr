@@ -3529,9 +3529,13 @@
   },
   "Repeat": {
    "at": 5,
+   "day": 8,
    "days": 4,
    "every": 3,
-   "time_zone": 6
+   "interval": 7,
+   "time_zone": 6,
+   "week": 9,
+   "weekday": 10
   },
   "ReplaceBackupRequest": {
    "account_record": 4,

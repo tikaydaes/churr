@@ -10377,6 +10377,48 @@ abstract class L10n {
   /// **'When'**
   String get checkinWhen;
 
+  /// No description provided for @checkinRepeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get checkinRepeats;
+
+  /// No description provided for @checkinDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get checkinDaily;
+
+  /// No description provided for @checkinWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every few weeks'**
+  String get checkinWeekly;
+
+  /// No description provided for @checkinMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get checkinMonthly;
+
+  /// No description provided for @checkinEveryWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Every how many weeks'**
+  String get checkinEveryWeeks;
+
+  /// No description provided for @checkinOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'On day'**
+  String get checkinOnDay;
+
+  /// No description provided for @checkinOnThe.
+  ///
+  /// In en, this message translates to:
+  /// **'On the'**
+  String get checkinOnThe;
+
   /// No description provided for @checkinAt.
   ///
   /// In en, this message translates to:
