@@ -31,6 +31,14 @@
 // (storm.go): at the same instant, or with -storm-spread 20s as clients
 // spread themselves.
 //
+// With -call it holds a call in place of posting (call.go): people with
+// microphones, some with cameras, some only listening, and a report of
+// loss, delay and bit rates; with -pid, of the server's CPU and memory for
+// each person too. -call-sweep holds one call after another and prints a
+// table:
+//
+//	loadtest -call -members-file members.json -url http://localhost:8472 -pid <server pid> -call-sweep 5,10,25,25/8,25/8/20
+//
 // It measures one set of machines at one moment. The numbers say nothing
 // about any other, and nothing here is a benchmark of anything but the run
 // it printed.
@@ -67,7 +75,7 @@ func main() {
 		rate      = flag.Float64("rate", 5, "messages posted a second, over all members and all generators")
 		duration  = flag.Duration("duration", time.Minute, "how long to post for")
 		share     = flag.Float64("general-share", 0.1, "the share of messages posted in #general, which every member is in")
-		pid       = flag.Int("pid", 0, "the server's process id, when it runs on this machine, to report its memory; 0 reports none")
+		pid       = flag.Int("pid", 0, "the server's process id, when it runs on this machine, to report its memory, and with -call its CPU; 0 reports none")
 		prefix    = flag.String("prefix", "", "what the usernames and channel names made start with; empty picks one for this run")
 		spread    = flag.Duration("storm-spread", 0, "with -storm: reconnect as clients do instead of all at once, each after a random time between 0.5s and 1s more than this (a server tells its clients 20s at 5,000 connections)")
 		storm     = flag.Bool("storm", false, "after the posting, with posting going on at the same rate: drop every connection at once, reconnect them all at the same moment with `resume` from where each was, and report how that went")
@@ -93,6 +101,11 @@ func main() {
 	callVideo := flag.Int("call-video", 8, "with -call: how many of them also have a camera on, in the three sizes of docs/CALLS.md section 7")
 	callFor := flag.Duration("call-for", time.Minute, "with -call: how long the call is measured for, once everyone is in and their pictures have settled")
 	callTalk := flag.Float64("call-talk", 0.25, "with -call: the share of the time each person talks, in spurts of a few seconds, sending nothing in between; 1 is everyone talking all the time")
+	callListeners := flag.Int("call-listeners", 0, "with -call: how many more people join and only listen and watch: they publish nothing, hear everyone and are shown every camera")
+	callSweep := flag.String("call-sweep", "", "with -call: hold one call after another and print a table of them. A `list` of calls separated by commas, each PEOPLE, PEOPLE/CAMERAS or PEOPLE/CAMERAS/LISTENERS, smallest first: 5,10,25,25/8,25/8/20. In place of -call-audio, -call-video and -call-listeners")
+	callBudget := flag.Float64("call-budget", 0, "with -call and -pid: fail if the server's memory for each person in a call passes this many `MiB`; 0 sets no budget")
+	heap := flag.String("heap", "", "with -call: save the server's heap profile to this `file` at the end of the measured stretch, with everyone still in. The server must be a `-tags diag` build; -diag says where its profiles are. With -call-sweep each call gets its own file, FILE-PEOPLE-CAMERAS-LISTENERS")
+	diag := flag.String("diag", "http://127.0.0.1:6060", "with -heap: the `address` the server's profiles are served at (CHURR_DIAG_ADDR of a `-tags diag` build)")
 	flag.Parse()
 	fail := func(err error) {
 		fmt.Fprintln(os.Stderr, "loadtest:", err)
@@ -160,7 +173,23 @@ func main() {
 		if *wire != "json" {
 			fail(errors.New("-call speaks JSON only; leave -wire out"))
 		}
-		if err := runCall(callConfig{base: strings.TrimSuffix(*base, "/"), people: *callAudio, cameras: *callVideo, steady: *callFor, talk: *callTalk, compress: *compress}, file); err != nil {
+		cc := callConfig{base: strings.TrimSuffix(*base, "/"), people: *callAudio, cameras: *callVideo, listeners: *callListeners, steady: *callFor,
+			talk: *callTalk, compress: *compress, pid: *pid, heap: *heap, diag: *diag}
+		if *callSweep != "" {
+			shapes, err := parseSweep(*callSweep)
+			if err == nil {
+				err = runSweep(cc, shapes, file, *callBudget)
+			}
+			if err != nil {
+				fail(err)
+			}
+			return
+		}
+		sum, err := runCall(cc, file)
+		if err == nil {
+			err = overBudget([]*callSummary{sum}, *callBudget)
+		}
+		if err != nil {
 			fail(err)
 		}
 		return

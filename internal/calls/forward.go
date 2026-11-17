@@ -51,6 +51,15 @@ type downTrack struct {
 	lastAt   time.Time
 	lastIn   uint16
 	haveLast bool
+
+	// sent notes what each of the last packets written was made from, so
+	// a lost one can be made again (resend.go). Video only.
+	sent []sentNote
+	// resendLeft is how many bytes may still be sent again, as of
+	// resendAt; rtt is the round trip to the subscriber, 0 until measured.
+	resendAt   time.Time
+	resendLeft int
+	rtt        time.Duration
 }
 
 // Bind is called by Pion when the subscriber has answered an offer that
@@ -190,6 +199,9 @@ func (d *downTrack) write(level int, pkt *rtp.Packet, key bool, vp8 vp8Descripto
 		}
 	}
 	d.haveLast = true
+	if d.video {
+		d.note(h.SequenceNumber, pkt.SequenceNumber, level)
+	}
 	if _, err := d.out.WriteRTP(&h, payload); err == nil {
 		d.sub.room.forwarded.Add(1)
 		d.sub.sentBytes.Add(int64(len(payload)) + 12)
@@ -201,13 +213,28 @@ func (d *downTrack) write(level int, pkt *rtp.Packet, key bool, vp8 vp8Descripto
 // what lets lost packets be sent again and the downlink be estimated; and a
 // subscriber's request for a key frame becomes a request to the publisher.
 func (d *downTrack) feedback(sender *webrtc.RTPSender) {
+	var buf []byte
 	for {
 		pkts, _, err := sender.ReadRTCP()
 		if err != nil {
 			return
 		}
 		for _, p := range pkts {
-			switch p.(type) {
+			switch p := p.(type) {
+			case *rtcp.TransportLayerNack:
+				d.mu.Lock()
+				ours := d.video && d.bound && p.MediaSSRC == d.ssrc
+				d.mu.Unlock()
+				if ours {
+					if buf == nil {
+						buf = make([]byte, 1500)
+					}
+					d.resend(p, buf)
+				}
+			case *rtcp.ReceiverReport:
+				if d.video {
+					d.heard(p.Reports, time.Now())
+				}
 			case *rtcp.PictureLossIndication, *rtcp.FullIntraRequest:
 				d.mu.Lock()
 				lvl := d.current
@@ -272,6 +299,9 @@ func (t *pubTrack) receive(level int, remote *webrtc.TrackRemote, audioLevelID u
 		subs := t.subs.Load()
 		if subs == nil {
 			continue
+		}
+		if l.kept != nil && len(pkt.Payload) > 0 {
+			l.kept.put(&pkt)
 		}
 		ask := false
 		for _, d := range *subs {
