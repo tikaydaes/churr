@@ -40,15 +40,17 @@ class MessageActions {
 
   // ---- who may do what ----
 
-  /// Whether the reader acts as manager of [c]: a manager of it, or an
-  /// admin in a public channel or one they belong to.
-  bool isManager(Conversation? c) {
-    final role = server.me?.role;
-    final admin = role == 'admin' || role == 'owner';
-    if (c == null) return false;
-    if (c.membership?.level == 'manager') return true;
-    return admin && (!c.private || c.membership != null) && !c.isSealed;
-  }
+  /// Whether the reader acts as manager of [c]: its level for them is
+  /// manager. The account's role gives nothing in a channel (ruling R99).
+  bool isManager(Conversation? c) =>
+      c != null && !c.isSealed && c.membership?.level == 'manager';
+
+  /// Whether the reader keeps the peace in [c]: a moderator or a manager
+  /// of it, who deletes others' messages and is exempt from slow mode.
+  bool keepsPeace(Conversation? c) =>
+      c != null &&
+      !c.isSealed &&
+      (c.membership?.level == 'manager' || c.membership?.level == 'moderator');
 
   /// Whether the reader may still edit [m] (FEATURES.md 4.1).
   bool canEdit(Message m, Conversation? c, ServerLimits limits, DateTime now) {
@@ -66,7 +68,7 @@ class MessageActions {
   bool canDelete(Message m, Conversation? c) {
     if (m.isDeleted || m.isSystem) return false;
     if (m.authorId == myId) return true;
-    return c != null && !c.isSealed && isManager(c);
+    return keepsPeace(c);
   }
 
   // ---- edits, deletes, history and purge ----

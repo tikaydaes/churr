@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/api/channels.dart';
 import '../../../core/api/conversation_ops.dart';
+import '../../../core/api/hubs.dart' show HubsApi;
 import '../../../core/api/operations.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/db/conversation_queries.dart';
@@ -14,12 +15,14 @@ import '../../../state/server_state.dart';
 import '../../message/checklist.dart' show shortWhen;
 import '../../theme/tokens.dart';
 import '../../widgets/avatar.dart';
+import '../channels/channel_settings_screen.dart' show openChannelSettings;
 import '../channels/common.dart';
 import 'help_panel.dart';
 
 // The dialogs of the commands of ruling R74: /help (help_panel.dart draws
 // it), /banlist, and the
-// requests to join a channel that its managers answer (/knock).
+// requests to join a channel that its moderators and managers answer
+// (/knock).
 
 /// The name of a group of commands in /help.
 String commandGroupName(L10n t, String group) => switch (group) {
@@ -357,18 +360,28 @@ class KnocksWatcher extends ChangeNotifier {
   /// How many wait; 0 also when the person may not see them.
   int count = 0;
 
+  /// The hub's stream, for a channel a hub owns: its requests are the
+  /// hub's, answered in the channel's settings.
+  String? get hubStream =>
+      object(server.conversation(conversationId)?.raw['shared'])?['stream_id']
+          as String?;
+
   Future<void> refresh() async {
     final conv = server.conversation(conversationId);
     if (conv == null || !conv.isNamed || !conv.private) return;
-    // Only those acting as its manager are asked: its managers, and an
-    // admin who is a member.
-    final role = server.me?.role;
+    // Only those who answer them are asked: its moderators and managers
+    // (ruling R99), and in a channel a hub owns those on its lists.
+    final level = conv.membership?.level;
     final acts =
-        conv.membership?.level == 'manager' ||
-        (conv.membership != null && (role == 'owner' || role == 'admin'));
+        level == 'manager' ||
+        level == 'moderator' ||
+        server.keepsHubPeace(conversationId);
     if (!acts) return;
     try {
-      final n = (await loadKnocks(server, conversationId)).length;
+      final stream = hubStream;
+      final n = stream != null
+          ? (await server.api.listHubChannelRequests(stream)).length
+          : (await loadKnocks(server, conversationId)).length;
       if (_disposed || n == count) return;
       count = n;
       notifyListeners();
@@ -385,7 +398,8 @@ class KnocksWatcher extends ChangeNotifier {
   }
 }
 
-/// The bar a channel's managers see while people ask to join it.
+/// The bar a channel's moderators and managers see while people ask to
+/// join it.
 class KnocksBar extends StatelessWidget {
   const KnocksBar({super.key, required this.watcher});
   final KnocksWatcher watcher;
@@ -408,11 +422,21 @@ class KnocksBar extends StatelessWidget {
               TextButton(
                 key: const Key('knocks-review'),
                 onPressed: () async {
-                  await showKnocksDialog(
-                    context,
-                    watcher.server,
-                    watcher.conversationId,
-                  );
+                  // A hub's requests are answered where its tools are,
+                  // in the channel's settings.
+                  if (watcher.hubStream != null) {
+                    await openChannelSettings(
+                      context,
+                      watcher.server,
+                      watcher.conversationId,
+                    );
+                  } else {
+                    await showKnocksDialog(
+                      context,
+                      watcher.server,
+                      watcher.conversationId,
+                    );
+                  }
                   await watcher.refresh();
                 },
                 child: Text(t.knocksReview),

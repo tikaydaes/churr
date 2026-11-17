@@ -6771,4 +6771,133 @@ class L10nEn extends L10n {
   String copyFact(String what, String value) {
     return '$what: $value. Copy';
   }
+
+  @override
+  String get levelModerator => 'Moderator';
+
+  @override
+  String get levelGuest => 'Guest';
+
+  @override
+  String cmdModded(String person) {
+    return '$person is a moderator of this channel.';
+  }
+
+  @override
+  String get approvals => 'Approvals';
+
+  @override
+  String get approvalsEmpty => 'Nothing waits for your approval.';
+
+  @override
+  String get approvalsAll => 'All';
+
+  @override
+  String get approvalKindRegistration => 'Registrations';
+
+  @override
+  String get approvalKindChannel => 'Channels';
+
+  @override
+  String get approvalKindWebhook => 'Webhooks';
+
+  @override
+  String get approvalAsksRegistration => 'Asks to join this instance';
+
+  @override
+  String approvalAsksChannel(String name) {
+    return 'Asks for a new channel: $name';
+  }
+
+  @override
+  String approvalAsksWebhook(String what) {
+    return 'Asks for a webhook: $what';
+  }
+
+  @override
+  String approvalLapses(String when) {
+    return 'lapses $when';
+  }
+
+  @override
+  String get approvalApprove => 'Approve';
+
+  @override
+  String get approvalDecline => 'Decline';
+
+  @override
+  String get approvalDeclineTitle => 'Decline this request?';
+
+  @override
+  String get approvalReasonLabel => 'Reason (optional; they are shown it)';
+
+  @override
+  String get approvalApproved => 'Approved.';
+
+  @override
+  String get approvalDeclined => 'Declined.';
+
+  @override
+  String notifyApprovalBody(String summary) {
+    return 'waits for your approval: $summary';
+  }
+
+  @override
+  String get notifyKnockBody => 'asks to join';
+
+  @override
+  String get channelNeedsApproval =>
+      'New channels on this instance wait for approval. Ask for this one, and you will be told when it is decided.';
+
+  @override
+  String get approvalNoteLabel => 'A note for whoever decides (optional)';
+
+  @override
+  String get askForApproval => 'Ask for approval';
+
+  @override
+  String channelRequestSent(String name) {
+    return 'Your request for $name was sent. You will be told when it is decided.';
+  }
+
+  @override
+  String channelRequestApproved(String channel) {
+    return 'Your channel $channel was approved.';
+  }
+
+  @override
+  String channelRequestDeclined(String channel) {
+    return 'Your channel $channel was declined.';
+  }
+
+  @override
+  String channelRequestDeclinedReason(String channel, String reason) {
+    return 'Your channel $channel was declined: $reason';
+  }
+
+  @override
+  String cmdUnmodded(String person) {
+    return '$person is a member of this channel, no longer a moderator.';
+  }
+
+  @override
+  String cmdAdmitQuestion(String person, String channel) {
+    return 'Admit $person to $channel?';
+  }
+
+  @override
+  String get cmdAdmitBody =>
+      'This is a private channel on a hub: nobody joins it unless one of its moderators or managers admits them. Their instance adds them.';
+
+  @override
+  String get cmdAdmitYes => 'Admit';
+
+  @override
+  String cmdAdmitted(String person) {
+    return '$person is admitted. Their instance adds them.';
+  }
+
+  @override
+  String get cmdAdmitNotYours =>
+      'This is a private channel on a hub: only its moderators and managers admit people. Ask one of them, or give the person its join code.';
 }

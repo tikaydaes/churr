@@ -65,7 +65,7 @@ class ChannelSettingsController extends ChangeNotifier {
   /// Reads the bans again, when the reader may see them.
   Future<void> loadBans() async {
     final c = conversation;
-    if (c == null || c.isSealed || !manager) {
+    if (c == null || c.isSealed || !keeper) {
       bans = const [];
       _changed();
       return;
@@ -92,9 +92,10 @@ class ChannelSettingsController extends ChangeNotifier {
   Future<void> loadMembers() async {
     try {
       final c = conversation;
-      // An announcement channel shows who is in it to its managers only:
-      // the list is not asked for, since the server would refuse it.
-      if (c != null && !showsMembers(c, manager: actions.actsAsManager(c))) {
+      // An announcement channel shows who is in it to its moderators and
+      // managers only: the list is not asked for, since the server would
+      // refuse it.
+      if (c != null && !showsMembers(c, keeper: actions.keepsPeace(c))) {
         members = const [];
         groups = const [];
         error = null;
@@ -133,6 +134,10 @@ class ChannelSettingsController extends ChangeNotifier {
 
   bool get manager =>
       conversation != null && actions.actsAsManager(conversation!);
+
+  /// A moderator or a manager here (ruling R99): adds people at the
+  /// default level, removes, bans and lifts bans, sets slow mode, locks.
+  bool get keeper => conversation != null && actions.keepsPeace(conversation!);
 
   /// In through a group only: such a person cannot leave on their own.
   bool get inThroughGroupOnly =>

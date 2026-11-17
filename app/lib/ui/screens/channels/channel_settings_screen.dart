@@ -6,6 +6,7 @@ import '../../../core/conversation/large.dart';
 import '../../../core/api/channels.dart';
 import '../../../core/api/hubs.dart' show HubsApi, MemberAction;
 import '../../../core/models/json.dart' show object;
+import '../../../core/models/account.dart';
 import '../../../core/models/conversation.dart';
 import '../../../state/app_state.dart';
 import '../../../state/channel_actions.dart';
@@ -59,8 +60,41 @@ Future<void> openChannelSettings(
 Map<String, String> _levels(L10n t) => {
   'reader': t.levelReader,
   'member': t.levelMember,
+  'moderator': t.levelModerator,
   'manager': t.levelManager,
 };
+
+/// Whether [a] may hold moderator or manager at all (ruling R99): a guest
+/// is a guest in every channel, and someone on another server is never
+/// one here.
+bool _mayKeep(Account? a) =>
+    a == null ||
+    (a.role != 'guest' && a.role != 'remote' && a.serverName == null);
+
+/// What a member's line says of their level: a guest account is a Guest in
+/// every channel, at reader or member.
+String _levelLabel(L10n t, Member m, Account? a) {
+  final level = _levels(t)[m.level] ?? m.level;
+  if (a?.role != 'guest') return level;
+  return m.level == 'reader' ? '${t.levelGuest} · $level' : t.levelGuest;
+}
+
+/// The member menu's target rule (ruling R99): nobody acts on an owner of
+/// the instance or on themselves, and a moderator does not remove, ban or
+/// time out a moderator or a manager.
+bool mayActOn({
+  required bool manager,
+  required String? myId,
+  required Member target,
+  Account? account,
+}) {
+  if (target.accountId == myId) return false;
+  if (account?.role == 'owner') return false;
+  if (!manager && (target.level == 'moderator' || target.level == 'manager')) {
+    return false;
+  }
+  return true;
+}
 
 Map<int, String> _slowModes(L10n t) => {
   0: t.off,
@@ -711,6 +745,7 @@ class _AboutState extends State<_About> {
           _slowModes(L10n.of(context)).containsKey(slow) ? slow : 0,
           _slowModes(L10n.of(context)),
           (v) => setState(() => slow = v),
+          key: const Key('settings-slow-mode'),
         ),
         _dropdown<String>(
           L10n.of(context).broadMentionsSetting,
@@ -798,6 +833,25 @@ class _AboutState extends State<_About> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(conv.raw['welcome'] as String),
           ),
+        // A moderator keeps the peace: slow mode is theirs too.
+        if (ctl.keeper) ...[
+          _dropdown<int>(
+            L10n.of(context).slowMode,
+            _slowModes(L10n.of(context)).containsKey(slow) ? slow : 0,
+            _slowModes(L10n.of(context)),
+            (v) => setState(() => slow = v),
+            key: const Key('settings-slow-mode'),
+          ),
+          if (error != null) Text(error!, style: TextStyle(color: c.pink)),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              key: const Key('settings-save'),
+              onPressed: busy ? null : _save,
+              child: Text(L10n.of(context).save),
+            ),
+          ),
+        ],
         const Divider(height: 24),
       ]);
     }
@@ -898,12 +952,13 @@ class _AboutState extends State<_About> {
         ),
       );
     }
-    // Lock: managers of a private channel, named or ad-hoc (R2, R44).
+    // Lock: moderators and managers of a private channel, named or
+    // ad-hoc (R2, R44, R99).
     if (conv.private &&
         !conv.isLocked &&
         !conv.isArchived &&
         !conv.shared &&
-        conv.membership?.level == 'manager') {
+        ctl.keeper) {
       rows.add(
         ListTile(
           key: const Key('settings-lock'),
@@ -1029,7 +1084,9 @@ class _Members extends StatelessWidget {
       child: StatefulBuilder(
         builder: (context, set) => Column(
           children: [
-            if (conv.isNamed)
+            // Choosing the level is the managers'; a moderator adds at
+            // the channel's default level.
+            if (conv.isNamed && controller.manager)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Row(
@@ -1066,7 +1123,7 @@ class _Members extends StatelessWidget {
                   await controller.actions.addMembers(
                     conv.id,
                     ids,
-                    level: conv.isNamed ? level : null,
+                    level: conv.isNamed && controller.manager ? level : null,
                   );
                   await controller.loadMembers();
                   return true;
@@ -1237,13 +1294,86 @@ class _Members extends StatelessWidget {
     if (context.mounted && err != null) say(context, refusal(err));
   }
 
+  /// A member's menu, or null when the reader can do nothing to them:
+  /// levels for managers (moderator and manager only for people of this
+  /// instance who are not guests; none in a channel a hub owns, whose
+  /// lists decide), who posts in an announcement channel, and removing
+  /// and banning by the target rule ([mayActOn]).
+  Widget? _menuFor(
+    BuildContext context,
+    Member m, {
+    required bool manager,
+    required bool keeper,
+    required bool hub,
+    required bool hubKeeper,
+    required Map<String, String> levels,
+  }) {
+    if (conv.isAdHoc || m.accountId == s.me?.id) return null;
+    final t = L10n.of(context);
+    final account = s.accounts[m.accountId];
+    final acts = mayActOn(
+      manager: manager,
+      myId: s.me?.id,
+      target: m,
+      account: account,
+    );
+    final items = <PopupMenuEntry<String>>[
+      // A hub's moderators and managers keep their level here.
+      if (manager && (!hub || (m.level != 'manager' && m.level != 'moderator')))
+        for (final e in levels.entries)
+          if (e.key != (m.directLevel ?? '') &&
+              (_mayKeep(account) ||
+                  (e.key != 'moderator' && e.key != 'manager')))
+            PopupMenuItem(
+              key: Key('member-level-${e.key}-${m.accountId}'),
+              value: e.key,
+              child: Text(t.makeLevel(e.value.toLowerCase())),
+            ),
+      // Who posts in an announcement channel besides its managers.
+      if (manager && isAnnouncement(conv) && m.level == 'member')
+        PopupMenuItem(
+          value: 'may-post',
+          child: Text(m.mayPost ? t.mayNotPostHere : t.mayPostHere),
+        ),
+      if (hub && hubKeeper && account?.role != 'owner')
+        PopupMenuItem(
+          key: Key('member-hub-remove-${m.accountId}'),
+          value: 'hub-remove',
+          child: Text(t.hubRemoveMember),
+        )
+      else if (keeper && acts)
+        PopupMenuItem(
+          key: Key('member-remove-${m.accountId}'),
+          value: 'remove',
+          child: Text(t.remove),
+        ),
+      // A channel ban (ruling R72); none in a shared channel yet.
+      if (keeper && acts && !conv.shared)
+        PopupMenuItem(
+          key: Key('member-ban-${m.accountId}'),
+          value: 'ban',
+          child: Text(t.banFromChannel),
+        ),
+    ];
+    if (items.isEmpty) return null;
+    return PopupMenuButton<String>(
+      popUpAnimationStyle: AnimationStyle.noAnimation,
+      key: Key('member-menu-${m.accountId}'),
+      icon: const Glyph(ChurrIcons.moreV, size: 18),
+      tooltip: t.memberOptions,
+      onSelected: (v) => _memberMenu(context, m, v),
+      itemBuilder: (_) => items,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = ChurrColors.of(context);
     final mgr = controller.manager;
+    final keeper = controller.keeper;
     final members = [...?controller.members]
       ..sort((a, b) {
-        const rank = {'manager': 0, 'member': 1, 'reader': 2};
+        const rank = {'manager': 0, 'moderator': 1, 'member': 2, 'reader': 3};
         final r = (rank[a.level] ?? 3).compareTo(rank[b.level] ?? 3);
         if (r != 0) return r;
         return foldName(s.accounts[a.accountId]?.name ?? '')
@@ -1253,17 +1383,19 @@ class _Members extends StatelessWidget {
     // whether it is private, where only they admit people.
     final hub = s.hubChannels[conv.id];
     final privateHub = hub?.private ?? false;
-    final keeper = s.keepsHubPeace(conv.id);
+    final hubKeeper = s.keepsHubPeace(conv.id);
     final open = !conv.isLocked && !conv.isArchived && !conv.isSealed;
-    final canAdd = (mgr || conv.isAdHoc) && open && !privateHub;
-    final hubAdd = privateHub && keeper && open && _streamId != null;
-    // Its manager level follows the hub's manager list.
+    final canAdd = (keeper || conv.isAdHoc) && open && !privateHub;
+    final hubAdd = privateHub && hubKeeper && open && _streamId != null;
+    // Its moderator and manager levels follow the hub's lists.
     final levels = {
       for (final e in _levels(L10n.of(context)).entries)
-        if (hub == null || e.key != 'manager') e.key: e.value,
+        if (hub == null || (e.key != 'manager' && e.key != 'moderator'))
+          e.key: e.value,
     };
-    // An announcement channel shows who is in it to its managers only.
-    if (!showsMembers(conv, manager: mgr)) {
+    // An announcement channel shows who is in it to its moderators and
+    // managers only.
+    if (!showsMembers(conv, keeper: keeper)) {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Text(
@@ -1436,7 +1568,7 @@ class _Members extends StatelessWidget {
             ),
             subtitle: Text(
               [
-                _levels(L10n.of(context))[m.level] ?? m.level,
+                _levelLabel(L10n.of(context), m, s.accounts[m.accountId]),
                 if (isAnnouncement(conv) && m.mayPost && m.level == 'member')
                   L10n.of(context).mayPostTag,
                 if (m.viaGroup)
@@ -1445,63 +1577,17 @@ class _Members extends StatelessWidget {
                       : L10n.of(context).alsoThroughGroup,
               ].join(' · '),
             ),
-            trailing:
-                (mgr || (hub != null && keeper)) &&
-                    m.accountId != s.me?.id &&
-                    !conv.isAdHoc
-                ? PopupMenuButton<String>(
-                    popUpAnimationStyle: AnimationStyle.noAnimation,
-                    key: Key('member-menu-${m.accountId}'),
-                    icon: const Glyph(ChurrIcons.moreV, size: 18),
-                    tooltip: L10n.of(context).memberOptions,
-                    onSelected: (v) => _memberMenu(context, m, v),
-                    itemBuilder: (_) => [
-                      // A hub's manager keeps the manager level here.
-                      if (mgr && (hub == null || m.level != 'manager'))
-                        for (final e in levels.entries)
-                          if (e.key != (m.directLevel ?? ''))
-                            PopupMenuItem(
-                              value: e.key,
-                              child: Text(
-                                L10n.of(context)
-                                    .makeLevel(e.value.toLowerCase()),
-                              ),
-                            ),
-                      // Who posts in an announcement channel besides
-                      // its managers.
-                      if (mgr && isAnnouncement(conv) && m.level == 'member')
-                        PopupMenuItem(
-                          value: 'may-post',
-                          child: Text(
-                            m.mayPost
-                                ? L10n.of(context).mayNotPostHere
-                                : L10n.of(context).mayPostHere,
-                          ),
-                        ),
-                      if (hub != null && keeper)
-                        PopupMenuItem(
-                          key: Key('member-hub-remove-${m.accountId}'),
-                          value: 'hub-remove',
-                          child: Text(L10n.of(context).hubRemoveMember),
-                        )
-                      else
-                        PopupMenuItem(
-                          value: 'remove',
-                          child: Text(L10n.of(context).remove),
-                        ),
-                      // A channel ban (ruling R72); none in a shared
-                      // channel yet.
-                      if (mgr && !conv.shared)
-                        PopupMenuItem(
-                          key: Key('member-ban-${m.accountId}'),
-                          value: 'ban',
-                          child: Text(L10n.of(context).banFromChannel),
-                        ),
-                    ],
-                  )
-                : null,
+            trailing: _menuFor(
+              context,
+              m,
+              manager: mgr,
+              keeper: keeper,
+              hub: hub != null,
+              hubKeeper: hubKeeper,
+              levels: levels,
+            ),
           ),
-        if (mgr && (controller.bans ?? const []).isNotEmpty) ...[
+        if (keeper && (controller.bans ?? const []).isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Text(

@@ -5,7 +5,9 @@ import '../sealed/new_sealed_chat.dart';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/api/approvals.dart';
 import '../../../core/api/channels.dart';
+import '../../../core/api/errors.dart';
 import '../../../core/models/conversation.dart';
 import '../../../state/app_state.dart';
 import '../../../state/channel_actions.dart';
@@ -107,6 +109,11 @@ class NewChannelForm extends StatefulWidget {
 class _NewChannelFormState extends State<NewChannelForm> {
   final name = TextEditingController();
   final topic = TextEditingController();
+
+  /// The note for whoever decides, once the server said new channels
+  /// here wait for approval (`approval_required`).
+  final note = TextEditingController();
+  bool needsApproval = false;
   bool private = false;
   bool announcement = false;
   String? sectionId;
@@ -122,6 +129,7 @@ class _NewChannelFormState extends State<NewChannelForm> {
   void dispose() {
     name.dispose();
     topic.dispose();
+    note.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -189,6 +197,57 @@ class _NewChannelFormState extends State<NewChannelForm> {
       if (!mounted) return;
       Navigator.of(context).maybePop();
       widget.app.openConversation(OpenTarget(s.localId, c.id));
+    } on ApiException catch (e) {
+      // New channels wait for approval here: the form offers to ask.
+      if (e.code == 'approval_required') {
+        if (mounted) {
+          setState(() {
+            busy = false;
+            needsApproval = true;
+            error = null;
+          });
+        }
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          busy = false;
+          error = refusal(e);
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          busy = false;
+          error = refusal(e);
+        });
+      }
+    }
+  }
+
+  /// Asks for the channel as the form describes it (`requestChannel`),
+  /// and says it was sent.
+  Future<void> _ask() async {
+    final n = name.text;
+    final problem = checkChannelName(n);
+    if (problem != null) {
+      setState(() => error = problem);
+      return;
+    }
+    setState(() => busy = true);
+    try {
+      final t = topic.text.trim();
+      await s.api.requestChannel({
+        'name': n,
+        'private': private,
+        if (t.isNotEmpty) 'topic': t,
+        if (parentId == null) 'section_id': ?sectionId,
+        'parent_id': ?parentId,
+        if (announcement) 'announcement': true,
+      }, note: note.text.trim());
+      if (!mounted) return;
+      say(context, L10n.of(context).channelRequestSent(n));
+      Navigator.of(context).maybePop();
     } on Exception catch (e) {
       if (mounted) {
         setState(() {
@@ -320,14 +379,40 @@ class _NewChannelFormState extends State<NewChannelForm> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(error!, style: TextStyle(color: c.pink)),
           ),
+        if (needsApproval) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              L10n.of(context).channelNeedsApproval,
+              key: const Key('channel-needs-approval'),
+              style: TextStyle(color: c.yellowInk),
+            ),
+          ),
+          TextField(
+            key: const Key('channel-approval-note'),
+            controller: note,
+            maxLength: 500,
+            minLines: 1,
+            maxLines: 4,
+            decoration: InputDecoration(
+              labelText: L10n.of(context).approvalNoteLabel,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Align(
           alignment: Alignment.centerRight,
-          child: FilledButton(
-            key: const Key('channel-create'),
-            onPressed: busy ? null : _create,
-            child: Text(L10n.of(context).create),
-          ),
+          child: needsApproval
+              ? FilledButton(
+                  key: const Key('channel-ask-approval'),
+                  onPressed: busy ? null : _ask,
+                  child: Text(L10n.of(context).askForApproval),
+                )
+              : FilledButton(
+                  key: const Key('channel-create'),
+                  onPressed: busy ? null : _create,
+                  child: Text(L10n.of(context).create),
+                ),
         ),
       ],
     );

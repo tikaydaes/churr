@@ -887,6 +887,25 @@ abstract final class Ops {
     'POST',
     '/api/v1/me/chat-requests/{id}/block',
   );
+  // Approvals (docs/FEATURES.md section 31): the requests that wait for
+  // whoever may decide them, and asking for a channel while new channels
+  // wait for approval.
+  static const getApprovalSummary = Op(
+    'getApprovalSummary',
+    'GET',
+    '/api/v1/approvals/summary',
+  );
+  static const listApprovals = Op('listApprovals', 'GET', '/api/v1/approvals');
+  static const decideApproval = Op(
+    'decideApproval',
+    'POST',
+    '/api/v1/approvals/{kind}/{id}',
+  );
+  static const requestChannel = Op(
+    'requestChannel',
+    'POST',
+    '/api/v1/approvals/channels',
+  );
   static const listScheduled = Op('listScheduled', 'GET', '/api/v1/scheduled');
   static const cancelScheduled = Op(
     'cancelScheduled',
@@ -974,6 +993,10 @@ abstract final class Ops {
     declineChatRequest,
     dismissChatRequest,
     blockChatRequester,
+    getApprovalSummary,
+    listApprovals,
+    decideApproval,
+    requestChannel,
     listScheduled,
     cancelScheduled,
     updateScheduled,

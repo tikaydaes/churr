@@ -690,7 +690,12 @@ class SyncEngine implements LiveDelegate {
           // ServerState and the hosts that show them, not stored.
           'server.broadcast' ||
           'knock.created' ||
-          'knock.answered':
+          'knock.answered' ||
+          // Approvals (FEATURES.md section 31): the count is held by
+          // ServerState, the list by the approvals screen.
+          'approval.created' ||
+          'approval.decided' ||
+          'approvals.changed':
         _local.add(e);
 
       case 'message.sent':

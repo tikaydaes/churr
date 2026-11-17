@@ -58,8 +58,20 @@ class HubChannelController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  StreamSubscription<Json>? _knocks;
+
   Future<void> start() async {
     server.addListener(_onServer);
+    // A request to join that arrives from another instance is told to
+    // this instance's moderators and managers on the lists live
+    // (`knock.created`): the list is read again.
+    _knocks = server.sync.localEvents.listen((e) {
+      if (e['type'] != 'knock.created' && e['type'] != 'knock.answered') {
+        return;
+      }
+      if (object(e['knock'])?['conversation_id'] != conversationId) return;
+      if ((channel?.private ?? false) && keepsPeace) unawaited(loadRequests());
+    });
     await load();
   }
 
@@ -177,6 +189,7 @@ class HubChannelController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     server.removeListener(_onServer);
+    _knocks?.cancel();
     super.dispose();
   }
 }

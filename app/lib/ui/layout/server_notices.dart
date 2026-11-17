@@ -15,7 +15,7 @@ import '../theme/tokens.dart';
 /// What a server tells everyone, or one person, outside any conversation
 /// (ruling R74): the server broadcast, drawn as a banner above everything
 /// until it runs out or is dismissed, and the answer to a request to join a
-/// channel (`/knock`), said once.
+/// channel (`/knock`) or to a request for a channel, said once.
 class ServerNoticesHost extends StatefulWidget {
   const ServerNoticesHost({super.key, required this.app, required this.child});
   final AppState app;
@@ -70,7 +70,12 @@ class _ServerNoticesHostState extends State<ServerNoticesHost> {
   }
 
   void _onEvent(ServerState server, Json e) {
-    if (e['type'] != 'knock.answered' || !mounted) return;
+    if (!mounted) return;
+    if (e['type'] == 'approval.decided') {
+      _decided(server, object(e['approval']));
+      return;
+    }
+    if (e['type'] != 'knock.answered') return;
     final k = object(e['knock']);
     if (k == null || k['account_id'] != server.me?.id) return;
     final t = L10n.of(context);
@@ -80,6 +85,29 @@ class _ServerNoticesHostState extends State<ServerNoticesHost> {
       k['outcome'] == 'accepted'
           ? t.knockAccepted(where)
           : t.knockDeclined(where),
+    );
+  }
+
+  /// The answer to the person's own request for a channel (FEATURES.md
+  /// section 31). What deciders are sent names who decided; what the one
+  /// who asked is sent does not, and only that is said.
+  void _decided(ServerState server, Json? a) {
+    if (a == null ||
+        a['kind'] != 'channel' ||
+        a['requester_id'] != server.me?.id ||
+        (a['decided_by_id'] as String? ?? '').isNotEmpty) {
+      return;
+    }
+    final t = L10n.of(context);
+    final where = '#${a['summary'] ?? ''}';
+    final reason = a['reason'] as String? ?? '';
+    say(
+      context,
+      a['state'] == 'approved'
+          ? t.channelRequestApproved(where)
+          : reason.isEmpty
+          ? t.channelRequestDeclined(where)
+          : t.channelRequestDeclinedReason(where, reason),
     );
   }
 

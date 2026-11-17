@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/api/approvals.dart';
 import '../core/db/cache_db.dart';
 import '../core/live.dart';
 import '../core/models/chat_request.dart';
@@ -267,6 +268,18 @@ class NotifyCenter extends ChangeNotifier {
       if (r != null) unawaited(_considerRequest(s, ChatRequest.fromJson(r)));
       return;
     }
+    if (e['type'] == 'approval.created') {
+      final a = object(e['approval']);
+      if (a != null) unawaited(_considerApproval(s, Approval(a)));
+      return;
+    }
+    if (e['type'] == 'knock.created') {
+      final k = object(e['knock']);
+      if (k != null) {
+        unawaited(_considerKnock(s, k, e['conversation_name'] as String?));
+      }
+      return;
+    }
     if (e['type'] != 'local.notify') return;
     final raw = object(e['message']);
     if (raw == null) return;
@@ -369,6 +382,105 @@ class NotifyCenter extends ChangeNotifier {
     );
     return verdict;
   }
+
+  /// The verdict for something addressed to the person alone (a chat
+  /// request, a request for approval, a request to join): the person's
+  /// own switches apply, as for a mention.
+  NotifyVerdict _personal(
+    ServerState s,
+    DateTime? at, {
+    bool onScreen = false,
+  }) => decide(
+    NotifyInputs(
+      notify: 'notify',
+      messageAt: at ?? _now(),
+      now: _now(),
+      own: false,
+      notificationsOn: app.prefs.notificationsOn,
+      serverMuted: app.prefs.isServerMuted(s.entry.address, _now()),
+      dnd: s.me?.dndOn ?? false,
+      windowInFront: windowInFront,
+      conversationOnScreen: onScreen,
+    ),
+  );
+
+  /// A new request for the person to approve (FEATURES.md section 31):
+  /// who asks and what for. It opens nothing; the Approvals entry lists
+  /// it.
+  Future<NotifyVerdict> _considerApproval(ServerState s, Approval a) async {
+    final verdict = _personal(s, a.createdAt);
+    if (verdict != NotifyVerdict.show) return verdict;
+    final who = s.accounts[a.requesterId] ?? a.requester;
+    await notifier.show(
+      ShownNotification(
+        key: 'approval:${s.localId}:${a.id}',
+        text: NotificationText(
+          sender: who?.name ?? a.summary,
+          kind: BodyKind.approval,
+          text: a.summary,
+          server: app.servers.length > 1 ? s.name : null,
+        ),
+        channel: NotifyChannel.direct,
+        payload: '',
+        sound: app.prefs.notificationSounds,
+      ),
+    );
+    return verdict;
+  }
+
+  /// A request to join a channel the person moderates or manages (rulings
+  /// R74, R99): who asks and where. It opens the channel, whose bar lists
+  /// the requests; nothing is shown while that channel is on screen.
+  Future<NotifyVerdict> _considerKnock(
+    ServerState s,
+    Json k,
+    String? channelName,
+  ) async {
+    final cid = k['conversation_id'] as String? ?? '';
+    final open = app.open;
+    final verdict = _personal(
+      s,
+      parseTime(k['created_at']),
+      onScreen:
+          open != null &&
+          open.serverId == s.localId &&
+          open.conversationId == cid,
+    );
+    if (verdict != NotifyVerdict.show) return verdict;
+    final who = s.accounts[k['account_id']];
+    await notifier.show(
+      ShownNotification(
+        key: 'knock:${s.localId}:$cid:${k['account_id']}',
+        text: NotificationText(
+          sender: who?.name ?? '…',
+          kind: BodyKind.knock,
+          channel: channelName ?? s.conversation(cid)?.name,
+          server: app.servers.length > 1 ? s.name : null,
+        ),
+        channel: NotifyChannel.direct,
+        payload: cid.isEmpty
+            ? ''
+            : TapTarget(serverLocalId: s.localId, conversationId: cid).encode(),
+        sound: app.prefs.notificationSounds,
+      ),
+    );
+    return verdict;
+  }
+
+  /// For tests: runs the decision for a request for approval as if its
+  /// event had arrived.
+  @visibleForTesting
+  Future<NotifyVerdict> considerApprovalForTest(ServerState s, Approval a) =>
+      _considerApproval(s, a);
+
+  /// For tests: runs the decision for a request to join as if its event
+  /// had arrived.
+  @visibleForTesting
+  Future<NotifyVerdict> considerKnockForTest(
+    ServerState s,
+    Json knock, {
+    String? channelName,
+  }) => _considerKnock(s, knock, channelName);
 
   /// For tests: runs the decision for a request as if its event had
   /// arrived marked `notify`.
