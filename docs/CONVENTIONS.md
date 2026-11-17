@@ -97,7 +97,7 @@ disagrees with this one, this one is right and the other needs fixing.
 |--------|---------------------------------------------------------------|
 | 400    | `invalid_request` (malformed), `invalid_value` (with `field`) |
 | 401    | `unauthenticated`, `second_factor_required`, `session_locked` (the session is locked: only unlocking and signing out are answered, `AUTH.md` section 10.6) |
-| 403    | `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, `fresh_check_required` (a passkey or authenticator check is needed first) |
+| 403    | `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, `fresh_check_required` (a passkey or authenticator check is needed first), `approval_required` (this is approved first: ask for it in the approvals queue instead, `FEATURES.md` section 31), `approval_pending` (the account waits for its registration to be approved and cannot sign in yet) |
 | 404    | `not_found`. Also returned for things that exist and that the caller may not know exist |
 | 409    | `conflict`, `name_taken` (usernames, group handles, emoji and command names, and reserved names; never for a channel name, since those need not be unique), `already_exists` |
 | 413    | `too_large`                                                   |

@@ -7,6 +7,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/tikaydaes/churr/internal/approvals"
 	"io"
 	"log/slog"
 	"net"
@@ -122,9 +123,11 @@ type Server struct {
 	Link *link.Service
 	// Mod, Previews and Janitor are moderation, link previews and the
 	// hourly clean-up (chatmore.go).
-	Mod      *mod.Service
-	Previews *preview.Service
-	Janitor  *janitor.Janitor
+	Mod *mod.Service
+	// Approvals is the instance's approvals queue.
+	Approvals *approvals.Service
+	Previews  *preview.Service
+	Janitor   *janitor.Janitor
 	// Sealed is what the server keeps for sealed chats; Push is devices
 	// and phone wake-ups (sealed.go).
 	Sealed *sealed.Service
@@ -259,6 +262,10 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 	s.API.Calls, s.API.Overview.Calls = s.Calls, overviewCalls{s.Calls}
 	s.API.Link, s.API.Overview.Links = s.Link, s.Link
 	s.API.Mod, s.API.Janitor, s.API.Storage = s.Mod, s.Janitor, s
+	// The approvals queue, with its kinds (docs/FEATURES.md section 31).
+	s.Approvals = approvals.New(s.Store, s.Live, s.Log)
+	s.Approvals.RegisterBuiltin(s.Chat, s.Bots)
+	s.API.Approvals = s.Approvals
 	// The pages sign-in draws itself: approving an app, the return from
 	// company sign-in.
 	s.API.Pages = web.NewPages()

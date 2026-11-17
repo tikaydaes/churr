@@ -25,9 +25,7 @@ func init() {
 		a.handle("adminGetChannel", a.adminGetChannel)
 		a.handle("adminUpdateChannel", a.adminUpdateChannel)
 		a.handle("appointManager", a.appointManager)
-		a.handle("adminArchiveChannel", a.adminArchiveChannel)
-		a.handle("adminUnarchiveChannel", a.adminUnarchiveChannel)
-		a.handle("adminLockChannel", a.adminLockChannel)
+		a.handle("ownerOverrideAdd", a.ownerOverrideAdd)
 		a.handle("adminListEmoji", a.adminListEmoji)
 		a.handle("renameEmoji", a.renameEmoji)
 		a.handle("adminDeleteEmoji", a.adminDeleteEmoji)
@@ -156,38 +154,31 @@ func (a *API) appointManager(r *Request) error {
 	if err != nil {
 		return err
 	}
-	m, err := a.Chat.AppointManager(r.Ctx(), r.Actor(), id, account)
+	var body struct {
+		Override bool `json:"override"`
+	}
+	if r.R.ContentLength != 0 {
+		if err := r.Decode(&body); err != nil {
+			return err
+		}
+	}
+	m, err := a.Chat.AppointManager(r.Ctx(), r.Actor(), id, account, body.Override)
 	if err != nil {
 		return err
 	}
 	return r.JSON(map[string]any{"member": m})
 }
 
-func (a *API) adminArchive(r *Request, archived bool) error {
-	id, err := PathID[model.ConversationID](r, "id")
+func (a *API) ownerOverrideAdd(r *Request) error {
+	id, account, err := memberPath(r)
 	if err != nil {
 		return err
 	}
-	channel, err := a.Chat.AdminArchive(r.Ctx(), r.Actor(), id, archived)
+	m, err := a.Chat.OverrideAdd(r.Ctx(), r.Actor(), id, account)
 	if err != nil {
 		return err
 	}
-	return r.JSON(map[string]any{"channel": channel})
-}
-
-func (a *API) adminArchiveChannel(r *Request) error   { return a.adminArchive(r, true) }
-func (a *API) adminUnarchiveChannel(r *Request) error { return a.adminArchive(r, false) }
-
-func (a *API) adminLockChannel(r *Request) error {
-	id, err := PathID[model.ConversationID](r, "id")
-	if err != nil {
-		return err
-	}
-	channel, err := a.Chat.AdminLock(r.Ctx(), r.Actor(), id)
-	if err != nil {
-		return err
-	}
-	return r.JSON(map[string]any{"channel": channel})
+	return r.JSON(map[string]any{"member": m})
 }
 
 func (a *API) adminListEmoji(r *Request) error {

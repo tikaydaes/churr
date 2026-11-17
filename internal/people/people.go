@@ -390,12 +390,26 @@ func (s *Service) CreateInvite(ctx context.Context, actor model.Account, in NewI
 		}
 	}
 	for _, c := range in.ConversationIDs {
-		st, err := s.perm.Can(ctx, actor, perm.AddAccount, c)
+		// A public channel is anyone's on this instance, and an admin's
+		// invite may carry it; a private one only someone who may let
+		// people into it (its moderators and managers) may name.
+		st, err := s.perm.Can(ctx, actor, perm.See, c)
 		if err != nil {
+			return inv, err
+		}
+		if !st.Conversation.Public() {
+			if err := perm.Check(st, perm.AddAccount); err != nil {
+				return inv, err
+			}
+		} else if err := perm.Check(st, perm.Join); err != nil && model.CodeOf(err) != model.CodeForbidden {
 			return inv, err
 		}
 		if !st.Conversation.Named() {
 			return inv, model.Invalid("conversation_ids", "An invite can name named channels only.")
+		}
+		if in.Role == model.RoleGuest && st.Conversation.IsShared() {
+			// Ruling R99: a guest is never in a shared channel.
+			return inv, model.Invalid("conversation_ids", "A guest cannot be in a channel shared with other servers.")
 		}
 	}
 	inv.Code = secret.NewInviteCode()

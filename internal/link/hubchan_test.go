@@ -454,9 +454,8 @@ func TestManagersChangeTheRecord(t *testing.T) {
 // hubOf is the hub of a shared fixture, for the operator's commands.
 func hubOf(s *shared) *hub.Hub { return s.Hub.Hub }
 
-// A moderator deletes any message in the channel for everyone, from their
-// own server, with no manager level there; a manager who is not a moderator
-// deletes only for their own server.
+// A manager deletes any message in the channel for everyone, from their
+// own server; an owner on neither list deletes none.
 func TestManagerDeletesForEveryone(t *testing.T) {
 	s := share(t, 3, true, nil)
 	a, b, c := s.Servers[0], s.Servers[1], s.Servers[2]
@@ -481,12 +480,14 @@ func TestManagerDeletesForEveryone(t *testing.T) {
 	testkit.Eventually(t, "b holds the record that names mo", func() bool {
 		return mo.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] == true
 	})
-	// Now she can, and her level has not changed.
+	// Now she can, and her level in b's copy follows the hub's list
+	// (section 14.1).
 	mo.Must(200, "DELETE", "/api/v1/messages/"+fromA["id"].(string), nil)
 	mo.Must(200, "DELETE", "/api/v1/messages/"+fromC["id"].(string), nil)
-	if member, _, _ = b.Server.Store.Members().Get(ctx, model.ConversationID(s.conv[1]), mo.ID); member.Level != model.LevelMember {
-		t.Fatalf("mo's level on b became %q", member.Level)
-	}
+	testkit.Eventually(t, "mo manages b's copy", func() bool {
+		member, _, _ = b.Server.Store.Members().Get(ctx, model.ConversationID(s.conv[1]), mo.ID)
+		return member.Level == model.LevelManager
+	})
 	for i, ts := range s.Servers {
 		for _, id := range []any{fromA["id"], fromC["id"]} {
 			testkit.Eventually(t, "the removal reaches "+testkit.ServerName(i), func() bool {
@@ -495,19 +496,14 @@ func TestManagerDeletesForEveryone(t *testing.T) {
 			})
 		}
 	}
-	// A manager of b's copy who is not a moderator hides a message on b,
-	// and nowhere else: local levels have no authority on other servers.
+	// b's owner is on neither list, and so no manager of b's copy: an
+	// owner is no manager by being one (ruling R99), and nobody is made
+	// one there but by the hub's list.
 	lee := b.Owner
 	if lee.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] != false {
-		t.Fatal("b's owner is a moderator")
+		t.Fatal("b's owner is a manager")
 	}
-	lee.Must(200, "DELETE", "/api/v1/messages/"+kept["id"].(string), nil)
-	s.settle("after the local delete")
-	for _, i := range []int{0, 2} {
-		if m, err := s.Servers[i].Server.Store.Messages().Get(ctx, model.MessageID(kept["id"].(string))); err != nil || m.Deleted() {
-			t.Fatalf("a local manager's delete reached %s: %v %v", testkit.ServerName(i), m.DeletedAt, err)
-		}
-	}
+	lee.Refused(403, model.CodeForbidden, "DELETE", "/api/v1/messages/"+kept["id"].(string), nil)
 	// Dismissed, she cannot any more.
 	another := s.ann.Post(s.conv[0], "after mo was dismissed")
 	b.Owner.HasMessage(s.conv[1], "after mo was dismissed")

@@ -148,20 +148,22 @@ func TestNextPostSeesARoleChange(t *testing.T) {
 	ts := testkit.NewServer(t)
 	owner := ts.Owner
 	adm := ts.Admin("adm")
-	// Only managers and admins post in an announcement channel.
+	// Only managers post in an announcement channel. A guest account is a
+	// guest in every channel and never one of its managers (ruling R99).
 	news := owner.Must(201, "POST", "/api/v1/channels", map[string]any{"name": "news", "private": false, "announcement": true,
 		"account_ids": []string{string(adm.ID)}})["conversation"].(map[string]any)["id"].(string)
+	owner.Must(200, "PATCH", convPath(news)+"/members/"+string(adm.ID), map[string]any{"level": "manager"})
 	role := "/api/v1/admin/accounts/" + string(adm.ID) + "/role"
-	say(adm, news, "as an admin")
+	say(adm, news, "as a manager")
 	adm.Must(200, "GET", "/api/v1/admin/word-filters", nil)
-	owner.Must(200, "PUT", role, map[string]any{"role": "member"})
-	refusedPost(adm, 403, model.CodeForbidden, news, "as a member")
+	owner.Must(200, "PUT", role, map[string]any{"role": "guest"})
+	refusedPost(adm, 403, model.CodeForbidden, news, "as a guest")
 	adm.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/word-filters", nil)
-	if got := at(adm.Must(200, "GET", "/api/v1/me", nil), "account")["role"]; got != "member" {
+	if got := at(adm.Must(200, "GET", "/api/v1/me", nil), "account")["role"]; got != "guest" {
 		t.Fatalf("the account still reads its old role: %v", got)
 	}
 	owner.Must(200, "PUT", role, map[string]any{"role": "admin"})
-	say(adm, news, "as an admin again")
+	say(adm, news, "a manager again")
 }
 
 func TestNextPostSeesABanAndASignOut(t *testing.T) {

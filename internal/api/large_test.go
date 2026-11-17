@@ -52,11 +52,10 @@ func TestAnnouncementChannel(t *testing.T) {
 	owner.Add(room, "member", bot)
 	post := convPath(room) + "/messages"
 
-	// Its managers and the admins post; nobody else does.
+	// Its managers post; nobody else does, an admin neither (ruling R99).
 	first := say(manager, room, "an announcement")["message"].(map[string]any)["id"].(string)
-	say(admin, room, "from an admin")
-	say(owner, room, "from the owner")
-	for name, c := range map[string]*testkit.Client{"member": member, "guest": guest, "bot": bot, "allowed": allowed} {
+	say(owner, room, "from the owner, its first manager")
+	for name, c := range map[string]*testkit.Client{"member": member, "guest": guest, "bot": bot, "allowed": allowed, "admin": admin} {
 		c.Refused(403, model.CodeForbidden, "POST", post, map[string]any{"text": "hello from " + name})
 		// Replies are off until a manager turns them on.
 		c.Refused(403, model.CodeForbidden, "POST", post, map[string]any{"text": "a reply", "parent_id": first})
@@ -69,7 +68,7 @@ func TestAnnouncementChannel(t *testing.T) {
 			t.Fatalf("%s sees %v", name, conv)
 		}
 	}
-	for name, c := range map[string]*testkit.Client{"manager": manager, "admin": admin, "owner": owner} {
+	for name, c := range map[string]*testkit.Client{"manager": manager, "owner": owner} {
 		if got := c.Must(200, "GET", convPath(room)+"/members", nil)["members"].([]any); len(got) != 7 {
 			t.Fatalf("%s is shown %d members", name, len(got))
 		}
@@ -125,8 +124,9 @@ func TestAnnouncementChannel(t *testing.T) {
 	}
 	say(member, room, "ordinary again")
 	member.Must(200, "GET", convPath(room)+"/members", nil)
-	// And converted back by an admin who is not a manager of it.
-	if c := admin.Must(200, "PATCH", convPath(room), map[string]any{"announcement": true})["conversation"].(map[string]any); c["announcement"] != true {
+	// Not by an admin who is not a manager of it (ruling R99).
+	admin.Refused(403, model.CodeForbidden, "PATCH", convPath(room), map[string]any{"announcement": true})
+	if c := manager.Must(200, "PATCH", convPath(room), map[string]any{"announcement": true})["conversation"].(map[string]any); c["announcement"] != true {
 		t.Fatalf("after converting: %v", c)
 	}
 	member.Refused(403, model.CodeForbidden, "POST", post, map[string]any{"text": "no"})

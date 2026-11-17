@@ -23,16 +23,22 @@ const (
 	CodeLocked             Code = "locked"
 	CodeFeatureOff         Code = "feature_off"
 	CodeFreshCheckRequired Code = "fresh_check_required"
-	CodeNotFound           Code = "not_found"
-	CodeConflict           Code = "conflict"
-	CodeNameTaken          Code = "name_taken"
-	CodeAlreadyExists      Code = "already_exists"
-	CodeTooLarge           Code = "too_large"
-	CodeBlockedByFilter    Code = "blocked_by_filter"
-	CodeRateLimited        Code = "rate_limited"
-	CodeSlowMode           Code = "slow_mode"
-	CodeInternal           Code = "internal"
-	CodeUnavailable        Code = "unavailable"
+	// CodeApprovalRequired: what was asked for is approved first; the
+	// caller asks for it instead (docs/FEATURES.md section 31).
+	CodeApprovalRequired Code = "approval_required"
+	// CodeApprovalPending: the account has been made and waits for its
+	// registration to be approved; it cannot sign in until then.
+	CodeApprovalPending Code = "approval_pending"
+	CodeNotFound        Code = "not_found"
+	CodeConflict        Code = "conflict"
+	CodeNameTaken       Code = "name_taken"
+	CodeAlreadyExists   Code = "already_exists"
+	CodeTooLarge        Code = "too_large"
+	CodeBlockedByFilter Code = "blocked_by_filter"
+	CodeRateLimited     Code = "rate_limited"
+	CodeSlowMode        Code = "slow_mode"
+	CodeInternal        Code = "internal"
+	CodeUnavailable     Code = "unavailable"
 )
 
 // statuses maps each code to its HTTP status.
@@ -48,6 +54,8 @@ var statuses = map[Code]int{
 	CodeLocked:               http.StatusForbidden,
 	CodeFeatureOff:           http.StatusForbidden,
 	CodeFreshCheckRequired:   http.StatusForbidden,
+	CodeApprovalRequired:     http.StatusForbidden,
+	CodeApprovalPending:      http.StatusForbidden,
 	CodeNotFound:             http.StatusNotFound,
 	CodeConflict:             http.StatusConflict,
 	CodeNameTaken:            http.StatusConflict,
@@ -65,6 +73,7 @@ func Codes() []Code {
 	return []Code{
 		CodeInvalidRequest, CodeInvalidValue, CodeUnauthenticated, CodeSecondFactorRequired, CodeSessionLocked,
 		CodeForbidden, CodeTimedOut, CodeArchived, CodeLocked, CodeFeatureOff, CodeFreshCheckRequired,
+		CodeApprovalRequired, CodeApprovalPending,
 		CodeNotFound, CodeConflict, CodeNameTaken, CodeAlreadyExists, CodeTooLarge, CodeBlockedByFilter,
 		CodeRateLimited, CodeSlowMode, CodeInternal, CodeUnavailable,
 	}
@@ -126,6 +135,8 @@ var (
 	ErrLocked               = &Error{Code: CodeLocked, Message: "This channel is locked. Nobody can be added to it."}
 	ErrFeatureOff           = &Error{Code: CodeFeatureOff, Message: "This feature is switched off on this server."}
 	ErrFreshCheckRequired   = &Error{Code: CodeFreshCheckRequired, Message: "Confirm with your passkey, access key or authenticator app first."}
+	ErrApprovalRequired     = &Error{Code: CodeApprovalRequired, Message: "This needs approval first. Ask for it instead."}
+	ErrApprovalPending      = &Error{Code: CodeApprovalPending, Message: "Your request to join waits for approval. You can sign in once it is approved."}
 	ErrNotFound             = &Error{Code: CodeNotFound, Message: "Not found."}
 	ErrConflict             = &Error{Code: CodeConflict, Message: "That cannot be done as things stand."}
 	// ErrNameTaken always carries this sentence, whatever the reason

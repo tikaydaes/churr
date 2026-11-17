@@ -28,7 +28,8 @@ type Janitor interface {
 	// Tidy deletes the rows of section 14.4 that have outlived their use
 	// (sessions, sign-in codes and links, invites, dialogs, time-outs,
 	// scheduled items, link logs, unlock requests) and
-	// clears client ids older than a day. It returns how many rows went,
+	// clears client ids older than a day and marks lapsed the approvals
+	// that waited past their end. It returns how many rows went,
 	// by table.
 	Tidy(ctx context.Context, now model.Time) (map[string]int64, error)
 }

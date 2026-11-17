@@ -84,6 +84,25 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 	via := len(groupLevels) > 0
 	level := model.HighestLevel(append(groupLevels, direct)...)
 	if level != "" {
+		// A guest account is a guest in every channel it is in: it reads,
+		// or takes part as a member, and is never in a conversation shared
+		// with other servers, however it would arrive (ruling R99).
+		var role string
+		var stream sql.NullString
+		err := q.wr.QueryRowContext(ctx, `SELECT a.role, c.stream_id FROM accounts a, conversations c WHERE a.id = ? AND c.id = ?`,
+			string(account), string(conv)).Scan(&role, &stream)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, q.mapErr(err)
+		}
+		if role == string(model.RoleGuest) {
+			if stream.Valid {
+				level, direct, via = "", "", false
+			} else if level.AtLeast(model.LevelModerator) {
+				level = model.LevelMember
+			}
+		}
+	}
+	if level != "" {
 		// A channel ban outranks every route in (FEATURES.md 19.1): the
 		// banned account has no row, however it would arrive.
 		banned, err := q.channelBanned(ctx, conv, account, at)
@@ -262,7 +281,7 @@ func (q *queries) recomputeMany(ctx context.Context, conv model.ConversationID, 
 
 // settle applies the rules that follow from who is left in a conversation:
 // a channel with members and no manager gets its longest-standing member as
-// manager; a private or ad-hoc channel, or a sealed chat, with nobody left
+// manager, unless a hub owns it; a private or ad-hoc channel, or a sealed chat, with nobody left
 // is deleted with its content; an ad-hoc channel's member key follows its
 // members.
 func (q *queries) settle(ctx context.Context, conv model.ConversationID, res *store.MembershipResult) error {
@@ -271,9 +290,13 @@ func (q *queries) settle(ctx context.Context, conv model.ConversationID, res *st
 		private   bool
 		name      sql.NullString
 		memberKey sql.NullString
+		hubOwned  bool
 	)
-	err := q.wr.QueryRowContext(ctx, `SELECT kind, private, name, member_key FROM conversations WHERE id = ?`, string(conv)).
-		Scan(&kind, flag(&private), &name, &memberKey)
+	err := q.wr.QueryRowContext(ctx, `
+		SELECT kind, private, name, member_key,
+			EXISTS (SELECT 1 FROM stream_channels sc WHERE sc.stream_id = conversations.stream_id)
+		FROM conversations WHERE id = ?`, string(conv)).
+		Scan(&kind, flag(&private), &name, &memberKey, flag(&hubOwned))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil // already deleted in this transaction
 	}
@@ -303,13 +326,15 @@ func (q *queries) settle(ctx context.Context, conv model.ConversationID, res *st
 		return nil
 	}
 
-	if kind == model.KindChannel && managers == 0 {
+	if kind == model.KindChannel && managers == 0 && !hubOwned {
 		// The shadow of someone on another server is never a manager
-		// here (docs/PERMISSIONS.md decision P19).
+		// here (docs/PERMISSIONS.md decision P19), nor is a guest (ruling
+		// R99). A channel a hub owns has the managers on the hub's list
+		// and nobody is promoted in its copy (section 14.1).
 		var account model.AccountID
 		err := q.wr.QueryRowContext(ctx, `
 			SELECT m.account_id FROM members m JOIN accounts a ON a.id = m.account_id
-			WHERE m.conversation_id = ? AND a.role <> 'remote'
+			WHERE m.conversation_id = ? AND a.role NOT IN ('remote', 'guest')
 			ORDER BY m.joined_at, m.account_id LIMIT 1`, string(conv)).Scan(str(&account))
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return err

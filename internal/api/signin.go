@@ -120,11 +120,12 @@ func (a *API) beginPasskeyRegistration(r *Request) error {
 		InviteCode  string `json:"invite_code"`
 		Username    string `json:"username"`
 		DisplayName string `json:"display_name"`
+		Note        string `json:"note"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	c, err := a.Auth.BeginRegistration(r.Ctx(), r.Addr, body.InviteCode, body.Username, body.DisplayName)
+	c, err := a.Auth.BeginRegistration(r.Ctx(), r.Addr, body.InviteCode, body.Username, body.DisplayName, body.Note)
 	if err != nil {
 		return err
 	}
@@ -143,6 +144,9 @@ func (a *API) finishPasskeyRegistration(r *Request) error {
 	in, err := a.Auth.FinishRegistration(r.Ctx(), fin, label(r))
 	if err != nil {
 		return err
+	}
+	if in.Applied != nil {
+		return a.applied(r, in)
 	}
 	return a.signedIn(r, r.Op.Success, in)
 }

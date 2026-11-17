@@ -43,13 +43,17 @@ func (a *API) registerWithAccessKey(r *Request) error {
 		DisplayName   string `json:"display_name"`
 		AccessKeyAuth string `json:"access_key_auth"`
 		UnlockPublic  string `json:"unlock_public"`
+		Note          string `json:"note"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	in, err := a.Auth.RegisterWithAccessKey(r.Ctx(), r.Addr, body.InviteCode, body.Username, body.DisplayName, body.AccessKeyAuth, body.UnlockPublic, label(r))
+	in, err := a.Auth.RegisterWithAccessKey(r.Ctx(), r.Addr, body.InviteCode, body.Username, body.DisplayName, body.Note, body.AccessKeyAuth, body.UnlockPublic, label(r))
 	if err != nil {
 		return err
+	}
+	if in.Applied != nil {
+		return a.applied(r, in)
 	}
 	return a.signedIn(r, r.Op.Success, in)
 }

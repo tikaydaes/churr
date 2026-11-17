@@ -38,7 +38,7 @@ func TestAdhocAcrossServers(t *testing.T) {
 		t.Run(how, func(t *testing.T) {
 			s := shareBy(t, how)
 			a, b := s.Servers[0], s.Servers[1]
-			lee := b.Owner
+			lee := s.keeper(1)
 			// zed is known on a (he was in the shared channel) and shares
 			// no channel with ann any more.
 			zed := b.Member("zed")
@@ -147,7 +147,7 @@ func TestAdhocAcrossServers(t *testing.T) {
 			// A shared channel returns: writable again.
 			back := a.Owner.Channel("back", false, s.ann, amy)
 			_, local := s.Share(0, back, "back", nil, 1)
-			lee.Add(local[1], "member", bea)
+			bea.Must(200, "POST", "/api/v1/conversations/"+local[1]+"/join", nil)
 			testkit.Eventually(t, "the chat is writable again on a", func() bool { return !readOnly(s.ann, chatA) })
 			testkit.Eventually(t, "the chat is writable again on b", func() bool { return !readOnly(lee, chatB) })
 			s.ann.Post(chatA, "back again")

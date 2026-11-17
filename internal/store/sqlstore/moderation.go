@@ -215,9 +215,9 @@ func (m moderation) Reports(ctx context.Context, f store.ReportFilter, p store.P
 	if f.Scope.AccountID == "" {
 		return nil, "", nil
 	}
-	// The stored level decides in a private or ad-hoc channel; an admin
-	// also handles every public channel's (docs/PERMISSIONS.md 8.4).
-	const manager = `EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = r.conversation_id AND m.account_id = ? AND m.level = 'manager')`
+	// The channel's moderators and managers; an admin also handles every
+	// public channel's (docs/PERMISSIONS.md 8.4).
+	const manager = `EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = r.conversation_id AND m.account_id = ? AND m.level IN ('moderator', 'manager'))`
 	where := []string{manager}
 	args := []any{string(f.Scope.AccountID)}
 	if f.Scope.PublicChannels {

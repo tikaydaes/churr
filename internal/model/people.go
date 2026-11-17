@@ -87,6 +87,11 @@ type AdminAccount struct {
 	ClaimedAtOut Time      `json:"claimed_at,omitempty"`
 	RemovedByID  AccountID `json:"removed_by_id,omitempty"`
 	Banned       bool      `json:"banned"`
+	// MayApprove: the account holds the flag "may approve requests"
+	// (docs/FEATURES.md section 31).
+	MayApprove bool `json:"may_approve"`
+	// Applying: the account waits for its registration to be approved.
+	Applying bool `json:"applying,omitempty"`
 }
 
 // Totals are an account's numbers across its conversations: the `total` of

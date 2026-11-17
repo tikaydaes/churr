@@ -157,16 +157,50 @@ func CheckMessage(st State, a MessageAction, m model.Message) error {
 }
 
 // CheckSetLevel answers whether the actor of st may set target's direct
-// level in st's conversation (section 6 note 7, decision P19).
+// level in st's conversation (section 6 note 7, decision P19): its managers
+// appoint and dismiss moderators and managers and set who only reads.
 func CheckSetLevel(st State, target model.Account, newLevel model.Level) error {
 	if err := Check(st, SetLevel); err != nil {
 		return err
 	}
-	if target.Role == model.RoleRemote && newLevel == model.LevelManager {
-		return forbidden("Someone on another server cannot be a manager here.")
+	if err := LevelFor(target, newLevel); err != nil {
+		return err
 	}
-	if st.HubOwned && newLevel == model.LevelManager {
-		return model.ErrConflict.With("The managers of a channel on a hub are those on the hub's manager list: make them a manager of the channel.")
+	if st.HubOwned && newLevel.AtLeast(model.LevelModerator) {
+		return model.ErrConflict.With("The managers and moderators of a channel on a hub are those on the hub's lists: make them one through the hub.")
+	}
+	return nil
+}
+
+// LevelFor answers whether an account may hold a level at all (ruling R99,
+// decision P19): a guest account is a guest in every channel it is in, at
+// reader or member, and someone on another server is never a moderator or
+// a manager here.
+func LevelFor(target model.Account, level model.Level) error {
+	if !level.AtLeast(model.LevelModerator) {
+		return nil
+	}
+	switch target.Role {
+	case model.RoleRemote:
+		return forbidden("Someone on another server cannot be a moderator or a manager here.")
+	case model.RoleGuest:
+		return forbidden("A guest is a guest in every channel: they read, or take part as a member.")
+	}
+	return nil
+}
+
+// againstKeeper is what keeps the peace keepers from turning on each other
+// and on the instance's Owners (section 6 note 6): a moderator does not act
+// on a moderator or a manager of the channel; nobody acts on an Owner or on
+// themselves. targetLevel is the target's level there, or "" for none.
+func againstKeeper(st State, target model.Account, targetLevel model.Level, what string) error {
+	switch {
+	case target.ID == st.Actor.ID:
+		return forbidden("You cannot " + what + " yourself.")
+	case target.Role == model.RoleOwner:
+		return forbidden("Nobody can " + what + " an owner of this instance.")
+	case targetLevel.AtLeast(model.LevelModerator) && !st.ActsAsManager():
+		return forbidden("Only a manager can " + what + " one of the channel's moderators or managers.")
 	}
 	return nil
 }
@@ -177,11 +211,8 @@ func CheckRemoveMember(st State, target model.Account, targetMember model.Member
 	if err := Check(st, RemoveMember); err != nil {
 		return err
 	}
-	if !st.Actor.Role.IsAdmin() && target.Role.IsAdmin() {
-		return forbidden("A manager cannot remove an admin.")
-	}
-	if target.Role == model.RoleOwner && st.Actor.Role != model.RoleOwner {
-		return forbidden("The owner cannot be removed.")
+	if err := againstKeeper(st, target, targetMember.Level, "remove"); err != nil {
+		return err
 	}
 	if targetMember.ViaGroup {
 		return model.ErrConflict.With("That account is in the channel through a group. Remove the group, or take them out of it.")

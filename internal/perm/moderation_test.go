@@ -75,19 +75,22 @@ func TestCheckFile(t *testing.T) {
 func TestCheckTimeOut(t *testing.T) {
 	owner, admin, admin2 := acct("o", model.RoleOwner), acct("a", model.RoleAdmin), acct("a2", model.RoleAdmin)
 	mgr, bob := acct("m", model.RoleMember), acct("b", model.RoleMember)
+	mod := acct("mo", model.RoleMember)
 	// Section 11.
-	wantCode(t, "a manager times out a member", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), bob), "")
-	wantCode(t, "a member cannot", CheckTimeOut(stateFor(bob, privConv, model.LevelMember), mgr), model.CodeForbidden)
-	wantCode(t, "a manager cannot time out an admin", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), admin), model.CodeForbidden)
-	wantCode(t, "nor the owner", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), owner), model.CodeForbidden)
-	wantCode(t, "an admin cannot time out another admin", CheckTimeOut(stateFor(admin, pubConv, ""), admin2), model.CodeForbidden)
-	wantCode(t, "the owner can", CheckTimeOut(stateFor(owner, pubConv, ""), admin), "")
-	wantCode(t, "an admin in a public channel they have not joined", CheckTimeOut(stateFor(admin, pubConv, ""), bob), "")
-	wantCode(t, "an admin outside a private channel", CheckTimeOut(stateFor(admin, privConv, ""), bob), model.CodeNotFound)
-	wantCode(t, "not oneself", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), mgr), model.CodeForbidden)
+	wantCode(t, "a manager times out a member", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), bob, model.LevelMember), "")
+	wantCode(t, "a moderator times out a member", CheckTimeOut(stateFor(mod, privConv, model.LevelModerator), bob, model.LevelMember), "")
+	wantCode(t, "a member cannot", CheckTimeOut(stateFor(bob, privConv, model.LevelMember), mgr, model.LevelManager), model.CodeForbidden)
+	wantCode(t, "a moderator cannot time out a manager", CheckTimeOut(stateFor(mod, privConv, model.LevelModerator), mgr, model.LevelManager), model.CodeForbidden)
+	wantCode(t, "a manager times out a moderator", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), mod, model.LevelModerator), "")
+	wantCode(t, "a manager times out an admin", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), admin, model.LevelMember), "")
+	wantCode(t, "nor an owner", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), owner, model.LevelMember), model.CodeForbidden)
+	wantCode(t, "an admin who is no manager", CheckTimeOut(stateFor(admin, pubConv, ""), bob, ""), model.CodeForbidden)
+	wantCode(t, "an owner who is no manager", CheckTimeOut(stateFor(owner, pubConv, model.LevelMember), admin2, model.LevelMember), model.CodeForbidden)
+	wantCode(t, "an admin outside a private channel", CheckTimeOut(stateFor(admin, privConv, ""), bob, ""), model.CodeNotFound)
+	wantCode(t, "not oneself", CheckTimeOut(stateFor(mgr, privConv, model.LevelManager), mgr, model.LevelManager), model.CodeForbidden)
 	timedOut := stateFor(mgr, privConv, model.LevelManager)
 	timedOut.TimedOutUntil = 2000
-	wantCode(t, "a timed-out manager has no management powers", CheckTimeOut(timedOut, bob), model.CodeTimedOut)
+	wantCode(t, "a timed-out manager has no management powers", CheckTimeOut(timedOut, bob, model.LevelMember), model.CodeTimedOut)
 
 	c := New(nil)
 	wantCode(t, "server-wide: admin on member", c.CanTimeOutEverywhere(admin, bob), "")
@@ -110,7 +113,10 @@ func TestCheckRetention(t *testing.T) {
 	wantCode(t, "clearing it", CheckRetention(week, 0), "")
 	adm := stateFor(admin, pubConv, "")
 	adm.Settings.RetentionSeconds = 7 * 86400
-	wantCode(t, "an admin sets any", CheckRetention(adm, 30*86400), "")
+	wantCode(t, "an admin who is no manager sets none", CheckRetention(adm, 30*86400), model.CodeForbidden)
+	admMgr := stateFor(admin, pubConv, model.LevelManager)
+	admMgr.Settings.RetentionSeconds = 7 * 86400
+	wantCode(t, "an admin who is a manager sets any", CheckRetention(admMgr, 30*86400), "")
 	wantCode(t, "a member sets none", CheckRetention(stateFor(bob, pubConv, model.LevelMember), 60), model.CodeForbidden)
 	adhoc := model.Conversation{ID: "x", Kind: model.KindChannel, Private: true}
 	wantCode(t, "never an ad-hoc channel", CheckRetention(stateFor(mgr, adhoc, model.LevelManager), 60), model.CodeForbidden)

@@ -431,6 +431,9 @@ enum Envelope_Body {
   chatRequestReceived,
   chatRequestRemoved,
   sidebarChanged,
+  approvalCreated,
+  approvalDecided,
+  approvalsChanged,
   notSet
 }
 
@@ -576,6 +579,9 @@ class Envelope extends $pb.GeneratedMessage {
     ChatRequestReceivedFrame? chatRequestReceived,
     ChatRequestRemovedFrame? chatRequestRemoved,
     SidebarChangedFrame? sidebarChanged,
+    ApprovalCreatedFrame? approvalCreated,
+    ApprovalDecidedFrame? approvalDecided,
+    ApprovalsChangedFrame? approvalsChanged,
   }) {
     final result = Envelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -742,6 +748,9 @@ class Envelope extends $pb.GeneratedMessage {
     if (chatRequestRemoved != null)
       result.chatRequestRemoved = chatRequestRemoved;
     if (sidebarChanged != null) result.sidebarChanged = sidebarChanged;
+    if (approvalCreated != null) result.approvalCreated = approvalCreated;
+    if (approvalDecided != null) result.approvalDecided = approvalDecided;
+    if (approvalsChanged != null) result.approvalsChanged = approvalsChanged;
     return result;
   }
 
@@ -885,6 +894,9 @@ class Envelope extends $pb.GeneratedMessage {
     137: Envelope_Body.chatRequestReceived,
     138: Envelope_Body.chatRequestRemoved,
     139: Envelope_Body.sidebarChanged,
+    140: Envelope_Body.approvalCreated,
+    141: Envelope_Body.approvalDecided,
+    142: Envelope_Body.approvalsChanged,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -1021,7 +1033,10 @@ class Envelope extends $pb.GeneratedMessage {
       136,
       137,
       138,
-      139
+      139,
+      140,
+      141,
+      142
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1328,6 +1343,12 @@ class Envelope extends $pb.GeneratedMessage {
         subBuilder: ChatRequestRemovedFrame.$_createMessage)
     ..aOM<SidebarChangedFrame>(139, _omitFieldNames ? '' : 'sidebarChanged',
         subBuilder: SidebarChangedFrame.$_createMessage)
+    ..aOM<ApprovalCreatedFrame>(140, _omitFieldNames ? '' : 'approvalCreated',
+        subBuilder: ApprovalCreatedFrame.$_createMessage)
+    ..aOM<ApprovalDecidedFrame>(141, _omitFieldNames ? '' : 'approvalDecided',
+        subBuilder: ApprovalDecidedFrame.$_createMessage)
+    ..aOM<ApprovalsChangedFrame>(142, _omitFieldNames ? '' : 'approvalsChanged',
+        subBuilder: ApprovalsChangedFrame.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1480,6 +1501,9 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(137)
   @$pb.TagNumber(138)
   @$pb.TagNumber(139)
+  @$pb.TagNumber(140)
+  @$pb.TagNumber(141)
+  @$pb.TagNumber(142)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1611,6 +1635,9 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(137)
   @$pb.TagNumber(138)
   @$pb.TagNumber(139)
+  @$pb.TagNumber(140)
+  @$pb.TagNumber(141)
+  @$pb.TagNumber(142)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -3119,6 +3146,39 @@ class Envelope extends $pb.GeneratedMessage {
   void clearSidebarChanged() => $_clearField(139);
   @$pb.TagNumber(139)
   SidebarChangedFrame ensureSidebarChanged() => $_ensure(135);
+
+  @$pb.TagNumber(140)
+  ApprovalCreatedFrame get approvalCreated => $_getN(136);
+  @$pb.TagNumber(140)
+  set approvalCreated(ApprovalCreatedFrame value) => $_setField(140, value);
+  @$pb.TagNumber(140)
+  $core.bool hasApprovalCreated() => $_has(136);
+  @$pb.TagNumber(140)
+  void clearApprovalCreated() => $_clearField(140);
+  @$pb.TagNumber(140)
+  ApprovalCreatedFrame ensureApprovalCreated() => $_ensure(136);
+
+  @$pb.TagNumber(141)
+  ApprovalDecidedFrame get approvalDecided => $_getN(137);
+  @$pb.TagNumber(141)
+  set approvalDecided(ApprovalDecidedFrame value) => $_setField(141, value);
+  @$pb.TagNumber(141)
+  $core.bool hasApprovalDecided() => $_has(137);
+  @$pb.TagNumber(141)
+  void clearApprovalDecided() => $_clearField(141);
+  @$pb.TagNumber(141)
+  ApprovalDecidedFrame ensureApprovalDecided() => $_ensure(137);
+
+  @$pb.TagNumber(142)
+  ApprovalsChangedFrame get approvalsChanged => $_getN(138);
+  @$pb.TagNumber(142)
+  set approvalsChanged(ApprovalsChangedFrame value) => $_setField(142, value);
+  @$pb.TagNumber(142)
+  $core.bool hasApprovalsChanged() => $_has(138);
+  @$pb.TagNumber(142)
+  void clearApprovalsChanged() => $_clearField(142);
+  @$pb.TagNumber(142)
+  ApprovalsChangedFrame ensureApprovalsChanged() => $_ensure(138);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -6506,12 +6566,14 @@ class BeginPasskeyRegistrationRequest extends $pb.GeneratedMessage {
     $core.String? inviteCode,
     $core.String? username,
     $core.String? displayName,
+    $core.String? note,
   }) {
     final result = BeginPasskeyRegistrationRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (inviteCode != null) result.inviteCode = inviteCode;
     if (username != null) result.username = username;
     if (displayName != null) result.displayName = displayName;
+    if (note != null) result.note = note;
     return result;
   }
 
@@ -6532,6 +6594,7 @@ class BeginPasskeyRegistrationRequest extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'inviteCode')
     ..aOS(4, _omitFieldNames ? '' : 'username')
     ..aOS(5, _omitFieldNames ? '' : 'displayName')
+    ..aOS(6, _omitFieldNames ? '' : 'note')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -6591,6 +6654,15 @@ class BeginPasskeyRegistrationRequest extends $pb.GeneratedMessage {
   $core.bool hasDisplayName() => $_has(3);
   @$pb.TagNumber(5)
   void clearDisplayName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get note => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set note($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasNote() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearNote() => $_clearField(6);
 }
 
 class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
@@ -6601,6 +6673,7 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     $core.String? displayName,
     $core.List<$core.int>? accessKeyAuth,
     $core.List<$core.int>? unlockPublic,
+    $core.String? note,
   }) {
     final result = RegisterWithAccessKeyRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -6609,6 +6682,7 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     if (displayName != null) result.displayName = displayName;
     if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
     if (unlockPublic != null) result.unlockPublic = unlockPublic;
+    if (note != null) result.note = note;
     return result;
   }
 
@@ -6633,6 +6707,7 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
         6, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
     ..a<$core.List<$core.int>>(
         7, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
+    ..aOS(8, _omitFieldNames ? '' : 'note')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -6710,6 +6785,15 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
   $core.bool hasUnlockPublic() => $_has(5);
   @$pb.TagNumber(7)
   void clearUnlockPublic() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get note => $_getSZ(6);
+  @$pb.TagNumber(8)
+  set note($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasNote() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearNote() => $_clearField(8);
 }
 
 class SignInWithAccessKeyRequest extends $pb.GeneratedMessage {
@@ -14667,7 +14751,7 @@ class Via extends $pb.GeneratedMessage {
   void clearIconFileId() => $_clearField(6);
 }
 
-/// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. Clients word these themselves.
+/// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an owner's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. Clients word these themselves.
 class SystemNotice extends $pb.GeneratedMessage {
   factory SystemNotice({
     $core.Iterable<$core.int>? emptyFields,
@@ -38486,6 +38570,8 @@ class Settings extends $pb.GeneratedMessage {
     $fixnum.Int64? channelsLargeChannelLimit,
     $fixnum.Int64? channelsLargeFeatureLimit,
     $core.bool? authAllowAccessKeys,
+    $core.bool? registrationApproval,
+    $core.bool? channelsCreationApproval,
   }) {
     final result = Settings._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -38544,6 +38630,10 @@ class Settings extends $pb.GeneratedMessage {
       result.channelsLargeFeatureLimit = channelsLargeFeatureLimit;
     if (authAllowAccessKeys != null)
       result.authAllowAccessKeys = authAllowAccessKeys;
+    if (registrationApproval != null)
+      result.registrationApproval = registrationApproval;
+    if (channelsCreationApproval != null)
+      result.channelsCreationApproval = channelsCreationApproval;
     return result;
   }
 
@@ -38612,6 +38702,8 @@ class Settings extends $pb.GeneratedMessage {
     ..aInt64(38, _omitFieldNames ? '' : 'channelsLargeChannelLimit')
     ..aInt64(39, _omitFieldNames ? '' : 'channelsLargeFeatureLimit')
     ..aOB(40, _omitFieldNames ? '' : 'authAllowAccessKeys')
+    ..aOB(41, _omitFieldNames ? '' : 'registrationApproval')
+    ..aOB(42, _omitFieldNames ? '' : 'channelsCreationApproval')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -38979,6 +39071,24 @@ class Settings extends $pb.GeneratedMessage {
   $core.bool hasAuthAllowAccessKeys() => $_has(39);
   @$pb.TagNumber(40)
   void clearAuthAllowAccessKeys() => $_clearField(40);
+
+  @$pb.TagNumber(41)
+  $core.bool get registrationApproval => $_getBF(40);
+  @$pb.TagNumber(41)
+  set registrationApproval($core.bool value) => $_setBool(40, value);
+  @$pb.TagNumber(41)
+  $core.bool hasRegistrationApproval() => $_has(40);
+  @$pb.TagNumber(41)
+  void clearRegistrationApproval() => $_clearField(41);
+
+  @$pb.TagNumber(42)
+  $core.bool get channelsCreationApproval => $_getBF(41);
+  @$pb.TagNumber(42)
+  set channelsCreationApproval($core.bool value) => $_setBool(41, value);
+  @$pb.TagNumber(42)
+  $core.bool hasChannelsCreationApproval() => $_has(41);
+  @$pb.TagNumber(42)
+  void clearChannelsCreationApproval() => $_clearField(42);
 }
 
 /// When the store is `s3`.
@@ -40642,6 +40752,8 @@ class AdminAccount extends $pb.GeneratedMessage {
     $core.bool? banned,
     AdminAccountLastSeen? lastSeen,
     $core.bool? hasAccessKey,
+    $core.bool? mayApprove,
+    $core.bool? applying,
   }) {
     final result = AdminAccount._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -40674,6 +40786,8 @@ class AdminAccount extends $pb.GeneratedMessage {
     if (banned != null) result.banned = banned;
     if (lastSeen != null) result.lastSeen = lastSeen;
     if (hasAccessKey != null) result.hasAccessKey = hasAccessKey;
+    if (mayApprove != null) result.mayApprove = mayApprove;
+    if (applying != null) result.applying = applying;
     return result;
   }
 
@@ -40730,6 +40844,8 @@ class AdminAccount extends $pb.GeneratedMessage {
     ..aE<AdminAccountLastSeen>(29, _omitFieldNames ? '' : 'lastSeen',
         enumValues: AdminAccountLastSeen.values)
     ..aOB(30, _omitFieldNames ? '' : 'hasAccessKey')
+    ..aOB(31, _omitFieldNames ? '' : 'mayApprove')
+    ..aOB(32, _omitFieldNames ? '' : 'applying')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -41003,6 +41119,24 @@ class AdminAccount extends $pb.GeneratedMessage {
   $core.bool hasHasAccessKey() => $_has(29);
   @$pb.TagNumber(30)
   void clearHasAccessKey() => $_clearField(30);
+
+  @$pb.TagNumber(31)
+  $core.bool get mayApprove => $_getBF(30);
+  @$pb.TagNumber(31)
+  set mayApprove($core.bool value) => $_setBool(30, value);
+  @$pb.TagNumber(31)
+  $core.bool hasMayApprove() => $_has(30);
+  @$pb.TagNumber(31)
+  void clearMayApprove() => $_clearField(31);
+
+  @$pb.TagNumber(32)
+  $core.bool get applying => $_getBF(31);
+  @$pb.TagNumber(32)
+  set applying($core.bool value) => $_setBool(31, value);
+  @$pb.TagNumber(32)
+  $core.bool hasApplying() => $_has(31);
+  @$pb.TagNumber(32)
+  void clearApplying() => $_clearField(32);
 }
 
 class AdminGetAccountResponse extends $pb.GeneratedMessage {
@@ -43338,6 +43472,71 @@ class AdminUpdateChannelResponse extends $pb.GeneratedMessage {
   AdminChannel ensureChannel() => $_ensure(1);
 }
 
+class AppointManagerRequest extends $pb.GeneratedMessage {
+  factory AppointManagerRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? override,
+  }) {
+    final result = AppointManagerRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (override != null) result.override = override;
+    return result;
+  }
+
+  AppointManagerRequest._();
+
+  factory AppointManagerRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AppointManagerRequest()..mergeFromBuffer(data, registry);
+  factory AppointManagerRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AppointManagerRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AppointManagerRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AppointManagerRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'override')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AppointManagerRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AppointManagerRequest copyWith(
+          void Function(AppointManagerRequest) updates) =>
+      super.copyWith((message) => updates(message as AppointManagerRequest))
+          as AppointManagerRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use AppointManagerRequest() / AppointManagerRequest.new instead')
+  static AppointManagerRequest create() => AppointManagerRequest._();
+  static $pb.GeneratedMessage $_createMessage() => AppointManagerRequest._();
+  @$core.override
+  AppointManagerRequest createEmptyInstance() => AppointManagerRequest._();
+  @$core.pragma('dart2js:noInline')
+  static AppointManagerRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AppointManagerRequest>(
+          AppointManagerRequest.$_createMessage);
+  static AppointManagerRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get override => $_getBF(1);
+  @$pb.TagNumber(3)
+  set override($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOverride() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearOverride() => $_clearField(3);
+}
+
 class AppointManagerResponse extends $pb.GeneratedMessage {
   factory AppointManagerResponse({
     $core.Iterable<$core.int>? nullFields,
@@ -43406,217 +43605,73 @@ class AppointManagerResponse extends $pb.GeneratedMessage {
   Member ensureMember() => $_ensure(1);
 }
 
-class AdminArchiveChannelResponse extends $pb.GeneratedMessage {
-  factory AdminArchiveChannelResponse({
+class OwnerOverrideAddResponse extends $pb.GeneratedMessage {
+  factory OwnerOverrideAddResponse({
     $core.Iterable<$core.int>? nullFields,
-    AdminChannel? channel,
+    Member? member,
   }) {
-    final result = AdminArchiveChannelResponse._();
+    final result = OwnerOverrideAddResponse._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (channel != null) result.channel = channel;
+    if (member != null) result.member = member;
     return result;
   }
 
-  AdminArchiveChannelResponse._();
+  OwnerOverrideAddResponse._();
 
-  factory AdminArchiveChannelResponse.fromBuffer($core.List<$core.int> data,
+  factory OwnerOverrideAddResponse.fromBuffer($core.List<$core.int> data,
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AdminArchiveChannelResponse()..mergeFromBuffer(data, registry);
-  factory AdminArchiveChannelResponse.fromJson($core.String json,
+      OwnerOverrideAddResponse()..mergeFromBuffer(data, registry);
+  factory OwnerOverrideAddResponse.fromJson($core.String json,
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AdminArchiveChannelResponse()..mergeFromJson(json, registry);
+      OwnerOverrideAddResponse()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'AdminArchiveChannelResponse',
+      _omitMessageNames ? '' : 'OwnerOverrideAddResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: AdminArchiveChannelResponse.$_createMessage)
+      createEmptyInstance: OwnerOverrideAddResponse.$_createMessage)
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aOM<AdminChannel>(3, _omitFieldNames ? '' : 'channel',
-        subBuilder: AdminChannel.$_createMessage)
+    ..aOM<Member>(3, _omitFieldNames ? '' : 'member',
+        subBuilder: Member.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AdminArchiveChannelResponse clone() => deepCopy();
+  OwnerOverrideAddResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AdminArchiveChannelResponse copyWith(
-          void Function(AdminArchiveChannelResponse) updates) =>
-      super.copyWith(
-              (message) => updates(message as AdminArchiveChannelResponse))
-          as AdminArchiveChannelResponse;
+  OwnerOverrideAddResponse copyWith(
+          void Function(OwnerOverrideAddResponse) updates) =>
+      super.copyWith((message) => updates(message as OwnerOverrideAddResponse))
+          as OwnerOverrideAddResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   @$core.Deprecated(
-      'Use AdminArchiveChannelResponse() / AdminArchiveChannelResponse.new instead')
-  static AdminArchiveChannelResponse create() =>
-      AdminArchiveChannelResponse._();
-  static $pb.GeneratedMessage $_createMessage() =>
-      AdminArchiveChannelResponse._();
+      'Use OwnerOverrideAddResponse() / OwnerOverrideAddResponse.new instead')
+  static OwnerOverrideAddResponse create() => OwnerOverrideAddResponse._();
+  static $pb.GeneratedMessage $_createMessage() => OwnerOverrideAddResponse._();
   @$core.override
-  AdminArchiveChannelResponse createEmptyInstance() =>
-      AdminArchiveChannelResponse._();
+  OwnerOverrideAddResponse createEmptyInstance() =>
+      OwnerOverrideAddResponse._();
   @$core.pragma('dart2js:noInline')
-  static AdminArchiveChannelResponse getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<AdminArchiveChannelResponse>(
-          AdminArchiveChannelResponse.$_createMessage);
-  static AdminArchiveChannelResponse? _defaultInstance;
+  static OwnerOverrideAddResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<OwnerOverrideAddResponse>(
+          OwnerOverrideAddResponse.$_createMessage);
+  static OwnerOverrideAddResponse? _defaultInstance;
 
   @$pb.TagNumber(2)
   $pb.PbList<$core.int> get nullFields => $_getList(0);
 
   @$pb.TagNumber(3)
-  AdminChannel get channel => $_getN(1);
+  Member get member => $_getN(1);
   @$pb.TagNumber(3)
-  set channel(AdminChannel value) => $_setField(3, value);
+  set member(Member value) => $_setField(3, value);
   @$pb.TagNumber(3)
-  $core.bool hasChannel() => $_has(1);
+  $core.bool hasMember() => $_has(1);
   @$pb.TagNumber(3)
-  void clearChannel() => $_clearField(3);
+  void clearMember() => $_clearField(3);
   @$pb.TagNumber(3)
-  AdminChannel ensureChannel() => $_ensure(1);
-}
-
-class AdminUnarchiveChannelResponse extends $pb.GeneratedMessage {
-  factory AdminUnarchiveChannelResponse({
-    $core.Iterable<$core.int>? nullFields,
-    AdminChannel? channel,
-  }) {
-    final result = AdminUnarchiveChannelResponse._();
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (channel != null) result.channel = channel;
-    return result;
-  }
-
-  AdminUnarchiveChannelResponse._();
-
-  factory AdminUnarchiveChannelResponse.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AdminUnarchiveChannelResponse()..mergeFromBuffer(data, registry);
-  factory AdminUnarchiveChannelResponse.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AdminUnarchiveChannelResponse()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'AdminUnarchiveChannelResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: AdminUnarchiveChannelResponse.$_createMessage)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aOM<AdminChannel>(3, _omitFieldNames ? '' : 'channel',
-        subBuilder: AdminChannel.$_createMessage)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AdminUnarchiveChannelResponse clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AdminUnarchiveChannelResponse copyWith(
-          void Function(AdminUnarchiveChannelResponse) updates) =>
-      super.copyWith(
-              (message) => updates(message as AdminUnarchiveChannelResponse))
-          as AdminUnarchiveChannelResponse;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated(
-      'Use AdminUnarchiveChannelResponse() / AdminUnarchiveChannelResponse.new instead')
-  static AdminUnarchiveChannelResponse create() =>
-      AdminUnarchiveChannelResponse._();
-  static $pb.GeneratedMessage $_createMessage() =>
-      AdminUnarchiveChannelResponse._();
-  @$core.override
-  AdminUnarchiveChannelResponse createEmptyInstance() =>
-      AdminUnarchiveChannelResponse._();
-  @$core.pragma('dart2js:noInline')
-  static AdminUnarchiveChannelResponse getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<AdminUnarchiveChannelResponse>(
-          AdminUnarchiveChannelResponse.$_createMessage);
-  static AdminUnarchiveChannelResponse? _defaultInstance;
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
-
-  @$pb.TagNumber(3)
-  AdminChannel get channel => $_getN(1);
-  @$pb.TagNumber(3)
-  set channel(AdminChannel value) => $_setField(3, value);
-  @$pb.TagNumber(3)
-  $core.bool hasChannel() => $_has(1);
-  @$pb.TagNumber(3)
-  void clearChannel() => $_clearField(3);
-  @$pb.TagNumber(3)
-  AdminChannel ensureChannel() => $_ensure(1);
-}
-
-class AdminLockChannelResponse extends $pb.GeneratedMessage {
-  factory AdminLockChannelResponse({
-    $core.Iterable<$core.int>? nullFields,
-    AdminChannel? channel,
-  }) {
-    final result = AdminLockChannelResponse._();
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (channel != null) result.channel = channel;
-    return result;
-  }
-
-  AdminLockChannelResponse._();
-
-  factory AdminLockChannelResponse.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AdminLockChannelResponse()..mergeFromBuffer(data, registry);
-  factory AdminLockChannelResponse.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AdminLockChannelResponse()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'AdminLockChannelResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: AdminLockChannelResponse.$_createMessage)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aOM<AdminChannel>(3, _omitFieldNames ? '' : 'channel',
-        subBuilder: AdminChannel.$_createMessage)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AdminLockChannelResponse clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AdminLockChannelResponse copyWith(
-          void Function(AdminLockChannelResponse) updates) =>
-      super.copyWith((message) => updates(message as AdminLockChannelResponse))
-          as AdminLockChannelResponse;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated(
-      'Use AdminLockChannelResponse() / AdminLockChannelResponse.new instead')
-  static AdminLockChannelResponse create() => AdminLockChannelResponse._();
-  static $pb.GeneratedMessage $_createMessage() => AdminLockChannelResponse._();
-  @$core.override
-  AdminLockChannelResponse createEmptyInstance() =>
-      AdminLockChannelResponse._();
-  @$core.pragma('dart2js:noInline')
-  static AdminLockChannelResponse getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<AdminLockChannelResponse>(
-          AdminLockChannelResponse.$_createMessage);
-  static AdminLockChannelResponse? _defaultInstance;
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
-
-  @$pb.TagNumber(3)
-  AdminChannel get channel => $_getN(1);
-  @$pb.TagNumber(3)
-  set channel(AdminChannel value) => $_setField(3, value);
-  @$pb.TagNumber(3)
-  $core.bool hasChannel() => $_has(1);
-  @$pb.TagNumber(3)
-  void clearChannel() => $_clearField(3);
-  @$pb.TagNumber(3)
-  AdminChannel ensureChannel() => $_ensure(1);
+  Member ensureMember() => $_ensure(1);
 }
 
 class AdminListEmojiResponse extends $pb.GeneratedMessage {
@@ -52642,6 +52697,917 @@ class TestCallsResponse extends $pb.GeneratedMessage {
   void clearMediaAddress() => $_clearField(4);
 }
 
+class GetApprovalSummaryResponse extends $pb.GeneratedMessage {
+  factory GetApprovalSummaryResponse({
+    $core.Iterable<$core.int>? nullFields,
+    ApprovalSummary? summary,
+  }) {
+    final result = GetApprovalSummaryResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (summary != null) result.summary = summary;
+    return result;
+  }
+
+  GetApprovalSummaryResponse._();
+
+  factory GetApprovalSummaryResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetApprovalSummaryResponse()..mergeFromBuffer(data, registry);
+  factory GetApprovalSummaryResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetApprovalSummaryResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetApprovalSummaryResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetApprovalSummaryResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ApprovalSummary>(3, _omitFieldNames ? '' : 'summary',
+        subBuilder: ApprovalSummary.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetApprovalSummaryResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetApprovalSummaryResponse copyWith(
+          void Function(GetApprovalSummaryResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetApprovalSummaryResponse))
+          as GetApprovalSummaryResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetApprovalSummaryResponse() / GetApprovalSummaryResponse.new instead')
+  static GetApprovalSummaryResponse create() => GetApprovalSummaryResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetApprovalSummaryResponse._();
+  @$core.override
+  GetApprovalSummaryResponse createEmptyInstance() =>
+      GetApprovalSummaryResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GetApprovalSummaryResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetApprovalSummaryResponse>(
+          GetApprovalSummaryResponse.$_createMessage);
+  static GetApprovalSummaryResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ApprovalSummary get summary => $_getN(1);
+  @$pb.TagNumber(3)
+  set summary(ApprovalSummary value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSummary() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearSummary() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ApprovalSummary ensureSummary() => $_ensure(1);
+}
+
+/// What an account may approve, and how many wait.
+class ApprovalSummary extends $pb.GeneratedMessage {
+  factory ApprovalSummary({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? mayApprove,
+    $core.Iterable<ApprovalSummaryKinds>? kinds,
+    $core.Iterable<$core.MapEntry<$core.String, $fixnum.Int64>>? counts,
+  }) {
+    final result = ApprovalSummary._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (mayApprove != null) result.mayApprove = mayApprove;
+    if (kinds != null) result.kinds.addAll(kinds);
+    if (counts != null) result.counts.addEntries(counts);
+    return result;
+  }
+
+  ApprovalSummary._();
+
+  factory ApprovalSummary.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalSummary()..mergeFromBuffer(data, registry);
+  factory ApprovalSummary.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalSummary()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ApprovalSummary',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ApprovalSummary.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'mayApprove')
+    ..pc<ApprovalSummaryKinds>(
+        4, _omitFieldNames ? '' : 'kinds', $pb.PbFieldType.KE,
+        valueOf: ApprovalSummaryKinds.valueOf,
+        enumValues: ApprovalSummaryKinds.values,
+        defaultEnumValue:
+            ApprovalSummaryKinds.APPROVAL_SUMMARY_KINDS_UNSPECIFIED)
+    ..m<$core.String, $fixnum.Int64>(5, _omitFieldNames ? '' : 'counts',
+        entryClassName: 'ApprovalSummary.CountsEntry',
+        keyFieldType: $pb.PbFieldType.OS,
+        valueFieldType: $pb.PbFieldType.O6,
+        packageName: const $pb.PackageName('churr.v1'))
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalSummary clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalSummary copyWith(void Function(ApprovalSummary) updates) =>
+      super.copyWith((message) => updates(message as ApprovalSummary))
+          as ApprovalSummary;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ApprovalSummary() / ApprovalSummary.new instead')
+  static ApprovalSummary create() => ApprovalSummary._();
+  static $pb.GeneratedMessage $_createMessage() => ApprovalSummary._();
+  @$core.override
+  ApprovalSummary createEmptyInstance() => ApprovalSummary._();
+  @$core.pragma('dart2js:noInline')
+  static ApprovalSummary getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ApprovalSummary>(
+          ApprovalSummary.$_createMessage);
+  static ApprovalSummary? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.bool get mayApprove => $_getBF(2);
+  @$pb.TagNumber(3)
+  set mayApprove($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMayApprove() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMayApprove() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<ApprovalSummaryKinds> get kinds => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $pb.PbMap<$core.String, $fixnum.Int64> get counts => $_getMap(4);
+}
+
+class ListApprovalsResponse extends $pb.GeneratedMessage {
+  factory ListApprovalsResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<Approval>? approvals,
+  }) {
+    final result = ListApprovalsResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (approvals != null) result.approvals.addAll(approvals);
+    return result;
+  }
+
+  ListApprovalsResponse._();
+
+  factory ListApprovalsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListApprovalsResponse()..mergeFromBuffer(data, registry);
+  factory ListApprovalsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListApprovalsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListApprovalsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListApprovalsResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<Approval>(3, _omitFieldNames ? '' : 'approvals',
+        subBuilder: Approval.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListApprovalsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListApprovalsResponse copyWith(
+          void Function(ListApprovalsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListApprovalsResponse))
+          as ListApprovalsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListApprovalsResponse() / ListApprovalsResponse.new instead')
+  static ListApprovalsResponse create() => ListApprovalsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListApprovalsResponse._();
+  @$core.override
+  ListApprovalsResponse createEmptyInstance() => ListApprovalsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListApprovalsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListApprovalsResponse>(
+          ListApprovalsResponse.$_createMessage);
+  static ListApprovalsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<Approval> get approvals => $_getList(2);
+}
+
+/// A request in the approvals queue (FEATURES.md section 31).
+class Approval extends $pb.GeneratedMessage {
+  factory Approval({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? id,
+    ApprovalKind? kind,
+    $core.List<$core.int>? requesterId,
+    $core.String? summary,
+    $core.String? note,
+    ApprovalState? state,
+    $core.String? reason,
+    $core.List<$core.int>? decidedById,
+    $fixnum.Int64? decidedAt,
+    $fixnum.Int64? createdAt,
+    $fixnum.Int64? expiresAt,
+    Account? requester,
+  }) {
+    final result = Approval._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (kind != null) result.kind = kind;
+    if (requesterId != null) result.requesterId = requesterId;
+    if (summary != null) result.summary = summary;
+    if (note != null) result.note = note;
+    if (state != null) result.state = state;
+    if (reason != null) result.reason = reason;
+    if (decidedById != null) result.decidedById = decidedById;
+    if (decidedAt != null) result.decidedAt = decidedAt;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    if (requester != null) result.requester = requester;
+    return result;
+  }
+
+  Approval._();
+
+  factory Approval.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Approval()..mergeFromBuffer(data, registry);
+  factory Approval.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Approval()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Approval',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Approval.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'id')
+    ..aE<ApprovalKind>(4, _omitFieldNames ? '' : 'kind',
+        enumValues: ApprovalKind.values)
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'requesterId', $pb.PbFieldType.OY)
+    ..aOS(6, _omitFieldNames ? '' : 'summary')
+    ..aOS(7, _omitFieldNames ? '' : 'note')
+    ..aE<ApprovalState>(8, _omitFieldNames ? '' : 'state',
+        enumValues: ApprovalState.values)
+    ..aOS(9, _omitFieldNames ? '' : 'reason')
+    ..a<$core.List<$core.int>>(
+        10, _omitFieldNames ? '' : 'decidedById', $pb.PbFieldType.OY)
+    ..aInt64(11, _omitFieldNames ? '' : 'decidedAt')
+    ..aInt64(12, _omitFieldNames ? '' : 'createdAt')
+    ..aInt64(13, _omitFieldNames ? '' : 'expiresAt')
+    ..aOM<Account>(14, _omitFieldNames ? '' : 'requester',
+        subBuilder: Account.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Approval clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Approval copyWith(void Function(Approval) updates) =>
+      super.copyWith((message) => updates(message as Approval)) as Approval;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Approval() / Approval.new instead')
+  static Approval create() => Approval._();
+  static $pb.GeneratedMessage $_createMessage() => Approval._();
+  @$core.override
+  Approval createEmptyInstance() => Approval._();
+  @$core.pragma('dart2js:noInline')
+  static Approval getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Approval>(Approval.$_createMessage);
+  static Approval? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get id => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set id($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  ApprovalKind get kind => $_getN(2);
+  @$pb.TagNumber(4)
+  set kind(ApprovalKind value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKind() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearKind() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get requesterId => $_getN(3);
+  @$pb.TagNumber(5)
+  set requesterId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasRequesterId() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearRequesterId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get summary => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set summary($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSummary() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearSummary() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get note => $_getSZ(5);
+  @$pb.TagNumber(7)
+  set note($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasNote() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearNote() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  ApprovalState get state => $_getN(6);
+  @$pb.TagNumber(8)
+  set state(ApprovalState value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasState() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearState() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get reason => $_getSZ(7);
+  @$pb.TagNumber(9)
+  set reason($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasReason() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearReason() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.List<$core.int> get decidedById => $_getN(8);
+  @$pb.TagNumber(10)
+  set decidedById($core.List<$core.int> value) => $_setBytes(8, value);
+  @$pb.TagNumber(10)
+  $core.bool hasDecidedById() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearDecidedById() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $fixnum.Int64 get decidedAt => $_getI64(9);
+  @$pb.TagNumber(11)
+  set decidedAt($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(11)
+  $core.bool hasDecidedAt() => $_has(9);
+  @$pb.TagNumber(11)
+  void clearDecidedAt() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get createdAt => $_getI64(10);
+  @$pb.TagNumber(12)
+  set createdAt($fixnum.Int64 value) => $_setInt64(10, value);
+  @$pb.TagNumber(12)
+  $core.bool hasCreatedAt() => $_has(10);
+  @$pb.TagNumber(12)
+  void clearCreatedAt() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $fixnum.Int64 get expiresAt => $_getI64(11);
+  @$pb.TagNumber(13)
+  set expiresAt($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(13)
+  $core.bool hasExpiresAt() => $_has(11);
+  @$pb.TagNumber(13)
+  void clearExpiresAt() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  Account get requester => $_getN(12);
+  @$pb.TagNumber(14)
+  set requester(Account value) => $_setField(14, value);
+  @$pb.TagNumber(14)
+  $core.bool hasRequester() => $_has(12);
+  @$pb.TagNumber(14)
+  void clearRequester() => $_clearField(14);
+  @$pb.TagNumber(14)
+  Account ensureRequester() => $_ensure(12);
+}
+
+class DecideApprovalRequest extends $pb.GeneratedMessage {
+  factory DecideApprovalRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? approve,
+    $core.String? reason,
+  }) {
+    final result = DecideApprovalRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (approve != null) result.approve = approve;
+    if (reason != null) result.reason = reason;
+    return result;
+  }
+
+  DecideApprovalRequest._();
+
+  factory DecideApprovalRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DecideApprovalRequest()..mergeFromBuffer(data, registry);
+  factory DecideApprovalRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DecideApprovalRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DecideApprovalRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DecideApprovalRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'approve')
+    ..aOS(4, _omitFieldNames ? '' : 'reason')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DecideApprovalRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DecideApprovalRequest copyWith(
+          void Function(DecideApprovalRequest) updates) =>
+      super.copyWith((message) => updates(message as DecideApprovalRequest))
+          as DecideApprovalRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use DecideApprovalRequest() / DecideApprovalRequest.new instead')
+  static DecideApprovalRequest create() => DecideApprovalRequest._();
+  static $pb.GeneratedMessage $_createMessage() => DecideApprovalRequest._();
+  @$core.override
+  DecideApprovalRequest createEmptyInstance() => DecideApprovalRequest._();
+  @$core.pragma('dart2js:noInline')
+  static DecideApprovalRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DecideApprovalRequest>(
+          DecideApprovalRequest.$_createMessage);
+  static DecideApprovalRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get approve => $_getBF(1);
+  @$pb.TagNumber(3)
+  set approve($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasApprove() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearApprove() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get reason => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set reason($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasReason() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearReason() => $_clearField(4);
+}
+
+class DecideApprovalResponse extends $pb.GeneratedMessage {
+  factory DecideApprovalResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Approval? approval,
+  }) {
+    final result = DecideApprovalResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (approval != null) result.approval = approval;
+    return result;
+  }
+
+  DecideApprovalResponse._();
+
+  factory DecideApprovalResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DecideApprovalResponse()..mergeFromBuffer(data, registry);
+  factory DecideApprovalResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DecideApprovalResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DecideApprovalResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DecideApprovalResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Approval>(3, _omitFieldNames ? '' : 'approval',
+        subBuilder: Approval.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DecideApprovalResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DecideApprovalResponse copyWith(
+          void Function(DecideApprovalResponse) updates) =>
+      super.copyWith((message) => updates(message as DecideApprovalResponse))
+          as DecideApprovalResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use DecideApprovalResponse() / DecideApprovalResponse.new instead')
+  static DecideApprovalResponse create() => DecideApprovalResponse._();
+  static $pb.GeneratedMessage $_createMessage() => DecideApprovalResponse._();
+  @$core.override
+  DecideApprovalResponse createEmptyInstance() => DecideApprovalResponse._();
+  @$core.pragma('dart2js:noInline')
+  static DecideApprovalResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DecideApprovalResponse>(
+          DecideApprovalResponse.$_createMessage);
+  static DecideApprovalResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Approval get approval => $_getN(1);
+  @$pb.TagNumber(3)
+  set approval(Approval value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasApproval() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearApproval() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Approval ensureApproval() => $_ensure(1);
+}
+
+class RequestChannelRequest extends $pb.GeneratedMessage {
+  factory RequestChannelRequest({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? name,
+    $core.bool? private,
+    RequestChannelRequestAccess? access,
+    $core.String? topic,
+    $core.String? welcome,
+    RequestChannelRequestDefaultLevel? defaultLevel,
+    $core.List<$core.int>? sectionId,
+    $core.Iterable<$core.List<$core.int>>? accountIds,
+    $core.List<$core.int>? parentId,
+    $core.bool? announcement,
+    $core.bool? announcementReplies,
+    $core.String? note,
+  }) {
+    final result = RequestChannelRequest._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (name != null) result.name = name;
+    if (private != null) result.private = private;
+    if (access != null) result.access = access;
+    if (topic != null) result.topic = topic;
+    if (welcome != null) result.welcome = welcome;
+    if (defaultLevel != null) result.defaultLevel = defaultLevel;
+    if (sectionId != null) result.sectionId = sectionId;
+    if (accountIds != null) result.accountIds.addAll(accountIds);
+    if (parentId != null) result.parentId = parentId;
+    if (announcement != null) result.announcement = announcement;
+    if (announcementReplies != null)
+      result.announcementReplies = announcementReplies;
+    if (note != null) result.note = note;
+    return result;
+  }
+
+  RequestChannelRequest._();
+
+  factory RequestChannelRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestChannelRequest()..mergeFromBuffer(data, registry);
+  factory RequestChannelRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestChannelRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RequestChannelRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: RequestChannelRequest.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOB(4, _omitFieldNames ? '' : 'private')
+    ..aE<RequestChannelRequestAccess>(5, _omitFieldNames ? '' : 'access',
+        enumValues: RequestChannelRequestAccess.values)
+    ..aOS(6, _omitFieldNames ? '' : 'topic')
+    ..aOS(7, _omitFieldNames ? '' : 'welcome')
+    ..aE<RequestChannelRequestDefaultLevel>(
+        8, _omitFieldNames ? '' : 'defaultLevel',
+        enumValues: RequestChannelRequestDefaultLevel.values)
+    ..a<$core.List<$core.int>>(
+        9, _omitFieldNames ? '' : 'sectionId', $pb.PbFieldType.OY)
+    ..p<$core.List<$core.int>>(
+        10, _omitFieldNames ? '' : 'accountIds', $pb.PbFieldType.PY)
+    ..a<$core.List<$core.int>>(
+        11, _omitFieldNames ? '' : 'parentId', $pb.PbFieldType.OY)
+    ..aOB(12, _omitFieldNames ? '' : 'announcement')
+    ..aOB(13, _omitFieldNames ? '' : 'announcementReplies')
+    ..aOS(14, _omitFieldNames ? '' : 'note')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestChannelRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestChannelRequest copyWith(
+          void Function(RequestChannelRequest) updates) =>
+      super.copyWith((message) => updates(message as RequestChannelRequest))
+          as RequestChannelRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RequestChannelRequest() / RequestChannelRequest.new instead')
+  static RequestChannelRequest create() => RequestChannelRequest._();
+  static $pb.GeneratedMessage $_createMessage() => RequestChannelRequest._();
+  @$core.override
+  RequestChannelRequest createEmptyInstance() => RequestChannelRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RequestChannelRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RequestChannelRequest>(
+          RequestChannelRequest.$_createMessage);
+  static RequestChannelRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.bool get private => $_getBF(3);
+  @$pb.TagNumber(4)
+  set private($core.bool value) => $_setBool(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPrivate() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearPrivate() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  RequestChannelRequestAccess get access => $_getN(4);
+  @$pb.TagNumber(5)
+  set access(RequestChannelRequestAccess value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasAccess() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearAccess() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get topic => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set topic($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasTopic() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTopic() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get welcome => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set welcome($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasWelcome() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearWelcome() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  RequestChannelRequestDefaultLevel get defaultLevel => $_getN(7);
+  @$pb.TagNumber(8)
+  set defaultLevel(RequestChannelRequestDefaultLevel value) =>
+      $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasDefaultLevel() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearDefaultLevel() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.List<$core.int> get sectionId => $_getN(8);
+  @$pb.TagNumber(9)
+  set sectionId($core.List<$core.int> value) => $_setBytes(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasSectionId() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearSectionId() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $pb.PbList<$core.List<$core.int>> get accountIds => $_getList(9);
+
+  @$pb.TagNumber(11)
+  $core.List<$core.int> get parentId => $_getN(10);
+  @$pb.TagNumber(11)
+  set parentId($core.List<$core.int> value) => $_setBytes(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasParentId() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearParentId() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.bool get announcement => $_getBF(11);
+  @$pb.TagNumber(12)
+  set announcement($core.bool value) => $_setBool(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasAnnouncement() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearAnnouncement() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.bool get announcementReplies => $_getBF(12);
+  @$pb.TagNumber(13)
+  set announcementReplies($core.bool value) => $_setBool(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasAnnouncementReplies() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearAnnouncementReplies() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.String get note => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set note($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasNote() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearNote() => $_clearField(14);
+}
+
+class RequestChannelResponse extends $pb.GeneratedMessage {
+  factory RequestChannelResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Approval? approval,
+  }) {
+    final result = RequestChannelResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (approval != null) result.approval = approval;
+    return result;
+  }
+
+  RequestChannelResponse._();
+
+  factory RequestChannelResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestChannelResponse()..mergeFromBuffer(data, registry);
+  factory RequestChannelResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestChannelResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RequestChannelResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: RequestChannelResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Approval>(3, _omitFieldNames ? '' : 'approval',
+        subBuilder: Approval.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestChannelResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestChannelResponse copyWith(
+          void Function(RequestChannelResponse) updates) =>
+      super.copyWith((message) => updates(message as RequestChannelResponse))
+          as RequestChannelResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RequestChannelResponse() / RequestChannelResponse.new instead')
+  static RequestChannelResponse create() => RequestChannelResponse._();
+  static $pb.GeneratedMessage $_createMessage() => RequestChannelResponse._();
+  @$core.override
+  RequestChannelResponse createEmptyInstance() => RequestChannelResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RequestChannelResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RequestChannelResponse>(
+          RequestChannelResponse.$_createMessage);
+  static RequestChannelResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Approval get approval => $_getN(1);
+  @$pb.TagNumber(3)
+  set approval(Approval value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasApproval() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearApproval() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Approval ensureApproval() => $_ensure(1);
+}
+
+class SetMayApproveRequest extends $pb.GeneratedMessage {
+  factory SetMayApproveRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? mayApprove,
+  }) {
+    final result = SetMayApproveRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (mayApprove != null) result.mayApprove = mayApprove;
+    return result;
+  }
+
+  SetMayApproveRequest._();
+
+  factory SetMayApproveRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMayApproveRequest()..mergeFromBuffer(data, registry);
+  factory SetMayApproveRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMayApproveRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetMayApproveRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetMayApproveRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'mayApprove')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMayApproveRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMayApproveRequest copyWith(void Function(SetMayApproveRequest) updates) =>
+      super.copyWith((message) => updates(message as SetMayApproveRequest))
+          as SetMayApproveRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetMayApproveRequest() / SetMayApproveRequest.new instead')
+  static SetMayApproveRequest create() => SetMayApproveRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetMayApproveRequest._();
+  @$core.override
+  SetMayApproveRequest createEmptyInstance() => SetMayApproveRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetMayApproveRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetMayApproveRequest>(
+          SetMayApproveRequest.$_createMessage);
+  static SetMayApproveRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get mayApprove => $_getBF(1);
+  @$pb.TagNumber(3)
+  set mayApprove($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMayApprove() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearMayApprove() => $_clearField(3);
+}
+
 class ListMyThemesResponse extends $pb.GeneratedMessage {
   factory ListMyThemesResponse({
     $core.Iterable<$core.int>? emptyFields,
@@ -61170,6 +62136,205 @@ class KnockAnsweredFrame extends $pb.GeneratedMessage {
   $core.bool hasConversationName() => $_has(2);
   @$pb.TagNumber(4)
   void clearConversationName() => $_clearField(4);
+}
+
+class ApprovalCreatedFrame extends $pb.GeneratedMessage {
+  factory ApprovalCreatedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    Approval? approval,
+  }) {
+    final result = ApprovalCreatedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (approval != null) result.approval = approval;
+    return result;
+  }
+
+  ApprovalCreatedFrame._();
+
+  factory ApprovalCreatedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalCreatedFrame()..mergeFromBuffer(data, registry);
+  factory ApprovalCreatedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalCreatedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ApprovalCreatedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ApprovalCreatedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Approval>(3, _omitFieldNames ? '' : 'approval',
+        subBuilder: Approval.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalCreatedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalCreatedFrame copyWith(void Function(ApprovalCreatedFrame) updates) =>
+      super.copyWith((message) => updates(message as ApprovalCreatedFrame))
+          as ApprovalCreatedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ApprovalCreatedFrame() / ApprovalCreatedFrame.new instead')
+  static ApprovalCreatedFrame create() => ApprovalCreatedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ApprovalCreatedFrame._();
+  @$core.override
+  ApprovalCreatedFrame createEmptyInstance() => ApprovalCreatedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ApprovalCreatedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ApprovalCreatedFrame>(
+          ApprovalCreatedFrame.$_createMessage);
+  static ApprovalCreatedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Approval get approval => $_getN(1);
+  @$pb.TagNumber(3)
+  set approval(Approval value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasApproval() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearApproval() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Approval ensureApproval() => $_ensure(1);
+}
+
+class ApprovalDecidedFrame extends $pb.GeneratedMessage {
+  factory ApprovalDecidedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    Approval? approval,
+  }) {
+    final result = ApprovalDecidedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (approval != null) result.approval = approval;
+    return result;
+  }
+
+  ApprovalDecidedFrame._();
+
+  factory ApprovalDecidedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalDecidedFrame()..mergeFromBuffer(data, registry);
+  factory ApprovalDecidedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalDecidedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ApprovalDecidedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ApprovalDecidedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Approval>(3, _omitFieldNames ? '' : 'approval',
+        subBuilder: Approval.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalDecidedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalDecidedFrame copyWith(void Function(ApprovalDecidedFrame) updates) =>
+      super.copyWith((message) => updates(message as ApprovalDecidedFrame))
+          as ApprovalDecidedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ApprovalDecidedFrame() / ApprovalDecidedFrame.new instead')
+  static ApprovalDecidedFrame create() => ApprovalDecidedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ApprovalDecidedFrame._();
+  @$core.override
+  ApprovalDecidedFrame createEmptyInstance() => ApprovalDecidedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ApprovalDecidedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ApprovalDecidedFrame>(
+          ApprovalDecidedFrame.$_createMessage);
+  static ApprovalDecidedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Approval get approval => $_getN(1);
+  @$pb.TagNumber(3)
+  set approval(Approval value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasApproval() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearApproval() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Approval ensureApproval() => $_ensure(1);
+}
+
+class ApprovalsChangedFrame extends $pb.GeneratedMessage {
+  factory ApprovalsChangedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? mayApprove,
+  }) {
+    final result = ApprovalsChangedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (mayApprove != null) result.mayApprove = mayApprove;
+    return result;
+  }
+
+  ApprovalsChangedFrame._();
+
+  factory ApprovalsChangedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalsChangedFrame()..mergeFromBuffer(data, registry);
+  factory ApprovalsChangedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ApprovalsChangedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ApprovalsChangedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ApprovalsChangedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'mayApprove')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalsChangedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ApprovalsChangedFrame copyWith(
+          void Function(ApprovalsChangedFrame) updates) =>
+      super.copyWith((message) => updates(message as ApprovalsChangedFrame))
+          as ApprovalsChangedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ApprovalsChangedFrame() / ApprovalsChangedFrame.new instead')
+  static ApprovalsChangedFrame create() => ApprovalsChangedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ApprovalsChangedFrame._();
+  @$core.override
+  ApprovalsChangedFrame createEmptyInstance() => ApprovalsChangedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ApprovalsChangedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ApprovalsChangedFrame>(
+          ApprovalsChangedFrame.$_createMessage);
+  static ApprovalsChangedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get mayApprove => $_getBF(1);
+  @$pb.TagNumber(3)
+  set mayApprove($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMayApprove() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearMayApprove() => $_clearField(3);
 }
 
 class ReportCreatedFrame extends $pb.GeneratedMessage {

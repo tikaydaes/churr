@@ -119,8 +119,8 @@ type TimeoutFilter struct {
 // ReportScope says whose reports an account may handle, in a form the query
 // can join against. perm.ReportScope builds it; nothing else should.
 type ReportScope struct {
-	// AccountID: reports in conversations where this account's stored level
-	// is manager.
+	// AccountID: reports in conversations where this account's level is
+	// moderator or manager.
 	AccountID model.AccountID
 	// PublicChannels: reports in every public channel too. Set for admins.
 	PublicChannels bool

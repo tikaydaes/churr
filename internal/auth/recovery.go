@@ -162,7 +162,7 @@ func (s *Service) CreateRecoveryLink(ctx context.Context, who Who, target model.
 		return RecoveryLink{}, err
 	}
 	if acc.Role == model.RoleOwner {
-		return RecoveryLink{}, model.ErrForbidden.With("A recovery link for the owner is made on the server with `churr recovery`.")
+		return RecoveryLink{}, model.ErrForbidden.With("A recovery link for an owner is made on the server with `churr recovery`.")
 	}
 	if err := perm.CheckOnAccount(who.Account, perm.MakeRecoveryLink, acc); err != nil {
 		return RecoveryLink{}, err

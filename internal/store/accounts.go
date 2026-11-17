@@ -17,8 +17,9 @@ type Accounts interface {
 	// 0 through CreateUnclaimed for an imported account). A local username
 	// must be free among local usernames and group handles and must not be
 	// reserved, or the answer is model.ErrNameTaken; a remote username
-	// must be free on its server. There is at most one owner
-	// (model.ErrConflict for a second).
+	// must be free on its server. An account is created owner only while
+	// the instance has none, by first-run setup (model.ErrConflict
+	// otherwise); later owners are made by SetRole.
 	//
 	// A new owner, admin or member is at once a member of every channel
 	// the built-in groups are in; those joins are returned.
@@ -44,7 +45,8 @@ type Accounts interface {
 	ByUsername(ctx context.Context, username string) (model.Account, error)
 	// ByWebAuthnHandle finds the account a passkey's user handle names.
 	ByWebAuthnHandle(ctx context.Context, handle []byte) (model.Account, error)
-	// Owner returns the one owner. found is false before first-run setup.
+	// Owner returns the first owner, the one setup made unless it has
+	// stepped down. found is false before first-run setup.
 	Owner(ctx context.Context) (a model.Account, found bool, err error)
 	// List returns accounts ordered by username, then id.
 	List(ctx context.Context, f AccountFilter, p Page) (accounts []model.Account, next string, err error)
@@ -57,13 +59,13 @@ type Accounts interface {
 	// and removal have their own methods and are ignored here. If fn
 	// returns an error nothing is written and that error is returned.
 	Update(ctx context.Context, id model.AccountID, fn func(a *model.Account) error) (model.Account, error)
-	// SetRole changes the role of an account that is not the owner to
-	// admin, member or guest (model.ErrConflict otherwise) and works out
-	// its channel memberships through the built-in groups again.
+	// SetRole changes the role of a person's account between owner,
+	// admin, member and guest (model.ErrConflict for any other) and works
+	// out its channel memberships through the built-in groups again. The
+	// instance's last active owner cannot be given another role
+	// (model.ErrConflict): there is always an owner. Who may ask is
+	// perm's (CheckSetRole).
 	SetRole(ctx context.Context, id model.AccountID, role model.Role) (model.Account, MembershipResult, error)
-	// TransferOwnership makes `to` the owner and the present owner an
-	// admin, together, so there is always exactly one owner.
-	TransferOwnership(ctx context.Context, to model.AccountID) (MembershipResult, error)
 	// Remove carries out account removal as docs/SCHEMA.md section 14.3
 	// lists it, in one go: marks the account removed, clears its profile,
 	// deletes its credentials and personal rows, takes it out of every

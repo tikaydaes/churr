@@ -39,7 +39,7 @@ func TestSealedAcrossServers(t *testing.T) {
 			hub := how != "direct"
 			s := shareBy(t, how)
 			a, b := s.Servers[0], s.Servers[1]
-			sam, lee := s.ann, b.Owner
+			sam, lee := s.ann, s.keeper(1)
 			samPhone := sam.Sealed("android")
 			phrase := samPhone.CreateBackup()
 			leePhone := lee.Sealed("ios")

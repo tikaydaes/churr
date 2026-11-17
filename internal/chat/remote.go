@@ -839,10 +839,11 @@ func (s *Service) JoinAdmitted(ctx context.Context, conv model.ConversationID, a
 }
 
 // SyncManagers makes this server's copy of a channel a hub owns agree with
-// the hub's manager list: the local members on it are its managers, and
-// nobody else is (docs/PERMISSIONS.md section 14.1). Levels held through a
-// group are left alone.
-func (s *Service) SyncManagers(ctx context.Context, conv model.ConversationID, moderators map[model.AccountID]bool) error {
+// the hub's lists: the local members on the manager list are its managers,
+// those on the moderator list its moderators, and nobody else is either
+// (docs/PERMISSIONS.md section 14.1). Levels held through a group are left
+// alone.
+func (s *Service) SyncManagers(ctx context.Context, conv model.ConversationID, managers, moderators map[model.AccountID]bool) error {
 	return s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		members, err := tx.Members().All(ctx, conv)
 		if err != nil {
@@ -851,9 +852,11 @@ func (s *Service) SyncManagers(ctx context.Context, conv model.ConversationID, m
 		for _, m := range members {
 			want := m.DirectLevel
 			switch {
-			case moderators[m.AccountID]:
+			case managers[m.AccountID]:
 				want = model.LevelManager
-			case m.DirectLevel == model.LevelManager:
+			case moderators[m.AccountID]:
+				want = model.LevelModerator
+			case m.DirectLevel.AtLeast(model.LevelModerator):
 				want = model.LevelMember
 			}
 			if want == m.DirectLevel || m.DirectLevel == "" {

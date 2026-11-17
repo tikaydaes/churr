@@ -72,7 +72,9 @@ op('DELETE reference-patterns/{id}', 'deleteReferencePattern',
 
 op('POST channels', 'createChannel',
    'Create a named channel',
-   who='Owner, admin or member. The creator is its first manager.',
+   who=('Owner, admin or member. The creator is its first manager. While new channels wait for approval (setting '
+        '`channels.creation_approval`), a member who may not approve requests is answered `approval_required`, after '
+        'every other check, and asks with `requestChannel` instead.'),
    desc=('Channel names are not unique: any number of channels may have the same name, and a name is never refused '
          'for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent\'s section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. To create a sub-channel the caller must be a member of the parent, or an admin (`forbidden` otherwise). A parent that is not a named channel is refused with `invalid_value`; one that is itself a sub-channel answers `conflict`; one the caller cannot see answers `not_found`.'),
    body={'name': ('str', 'A channel name: 1 to 64 characters of any script. Spaces and capitals are allowed; no control characters, no leading or trailing space, and runs of spaces are collapsed to one. Not unique.', {'minLength': 1, 'maxLength': 64}),
@@ -88,7 +90,7 @@ op('POST channels', 'createChannel',
          'account_ids?': ('[uuid]', 'Accounts to add at the default level.')},
    res={'conversation': '#Conversation'},
    st=201,
-   err='forbidden not_found conflict')
+   err='forbidden not_found conflict approval_required')
 
 op('POST chats', 'openChat',
    'Find or create the ad-hoc channel with exactly these people',
@@ -131,12 +133,12 @@ op('POST sealed', 'openSealedChat',
 
 op('PATCH conversations/{id}', 'updateConversation',
    "Change a channel's name, topic and settings",
-   who="Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. A manager may set a retention period shorter than the server's; an admin may set any. Sealed chats cannot be changed.",
+   who="The channel's managers. An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.",
    desc=('Giving an ad-hoc channel a name makes it a named private channel; nothing else about it changes. `private` '
          'may only be set to true: a public channel can be made private, and people who are not members then lose it '
          'at once, history and search included. A private channel can never be made public. Welcome text, section '
          'and retention are for named channels. Channel names are not unique, and a name is never refused for '
-         'being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent\'s section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by an account acting as manager of the sub-channel that is also a member of the parent, or by an admin (`forbidden` otherwise). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.'),
+         'being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent\'s section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by a manager of the sub-channel who is also a member of the parent; a manager who is not may only clear it (`forbidden` otherwise). Admins set and clear it from the admin console (`adminUpdateChannel`). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.'),
    body={'name?': ('str', 'A channel name: 1 to 64 characters of any script. Spaces and capitals are allowed; no control characters, no leading or trailing space, and runs of spaces are collapsed to one. Not unique.', {'minLength': 1, 'maxLength': 64}),
          'topic?': ('str', 'Up to 250 characters.'),
          'welcome?': 'str',
@@ -166,7 +168,7 @@ op('POST conversations/{id}/leave', 'leaveConversation',
    'Leave a channel',
    who='Any member who is in the channel directly.',
    desc=('Refused with `conflict` for someone who is in through a group, and in a sealed chat, which can only be '
-         'hidden from the sidebar. If the last manager leaves, the longest-standing member becomes manager. When the last member of a '
+         'hidden from the sidebar. If the last manager leaves, the longest-standing member who is a person of this instance and not a guest becomes manager; in a channel a hub owns nobody is promoted, since its managers are those on the hub\'s list. When the last member of a '
          'private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked '
          'channel cannot return.'),
    err='not_found conflict')
@@ -190,49 +192,49 @@ op('POST conversations/{id}/withdraw', 'withdrawChatRequest',
 
 op('POST conversations/{id}/archive', 'archiveConversation',
    'Archive a channel',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.',
+   who="The channel's managers.",
    desc='An archived channel can be read and searched and accepts no posts.',
    res={'conversation': '#Conversation'},
    err='forbidden not_found')
 
 op('DELETE conversations/{id}/archive', 'unarchiveConversation',
    'Bring an archived channel back',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.',
+   who="The channel's managers.",
    res={'conversation': '#Conversation'},
    err='forbidden not_found')
 
 op('GET conversations/{id}/members', 'listMembers',
    'List the members of a conversation',
    who='Any account that can read the conversation: its members, and for a public channel every owner, admin and member.',
-   q=['level:enum:reader|member|manager:Only this level.'],
+   q=['level:enum:reader|member|moderator|manager:Only this level.'],
    res={'members': '[#Member]'},
    err='not_found',
    page='cursor')
 
 op('POST conversations/{id}/members', 'addMembers',
    'Add accounts to a channel',
-   who='Any member of an ad-hoc channel. In a named channel, accounts acting as manager. Nobody, in a sealed chat. The caller must be able to see each account, and none of them may have blocked the caller.',
+   who='Any member of an ad-hoc channel. In a named channel, its moderators and managers, at the channel\'s default level; choosing another `level`, and adding a bot, is for its managers. Nobody, in a sealed chat. The caller must be able to see each account, and none of them may have blocked the caller.',
    desc=('Whoever is added sees the whole history. Adding to an ad-hoc channel past 50 members is refused with '
          '`too_large`. A remote account is never added to a channel that is not shared, nor to an ad-hoc channel '
          'that began local. In an ad-hoc channel that crosses servers, the accounts are invited through their '
          'servers: the answer is 200 and does not list them, and they appear with `member.joined` once their '
          'servers accept.'),
-   body={'account_ids': '[uuid]', 'level?': ('enum:reader|member|manager', "Default: the channel's default level.")},
+   body={'account_ids': '[uuid]', 'level?': ('enum:reader|member|moderator|manager', "Default: the channel's default level.")},
    res={'members': '[#Member]'},
    err='forbidden not_found archived locked too_large')
 
 op('PATCH conversations/{id}/members/{account_id}', 'setMemberLevel',
    "Change a member's level in a channel",
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.',
+   who="The channel's managers. They appoint and dismiss moderators and managers and set who only reads.",
    desc=("Sets the level held directly. The member's level is the highest of that and the levels of their groups. A "
-         "channel's last manager cannot lower their own level (`conflict`). A remote account is never a manager."),
-   body={'level': 'enum:reader|member|manager'},
+         "channel's last manager cannot lower their own level (`conflict`). A guest is never a moderator or a manager, nor is a remote account."),
+   body={'level': 'enum:reader|member|moderator|manager'},
    res={'member': '#Member'},
    err='forbidden not_found conflict')
 
 op('PUT conversations/{id}/members/{account_id}/may-post', 'setMemberMayPost',
    'Allow a member to post in an announcement channel, or stop allowing it',
-   who='Accounts acting as manager of the channel, in a named channel.',
+   who="The channel's managers, in a named channel.",
    desc=('In an announcement channel only its managers and the members allowed here post. The member must be at '
          'level `member` or above to use it: a `reader` posts nowhere. It can be set while the channel is not an '
          'announcement channel and applies once it is. The member is sent `membership.updated`.'),
@@ -242,28 +244,28 @@ op('PUT conversations/{id}/members/{account_id}/may-post', 'setMemberMayPost',
 
 op('DELETE conversations/{id}/members/{account_id}', 'removeMember',
    'Remove an account from a channel',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. A manager cannot remove an admin or the owner.',
+   who="The channel's moderators and managers. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.",
    desc=('Removes the direct membership. An account that is in through a group cannot be removed this way: remove '
          'the group, or take the person out of the group (`conflict`).'),
    err='forbidden not_found conflict')
 
 op('GET conversations/{id}/bans', 'listChannelBans',
    'List the bans in force in a channel',
-   who=('Whoever may ban there (see `banFromChannel`), and an admin from the console for a named channel they '
-        'cannot otherwise act in.'),
+   who=('Whoever may ban there (see `banFromChannel`): the channel\'s moderators and managers. Admins see a named '
+        'channel\'s bans in the admin console and do not lift them.'),
    desc='Newest first, with who banned and when. Bans that ran out or were lifted are not listed.',
    res={'bans': '[#ChannelBan]'},
    err='forbidden not_found')
 
 op('POST conversations/{id}/bans', 'banFromChannel',
    'Ban an account from a channel',
-   who=('Whoever may remove members there: accounts acting as manager of a named channel (its managers, and admins '
-        'in a public channel or a private one they belong to), the managers of an ad-hoc channel. Never in a sealed '
-        'chat. A manager cannot ban an admin; nobody bans the owner or themselves.'),
+   who=('Whoever may remove members there: the channel\'s moderators and managers, named or ad-hoc. Never in a '
+        'sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or '
+        'themselves. An admin is banned like anyone.'),
    desc=('Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, '
          'with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a '
          'public channel is hidden from it. A new ban replaces one in force. Not inherited by sub-channels. A channel '
-         'shared with other servers takes no new bans (`conflict`). The account and the channel\'s managers get '
+         'shared with other servers takes no new bans (`conflict`). The account and the channel\'s moderators and managers get '
          '`channel_ban.created`. Written to the audit log, except in an ad-hoc channel.'),
    body='#ChannelBanInput',
    res={'ban': '#ChannelBan'},
@@ -273,24 +275,24 @@ op('POST conversations/{id}/bans', 'banFromChannel',
 op('DELETE conversations/{id}/bans/{account_id}', 'liftChannelBan',
    'Lift a ban on an account in a channel',
    who='As `listChannelBans`.',
-   desc=('The account may then join or be added again; it is not brought back. The account and the managers get '
+   desc=('The account may then join or be added again; it is not brought back. The account and the moderators and managers get '
          '`channel_ban.lifted`.'),
    err='forbidden not_found')
 
 op('POST conversations/{id}/knocks', 'knock',
-   'Ask the managers of a knock channel to add the caller',
+   'Ask the moderators and managers of a knock channel to add the caller',
    who='Owner, admin and member accounts that can see the channel and are not in it.',
    desc=('`/knock` and "Ask to join" (rulings R74, R79). Only a knock channel takes requests (`access` `knock`): a '
          'public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller '
          'is in answers `conflict`. At most one request waits per account and channel; asking again returns the one '
-         'waiting. Its managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and '
+         'waiting. Its moderators and managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and '
          'locked channels take none. At most ten an hour per account that were not accepted, waiting or declined; an accepted one does not count (`rate_limited`).'),
    res={'knock': '#Knock'},
    err='forbidden not_found conflict archived locked')
 
 op('GET conversations/{id}/knocks', 'listKnocks',
    'List the requests waiting to be added to a channel',
-   who='Accounts acting as manager of the channel.',
+   who="The channel's moderators and managers.",
    desc=('Oldest first. A request from someone who has become a member another way, or whose account was removed, '
          'is left out. Empty for an ad-hoc channel.'),
    res={'knocks': '[#Knock]'},
@@ -298,9 +300,9 @@ op('GET conversations/{id}/knocks', 'listKnocks',
 
 op('POST conversations/{id}/knocks/{knock_id}', 'answerKnock',
    'Accept or decline a request to be added to a channel',
-   who='Accounts acting as manager of the named channel.',
+   who="The named channel's moderators and managers.",
    desc=('Accepting adds the account at the channel\'s default level with every rule of `addMembers` (a ban, a '
-         'block or a lock refuses it, and the request stays waiting). The managers get `knock.answered`; the one '
+         'block or a lock refuses it, and the request stays waiting). The moderators and managers get `knock.answered`; the one '
          'who asked gets it too, with the channel\'s name and without who answered. A request answered already is '
          '`not_found`. Written to the audit log.'),
    body={'accept': 'bool'},
@@ -315,16 +317,16 @@ op('GET conversations/{id}/groups', 'listChannelGroups',
 
 op('PUT conversations/{id}/groups/{group_id}', 'addChannelGroup',
    'Add a group to a channel at a level, or change its level',
-   who='Accounts acting as manager of a named channel, with the owner, admin or member role. Groups are not added to ad-hoc channels.',
+   who='The managers of a named channel, with the owner, admin or member role. Groups are not added to ad-hoc channels.',
    desc=('Everyone in the group is then in the channel at that level and stays in step as the group changes. In a '
          'locked channel a group cannot be added (`locked`), and a group already there brings in nobody new.'),
-   body={'level': 'enum:reader|member|manager'},
+   body={'level': 'enum:reader|member|moderator|manager'},
    res={'group': '#ChannelGroup'},
    err='forbidden not_found archived locked')
 
 op('DELETE conversations/{id}/groups/{group_id}', 'removeChannelGroup',
    'Remove a group from a channel',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.',
+   who="The channel's managers.",
    err='forbidden not_found')
 
 op('PUT conversations/{id}/read', 'setReadPosition',
@@ -358,7 +360,7 @@ op('POST conversations/{id}/broad-mentions/check', 'checkBroadMentions',
    'Say what the broad mentions of a text would do',
    who='Members at level `member` or above, if the conversation is not archived or read-only.',
    desc=('Reads `text` as `postMessage` would and stores nothing. `broad` says it holds `@channel`, `@here` or '
-         '`@everyone` outside code. `allowed` says the caller may use them here: its managers and the admins '
+         '`@everyone` outside code. `allowed` says the caller may use them here: its managers '
          'always, and anyone else unless the server or the channel limits broad mentions to managers or the '
          'channel has more members than `mentions.broad_mention_limit`. When it is false the message would be '
          'stored with those words as plain text and notify nobody, and a client says so before sending. '
@@ -386,24 +388,24 @@ op('GET conversations/{id}/pins', 'listPins',
 
 op('PUT conversations/{id}/pins/{message_id}', 'pinMessage',
    'Pin a message',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. There are no pins in a sealed chat.',
+   who="The channel's managers. There are no pins in a sealed chat.",
    desc='At most 100 pins per conversation; one more is refused with `conflict`.',
    err='forbidden not_found conflict archived')
 
 op('DELETE conversations/{id}/pins/{message_id}', 'unpinMessage',
    'Unpin a message',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.',
+   who="The channel's managers.",
    err='forbidden not_found')
 
 op('GET conversations/{id}/timeouts', 'listChannelTimeouts',
    'List the time-outs in force in a channel',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.',
+   who="The channel's moderators and managers.",
    res={'timeouts': '[#Timeout]'},
    err='forbidden not_found')
 
 op('POST conversations/{id}/timeouts', 'timeOutMember',
    'Stop an account posting and reacting in a channel for a set time',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. A manager cannot time out an admin or the owner.',
+   who="The channel's moderators and managers. A moderator does not time out a moderator or a manager; nobody times out an owner of this instance, or themselves. An admin is timed out like anyone.",
    desc=('The account can still read. It cannot post, react, tick, answer forms, edit, upload, join a call or send '
          'typing notices there. Written to the audit log.'),
    body='#TimeoutInput',
@@ -413,7 +415,7 @@ op('POST conversations/{id}/timeouts', 'timeOutMember',
 
 op('DELETE conversations/{id}/timeouts/{timeout_id}', 'liftChannelTimeout',
    'Lift a time-out in a channel',
-   who='Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.',
+   who="The channel's moderators and managers.",
    err='forbidden not_found')
 
 op('POST reports/{id}/handle', 'handleReport',
@@ -425,7 +427,7 @@ op('POST reports/{id}/handle', 'handleReport',
 
 op('POST conversations/{id}/lock', 'lockConversation',
    'Lock a private channel for good',
-   who='Managers of a private channel, named or ad-hoc. Any admin may lock a named private channel with `adminLockChannel`; an ad-hoc channel can be locked only from inside.',
+   who='The moderators and managers of a private channel, named or ad-hoc. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).',
    desc=('One-way. Afterwards nobody can be added or join, a group attached to it brings in nobody new (its current '
          'members stay), people can still leave, and someone who leaves cannot return. Sets `locked_at` and sends '
          '`conversation.updated`. A public channel is refused with `conflict`: make it private first.'),
@@ -434,7 +436,7 @@ op('POST conversations/{id}/lock', 'lockConversation',
 
 op('GET reports', 'listReports',
    'List the reports the caller may handle',
-   who='Any signed-in account. The list holds only reports the caller may handle: in a public channel, accounts acting as manager, which includes every admin; in a private or ad-hoc channel, only accounts whose level there is `manager`.',
+   who='Any signed-in account. The list holds only reports the caller may handle: the channel\'s moderators and managers, and in a public channel every admin too, for what is the instance\'s to do. An admin never sees the reports of a private or ad-hoc channel unless a moderator or manager there.',
    desc=('Reports made by people and messages the word filter flagged (`source` of `filter`) follow the same '
          "routing. A report about the caller's own message is left out if another handler exists."),
    q=['conversation_id:uuid:Only this conversation.', 'waiting:bool:Only reports nobody has handled.'],
@@ -463,7 +465,7 @@ op('GET conversations/{id}/messages', 'listMessages',
 
 op('POST conversations/{id}/messages', 'postMessage',
    'Post a message',
-   who='Members at level `member` or above, if the conversation is not archived or read-only. Managers, bots and webhooks are exempt from slow mode. Cards and the `bot` form action need a bot. The `channel` form action and `answerer_group_id` need an account acting as manager. The `group` form action needs an admin who is a member at `member` or above. In a conversation shared with other servers only `tally` forms are allowed.',
+   who='Members at level `member` or above, if the conversation is not archived or read-only. The channel\'s moderators and managers, bots and webhooks are exempt from slow mode. Cards and the `bot` form action need a bot. The `channel` form action and `answerer_group_id` need a manager of the channel. The `group` form action needs an admin who is a member at `member` or above. In a conversation shared with other servers only `tally` forms are allowed.',
    desc=('Send `client_id` so a retry cannot post twice. Answers 201 for a new message and 200 for one already '
          'created with that `client_id`. `cannot_read_ids` names accounts the text mentions that cannot read this '
          'conversation, so the client can tell the author they will not be notified; it says nothing else about '
@@ -520,7 +522,7 @@ op('PATCH messages/{id}', 'editMessage',
 
 op('DELETE messages/{id}', 'deleteMessage',
    'Delete a message',
-   who="Its author, while they can read the conversation. For another account's message, an account acting as manager of the channel. In a sealed chat, the author only. Only an admin may pass `purge`.",
+   who="Its author, while they can read the conversation. For another account's message, the channel's moderators and managers. In a sealed chat, the author only. Only an admin may pass `purge`.",
    desc=('Leaves a marker saying who deleted it and when. The content is kept as history until purged or removed by '
          "retention. In a sealed chat the server erases the row's ciphertext and file blobs at once and leaves the "
          'marker.'),
@@ -584,7 +586,7 @@ op('GET messages/{id}/checklist/{item}/history', 'getChecklistItemHistory',
 
 op('DELETE messages/{id}/previews/{index}', 'removeLinkPreview',
    'Remove a link preview from a message',
-   who="The message's author, at level `member` or above, or an account acting as manager of the channel.",
+   who="The message's author, at level `member` or above, or the channel's moderators and managers.",
    desc="`{index}` is the card's position in `cards`, from 0.",
    res={'message': '#Message'},
    err='forbidden not_found')
@@ -605,8 +607,8 @@ op('POST messages/{id}/notify-anyway', 'notifyAnyway',
 op('POST messages/{id}/report', 'reportMessage',
    'Report a message',
    who='In a public channel, anyone who can read it. In a private or ad-hoc channel, its members. Nobody, in a sealed chat.',
-   desc=("In a private or ad-hoc channel the report goes to that channel's managers only. In a public channel it "
-         'goes to accounts acting as manager, which includes the admins.'),
+   desc=("The report goes to the channel's moderators and managers. In a public channel it also goes to the "
+         'admins, for what is the instance\'s to do; an admin who handles it with `deleted` purges the message.'),
    body={'reason?': 'str'},
    res={'report_id': 'uuid'},
    st=201,
@@ -631,7 +633,7 @@ op('GET bookmarks', 'listBookmarks',
 
 op('POST messages/{id}/move-to-channel', 'moveThreadToChannel',
    'Move a thread out into a channel of its own',
-   who="The author of the thread's parent message, at level `member` or above and with a role that may create channels; or an account acting as manager of the channel. Not in a shared channel, a sealed chat or an archived channel.",
+   who="The author of the thread's parent message, at level `member` or above and with a role that may create channels; or a manager of the channel. Not in a shared channel, a sealed chat or an archived channel.",
    desc=('The replies are moved, not copied, and the move is not undone. The parent stays in the old channel '
          "untouched; a copy of it is the new channel's first message, and the replies become top-level messages "
          "after it. The new channel is private if the old one was, and is a sub-channel of the channel the thread was in, or, if that channel is itself a sub-channel, a sibling under the same parent. Its name need not be unique. The thread's followers become its members and "
@@ -690,7 +692,7 @@ op('POST messages/{id}/form/options', 'addFormOption',
 
 op('POST messages/{id}/form/close', 'closeForm',
    'Close a form',
-   who="The message's author, while they can read the conversation, or an account acting as manager of the channel.",
+   who="The message's author, while they can read the conversation, or a manager of the channel.",
    desc=('A closed form keeps its result on the message and accepts no more answers. In a shared conversation only '
          'the server the form was posted on can close it; elsewhere this answers `forbidden`.'),
    res={'form': '#Form'},

@@ -81,6 +81,9 @@ type Areas interface {
 	// Chat requests and ghost members (rulings R77, R78).
 	ChatRequests() ChatRequests
 
+	// The approvals queue and its approvers (approvals.go).
+	Approvals() Approvals
+
 	// What the janitor needs across tables (janitor.go).
 	Janitor() Janitor
 }

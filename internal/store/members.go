@@ -55,6 +55,10 @@ type Members interface {
 	// Managers returns the accounts whose level in the conversation is
 	// manager.
 	Managers(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error)
+	// Keepers returns the accounts whose level in the conversation is
+	// moderator or manager: who answers its requests to join and its
+	// reports.
+	Keepers(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error)
 
 	// Knock stores a waiting knock, filling in an empty ID and a zero
 	// CreatedAt. created is false, and nothing is stored, when the account
@@ -79,6 +83,9 @@ type Members interface {
 	// account already holds a direct level; model.ErrLocked if the
 	// conversation is locked.
 	AddDirect(ctx context.Context, conv model.ConversationID, account model.AccountID, level model.Level, at model.Time) (MembershipResult, error)
+	// AddByOverride is AddDirect for an Owner's override (docs/PERMISSIONS.md
+	// section 6.3): it adds to a locked conversation too.
+	AddByOverride(ctx context.Context, conv model.ConversationID, account model.AccountID, level model.Level, at model.Time) (MembershipResult, error)
 	// SetDirectLevel changes the level a member holds directly (a member
 	// who is in only through groups gains a direct level). The level in
 	// force stays the highest of direct and group levels.

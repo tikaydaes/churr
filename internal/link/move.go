@@ -203,9 +203,9 @@ func (s *Service) setMove(ctx context.Context, id string, fn func(mv *store.Stre
 }
 
 // managersOf returns the managers of a channel on this server as the
-// moderators they become when the channel moves onto a hub: every member
-// whose level is manager, and every active owner or admin who is a member
-// (they act as managers, docs/PERMISSIONS.md section 2.4).
+// managers they become when the channel is shared to or moves onto a hub:
+// every active person's account whose level is manager. An Owner or an
+// Admin is a manager only as anyone is (docs/PERMISSIONS.md section 2.4).
 func (s *Service) managersOf(ctx context.Context, a store.Areas, conv model.ConversationID) ([]wire.ChannelAccount, error) {
 	ids, err := a.Members().IDs(ctx, conv)
 	if err != nil {
@@ -228,7 +228,7 @@ func (s *Service) managersOf(ctx context.Context, a store.Areas, conv model.Conv
 		if !acc.Local() || !acc.Active() || acc.Role == model.RoleBot {
 			continue
 		}
-		if level[acc.ID] || acc.Role.IsAdmin() {
+		if level[acc.ID] {
 			out = append(out, wire.ChannelAccount{AccountID: string(acc.ID), Server: s.id.Name, Username: acc.Username})
 		}
 	}

@@ -219,11 +219,13 @@ var messages = []message{
 		{"invite_code", 3, kindString, cardOne, 0, ""},
 		{"username", 4, kindString, cardOne, 0, ""},
 		{"display_name", 5, kindString, cardOne, 0, ""},
+		{"note", 6, kindString, cardOne, 0, ""},
 	}},
 	{name: "RegisterWithAccessKeyRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"invite_code", 3, kindString, cardOne, 0, ""},
 		{"username", 4, kindString, cardOne, 0, ""},
 		{"display_name", 5, kindString, cardOne, 0, ""},
+		{"note", 8, kindString, cardOne, 0, ""},
 		{"access_key_auth", 6, kindBytes, cardOne, 0, ""},
 		{"unlock_public", 7, kindBytes, cardOne, 0, ""},
 	}},
@@ -2008,6 +2010,7 @@ var messages = []message{
 		{"server.time_zone", 5, kindString, cardOne, 0, ""},
 		{"welcome.text", 6, kindString, cardOne, 0, ""},
 		{"registration.mode", 7, kindEnum, cardOne, 110, ""},
+		{"registration.approval", 41, kindBool, cardOne, 0, ""},
 		{"invites.members_may_invite", 8, kindBool, cardOne, 0, ""},
 		{"auth.member_sign_in", 9, kindEnum, cardOne, 111, ""},
 		{"auth.second_factor", 10, kindEnum, cardOne, 112, ""},
@@ -2025,6 +2028,7 @@ var messages = []message{
 		{"emoji.members_may_add", 19, kindBool, cardOne, 0, ""},
 		{"blocking.enabled", 20, kindBool, cardOne, 0, ""},
 		{"webhooks.managers_may_approve", 21, kindBool, cardOne, 0, ""},
+		{"channels.creation_approval", 42, kindBool, cardOne, 0, ""},
 		{"files.max_bytes", 22, kindInt, cardOne, 0, ""},
 		{"files.store", 23, kindEnum, cardOne, 114, ""},
 		{"files.s3", 24, kindMsg, cardOne, 369, ""},
@@ -2163,6 +2167,8 @@ var messages = []message{
 		{"claimed_at", 26, kindTime, cardOne, 0, ""},
 		{"removed_by_id", 27, kindUuid, cardOne, 0, ""},
 		{"banned", 28, kindBool, cardOne, 0, ""},
+		{"may_approve", 31, kindBool, cardOne, 0, ""},
+		{"applying", 32, kindBool, cardOne, 0, ""},
 	}},
 	{name: "AdminGetAccountResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"account", 3, kindMsg, cardOne, 386, ""},
@@ -2289,17 +2295,14 @@ var messages = []message{
 	{name: "AdminUpdateChannelResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"channel", 3, kindMsg, cardOne, 410, ""},
 	}},
+	{name: "AppointManagerRequest", shape: shapeObject, extra: 0, fields: []field{
+		{"override", 3, kindBool, cardOne, 0, ""},
+	}},
 	{name: "AppointManagerResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"member", 3, kindMsg, cardOne, 194, ""},
 	}},
-	{name: "AdminArchiveChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"channel", 3, kindMsg, cardOne, 410, ""},
-	}},
-	{name: "AdminUnarchiveChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"channel", 3, kindMsg, cardOne, 410, ""},
-	}},
-	{name: "AdminLockChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"channel", 3, kindMsg, cardOne, 410, ""},
+	{name: "OwnerOverrideAddResponse", shape: shapeObject, extra: 0, fields: []field{
+		{"member", 3, kindMsg, cardOne, 194, ""},
 	}},
 	{name: "AdminListEmojiResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"emoji", 3, kindMsg, cardList, 278, ""},
@@ -2332,7 +2335,7 @@ var messages = []message{
 		{"preset", 3, kindMsg, cardOne, 140, ""},
 	}},
 	{name: "ListWordFiltersResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"word_filters", 3, kindMsg, cardList, 428, ""},
+		{"word_filters", 3, kindMsg, cardList, 427, ""},
 	}},
 	{name: "WordFilter", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
@@ -2348,7 +2351,7 @@ var messages = []message{
 		{"action", 5, kindEnum, cardOne, 126, ""},
 	}},
 	{name: "CreateWordFilterResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"word_filter", 3, kindMsg, cardOne, 428, ""},
+		{"word_filter", 3, kindMsg, cardOne, 427, ""},
 	}},
 	{name: "UpdateWordFilterRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"pattern", 3, kindString, cardOne, 0, ""},
@@ -2356,10 +2359,10 @@ var messages = []message{
 		{"action", 5, kindEnum, cardOne, 127, ""},
 	}},
 	{name: "UpdateWordFilterResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"word_filter", 3, kindMsg, cardOne, 428, ""},
+		{"word_filter", 3, kindMsg, cardOne, 427, ""},
 	}},
 	{name: "ListPurgeRequestsResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"purge_requests", 3, kindMsg, cardList, 434, ""},
+		{"purge_requests", 3, kindMsg, cardList, 433, ""},
 		{"next_cursor", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "PurgeRequest", shape: shapeObject, extra: 0, fields: []field{
@@ -2376,10 +2379,10 @@ var messages = []message{
 		{"outcome", 3, kindEnum, cardOne, 129, ""},
 	}},
 	{name: "DecidePurgeRequestResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"purge_request", 3, kindMsg, cardOne, 434, ""},
+		{"purge_request", 3, kindMsg, cardOne, 433, ""},
 	}},
 	{name: "ListBotsResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"bots", 3, kindMsg, cardList, 438, ""},
+		{"bots", 3, kindMsg, cardList, 437, ""},
 		{"next_cursor", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "Bot", shape: shapeObject, extra: 0, fields: []field{
@@ -2396,12 +2399,12 @@ var messages = []message{
 		{"description", 5, kindString, cardOne, 0, ""},
 	}},
 	{name: "CreateBotResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"bot", 3, kindMsg, cardOne, 438, ""},
+		{"bot", 3, kindMsg, cardOne, 437, ""},
 		{"token", 4, kindMsg, cardOne, 73, ""},
 		{"secret", 5, kindString, cardOne, 0, ""},
 	}},
 	{name: "GetBotResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"bot", 3, kindMsg, cardOne, 438, ""},
+		{"bot", 3, kindMsg, cardOne, 437, ""},
 	}},
 	{name: "UpdateBotRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"username", 3, kindString, cardOne, 0, ""},
@@ -2409,10 +2412,10 @@ var messages = []message{
 		{"description", 5, kindString, cardOne, 0, ""},
 	}},
 	{name: "UpdateBotResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"bot", 3, kindMsg, cardOne, 438, ""},
+		{"bot", 3, kindMsg, cardOne, 437, ""},
 	}},
 	{name: "SetBotAvatarResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"bot", 3, kindMsg, cardOne, 438, ""},
+		{"bot", 3, kindMsg, cardOne, 437, ""},
 	}},
 	{name: "ListBotTokensResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"tokens", 3, kindMsg, cardList, 73, ""},
@@ -2429,7 +2432,7 @@ var messages = []message{
 		{"next_cursor", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "ListIntegrationsResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"integrations", 3, kindMsg, cardList, 450, ""},
+		{"integrations", 3, kindMsg, cardList, 449, ""},
 	}},
 	{name: "Integration", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
@@ -2445,11 +2448,11 @@ var messages = []message{
 		{"allows", 4, kindEnum, cardList, 131, ""},
 	}},
 	{name: "CreateIntegrationResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"integration", 3, kindMsg, cardOne, 450, ""},
+		{"integration", 3, kindMsg, cardOne, 449, ""},
 		{"secret", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "ListPeersResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"peers", 3, kindMsg, cardList, 454, ""},
+		{"peers", 3, kindMsg, cardList, 453, ""},
 	}},
 	{name: "Peer", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
@@ -2459,13 +2462,13 @@ var messages = []message{
 		{"dials", 7, kindBool, cardOne, 0, ""},
 		{"state", 8, kindEnum, cardOne, 133, ""},
 		{"invite_expires_at", 9, kindTime, cardOne, 0, ""},
-		{"servers", 10, kindMsg, cardList, 455, ""},
+		{"servers", 10, kindMsg, cardList, 454, ""},
 		{"created_by_id", 11, kindUuid, cardOne, 0, ""},
 		{"created_at", 12, kindTime, cardOne, 0, ""},
 		{"connected_at", 13, kindTime, cardOne, 0, ""},
 		{"last_error", 14, kindString, cardOne, 0, ""},
-		{"told_clock", 15, kindMsg, cardOne, 456, ""},
-		{"measured_clock", 16, kindMsg, cardOne, 456, ""},
+		{"told_clock", 15, kindMsg, cardOne, 455, ""},
+		{"measured_clock", 16, kindMsg, cardOne, 455, ""},
 	}},
 	{name: "KnownServer", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
@@ -2492,30 +2495,30 @@ var messages = []message{
 		{"invitation", 3, kindString, cardOne, 0, ""},
 	}},
 	{name: "AcceptPeerInvitationResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"peer", 3, kindMsg, cardOne, 454, ""},
+		{"peer", 3, kindMsg, cardOne, 453, ""},
 	}},
 	{name: "CreatePeerInvitationRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"expires_in_seconds", 3, kindInt, cardOne, 0, ""},
 	}},
 	{name: "CreatePeerInvitationResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"peer", 3, kindMsg, cardOne, 454, ""},
+		{"peer", 3, kindMsg, cardOne, 453, ""},
 		{"invitation", 4, kindString, cardOne, 0, ""},
 		{"expires_at", 5, kindTime, cardOne, 0, ""},
 	}},
 	{name: "GetPeerResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"peer", 3, kindMsg, cardOne, 454, ""},
+		{"peer", 3, kindMsg, cardOne, 453, ""},
 	}},
 	{name: "UpdatePeerRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"state", 3, kindEnum, cardOne, 134, ""},
 	}},
 	{name: "UpdatePeerResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"peer", 3, kindMsg, cardOne, 454, ""},
+		{"peer", 3, kindMsg, cardOne, 453, ""},
 	}},
 	{name: "ListKnownServersResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"servers", 3, kindMsg, cardList, 455, ""},
+		{"servers", 3, kindMsg, cardList, 454, ""},
 	}},
 	{name: "ListStreamsResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"streams", 3, kindMsg, cardList, 466, ""},
+		{"streams", 3, kindMsg, cardList, 465, ""},
 	}},
 	{name: "Stream", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
@@ -2532,7 +2535,7 @@ var messages = []message{
 		{"offer_expires_at", 14, kindTime, cardOne, 0, ""},
 		{"history_days", 15, kindInt, cardOne, 0, ""},
 		{"max_blob_bytes", 16, kindInt, cardOne, 0, ""},
-		{"servers", 17, kindMsg, cardList, 467, ""},
+		{"servers", 17, kindMsg, cardList, 466, ""},
 		{"created_at", 18, kindTime, cardOne, 0, ""},
 	}},
 	{name: "StreamServer", shape: shapeObject, extra: 0, fields: []field{
@@ -2550,7 +2553,7 @@ var messages = []message{
 		{"max_blob_bytes", 8, kindInt, cardOne, 0, ""},
 	}},
 	{name: "ShareChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"stream", 3, kindMsg, cardOne, 466, ""},
+		{"stream", 3, kindMsg, cardOne, 465, ""},
 	}},
 	{name: "AcceptStreamRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"name", 3, kindString, cardOne, 0, ""},
@@ -2558,26 +2561,26 @@ var messages = []message{
 		{"section_id", 5, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "AcceptStreamResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"stream", 3, kindMsg, cardOne, 466, ""},
+		{"stream", 3, kindMsg, cardOne, 465, ""},
 		{"conversation", 4, kindMsg, cardOne, 157, ""},
 	}},
 	{name: "UpdateStreamRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"max_blob_bytes", 3, kindInt, cardOne, 0, ""},
 	}},
 	{name: "UpdateStreamResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"stream", 3, kindMsg, cardOne, 466, ""},
+		{"stream", 3, kindMsg, cardOne, 465, ""},
 	}},
 	{name: "AddStreamServerResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"stream", 3, kindMsg, cardOne, 466, ""},
+		{"stream", 3, kindMsg, cardOne, 465, ""},
 	}},
 	{name: "RemoveStreamServerResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"stream", 3, kindMsg, cardOne, 466, ""},
+		{"stream", 3, kindMsg, cardOne, 465, ""},
 	}},
 	{name: "TransferStreamRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"server_id", 3, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "TransferStreamResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"stream", 3, kindMsg, cardOne, 466, ""},
+		{"stream", 3, kindMsg, cardOne, 465, ""},
 	}},
 	{name: "InspectPeerInvitationRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"invitation", 3, kindString, cardOne, 0, ""},
@@ -2589,14 +2592,14 @@ var messages = []message{
 		{"expires_at", 6, kindTime, cardOne, 0, ""},
 	}},
 	{name: "ListHubDirectoryResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"channels", 3, kindMsg, cardList, 481, ""},
+		{"channels", 3, kindMsg, cardList, 480, ""},
 	}},
 	{name: "HubDirectoryEntry", shape: shapeObject, extra: 0, fields: []field{
 		{"stream_id", 3, kindUuid, cardOne, 0, ""},
 		{"name", 4, kindString, cardOne, 0, ""},
 		{"description", 5, kindString, cardOne, 0, ""},
 		{"listing", 6, kindEnum, cardOne, 141, ""},
-		{"managers", 10, kindMsg, cardList, 482, ""},
+		{"managers", 10, kindMsg, cardList, 481, ""},
 		{"servers", 8, kindInt, cardOne, 0, ""},
 		{"state", 9, kindEnum, cardOne, 142, ""},
 	}},
@@ -2612,7 +2615,7 @@ var messages = []message{
 		{"section_id", 6, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "JoinHubChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"stream", 3, kindMsg, cardOne, 466, ""},
+		{"stream", 3, kindMsg, cardOne, 465, ""},
 		{"conversation", 4, kindMsg, cardOne, 157, ""},
 	}},
 	{name: "ProposeStreamMoveRequest", shape: shapeObject, extra: 0, fields: []field{
@@ -2620,7 +2623,7 @@ var messages = []message{
 		{"expires_in_seconds", 4, kindInt, cardOne, 0, ""},
 	}},
 	{name: "ProposeStreamMoveResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"move", 3, kindMsg, cardOne, 487, ""},
+		{"move", 3, kindMsg, cardOne, 486, ""},
 	}},
 	{name: "StreamMove", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
@@ -2637,19 +2640,19 @@ var messages = []message{
 		{"updated_at", 14, kindTime, cardOne, 0, ""},
 	}},
 	{name: "ListStreamMovesResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"moves", 3, kindMsg, cardList, 487, ""},
+		{"moves", 3, kindMsg, cardList, 486, ""},
 	}},
 	{name: "AcceptStreamMoveResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"move", 3, kindMsg, cardOne, 487, ""},
+		{"move", 3, kindMsg, cardOne, 486, ""},
 	}},
 	{name: "DeclineStreamMoveResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"move", 3, kindMsg, cardOne, 487, ""},
+		{"move", 3, kindMsg, cardOne, 486, ""},
 	}},
 	{name: "CancelStreamMoveResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"move", 3, kindMsg, cardOne, 487, ""},
+		{"move", 3, kindMsg, cardOne, 486, ""},
 	}},
 	{name: "GetHubChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"channel", 3, kindMsg, cardOne, 493, ""},
+		{"channel", 3, kindMsg, cardOne, 492, ""},
 		{"manager", 5, kindBool, cardOne, 0, ""},
 		{"moderator", 4, kindBool, cardOne, 0, ""},
 	}},
@@ -2661,8 +2664,8 @@ var messages = []message{
 		{"description", 7, kindString, cardOne, 0, ""},
 		{"listing", 8, kindEnum, cardOne, 145, ""},
 		{"servers", 9, kindString, cardList, 0, ""},
-		{"managers", 17, kindMsg, cardList, 482, ""},
-		{"moderators", 10, kindMsg, cardList, 482, ""},
+		{"managers", 17, kindMsg, cardList, 481, ""},
+		{"moderators", 10, kindMsg, cardList, 481, ""},
 		{"invited", 11, kindString, cardList, 0, ""},
 		{"requests", 12, kindString, cardList, 0, ""},
 		{"key_maker", 13, kindString, cardOne, 0, ""},
@@ -2679,10 +2682,10 @@ var messages = []message{
 		{"listing", 8, kindEnum, cardOne, 147, ""},
 	}},
 	{name: "ModerateHubChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"channel", 3, kindMsg, cardOne, 493, ""},
+		{"channel", 3, kindMsg, cardOne, 492, ""},
 	}},
 	{name: "AskToJoinHubChannelResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"request", 3, kindMsg, cardOne, 497, ""},
+		{"request", 3, kindMsg, cardOne, 496, ""},
 	}},
 	{name: "HubPerson", shape: shapeObject, extra: 0, fields: []field{
 		{"account_id", 3, kindUuid, cardOne, 0, ""},
@@ -2692,17 +2695,17 @@ var messages = []message{
 		{"requested_at", 7, kindTime, cardOne, 0, ""},
 	}},
 	{name: "ListHubChannelRequestsResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"requests", 3, kindMsg, cardList, 497, ""},
+		{"requests", 3, kindMsg, cardList, 496, ""},
 	}},
 	{name: "ListHubChannelCandidatesResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"people", 3, kindMsg, cardList, 497, ""},
+		{"people", 3, kindMsg, cardList, 496, ""},
 	}},
 	{name: "ModerateHubChannelMemberRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"action", 3, kindEnum, cardOne, 148, ""},
 		{"account_id", 4, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "ListAuditLogResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"entries", 3, kindMsg, cardList, 502, ""},
+		{"entries", 3, kindMsg, cardList, 501, ""},
 		{"next_cursor", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "AuditEntry", shape: shapeObject, extra: 0, fields: []field{
@@ -2716,7 +2719,7 @@ var messages = []message{
 		{"detail", 10, kindValue, cardOne, 0, ""},
 	}},
 	{name: "StartExportResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"export", 3, kindMsg, cardOne, 504, ""},
+		{"export", 3, kindMsg, cardOne, 503, ""},
 	}},
 	{name: "Export", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
@@ -2728,27 +2731,27 @@ var messages = []message{
 		{"error", 9, kindString, cardOne, 0, ""},
 	}},
 	{name: "GetExportResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"export", 3, kindMsg, cardOne, 504, ""},
+		{"export", 3, kindMsg, cardOne, 503, ""},
 	}},
 	{name: "GetOverviewResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"overview", 3, kindMsg, cardOne, 507, ""},
+		{"overview", 3, kindMsg, cardOne, 506, ""},
 	}},
 	{name: "Overview", shape: shapeObject, extra: 0, fields: []field{
 		{"version", 3, kindString, cardOne, 0, ""},
 		{"started_at", 4, kindTime, cardOne, 0, ""},
 		{"uptime_seconds", 5, kindInt, cardOne, 0, ""},
-		{"database", 6, kindMsg, cardOne, 508, ""},
-		{"files", 7, kindMsg, cardOne, 509, ""},
-		{"accounts", 8, kindMsg, cardOne, 510, ""},
+		{"database", 6, kindMsg, cardOne, 507, ""},
+		{"files", 7, kindMsg, cardOne, 508, ""},
+		{"accounts", 8, kindMsg, cardOne, 509, ""},
 		{"members_online", 9, kindInt, cardOne, 0, ""},
 		{"connections", 10, kindInt, cardOne, 0, ""},
 		{"live_calls", 11, kindInt, cardOne, 0, ""},
 		{"media_address", 12, kindString, cardOne, 0, ""},
-		{"outside", 13, kindMsg, cardList, 511, ""},
-		{"peers", 14, kindMsg, cardList, 454, ""},
+		{"outside", 13, kindMsg, cardList, 510, ""},
+		{"peers", 14, kindMsg, cardList, 453, ""},
 		{"outbox", 15, kindInt, cardOne, 0, ""},
 		{"janitor_last_run_at", 16, kindTime, cardOne, 0, ""},
-		{"waiting", 17, kindMsg, cardOne, 512, ""},
+		{"waiting", 17, kindMsg, cardOne, 511, ""},
 		{"warnings", 18, kindString, cardList, 0, ""},
 	}},
 	{name: "OverviewDatabase", shape: shapeObject, extra: 0, fields: []field{
@@ -2780,7 +2783,7 @@ var messages = []message{
 		{"purge_requests", 5, kindInt, cardOne, 0, ""},
 	}},
 	{name: "ListLiveCallsResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"calls", 3, kindMsg, cardList, 514, ""},
+		{"calls", 3, kindMsg, cardList, 513, ""},
 		{"media_address", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "LiveCall", shape: shapeObject, extra: 0, fields: []field{
@@ -2797,14 +2800,66 @@ var messages = []message{
 		{"sdp", 3, kindString, cardOne, 0, ""},
 		{"media_address", 4, kindString, cardOne, 0, ""},
 	}},
+	{name: "GetApprovalSummaryResponse", shape: shapeObject, extra: 0, fields: []field{
+		{"summary", 3, kindMsg, cardOne, 517, ""},
+	}},
+	{name: "ApprovalSummary", shape: shapeObject, extra: 0, fields: []field{
+		{"may_approve", 3, kindBool, cardOne, 0, ""},
+		{"kinds", 4, kindEnum, cardList, 155, ""},
+		{"counts", 5, kindInt, cardMap, 0, ""},
+	}},
+	{name: "ListApprovalsResponse", shape: shapeObject, extra: 0, fields: []field{
+		{"approvals", 3, kindMsg, cardList, 519, ""},
+	}},
+	{name: "Approval", shape: shapeObject, extra: 0, fields: []field{
+		{"id", 3, kindString, cardOne, 0, ""},
+		{"kind", 4, kindEnum, cardOne, 156, ""},
+		{"requester_id", 5, kindUuid, cardOne, 0, ""},
+		{"summary", 6, kindString, cardOne, 0, ""},
+		{"note", 7, kindString, cardOne, 0, ""},
+		{"state", 8, kindEnum, cardOne, 157, ""},
+		{"reason", 9, kindString, cardOne, 0, ""},
+		{"decided_by_id", 10, kindUuid, cardOne, 0, ""},
+		{"decided_at", 11, kindTime, cardOne, 0, ""},
+		{"created_at", 12, kindTime, cardOne, 0, ""},
+		{"expires_at", 13, kindTime, cardOne, 0, ""},
+		{"requester", 14, kindMsg, cardOne, 145, ""},
+	}},
+	{name: "DecideApprovalRequest", shape: shapeObject, extra: 0, fields: []field{
+		{"approve", 3, kindBool, cardOne, 0, ""},
+		{"reason", 4, kindString, cardOne, 0, ""},
+	}},
+	{name: "DecideApprovalResponse", shape: shapeObject, extra: 0, fields: []field{
+		{"approval", 3, kindMsg, cardOne, 519, ""},
+	}},
+	{name: "RequestChannelRequest", shape: shapeObject, extra: 0, fields: []field{
+		{"name", 3, kindString, cardOne, 0, ""},
+		{"private", 4, kindBool, cardOne, 0, ""},
+		{"access", 5, kindEnum, cardOne, 158, ""},
+		{"topic", 6, kindString, cardOne, 0, ""},
+		{"welcome", 7, kindString, cardOne, 0, ""},
+		{"default_level", 8, kindEnum, cardOne, 159, ""},
+		{"section_id", 9, kindUuid, cardOne, 0, ""},
+		{"account_ids", 10, kindUuid, cardList, 0, ""},
+		{"parent_id", 11, kindUuid, cardOne, 0, ""},
+		{"announcement", 12, kindBool, cardOne, 0, ""},
+		{"announcement_replies", 13, kindBool, cardOne, 0, ""},
+		{"note", 14, kindString, cardOne, 0, ""},
+	}},
+	{name: "RequestChannelResponse", shape: shapeObject, extra: 0, fields: []field{
+		{"approval", 3, kindMsg, cardOne, 519, ""},
+	}},
+	{name: "SetMayApproveRequest", shape: shapeObject, extra: 0, fields: []field{
+		{"may_approve", 3, kindBool, cardOne, 0, ""},
+	}},
 	{name: "ListMyThemesResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"themes", 3, kindMsg, cardList, 518, ""},
+		{"themes", 3, kindMsg, cardList, 526, ""},
 	}},
 	{name: "Theme", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
 		{"owner_id", 4, kindUuid, cardOne, 0, ""},
 		{"name", 5, kindString, cardOne, 0, ""},
-		{"kind", 6, kindEnum, cardOne, 155, ""},
+		{"kind", 6, kindEnum, cardOne, 160, ""},
 		{"colours", 7, kindMsg, cardOne, 8, ""},
 		{"published", 8, kindBool, cardOne, 0, ""},
 		{"published_at", 9, kindTime, cardOne, 0, ""},
@@ -2813,33 +2868,33 @@ var messages = []message{
 	}},
 	{name: "ThemeInput", shape: shapeObject, extra: 0, fields: []field{
 		{"name", 3, kindString, cardOne, 0, ""},
-		{"kind", 4, kindEnum, cardOne, 156, ""},
+		{"kind", 4, kindEnum, cardOne, 161, ""},
 		{"colours", 5, kindMsg, cardOne, 8, ""},
 	}},
 	{name: "CreateThemeResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"theme", 3, kindMsg, cardOne, 518, ""},
+		{"theme", 3, kindMsg, cardOne, 526, ""},
 	}},
 	{name: "GetThemeResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"theme", 3, kindMsg, cardOne, 518, ""},
+		{"theme", 3, kindMsg, cardOne, 526, ""},
 	}},
 	{name: "UpdateThemeResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"theme", 3, kindMsg, cardOne, 518, ""},
+		{"theme", 3, kindMsg, cardOne, 526, ""},
 	}},
 	{name: "PublishThemeResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"theme", 3, kindMsg, cardOne, 518, ""},
+		{"theme", 3, kindMsg, cardOne, 526, ""},
 	}},
 	{name: "UnpublishThemeResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"theme", 3, kindMsg, cardOne, 518, ""},
+		{"theme", 3, kindMsg, cardOne, 526, ""},
 	}},
 	{name: "ListThemeLibraryResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"themes", 3, kindMsg, cardList, 518, ""},
+		{"themes", 3, kindMsg, cardList, 526, ""},
 		{"next_cursor", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "AddThemeResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"theme", 3, kindMsg, cardOne, 518, ""},
+		{"theme", 3, kindMsg, cardOne, 526, ""},
 	}},
 	{name: "SetDefaultThemeRequest", shape: shapeObject, extra: 0, fields: []field{
-		{"kind", 3, kindEnum, cardOne, 157, ""},
+		{"kind", 3, kindEnum, cardOne, 162, ""},
 		{"theme_id", 4, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "SetDefaultThemeResponse", shape: shapeObject, extra: 0, fields: []field{
@@ -2847,12 +2902,12 @@ var messages = []message{
 	}},
 	{name: "MessageCreatedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message", 3, kindMsg, cardOne, 86, ""},
-		{"notify", 4, kindEnum, cardOne, 158, ""},
+		{"notify", 4, kindEnum, cardOne, 163, ""},
 		{"client_id", 5, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "PresenceChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"account_id", 3, kindUuid, cardOne, 0, ""},
-		{"presence", 4, kindEnum, cardOne, 159, ""},
+		{"presence", 4, kindEnum, cardOne, 164, ""},
 		{"in_call", 5, kindBool, cardOne, 0, ""},
 	}},
 	{name: "TypingStartedFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -2869,7 +2924,7 @@ var messages = []message{
 		{"unread_count", 4, kindInt, cardOne, 0, ""},
 		{"mention_count", 5, kindInt, cardOne, 0, ""},
 		{"badge_count", 6, kindInt, cardOne, 0, ""},
-		{"total", 7, kindMsg, cardOne, 534, ""},
+		{"total", 7, kindMsg, cardOne, 542, ""},
 	}},
 	{name: "ReadPositionMovedFrameTotal", shape: shapeObject, extra: 0, fields: []field{
 		{"badge", 3, kindInt, cardOne, 0, ""},
@@ -2878,13 +2933,13 @@ var messages = []message{
 		{"unread_threads", 6, kindInt, cardOne, 0, ""},
 	}},
 	{name: "PresenceBatchFrame", shape: shapeObject, extra: 0, fields: []field{
-		{"changes", 3, kindMsg, cardList, 536, ""},
+		{"changes", 3, kindMsg, cardList, 544, ""},
 	}},
 	{name: "PresenceChange", shape: shapeObject, extra: 0, fields: []field{
 		{"type", 0, kindConst, cardOne, 0, "presence.changed"},
 		{"at", 3, kindTime, cardOne, 0, ""},
 		{"account_id", 4, kindUuid, cardOne, 0, ""},
-		{"presence", 5, kindEnum, cardOne, 160, ""},
+		{"presence", 5, kindEnum, cardOne, 165, ""},
 		{"in_call", 6, kindBool, cardOne, 0, ""},
 	}},
 	{name: "HelloFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -2902,7 +2957,7 @@ var messages = []message{
 		{"new_conversation_ids", 3, kindUuid, cardList, 0, ""},
 	}},
 	{name: "ReloadFrame", shape: shapeObject, extra: 0, fields: []field{
-		{"reason", 3, kindEnum, cardOne, 161, ""},
+		{"reason", 3, kindEnum, cardOne, 166, ""},
 		{"last_seq", 4, kindInt, cardOne, 0, ""},
 	}},
 	{name: "PongFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -2914,17 +2969,17 @@ var messages = []message{
 	}},
 	{name: "ErrorFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"reply_to", 3, kindString, cardOne, 0, ""},
-		{"error", 4, kindMsg, cardOne, 543, ""},
+		{"error", 4, kindMsg, cardOne, 551, ""},
 	}},
 	{name: "ErrorDetail", shape: shapeObject, extra: 0, fields: []field{
-		{"code", 3, kindEnum, cardOne, 162, ""},
+		{"code", 3, kindEnum, cardOne, 167, ""},
 		{"message", 4, kindString, cardOne, 0, ""},
 		{"field", 5, kindString, cardOne, 0, ""},
 		{"retry_after_seconds", 6, kindInt, cardOne, 0, ""},
 	}},
 	{name: "ResumeFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
-		{"positions", 4, kindMsg, cardUmap, 545, ""},
+		{"positions", 4, kindMsg, cardUmap, 553, ""},
 		{"open", 5, kindUuid, cardList, 0, ""},
 	}},
 	{name: "ResumeFramePositionsEntry", shape: shapeEntry, extra: 0, fields: []field{
@@ -2947,7 +3002,7 @@ var messages = []message{
 	}},
 	{name: "ConversationsOpenFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
-		{"positions", 4, kindMsg, cardUmap, 551, ""},
+		{"positions", 4, kindMsg, cardUmap, 559, ""},
 	}},
 	{name: "ConversationsOpenFramePositionsEntry", shape: shapeEntry, extra: 0, fields: []field{
 		{"key", 1, kindUuid, cardOne, 0, ""},
@@ -2960,7 +3015,7 @@ var messages = []message{
 		{"unread_count", 6, kindInt, cardOne, 0, ""},
 		{"mention_count", 7, kindInt, cardOne, 0, ""},
 		{"badge_count", 8, kindInt, cardOne, 0, ""},
-		{"total", 9, kindMsg, cardOne, 553, ""},
+		{"total", 9, kindMsg, cardOne, 561, ""},
 		{"event", 10, kindEnvelope, cardOne, 0, ""},
 	}},
 	{name: "ConversationChangedFrameTotal", shape: shapeObject, extra: 0, fields: []field{
@@ -2971,7 +3026,7 @@ var messages = []message{
 	}},
 	{name: "PresenceCountsFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"online_count", 3, kindInt, cardOne, 0, ""},
-		{"conversations", 4, kindMsg, cardUmap, 555, ""},
+		{"conversations", 4, kindMsg, cardUmap, 563, ""},
 	}},
 	{name: "PresenceCountsFrameConversationsEntry", shape: shapeEntry, extra: 0, fields: []field{
 		{"key", 1, kindUuid, cardOne, 0, ""},
@@ -3025,7 +3080,7 @@ var messages = []message{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
 		{"form", 4, kindMsg, cardOne, 95, ""},
 		{"account_id", 5, kindUuid, cardOne, 0, ""},
-		{"refused", 6, kindEnum, cardOne, 163, ""},
+		{"refused", 6, kindEnum, cardOne, 168, ""},
 	}},
 	{name: "FormOptionAddedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
@@ -3044,7 +3099,7 @@ var messages = []message{
 	{name: "MemberLeftFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"account_id", 3, kindUuid, cardOne, 0, ""},
 		{"by_id", 4, kindUuid, cardOne, 0, ""},
-		{"reason", 5, kindEnum, cardOne, 164, ""},
+		{"reason", 5, kindEnum, cardOne, 169, ""},
 	}},
 	{name: "MemberLevelChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"member", 3, kindMsg, cardOne, 194, ""},
@@ -3096,11 +3151,11 @@ var messages = []message{
 	}},
 	{name: "StreamChannelChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"stream_id", 3, kindUuid, cardOne, 0, ""},
-		{"channel", 4, kindMsg, cardOne, 493, ""},
+		{"channel", 4, kindMsg, cardOne, 492, ""},
 	}},
 	{name: "StreamMoveChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"stream_id", 3, kindUuid, cardOne, 0, ""},
-		{"move", 4, kindMsg, cardOne, 487, ""},
+		{"move", 4, kindMsg, cardOne, 486, ""},
 	}},
 	{name: "SealedEpochStartedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"epoch", 3, kindMsg, cardOne, 338, ""},
@@ -3111,7 +3166,7 @@ var messages = []message{
 	}},
 	{name: "CallEndedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"call_id", 3, kindUuid, cardOne, 0, ""},
-		{"reason", 4, kindEnum, cardOne, 165, ""},
+		{"reason", 4, kindEnum, cardOne, 170, ""},
 		{"duration_seconds", 5, kindInt, cardOne, 0, ""},
 	}},
 	{name: "CallParticipantJoinedFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -3121,7 +3176,7 @@ var messages = []message{
 	{name: "CallParticipantLeftFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"call_id", 3, kindUuid, cardOne, 0, ""},
 		{"account_id", 4, kindUuid, cardOne, 0, ""},
-		{"reason", 5, kindEnum, cardOne, 166, ""},
+		{"reason", 5, kindEnum, cardOne, 171, ""},
 	}},
 	{name: "StatusChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"account_id", 3, kindUuid, cardOne, 0, ""},
@@ -3195,7 +3250,7 @@ var messages = []message{
 		{"unread_count", 3, kindInt, cardOne, 0, ""},
 		{"mention_count", 4, kindInt, cardOne, 0, ""},
 		{"badge_count", 5, kindInt, cardOne, 0, ""},
-		{"total", 6, kindMsg, cardOne, 610, ""},
+		{"total", 6, kindMsg, cardOne, 618, ""},
 	}},
 	{name: "BadgeChangedFrameTotal", shape: shapeObject, extra: 0, fields: []field{
 		{"badge", 3, kindInt, cardOne, 0, ""},
@@ -3215,7 +3270,7 @@ var messages = []message{
 	{name: "ScheduledFiredFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"scheduled", 3, kindMsg, cardOne, 164, ""},
 		{"message_id", 4, kindUuid, cardOne, 0, ""},
-		{"error", 5, kindMsg, cardOne, 543, ""},
+		{"error", 5, kindMsg, cardOne, 551, ""},
 	}},
 	{name: "TimeoutStartedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"timeout", 3, kindMsg, cardOne, 224, ""},
@@ -3239,6 +3294,15 @@ var messages = []message{
 		{"knock", 3, kindMsg, cardOne, 206, ""},
 		{"conversation_name", 4, kindString, cardOne, 0, ""},
 	}},
+	{name: "ApprovalCreatedFrame", shape: shapeObject, extra: 0, fields: []field{
+		{"approval", 3, kindMsg, cardOne, 519, ""},
+	}},
+	{name: "ApprovalDecidedFrame", shape: shapeObject, extra: 0, fields: []field{
+		{"approval", 3, kindMsg, cardOne, 519, ""},
+	}},
+	{name: "ApprovalsChangedFrame", shape: shapeObject, extra: 0, fields: []field{
+		{"may_approve", 3, kindBool, cardOne, 0, ""},
+	}},
 	{name: "ReportCreatedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"report", 3, kindMsg, cardOne, 229, ""},
 	}},
@@ -3246,10 +3310,10 @@ var messages = []message{
 		{"report", 3, kindMsg, cardOne, 229, ""},
 	}},
 	{name: "PurgeRequestCreatedFrame", shape: shapeObject, extra: 0, fields: []field{
-		{"purge_request", 3, kindMsg, cardOne, 434, ""},
+		{"purge_request", 3, kindMsg, cardOne, 433, ""},
 	}},
 	{name: "PurgeRequestDecidedFrame", shape: shapeObject, extra: 0, fields: []field{
-		{"purge_request", 3, kindMsg, cardOne, 434, ""},
+		{"purge_request", 3, kindMsg, cardOne, 433, ""},
 	}},
 	{name: "WebhookRequestedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"webhook", 3, kindMsg, cardOne, 307, ""},
@@ -3282,7 +3346,7 @@ var messages = []message{
 		{"emoji", 3, kindMsg, cardOne, 278, ""},
 	}},
 	{name: "ThemePublishedFrame", shape: shapeObject, extra: 0, fields: []field{
-		{"theme", 3, kindMsg, cardOne, 518, ""},
+		{"theme", 3, kindMsg, cardOne, 526, ""},
 	}},
 	{name: "ThemeUnpublishedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"theme_id", 3, kindUuid, cardOne, 0, ""},
@@ -3291,10 +3355,10 @@ var messages = []message{
 		{"interaction_id", 3, kindUuid, cardOne, 0, ""},
 		{"parent_id", 4, kindUuid, cardOne, 0, ""},
 		{"bot_id", 5, kindUuid, cardOne, 0, ""},
-		{"response", 6, kindMsg, cardOne, 638, ""},
+		{"response", 6, kindMsg, cardOne, 649, ""},
 	}},
 	{name: "InteractionRespondedFrameResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"type", 3, kindEnum, cardOne, 167, ""},
+		{"type", 3, kindEnum, cardOne, 172, ""},
 		{"message_id", 4, kindUuid, cardOne, 0, ""},
 		{"text", 5, kindString, cardOne, 0, ""},
 		{"entities", 6, kindMsg, cardList, 88, ""},
@@ -3336,7 +3400,7 @@ var messages = []message{
 		{"id", 3, kindString, cardOne, 0, ""},
 		{"call_id", 4, kindUuid, cardOne, 0, ""},
 		{"ticket", 5, kindString, cardOne, 0, ""},
-		{"client", 6, kindMsg, cardOne, 648, ""},
+		{"client", 6, kindMsg, cardOne, 659, ""},
 	}},
 	{name: "CallJoinFrameClient", shape: shapeObject, extra: 0, fields: []field{
 		{"simulcast", 3, kindBool, cardOne, 0, ""},
@@ -3346,15 +3410,15 @@ var messages = []message{
 	{name: "CallOfferFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
 		{"reply_to", 4, kindString, cardOne, 0, ""},
-		{"pc", 5, kindEnum, cardOne, 168, ""},
+		{"pc", 5, kindEnum, cardOne, 173, ""},
 		{"offer_id", 6, kindInt, cardOne, 0, ""},
 		{"sdp", 7, kindString, cardOne, 0, ""},
 		{"ice_restart", 8, kindBool, cardOne, 0, ""},
-		{"tracks", 9, kindMsg, cardList, 650, ""},
+		{"tracks", 9, kindMsg, cardList, 661, ""},
 	}},
 	{name: "CallMediaLine", shape: shapeObject, extra: 0, fields: []field{
 		{"mid", 3, kindString, cardOne, 0, ""},
-		{"source", 4, kindEnum, cardOne, 169, ""},
+		{"source", 4, kindEnum, cardOne, 174, ""},
 		{"track_id", 5, kindString, cardOne, 0, ""},
 		{"account_id", 6, kindUuid, cardOne, 0, ""},
 		{"device_id", 7, kindUuid, cardOne, 0, ""},
@@ -3364,21 +3428,21 @@ var messages = []message{
 	{name: "CallAnswerFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
 		{"reply_to", 4, kindString, cardOne, 0, ""},
-		{"pc", 5, kindEnum, cardOne, 170, ""},
+		{"pc", 5, kindEnum, cardOne, 175, ""},
 		{"offer_id", 6, kindInt, cardOne, 0, ""},
 		{"sdp", 7, kindString, cardOne, 0, ""},
-		{"tracks", 8, kindMsg, cardList, 650, ""},
+		{"tracks", 8, kindMsg, cardList, 661, ""},
 	}},
 	{name: "CallCandidateFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
-		{"pc", 4, kindEnum, cardOne, 171, ""},
+		{"pc", 4, kindEnum, cardOne, 176, ""},
 		{"candidate", 5, kindString, cardOne, 0, ""},
 		{"sdp_mid", 6, kindString, cardOne, 0, ""},
 		{"sdp_mline_index", 7, kindInt, cardOne, 0, ""},
 	}},
 	{name: "CallSubscribeFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
-		{"video", 4, kindMsg, cardList, 654, ""},
+		{"video", 4, kindMsg, cardList, 665, ""},
 	}},
 	{name: "CallSubscribeFrameVideo", shape: shapeObject, extra: 0, fields: []field{
 		{"track_id", 3, kindString, cardOne, 0, ""},
@@ -3387,12 +3451,12 @@ var messages = []message{
 	}},
 	{name: "CallMuteFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
-		{"source", 4, kindEnum, cardOne, 172, ""},
+		{"source", 4, kindEnum, cardOne, 177, ""},
 		{"muted", 5, kindBool, cardOne, 0, ""},
 	}},
 	{name: "CallRestartFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
-		{"pc", 4, kindEnum, cardOne, 173, ""},
+		{"pc", 4, kindEnum, cardOne, 178, ""},
 	}},
 	{name: "CallResumeFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
@@ -3411,8 +3475,8 @@ var messages = []message{
 		{"reply_to", 3, kindString, cardOne, 0, ""},
 		{"call", 4, kindMsg, cardOne, 159, ""},
 		{"resume_token", 5, kindString, cardOne, 0, ""},
-		{"limits", 6, kindMsg, cardOne, 661, ""},
-		{"video", 7, kindMsg, cardList, 662, ""},
+		{"limits", 6, kindMsg, cardOne, 672, ""},
+		{"video", 7, kindMsg, cardList, 673, ""},
 	}},
 	{name: "CallOkFrameLimits", shape: shapeObject, extra: 0, fields: []field{
 		{"max_participants", 3, kindInt, cardOne, 0, ""},
@@ -3424,7 +3488,7 @@ var messages = []message{
 	}},
 	{name: "CallOkFrameVideo", shape: shapeObject, extra: 0, fields: []field{
 		{"track_id", 3, kindString, cardOne, 0, ""},
-		{"state", 4, kindEnum, cardOne, 174, ""},
+		{"state", 4, kindEnum, cardOne, 179, ""},
 		{"layer", 5, kindString, cardOne, 0, ""},
 	}},
 	{name: "CallErrorFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -3449,7 +3513,7 @@ var messages = []message{
 		{"call_id", 3, kindUuid, cardOne, 0, ""},
 		{"account_id", 4, kindUuid, cardOne, 0, ""},
 		{"track_id", 5, kindString, cardOne, 0, ""},
-		{"source", 6, kindEnum, cardOne, 175, ""},
+		{"source", 6, kindEnum, cardOne, 180, ""},
 		{"muted", 7, kindBool, cardOne, 0, ""},
 	}},
 	{name: "CallSpeakersChangedFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -3459,9 +3523,9 @@ var messages = []message{
 	{name: "CallLayerChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"call_id", 3, kindUuid, cardOne, 0, ""},
 		{"track_id", 4, kindString, cardOne, 0, ""},
-		{"state", 5, kindEnum, cardOne, 176, ""},
+		{"state", 5, kindEnum, cardOne, 181, ""},
 		{"layer", 6, kindString, cardOne, 0, ""},
-		{"reason", 7, kindEnum, cardOne, 177, ""},
+		{"reason", 7, kindEnum, cardOne, 182, ""},
 	}},
 	{name: "CallDemandChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"call_id", 3, kindUuid, cardOne, 0, ""},
@@ -3479,7 +3543,7 @@ var messages = []message{
 	}},
 	{name: "CallRingStoppedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"call_id", 3, kindUuid, cardOne, 0, ""},
-		{"reason", 4, kindEnum, cardOne, 178, ""},
+		{"reason", 4, kindEnum, cardOne, 183, ""},
 	}},
 }
 
@@ -3528,12 +3592,12 @@ var enums = [][]string{
 	{"", "default", "primary", "danger"},                                                                // FormButtonStyle
 	{"", "join", "leave"},                                                                               // FormButtonGroupAction
 	{"", "tally", "collect", "thread", "channel", "group", "bot"},                                       // FormActionType
-	{"", "reader", "member", "manager"},                                                                 // FormActionLevel
+	{"", "reader", "member", "manager", "moderator"},                                                    // FormActionLevel
 	{"", "live", "after_answer", "after_close"},                                                         // FormResults
 	{"", "roll", "flip", "pick", "shuffle", "draw", "tarot"},                                            // ChanceKind
 	{"", "heads", "tails"},                                                                              // ChanceOutcome
 	{"", "webhook", "reminder", "scheduled", "command", "import", "system"},                             // ViaKind
-	{"", "member_joined", "member_left", "call_started", "call_ended", "thread_moved", "channel_renamed", "pinned"}, // SystemNoticeKind
+	{"", "member_joined", "member_left", "call_started", "call_ended", "thread_moved", "channel_renamed", "pinned", "owner_override"}, // SystemNoticeKind
 	{"", "direct", "sealed"},                   // WakeUpRequestKind
 	{"", "meeting", "out_of_office"},           // SetAvailabilityRequestValue
 	{"", "alphabetical", "activity", "custom"}, // SidebarGroupSort
@@ -3555,7 +3619,7 @@ var enums = [][]string{
 	{"", "waiting", "declined", "closed"},                                   // ConversationChatState
 	{"", "microphone", "camera", "screen"},                                  // CallTrackSource
 	{"", "audio", "video"},                                                  // CallTrackKind
-	{"", "reader", "member", "manager"},                                     // MembershipLevel
+	{"", "reader", "member", "manager", "moderator"},                        // MembershipLevel
 	{"", "any", "mentions", "nothing"},                                      // MembershipMode
 	{"", "always", "activity", "notification", "hidden"},                    // MembershipShow
 	{"", "threaded", "flat"},                                                // MembershipThreadView
@@ -3572,13 +3636,13 @@ var enums = [][]string{
 	{"", "server", "on", "off"},                                        // UpdateConversationRequestLazyDelivery
 	{"", "public", "knock", "private"},                                 // CreateChannelRequestAccess
 	{"", "reader", "member"},                                           // CreateChannelRequestDefaultLevel
-	{"", "reader", "member", "manager"},                                // MemberLevel
-	{"", "reader", "member", "manager"},                                // MemberDirectLevel
-	{"", "reader", "member", "manager"},                                // AddMembersRequestLevel
-	{"", "reader", "member", "manager"},                                // SetMemberLevelRequestLevel
+	{"", "reader", "member", "manager", "moderator"},                   // MemberLevel
+	{"", "reader", "member", "manager", "moderator"},                   // MemberDirectLevel
+	{"", "reader", "member", "manager", "moderator"},                   // AddMembersRequestLevel
+	{"", "reader", "member", "manager", "moderator"},                   // SetMemberLevelRequestLevel
 	{"", "pending", "accepted", "declined"},                            // KnockOutcome
-	{"", "reader", "member", "manager"},                                // ChannelGroupLevel
-	{"", "reader", "member", "manager"},                                // AddChannelGroupRequestLevel
+	{"", "reader", "member", "manager", "moderator"},                   // ChannelGroupLevel
+	{"", "reader", "member", "manager", "moderator"},                   // AddChannelGroupRequestLevel
 	{"", "any", "mentions", "nothing"},                                 // UpdateMembershipRequestMode
 	{"", "dismissed", "deleted", "timed_out"},                          // HandleReportRequestOutcome
 	{"", "person", "filter"},                                           // ReportSource
@@ -3640,6 +3704,11 @@ var enums = [][]string{
 	{"", "disk", "s3"},                              // OverviewFilesStore
 	{"", "certificate", "push_relay", "unifiedpush", "link_previews", "object_storage", "identity_provider", "peers"}, // OutsideConnectionName
 	{"", "ok", "failing", "off"},                          // OutsideConnectionState
+	{"", "registration", "channel", "webhook"},            // ApprovalSummaryKinds
+	{"", "registration", "channel", "webhook"},            // ApprovalKind
+	{"", "waiting", "approved", "declined", "lapsed"},     // ApprovalState
+	{"", "public", "knock", "private"},                    // RequestChannelRequestAccess
+	{"", "reader", "member"},                              // RequestChannelRequestDefaultLevel
 	{"", "dark", "light"},                                 // ThemeKind
 	{"", "dark", "light"},                                 // ThemeInputKind
 	{"", "dark", "light"},                                 // SetDefaultThemeRequestKind
@@ -3668,136 +3737,139 @@ var enums = [][]string{
 
 // frames is every body of the Envelope: the frame type, its number and its message.
 var frames = []frame{
-	{"message.created", 10, 529},
-	{"presence.changed", 11, 530},
-	{"typing.started", 12, 531},
-	{"reaction.added", 13, 532},
-	{"read_position.moved", 14, 533},
-	{"presence.batch", 15, 535},
-	{"hello", 16, 537},
-	{"ready", 17, 538},
-	{"reload", 18, 539},
-	{"pong", 19, 540},
-	{"ack", 20, 541},
-	{"error", 21, 542},
-	{"resume", 22, 544},
-	{"ping", 23, 546},
-	{"activity", 24, 547},
-	{"typing", 25, 548},
-	{"presence.subscribe", 26, 549},
-	{"conversations.open", 128, 550},
-	{"conversation.changed", 129, 552},
-	{"presence.counts", 130, 554},
-	{"reaction.removed", 27, 556},
-	{"message.edited", 28, 557},
-	{"message.deleted", 29, 558},
-	{"message.history_restored", 30, 559},
-	{"message.placed", 31, 560},
-	{"preview.added", 32, 561},
-	{"preview.removed", 33, 562},
-	{"message.purged", 34, 563},
-	{"message.sent", 35, 564},
-	{"task.changed", 36, 565},
-	{"form.answered", 37, 566},
-	{"form.answer_withdrawn", 38, 567},
-	{"form.option_added", 39, 568},
-	{"form.closed", 40, 569},
-	{"member.joined", 41, 570},
-	{"member.left", 42, 571},
-	{"member.level_changed", 43, 572},
-	{"channel_group.added", 44, 573},
-	{"channel_group.changed", 45, 574},
-	{"channel_group.removed", 46, 575},
-	{"conversation.updated", 47, 576},
-	{"conversation.archived", 48, 577},
-	{"conversation.unarchived", 49, 578},
-	{"pin.added", 50, 579},
-	{"pin.removed", 51, 580},
-	{"thread.moved", 52, 581},
-	{"file.changed", 53, 582},
-	{"stream.channel_changed", 54, 583},
-	{"stream.move_changed", 55, 584},
-	{"sealed.epoch_started", 56, 585},
-	{"call.started", 57, 586},
-	{"call.ended", 58, 587},
-	{"call.participant_joined", 59, 588},
-	{"call.participant_left", 60, 589},
-	{"status.changed", 61, 590},
-	{"availability.changed", 62, 591},
-	{"dnd.changed", 63, 592},
-	{"account.updated", 64, 593},
-	{"account.removed", 65, 594},
-	{"me.updated", 66, 595},
-	{"group.created", 67, 596},
-	{"group.updated", 68, 597},
-	{"group.deleted", 69, 598},
-	{"group.member_added", 70, 599},
-	{"group.member_removed", 71, 600},
-	{"block.added", 72, 601},
-	{"block.removed", 73, 602},
-	{"chat_request.received", 137, 603},
-	{"chat_request.removed", 138, 604},
-	{"membership.updated", 74, 605},
-	{"thread_state.changed", 75, 606},
-	{"bookmark.added", 76, 607},
-	{"bookmark.removed", 77, 608},
-	{"badge.changed", 78, 609},
-	{"scheduled.created", 79, 611},
-	{"scheduled.updated", 80, 612},
-	{"scheduled.cancelled", 81, 613},
-	{"scheduled.fired", 82, 614},
-	{"timeout.started", 83, 615},
-	{"timeout.lifted", 84, 616},
-	{"channel_ban.created", 131, 617},
-	{"channel_ban.lifted", 132, 618},
-	{"knock.created", 134, 619},
-	{"knock.answered", 135, 620},
-	{"report.created", 85, 621},
-	{"report.handled", 86, 622},
-	{"purge_request.created", 87, 623},
-	{"purge_request.decided", 88, 624},
-	{"webhook.requested", 89, 625},
-	{"webhook.decided", 90, 626},
-	{"server.updated", 91, 627},
-	{"server.broadcast", 136, 628},
-	{"sections.changed", 92, 629},
-	{"sidebar.changed", 139, 630},
-	{"reference_patterns.changed", 133, 631},
-	{"emoji.added", 93, 632},
-	{"emoji.updated", 94, 633},
-	{"emoji.removed", 95, 634},
-	{"theme.published", 96, 635},
-	{"theme.unpublished", 97, 636},
-	{"interaction.responded", 98, 637},
-	{"session.created", 99, 639},
-	{"session.ended", 100, 640},
-	{"device.retired", 101, 641},
-	{"device_list.changed", 102, 642},
-	{"unlock_request.created", 103, 643},
-	{"unlock_request.answered", 104, 644},
-	{"backup.changed", 105, 645},
-	{"command.invoked", 106, 646},
-	{"call.join", 107, 647},
-	{"call.offer", 108, 649},
-	{"call.answer", 109, 651},
-	{"call.candidate", 110, 652},
-	{"call.subscribe", 111, 653},
-	{"call.mute", 112, 655},
-	{"call.restart", 113, 656},
-	{"call.resume", 114, 657},
-	{"call.decline", 115, 658},
-	{"call.leave", 116, 659},
-	{"call.ok", 117, 660},
-	{"call.error", 118, 663},
-	{"call.track_published", 119, 664},
-	{"call.track_unpublished", 120, 665},
-	{"call.mute_changed", 121, 666},
-	{"call.speakers_changed", 122, 667},
-	{"call.layer_changed", 123, 668},
-	{"call.demand_changed", 124, 669},
-	{"call.declined", 125, 670},
-	{"call.ring_started", 126, 671},
-	{"call.ring_stopped", 127, 672},
+	{"message.created", 10, 537},
+	{"presence.changed", 11, 538},
+	{"typing.started", 12, 539},
+	{"reaction.added", 13, 540},
+	{"read_position.moved", 14, 541},
+	{"presence.batch", 15, 543},
+	{"hello", 16, 545},
+	{"ready", 17, 546},
+	{"reload", 18, 547},
+	{"pong", 19, 548},
+	{"ack", 20, 549},
+	{"error", 21, 550},
+	{"resume", 22, 552},
+	{"ping", 23, 554},
+	{"activity", 24, 555},
+	{"typing", 25, 556},
+	{"presence.subscribe", 26, 557},
+	{"conversations.open", 128, 558},
+	{"conversation.changed", 129, 560},
+	{"presence.counts", 130, 562},
+	{"reaction.removed", 27, 564},
+	{"message.edited", 28, 565},
+	{"message.deleted", 29, 566},
+	{"message.history_restored", 30, 567},
+	{"message.placed", 31, 568},
+	{"preview.added", 32, 569},
+	{"preview.removed", 33, 570},
+	{"message.purged", 34, 571},
+	{"message.sent", 35, 572},
+	{"task.changed", 36, 573},
+	{"form.answered", 37, 574},
+	{"form.answer_withdrawn", 38, 575},
+	{"form.option_added", 39, 576},
+	{"form.closed", 40, 577},
+	{"member.joined", 41, 578},
+	{"member.left", 42, 579},
+	{"member.level_changed", 43, 580},
+	{"channel_group.added", 44, 581},
+	{"channel_group.changed", 45, 582},
+	{"channel_group.removed", 46, 583},
+	{"conversation.updated", 47, 584},
+	{"conversation.archived", 48, 585},
+	{"conversation.unarchived", 49, 586},
+	{"pin.added", 50, 587},
+	{"pin.removed", 51, 588},
+	{"thread.moved", 52, 589},
+	{"file.changed", 53, 590},
+	{"stream.channel_changed", 54, 591},
+	{"stream.move_changed", 55, 592},
+	{"sealed.epoch_started", 56, 593},
+	{"call.started", 57, 594},
+	{"call.ended", 58, 595},
+	{"call.participant_joined", 59, 596},
+	{"call.participant_left", 60, 597},
+	{"status.changed", 61, 598},
+	{"availability.changed", 62, 599},
+	{"dnd.changed", 63, 600},
+	{"account.updated", 64, 601},
+	{"account.removed", 65, 602},
+	{"me.updated", 66, 603},
+	{"group.created", 67, 604},
+	{"group.updated", 68, 605},
+	{"group.deleted", 69, 606},
+	{"group.member_added", 70, 607},
+	{"group.member_removed", 71, 608},
+	{"block.added", 72, 609},
+	{"block.removed", 73, 610},
+	{"chat_request.received", 137, 611},
+	{"chat_request.removed", 138, 612},
+	{"membership.updated", 74, 613},
+	{"thread_state.changed", 75, 614},
+	{"bookmark.added", 76, 615},
+	{"bookmark.removed", 77, 616},
+	{"badge.changed", 78, 617},
+	{"scheduled.created", 79, 619},
+	{"scheduled.updated", 80, 620},
+	{"scheduled.cancelled", 81, 621},
+	{"scheduled.fired", 82, 622},
+	{"timeout.started", 83, 623},
+	{"timeout.lifted", 84, 624},
+	{"channel_ban.created", 131, 625},
+	{"channel_ban.lifted", 132, 626},
+	{"knock.created", 134, 627},
+	{"knock.answered", 135, 628},
+	{"approval.created", 140, 629},
+	{"approval.decided", 141, 630},
+	{"approvals.changed", 142, 631},
+	{"report.created", 85, 632},
+	{"report.handled", 86, 633},
+	{"purge_request.created", 87, 634},
+	{"purge_request.decided", 88, 635},
+	{"webhook.requested", 89, 636},
+	{"webhook.decided", 90, 637},
+	{"server.updated", 91, 638},
+	{"server.broadcast", 136, 639},
+	{"sections.changed", 92, 640},
+	{"sidebar.changed", 139, 641},
+	{"reference_patterns.changed", 133, 642},
+	{"emoji.added", 93, 643},
+	{"emoji.updated", 94, 644},
+	{"emoji.removed", 95, 645},
+	{"theme.published", 96, 646},
+	{"theme.unpublished", 97, 647},
+	{"interaction.responded", 98, 648},
+	{"session.created", 99, 650},
+	{"session.ended", 100, 651},
+	{"device.retired", 101, 652},
+	{"device_list.changed", 102, 653},
+	{"unlock_request.created", 103, 654},
+	{"unlock_request.answered", 104, 655},
+	{"backup.changed", 105, 656},
+	{"command.invoked", 106, 657},
+	{"call.join", 107, 658},
+	{"call.offer", 108, 660},
+	{"call.answer", 109, 662},
+	{"call.candidate", 110, 663},
+	{"call.subscribe", 111, 664},
+	{"call.mute", 112, 666},
+	{"call.restart", 113, 667},
+	{"call.resume", 114, 668},
+	{"call.decline", 115, 669},
+	{"call.leave", 116, 670},
+	{"call.ok", 117, 671},
+	{"call.error", 118, 674},
+	{"call.track_published", 119, 675},
+	{"call.track_unpublished", 120, 676},
+	{"call.mute_changed", 121, 677},
+	{"call.speakers_changed", 122, 678},
+	{"call.layer_changed", 123, 679},
+	{"call.demand_changed", 124, 680},
+	{"call.declined", 125, 681},
+	{"call.ring_started", 126, 682},
+	{"call.ring_stopped", 127, 683},
 }
 
 // operations gives each operation its request message (or -1) and its response messages by status.
@@ -3809,7 +3881,7 @@ var operations = map[string]operation{
 	"setupWithAccessKey":               {26, map[int]int{201: 16, 400: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"checkInvite":                      {-1, map[int]int{200: 27, 400: 9, 404: 9, 429: 9, 500: 9}},
 	"beginPasskeyRegistration":         {28, map[int]int{200: 14, 400: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"finishPasskeyRegistration":        {15, map[int]int{201: 16, 400: 9, 401: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"finishPasskeyRegistration":        {15, map[int]int{201: 16, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"registerWithAccessKey":            {29, map[int]int{201: 16, 400: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"signInWithAccessKey":              {30, map[int]int{200: 16, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
 	"beginPasskeyLogin":                {-1, map[int]int{200: 14, 429: 9, 500: 9}},
@@ -4086,89 +4158,92 @@ var operations = map[string]operation{
 	"adminListChannels":                {-1, map[int]int{200: 409, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
 	"adminGetChannel":                  {-1, map[int]int{200: 411, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
 	"adminUpdateChannel":               {412, map[int]int{200: 413, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"appointManager":                   {-1, map[int]int{200: 414, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"adminArchiveChannel":              {-1, map[int]int{200: 415, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"adminUnarchiveChannel":            {-1, map[int]int{200: 416, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"adminLockChannel":                 {-1, map[int]int{200: 417, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"adminListEmoji":                   {-1, map[int]int{200: 418, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"renameEmoji":                      {419, map[int]int{200: 420, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"appointManager":                   {414, map[int]int{200: 415, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"ownerOverrideAdd":                 {-1, map[int]int{200: 416, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"adminListEmoji":                   {-1, map[int]int{200: 417, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"renameEmoji":                      {418, map[int]int{200: 419, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"adminDeleteEmoji":                 {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"createCommunityReply":             {421, map[int]int{201: 422, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
-	"updateCommunityReply":             {423, map[int]int{200: 424, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"createCommunityReply":             {420, map[int]int{201: 421, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
+	"updateCommunityReply":             {422, map[int]int{200: 423, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"deleteCommunityReply":             {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"createCommunityPreset":            {141, map[int]int{201: 425, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"updateCommunityPreset":            {141, map[int]int{200: 426, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"createCommunityPreset":            {141, map[int]int{201: 424, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"updateCommunityPreset":            {141, map[int]int{200: 425, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
 	"deleteCommunityPreset":            {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"listWordFilters":                  {-1, map[int]int{200: 427, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"createWordFilter":                 {429, map[int]int{201: 430, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"updateWordFilter":                 {431, map[int]int{200: 432, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"listWordFilters":                  {-1, map[int]int{200: 426, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"createWordFilter":                 {428, map[int]int{201: 429, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"updateWordFilter":                 {430, map[int]int{200: 431, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
 	"deleteWordFilter":                 {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"listPurgeRequests":                {-1, map[int]int{200: 433, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"decidePurgeRequest":               {435, map[int]int{200: 436, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"listBots":                         {-1, map[int]int{200: 437, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"createBot":                        {439, map[int]int{201: 440, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
-	"getBot":                           {-1, map[int]int{200: 441, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"updateBot":                        {442, map[int]int{200: 443, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"listPurgeRequests":                {-1, map[int]int{200: 432, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"decidePurgeRequest":               {434, map[int]int{200: 435, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"listBots":                         {-1, map[int]int{200: 436, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"createBot":                        {438, map[int]int{201: 439, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
+	"getBot":                           {-1, map[int]int{200: 440, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"updateBot":                        {441, map[int]int{200: 442, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"deleteBot":                        {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"setBotAvatar":                     {-1, map[int]int{200: 444, 400: 9, 401: 9, 403: 9, 404: 9, 413: 9, 429: 9, 500: 9}},
-	"listBotTokens":                    {-1, map[int]int{200: 445, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"createBotToken":                   {446, map[int]int{201: 447, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"setBotAvatar":                     {-1, map[int]int{200: 443, 400: 9, 401: 9, 403: 9, 404: 9, 413: 9, 429: 9, 500: 9}},
+	"listBotTokens":                    {-1, map[int]int{200: 444, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"createBotToken":                   {445, map[int]int{201: 446, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"revokeBotToken":                   {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"listWebhooks":                     {-1, map[int]int{200: 448, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"listIntegrations":                 {-1, map[int]int{200: 449, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"createIntegration":                {451, map[int]int{201: 452, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"listWebhooks":                     {-1, map[int]int{200: 447, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"listIntegrations":                 {-1, map[int]int{200: 448, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"createIntegration":                {450, map[int]int{201: 451, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
 	"revokeIntegration":                {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"listPeers":                        {-1, map[int]int{200: 453, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"acceptPeerInvitation":             {457, map[int]int{201: 458, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"createPeerInvitation":             {459, map[int]int{201: 460, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"getPeer":                          {-1, map[int]int{200: 461, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"updatePeer":                       {462, map[int]int{200: 463, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"listPeers":                        {-1, map[int]int{200: 452, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"acceptPeerInvitation":             {456, map[int]int{201: 457, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"createPeerInvitation":             {458, map[int]int{201: 459, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"getPeer":                          {-1, map[int]int{200: 460, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"updatePeer":                       {461, map[int]int{200: 462, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
 	"removePeer":                       {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"listKnownServers":                 {-1, map[int]int{200: 464, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"listKnownServers":                 {-1, map[int]int{200: 463, 401: 9, 403: 9, 429: 9, 500: 9}},
 	"blockServer":                      {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
 	"unblockServer":                    {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"listStreams":                      {-1, map[int]int{200: 465, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"shareChannel":                     {468, map[int]int{201: 469, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"acceptStream":                     {470, map[int]int{200: 471, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"listStreams":                      {-1, map[int]int{200: 464, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"shareChannel":                     {467, map[int]int{201: 468, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"acceptStream":                     {469, map[int]int{200: 470, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"declineStream":                    {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"leaveStream":                      {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"updateStream":                     {472, map[int]int{200: 473, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"addStreamServer":                  {-1, map[int]int{200: 474, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"removeStreamServer":               {-1, map[int]int{200: 475, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"transferStream":                   {476, map[int]int{200: 477, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"inspectPeerInvitation":            {478, map[int]int{200: 479, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
+	"updateStream":                     {471, map[int]int{200: 472, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"addStreamServer":                  {-1, map[int]int{200: 473, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"removeStreamServer":               {-1, map[int]int{200: 474, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"transferStream":                   {475, map[int]int{200: 476, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"inspectPeerInvitation":            {477, map[int]int{200: 478, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
 	"closeStream":                      {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"listHubDirectory":                 {-1, map[int]int{200: 480, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9, 503: 9}},
-	"joinHubChannel":                   {483, map[int]int{200: 484, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"proposeStreamMove":                {485, map[int]int{201: 486, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"listStreamMoves":                  {-1, map[int]int{200: 488, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"acceptStreamMove":                 {-1, map[int]int{200: 489, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"declineStreamMove":                {-1, map[int]int{200: 490, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"cancelStreamMove":                 {-1, map[int]int{200: 491, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"getHubChannel":                    {-1, map[int]int{200: 492, 400: 9, 401: 9, 404: 9, 429: 9, 500: 9}},
-	"moderateHubChannel":               {494, map[int]int{200: 495, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"askToJoinHubChannel":              {-1, map[int]int{200: 496, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
-	"listHubChannelRequests":           {-1, map[int]int{200: 498, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"listHubChannelCandidates":         {-1, map[int]int{200: 499, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"moderateHubChannelMember":         {500, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
-	"listAuditLog":                     {-1, map[int]int{200: 501, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"startExport":                      {-1, map[int]int{201: 503, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
-	"getExport":                        {-1, map[int]int{200: 505, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"listHubDirectory":                 {-1, map[int]int{200: 479, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9, 503: 9}},
+	"joinHubChannel":                   {482, map[int]int{200: 483, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"proposeStreamMove":                {484, map[int]int{201: 485, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"listStreamMoves":                  {-1, map[int]int{200: 487, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"acceptStreamMove":                 {-1, map[int]int{200: 488, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"declineStreamMove":                {-1, map[int]int{200: 489, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"cancelStreamMove":                 {-1, map[int]int{200: 490, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"getHubChannel":                    {-1, map[int]int{200: 491, 400: 9, 401: 9, 404: 9, 429: 9, 500: 9}},
+	"moderateHubChannel":               {493, map[int]int{200: 494, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"askToJoinHubChannel":              {-1, map[int]int{200: 495, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"listHubChannelRequests":           {-1, map[int]int{200: 497, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"listHubChannelCandidates":         {-1, map[int]int{200: 498, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"moderateHubChannelMember":         {499, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9, 503: 9}},
+	"listAuditLog":                     {-1, map[int]int{200: 500, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"startExport":                      {-1, map[int]int{201: 502, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
+	"getExport":                        {-1, map[int]int{200: 504, 401: 9, 403: 9, 429: 9, 500: 9}},
 	"downloadExport":                   {-1, map[int]int{401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"getOverview":                      {-1, map[int]int{200: 506, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"listLiveCalls":                    {-1, map[int]int{200: 513, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"testCalls":                        {515, map[int]int{200: 516, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"listMyThemes":                     {-1, map[int]int{200: 517, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"createTheme":                      {519, map[int]int{201: 520, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
-	"getTheme":                         {-1, map[int]int{200: 521, 400: 9, 401: 9, 404: 9, 429: 9, 500: 9}},
-	"updateTheme":                      {519, map[int]int{200: 522, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"getOverview":                      {-1, map[int]int{200: 505, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"listLiveCalls":                    {-1, map[int]int{200: 512, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"testCalls":                        {514, map[int]int{200: 515, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"getApprovalSummary":               {-1, map[int]int{200: 516, 401: 9, 429: 9, 500: 9}},
+	"listApprovals":                    {-1, map[int]int{200: 518, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"decideApproval":                   {520, map[int]int{200: 521, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"requestChannel":                   {522, map[int]int{201: 523, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"setMayApprove":                    {524, map[int]int{200: 524, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"listMyThemes":                     {-1, map[int]int{200: 525, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"createTheme":                      {527, map[int]int{201: 528, 400: 9, 401: 9, 403: 9, 409: 9, 429: 9, 500: 9}},
+	"getTheme":                         {-1, map[int]int{200: 529, 400: 9, 401: 9, 404: 9, 429: 9, 500: 9}},
+	"updateTheme":                      {527, map[int]int{200: 530, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
 	"deleteTheme":                      {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"publishTheme":                     {-1, map[int]int{200: 523, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"unpublishTheme":                   {-1, map[int]int{200: 524, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"listThemeLibrary":                 {-1, map[int]int{200: 525, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
-	"addTheme":                         {-1, map[int]int{201: 526, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
+	"publishTheme":                     {-1, map[int]int{200: 531, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"unpublishTheme":                   {-1, map[int]int{200: 532, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"listThemeLibrary":                 {-1, map[int]int{200: 533, 400: 9, 401: 9, 403: 9, 429: 9, 500: 9}},
+	"addTheme":                         {-1, map[int]int{201: 534, 400: 9, 401: 9, 403: 9, 404: 9, 409: 9, 429: 9, 500: 9}},
 	"removeLibraryTheme":               {-1, map[int]int{400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
-	"setDefaultTheme":                  {527, map[int]int{200: 528, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
+	"setDefaultTheme":                  {535, map[int]int{200: 536, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}},
 }
 
 // errorMessage is the message of the error shape every operation answers a failure with.

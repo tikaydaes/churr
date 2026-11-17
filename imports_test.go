@@ -26,7 +26,7 @@ var layers = map[string]int{
 	"notify": 4, "search": 4, "mod": 4, "preview": 4,
 	"live": 5, "push": 5,
 	"people": 6, "chat": 6,
-	"forms": 7, "sched": 7, "bots": 7, "calls": 7, "sealed": 7, "link": 7, "auth": 7, "importer": 7, "export": 7, "janitor": 7, "acme": 7, "themes": 7, "broadcast": 7,
+	"forms": 7, "sched": 7, "bots": 7, "calls": 7, "sealed": 7, "link": 7, "auth": 7, "importer": 7, "export": 7, "janitor": 7, "acme": 7, "themes": 7, "broadcast": 7, "approvals": 7,
 	"api": 8, "web": 8,
 	"server": 9, "hub": 9, "relay": 9,
 }

@@ -61,10 +61,13 @@ func CheckEditGroup(actor model.Account, g model.Group, set Settings) error {
 }
 
 // CheckSetRole answers whether actor may give target a role (section 9.1,
-// "Change an account's role; hand over ownership"). Only the owner may.
-// The role is admin, member or guest, or owner to hand the server over. A
-// bot's role cannot be changed, nor that of a remote, removed or unclaimed
-// account, and the owner's own changes only by handing over.
+// "Change an account's role; make an owner"; ruling R99). Only an owner
+// may. The role is owner, admin, member or guest. An owner may make any
+// other person's account of the instance an owner. Nobody demotes an owner,
+// not even another owner: an owner changes only their own role, stepping
+// down, and only while another owner remains (the store refuses the last).
+// A bot's role cannot be changed, nor that of a remote, removed or
+// unclaimed account.
 func CheckSetRole(actor, target model.Account, role model.Role, set Settings) error {
 	if err := CheckServer(actor, ChangeRole, set); err != nil {
 		return err
@@ -79,10 +82,8 @@ func CheckSetRole(actor, target model.Account, role model.Role, set Settings) er
 		return model.ErrConflict.With("A bot's role cannot be changed.")
 	case target.Role == model.RoleRemote || !target.Active():
 		return model.ErrConflict.With("Only an active account on this server can be given a role.")
-	case target.ID == actor.ID:
-		return model.ErrConflict.With("To stop being the owner, hand the server over to someone else.")
-	case role == model.RoleOwner && target.Role == model.RoleGuest:
-		return model.ErrConflict.With("The server can be handed to an admin or a member.")
+	case target.Role == model.RoleOwner && target.ID != actor.ID:
+		return forbidden("An owner cannot be demoted, not even by another owner. Only they can step down.")
 	}
 	return nil
 }

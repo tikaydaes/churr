@@ -663,6 +663,7 @@ func TestInterleavedTransactionIsPublishedInOrder(t *testing.T) {
 			b := s.Servers[1]
 			s.settle("before")
 			bea, bob, cy := b.Member("bea"), b.Member("bob"), b.Member("cy")
+			keeper := s.keeper(1)
 			live, _ := b.Owner.Events(nil)
 			defer live.Close()
 			// b's frames leave one event at a time, and a writes between
@@ -678,7 +679,7 @@ func TestInterleavedTransactionIsPublishedInOrder(t *testing.T) {
 				return f
 			})
 			defer b.Server.Link.TestSubmitting(nil)
-			b.Owner.Add(s.conv[1], "member", bea, bob, cy)
+			keeper.Add(s.conv[1], "member", bea, bob, cy)
 			// Made at once on b, in one piece, in seq order.
 			last := float64(0)
 			for i := 0; i < 3; i++ {
@@ -723,6 +724,7 @@ func TestSubmissionThatIsCutShortPartWay(t *testing.T) {
 			b := s.Servers[1]
 			s.settle("before")
 			bea, bob := b.Member("bea"), b.Member("bob")
+			keeper := s.keeper(1)
 			// The connection loses everything but the first envelope of the
 			// first frame, and every frame after it.
 			var frames atomic.Int32
@@ -734,7 +736,7 @@ func TestSubmissionThatIsCutShortPartWay(t *testing.T) {
 				f.Envelopes = nil
 				return f
 			})
-			b.Owner.Add(s.conv[1], "member", bea, bob)
+			keeper.Add(s.conv[1], "member", bea, bob)
 			if !s.isMember(1, bea.ID) || !s.isMember(1, bob.ID) {
 				t.Fatal("the call did not make its change at once")
 			}

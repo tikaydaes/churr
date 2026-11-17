@@ -164,7 +164,7 @@ func (s *Service) SetupWithAccessKey(ctx context.Context, addr, token, username,
 
 // RegisterWithAccessKey makes an account, or claims an imported one, with
 // an access key in place of a passkey.
-func (s *Service) RegisterWithAccessKey(ctx context.Context, addr, inviteCode, username, displayName, auth, unlockPublic, label string) (SignIn, error) {
+func (s *Service) RegisterWithAccessKey(ctx context.Context, addr, inviteCode, username, displayName, note, auth, unlockPublic, label string) (SignIn, error) {
 	hash, err := accessKeyHash(auth)
 	if err != nil {
 		return SignIn{}, err
@@ -178,7 +178,7 @@ func (s *Service) RegisterWithAccessKey(ctx context.Context, addr, inviteCode, u
 	} else if !ok {
 		return SignIn{}, errAccessKeysOff
 	}
-	c, err := s.prepareRegistration(ctx, addr, inviteCode, username, displayName)
+	c, err := s.prepareRegistration(ctx, addr, inviteCode, username, displayName, note)
 	if err != nil {
 		return SignIn{}, err
 	}
@@ -222,6 +222,13 @@ func (s *Service) SignInWithAccessKey(ctx context.Context, addr, username, auth,
 	ok, err := s.matches(ctx, target, hash)
 	if err != nil {
 		return SignIn{}, err
+	}
+	if ok && known && !acc.Active() {
+		// The key is right: an applicant is told where their request
+		// stands (docs/FEATURES.md section 31).
+		if err := s.application(ctx, acc); err != nil {
+			return SignIn{}, err
+		}
 	}
 	if !ok || !known || !acc.Active() {
 		failed(lim.addr, addr)

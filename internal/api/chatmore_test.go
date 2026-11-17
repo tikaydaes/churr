@@ -71,16 +71,20 @@ func TestUpdateConversation(t *testing.T) {
 	bob.Refused(403, model.CodeForbidden, "PATCH", conv+ch, map[string]any{"topic": "x"})
 	eve.Refused(404, model.CodeNotFound, "PATCH", conv+priv, map[string]any{"topic": "x"})
 	admin.Refused(404, model.CodeNotFound, "PATCH", conv+priv, map[string]any{"topic": "x"})
-	admin.Must(200, "PATCH", conv+ch, map[string]any{"topic": "admins act as manager in a public channel"})
+	// An admin is no manager of a channel (ruling R99).
+	admin.Refused(403, model.CodeForbidden, "PATCH", conv+ch, map[string]any{"topic": "admins are not managers"})
 	for field, bad := range map[string]any{"name": "", "topic": strings.Repeat("x", 251), "default_level": "manager",
 		"slow_mode_seconds": 3, "section_id": string(model.NewID[model.SectionID]()), "retention_seconds": -1} {
 		ann.Refused(400, model.CodeInvalidValue, "PATCH", conv+ch, map[string]any{field: bad})
 	}
 	ann.Refused(400, model.CodeInvalidRequest, "PATCH", conv+ch, map[string]any{"nonsense": 1})
-	// A manager may only shorten retention; an admin may set any.
+	// A manager may only shorten retention; an admin may set any, from the
+	// console, or here as one of its managers.
 	setting(t, ts, store.SettingRetention, 7*86400)
 	ann.Refused(403, model.CodeForbidden, "PATCH", conv+ch, map[string]any{"retention_seconds": 30 * 86400})
 	ann.Must(200, "PATCH", conv+ch, map[string]any{"retention_seconds": 86400})
+	admin.Must(200, "PATCH", "/api/v1/admin/channels/"+ch, map[string]any{"retention_seconds": 30 * 86400})
+	ann.Must(200, "POST", conv+ch+"/members", map[string]any{"account_ids": []string{string(admin.ID)}, "level": "manager"})
 	admin.Must(200, "PATCH", conv+ch, map[string]any{"retention_seconds": 30 * 86400})
 
 	// Naming an ad-hoc channel makes it a named private channel.
@@ -169,11 +173,10 @@ func TestMakePrivate(t *testing.T) {
 	chat := convOf(ann.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(bob.ID)}}))["id"].(string)
 	ann.Refused(403, model.CodeForbidden, "PATCH", conv+chat, map[string]any{"private": false})
 
-	// 158: an admin who has not joined makes a channel private, and by
-	// doing so loses the ability to read it.
+	// 158: an admin who has not joined cannot make a channel private: an
+	// admin is no manager (ruling R99).
 	other := ann.Channel("other", false)
-	admin.Must(200, "PATCH", conv+other, map[string]any{"private": true})
-	admin.Refused(404, model.CodeNotFound, "GET", conv+other+"/messages", nil)
+	admin.Refused(403, model.CodeForbidden, "PATCH", conv+other, map[string]any{"private": true})
 }
 
 func TestLocking(t *testing.T) {
@@ -249,18 +252,16 @@ func TestLocking(t *testing.T) {
 		t.Error("nothing done in an ad-hoc channel is written to the audit log")
 	}
 
-	// 172: an admin not in a private channel locks it from the admin
-	// view, and still cannot read it or join it.
-	second := ann.Channel("second", true)
-	admin.Refused(409, model.CodeConflict, "POST", "/api/v1/admin/channels/"+pub+"/lock", nil)
-	admin.Refused(404, model.CodeNotFound, "POST", "/api/v1/admin/channels/"+chat+"/lock", nil)
-	bob.Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/channels/"+second+"/lock", nil)
-	admin.Must(200, "POST", "/api/v1/admin/channels/"+second+"/lock", nil)
+	// 172: the admin console locks nothing (ruling R99); a moderator
+	// locks from inside.
+	second := ann.Channel("second", true, cat)
+	admin.Refused(404, model.CodeNotFound, "POST", "/api/v1/admin/channels/"+second+"/lock", nil)
+	cat.Refused(403, model.CodeForbidden, "POST", conv+second+"/lock", nil)
+	ann.Must(200, "PATCH", conv+second+"/members/"+string(cat.ID), map[string]any{"level": "moderator"})
+	cat.Must(200, "POST", conv+second+"/lock", nil)
 	if !auditedFor(t, ts, "channel.locked", second) {
-		t.Error("172: an admin's lock is in the audit log")
+		t.Error("172: a moderator's lock is in the audit log")
 	}
-	admin.Refused(404, model.CodeNotFound, "GET", conv+second+"/messages", nil)
-	admin.Refused(404, model.CodeNotFound, "POST", conv+second+"/join", nil)
 	// An archived channel is not locked.
 	third := ann.Channel("third", true)
 	ann.Must(200, "POST", conv+third+"/archive", nil)
@@ -352,7 +353,13 @@ func TestArchiveLevelsGroupsPins(t *testing.T) {
 	ann.Add(ch, "member", admin)
 	stream.Expect("member.joined")
 	bob.Refused(403, model.CodeForbidden, "DELETE", conv+ch+"/members/"+string(ann.ID), nil)
-	ann.Refused(403, model.CodeForbidden, "DELETE", conv+ch+"/members/"+string(admin.ID), nil)
+	ann.Refused(403, model.CodeForbidden, "DELETE", conv+ch+"/members/"+string(ann.ID), nil)
+	// An admin is removed like anyone (ruling R99); an owner is not.
+	ann.Must(204, "DELETE", conv+ch+"/members/"+string(admin.ID), nil)
+	stream.Expect("member.left")
+	ann.Add(ch, "member", ts.Owner)
+	stream.Expect("member.joined")
+	ann.Refused(403, model.CodeForbidden, "DELETE", conv+ch+"/members/"+string(ts.Owner.ID), nil)
 	ann.Must(204, "DELETE", conv+ch+"/members/"+string(bob.ID), nil)
 	if e := stream.Expect("member.left"); e["reason"] != "removed" || e["by_id"] != string(ann.ID) {
 		t.Fatalf("member.left: %v", e)

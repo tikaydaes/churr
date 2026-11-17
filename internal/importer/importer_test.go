@@ -250,8 +250,10 @@ func TestSlackImport(t *testing.T) {
 	if err != nil || !plans.Private || plans.Topic != "Shh" {
 		t.Fatalf("a private channel: %+v %v", plans, err)
 	}
-	if m, found, _ := st.Members().Get(ctx, plans.ID, ann.ID); !found || m.Level != model.LevelMember {
-		t.Fatalf("a member of a private channel: %+v", m)
+	// Its creator, bob, is a guest here, and a guest is never a manager
+	// (ruling R99): ann, the first member who may be, manages it.
+	if m, found, _ := st.Members().Get(ctx, plans.ID, ann.ID); !found || m.Level != model.LevelManager {
+		t.Fatalf("a member of a private channel made by a guest: %+v", m)
 	}
 	adhoc := func(what string, ids ...model.AccountID) model.Conversation {
 		t.Helper()

@@ -145,6 +145,9 @@ func (j janitor) Tidy(ctx context.Context, now model.Time) (map[string]int64, er
 		{"unlock_requests", `DELETE FROM unlock_requests WHERE expires_at < ?`, []any{ago(day)}},
 		{"stream_log", `DELETE FROM stream_log WHERE at < ?`, []any{month}},
 		{"stream_seen", `DELETE FROM stream_seen WHERE at < ?`, []any{month35}},
+		// Not a deletion: a request that waited too long has lapsed, and
+		// is kept as the record of it (docs/FEATURES.md section 31).
+		{"approvals", `UPDATE approvals SET state = 'lapsed' WHERE state = 'waiting' AND expires_at < ?`, []any{int64(now)}},
 		// Not a deletion: a client id only matters for a day.
 		{"messages.client_id", `UPDATE messages SET client_id = NULL WHERE client_id IS NOT NULL AND created_at < ?`, []any{ago(day)}},
 	}

@@ -334,6 +334,21 @@ func (c *Client) Register(username, inviteCode string) map[string]any {
 	return out
 }
 
+// Apply registers without an invite while registrations wait for approval
+// (docs/FEATURES.md section 31): the account is made with this browser's
+// passkey and nobody is signed in. It returns the finish request's status
+// and answer, and fills in the browser's username.
+func (c *Client) Apply(username, note string) (int, map[string]any) {
+	c.t.Helper()
+	begin := c.Must(200, "POST", "/api/v1/passkey/register/begin", map[string]any{"username": username, "display_name": username, "note": note})
+	c.Username = username
+	return c.Do("POST", "/api/v1/passkey/register/finish", c.create(begin))
+}
+
+// SignedIn takes a sign-in answer as this browser's: its account and, for
+// a later Login, nothing more.
+func (c *Client) SignedIn(out map[string]any) { c.signedIn(out) }
+
 // Login signs this browser in with its passkey and returns the status and
 // the answer.
 func (c *Client) Login() (int, map[string]any) {

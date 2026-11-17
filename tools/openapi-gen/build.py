@@ -40,7 +40,7 @@ STATUS = collections.OrderedDict([
     ('invalid_request', 400), ('invalid_value', 400),
     ('unauthenticated', 401), ('second_factor_required', 401), ('session_locked', 401),
     ('forbidden', 403), ('timed_out', 403), ('archived', 403), ('locked', 403), ('feature_off', 403),
-    ('fresh_check_required', 403),
+    ('fresh_check_required', 403), ('approval_required', 403), ('approval_pending', 403),
     ('not_found', 404),
     ('conflict', 409), ('name_taken', 409), ('already_exists', 409),
     ('too_large', 413), ('blocked_by_filter', 422),
@@ -50,7 +50,7 @@ STATUS = collections.OrderedDict([
 RESPONSES = collections.OrderedDict([
     (400, ('BadRequest', 'The request was malformed (`invalid_request`) or a field was wrong (`invalid_value`, with `field`).')),
     (401, ('Unauthenticated', 'No valid credential (`unauthenticated`), the session still owes a second factor (`second_factor_required`), or its holder locked it (`session_locked`): only unlocking and signing out are answered until a passkey unlocks it.')),
-    (403, ('Forbidden', 'The caller may not do this: `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, or `fresh_check_required` (pass a passkey or authenticator check, then try again).')),
+    (403, ('Forbidden', 'The caller may not do this: `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, `fresh_check_required` (pass a passkey or authenticator check, then try again), `approval_required` (this is approved first: ask for it instead) or `approval_pending` (the account waits for its registration to be approved).')),
     (404, ('NotFound', '`not_found`. Also returned for things that exist and that the caller may not know exist.')),
     (409, ('Conflict', '`conflict`, `name_taken` (usernames, group handles, emoji and command names, and reserved names; never a channel name) or `already_exists`.')),
     (413, ('TooLarge', '`too_large`.')),
@@ -73,6 +73,7 @@ PATH_PARAMS = collections.OrderedDict([
     ('token_id', ('uuid', 'A token.')),
     ('timeout_id', ('uuid', 'A time-out.')),
     ('knock_id', ('uuid', 'A request to be added to a channel.')),
+    ('kind', ('str', 'A kind of request in the approvals queue: `registration`, `channel` or `webhook`.')),
     ('provider', ('uuid', 'A company sign-in provider.')),
     ('interaction_id', ('uuid', 'The `interaction_id` from an event the bot received.')),
     ('emoji', ('str', 'The emoji itself, percent-encoded, `:name:` for a custom one, or `:name@server.name:` for another server\'s.')),
@@ -291,7 +292,7 @@ In brief:
 - Lists ordered by `seq` take `before`, `after` and `limit` and return `has_more`. Filters by time are `since` and `until`. Other lists take `limit` and `cursor` and return `next_cursor`.
 - Every response to an authenticated request carries `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`.
 - A few addresses are answered by the server but are not operations here: the form posts of its own pages, `POST /oauth/authorize` (approving an app) and `POST /sso/register` (the username at a first company sign-in); `GET /healthz`; `GET /link/v1`, where other servers and hubs connect (`docs/LINK-PROTOCOL.md`); the theme page at `/themes/{id}`; the web pages and the web chat; and, on port 80 when the server gets its own certificate, the certificate authority's challenge (every other request there is redirected to HTTPS).
-- Each operation's description starts with who may call it. "Admins" includes the owner. "Acting as manager" means a manager of the channel, or an admin in a public channel or a private one they belong to.
+- Each operation's description starts with who may call it. "Admins" includes the owners; an instance may have several. "Acting as manager" means a manager of the channel: in a channel a hub owns, a local account on the hub's manager list. "Moderators and managers" adds the channel's moderators. An admin or an owner is a moderator or manager of a channel only when made one, never by their role.
 '''
 
 

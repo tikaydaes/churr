@@ -387,15 +387,15 @@ func TestAdminChannels(t *testing.T) {
 	}
 	admin.Refused(404, model.CodeNotFound, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(admin.ID)}})
 
-	// Appoint a manager: an existing member, and nothing else.
-	admin.Refused(404, model.CodeNotFound, "PUT", ac+"/"+priv+"/managers/"+string(admin.ID), nil)
-	bob.Refused(403, model.CodeForbidden, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil)
+	// Appoint a manager: an owner's, never an admin's (ruling R99).
 	stream, _ := ann.Events(nil)
-	if m := obj(admin.Must(200, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil), "member"); m["level"] != "manager" {
+	admin.Refused(403, model.CodeForbidden, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil)
+	bob.Refused(403, model.CodeForbidden, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil)
+	if m := obj(ts.Owner.Must(200, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil), "member"); m["level"] != "manager" {
 		t.Fatalf("appointed: %v", m)
 	}
 	// The channel can see it.
-	if e := stream.Expect("member.level_changed"); e["by_id"] != string(admin.ID) {
+	if e := stream.Expect("member.level_changed"); e["by_id"] != string(ts.Owner.ID) {
 		t.Fatalf("member.level_changed: %v", e)
 	}
 	if !auditedFor(t, ts, "channel.manager_appointed", string(bob.ID)) {
@@ -411,23 +411,19 @@ func TestAdminChannels(t *testing.T) {
 	}
 	bob.Refused(403, model.CodeForbidden, "PATCH", ac+"/"+priv, map[string]any{"retention_seconds": 60})
 	admin.Refused(404, model.CodeNotFound, "PATCH", ac+"/"+chat, map[string]any{"retention_seconds": 60})
-	// Archive and unarchive.
-	if a := obj(admin.Must(200, "POST", ac+"/"+priv+"/archive", nil), "channel"); a["archived_at"] == nil {
-		t.Fatalf("archived: %v", a)
-	}
+	// The console has no archive and no lock: those are the channel's
+	// managers' (ruling R99).
+	admin.Refused(404, model.CodeNotFound, "POST", ac+"/"+priv+"/archive", nil)
+	ann.Must(200, "POST", conv+priv+"/archive", nil)
 	stream.Expect("conversation.updated")
 	stream.Expect("conversation.updated")
 	stream.Expect("conversation.archived")
-	if a := obj(admin.Must(200, "DELETE", ac+"/"+priv+"/archive", nil), "channel"); a["archived_at"] != nil {
-		t.Fatalf("unarchived: %v", a)
-	}
-	bob.Refused(403, model.CodeForbidden, "POST", ac+"/"+priv+"/archive", nil)
-	admin.Refused(404, model.CodeNotFound, "POST", ac+"/"+chat+"/archive", nil)
+	ann.Must(200, "DELETE", conv+priv+"/archive", nil)
 
 	// The audit log and the overview.
 	bob.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/audit", nil)
 	entries := arr(admin.Must(200, "GET", "/api/v1/admin/audit?action=channel.&actor_id="+string(admin.ID), nil), "entries")
-	if len(entries) < 4 {
+	if len(entries) < 2 {
 		t.Fatalf("audit by prefix and actor: %v", entries)
 	}
 	for _, e := range entries {

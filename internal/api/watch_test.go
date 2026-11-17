@@ -72,7 +72,7 @@ func TestWatch(t *testing.T) {
 	room := ann.Channel("room", false, bob, dan, gus)
 	// hal is a guest of room alone, so ann sees his presence only there.
 	hal := ts.Guest("hal", room)
-	ts.Owner.Add(room, "", bot)
+	ann.Add(room, "", bot)
 
 	// Who may be watched.
 	ann.Refused(403, model.CodeForbidden, "PUT", fWatches+string(ann.ID), nil)

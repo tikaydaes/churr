@@ -70,8 +70,9 @@ op('GET invite-codes/{code}', 'checkInvite',
 op('POST passkey/register/begin', 'beginPasskeyRegistration',
    'Start registering a new account with a passkey',
    who="Anyone, if registration is `open`; otherwise only with a usable invite code. Refused with `forbidden` when the invite's role must use company sign-in. A claim link works in every registration mode.",
-   desc='With a claim link the account already exists and `username` is ignored.',
-   body={'invite_code?': 'str', 'username?': 'str', 'display_name?': 'str'},
+   desc=('With a claim link the account already exists and `username` is ignored. While the setting '
+         '`registration.approval` is on, a registration without an invite waits for approval (FEATURES.md section 31).'),
+   body={'invite_code?': 'str', 'username?': 'str', 'display_name?': 'str', 'note?': ('str', 'Why the person would like to join, at most 500 characters. Kept with their request while new registrations wait for approval (setting `registration.approval`).')},
    res='#Ceremony',
    err='forbidden not_found name_taken',
    auth='none')
@@ -79,11 +80,12 @@ op('POST passkey/register/begin', 'beginPasskeyRegistration',
 op('POST passkey/register/finish', 'finishPasskeyRegistration',
    'Finish registering and sign in',
    who='Whoever began the registration.',
-   desc='Returns the eight recovery codes, once.',
+   desc=('Returns the eight recovery codes, once. A registration that waits for approval makes the account and its '
+         'passkey, signs nobody in and answers `approval_pending`; the person signs in once it is approved.'),
    body='#PasskeyCreated',
    res='#SignIn',
    st=201,
-   err='not_found unauthenticated name_taken',
+   err='not_found unauthenticated name_taken approval_pending',
    auth='none')
 
 op('POST access-key/register', 'registerWithAccessKey',
@@ -92,12 +94,13 @@ op('POST access-key/register', 'registerWithAccessKey',
         '`auth.allow_access_keys`). A claim link works in every registration mode.'),
    desc=('The page makes the access key, shows it once and has it confirmed before it calls this; the server is '
          'sent only the value derived from it. Makes the account (or claims the imported one) with that access key '
-         'and no recovery codes, and signs it in.'),
-   body={'invite_code?': 'str', 'username?': 'str', 'display_name?': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.'),
+         'and no recovery codes, and signs it in. A registration that waits for approval makes the account and '
+         'answers `approval_pending`, signing nobody in.'),
+   body={'invite_code?': 'str', 'username?': 'str', 'display_name?': 'str', 'note?': ('str', 'Why the person would like to join, at most 500 characters. Kept with their request while new registrations wait for approval (setting `registration.approval`).'), 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.'),
          'unlock_public?': ('b64', 'The X25519 public key derived from the access key for sealed chats (SEALED.md section 13.3). The server keeps it with the key; an unlocked device seals the backup key to it.')},
    res='#SignIn',
    st=201,
-   err='forbidden not_found name_taken',
+   err='forbidden not_found name_taken rate_limited approval_pending',
    auth='none')
 
 op('POST access-key/login', 'signInWithAccessKey',
@@ -108,7 +111,7 @@ op('POST access-key/login', 'signInWithAccessKey',
          'when the server stops allowing new ones.'),
    body={'username': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
    res='#SignIn',
-   err='unauthenticated forbidden',
+   err='unauthenticated forbidden approval_pending',
    auth='none')
 
 op('POST passkey/login/begin', 'beginPasskeyLogin',
@@ -121,10 +124,11 @@ op('POST passkey/login/finish', 'finishPasskeyLogin',
    'Finish a passkey sign-in',
    who='Whoever began it. A member or guest is refused with `forbidden` when member sign-in is `sso`; the owner and admins never are.',
    desc=('A passkey sign-in already counts as two factors and is never asked for a second. The error does not say '
-         'which part was wrong.'),
+         'which part was wrong. An account that waits for its registration to be approved answers `approval_pending`; '
+         'one whose request was declined, or lapsed, `forbidden` saying so.'),
    body='#CeremonyResult',
    res='#SignIn',
-   err='unauthenticated forbidden not_found',
+   err='unauthenticated forbidden not_found approval_pending',
    auth='none')
 
 op('GET sso/{provider}/start', 'startSso',

@@ -107,8 +107,8 @@ const (
 )
 
 // CheckOnAccount answers whether actor may act on target: admins act on
-// members, guests and bots; only the owner acts on an admin; nobody removes,
-// bans or times out the owner.
+// members, guests and bots; only an owner acts on an admin; nobody removes,
+// bans or times out an owner, another owner included.
 func CheckOnAccount(actor model.Account, a AccountAction, target model.Account) error {
 	if !actor.Active() {
 		return model.ErrUnauthenticated
@@ -125,10 +125,13 @@ func CheckOnAccount(actor model.Account, a AccountAction, target model.Account) 
 	}
 	switch target.Role {
 	case model.RoleOwner:
-		if a == MakeRecoveryLink && actor.Role == model.RoleOwner {
+		// An owner makes a recovery link for themselves only: one for
+		// another owner would let them become that owner. The operator
+		// has churr recovery for that.
+		if a == MakeRecoveryLink && actor.ID == target.ID {
 			return nil
 		}
-		return forbidden("Nobody can do that to the owner.")
+		return forbidden("Nobody can do that to an owner.")
 	case model.RoleAdmin:
 		if actor.Role != model.RoleOwner {
 			return forbidden("Only the owner can do that to an admin.")
