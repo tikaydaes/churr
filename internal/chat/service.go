@@ -226,6 +226,12 @@ type Recorder struct {
 	// arrival is announced with an owner_override notice instead of the
 	// ordinary one (docs/PERMISSIONS.md section 6.3).
 	override bool
+	// loud, when set, is the access alert each arrival in a conversation
+	// that is not public is announced with instead of member_joined,
+	// naming who caused it even when they let themselves in (alerts.go).
+	loud *Alert
+	// loudKind is that alert's kind.
+	loudKind string
 }
 
 // Tx runs fn in one transaction and, if it commits, publishes the events fn
@@ -445,6 +451,15 @@ func (r *Recorder) announce(ctx context.Context, announce []joined, by model.Acc
 		}
 		if by != "" && by != j.account {
 			system["by_id"] = string(by)
+		}
+		if r.loud != nil {
+			system["kind"] = r.loudKind
+			if r.loud.By != "" {
+				system["by_id"] = string(r.loud.By)
+			}
+			if r.loud.Name != "" {
+				system["name"] = r.loud.Name
+			}
 		}
 		if _, err := r.s.systemNotice(ctx, r.tx, r, c, j.account, system); err != nil {
 			return err

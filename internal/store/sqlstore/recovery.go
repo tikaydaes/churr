@@ -79,18 +79,18 @@ func (r recovery) CreateLink(ctx context.Context, tokenHash []byte, account, cre
 	})
 }
 
-func (r recovery) UseLink(ctx context.Context, tokenHash []byte, at model.Time) (model.AccountID, bool, error) {
+func (r recovery) UseLink(ctx context.Context, tokenHash []byte, at model.Time) (model.AccountID, model.AccountID, bool, error) {
 	if len(tokenHash) == 0 {
-		return "", false, nil
+		return "", "", false, nil
 	}
-	var account model.AccountID
+	var account, by model.AccountID
 	err := r.wr.QueryRowContext(ctx, `
 		UPDATE recovery_links SET used_at = ? WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?
-		RETURNING account_id`, int64(at), tokenHash, int64(at)).Scan(str(&account))
+		RETURNING account_id, created_by`, int64(at), tokenHash, int64(at)).Scan(str(&account), str(&by))
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", false, nil
+		return "", "", false, nil
 	}
-	return account, err == nil, err
+	return account, by, err == nil, err
 }
 
 func (r recovery) DeleteLinksEnded(ctx context.Context, before model.Time) (int64, error) {

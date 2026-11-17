@@ -738,13 +738,21 @@ RAW('SystemNotice', {'type': 'object',
                     '`channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the '
                     'author was added to this private channel by an Owner\'s or an Admin\'s override (`by_id`), and clients '
                     'show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a '
-                    'manager of this channel, by an Owner\'s or an Admin\'s act from the admin console (`by_id`); shown as '
-                    'wanting attention too. Clients '
-                    'word these themselves.',
+                    'manager of this channel, by an Owner\'s or an Admin\'s act from the admin console (`by_id`). These '
+                    'and the access alerts want attention the same way, '
+                    'are posted in every conversation of the author\'s that is not public, and name in `by_id` who did '
+                    'it when that is known: `bot_token_made` (a new token for the author, a bot), `account_recovered` '
+                    '(a recovery link made by `by_id` was used to sign in as the author), `account_claimed` (the '
+                    'author, an imported account, was claimed with a claim link `by_id` made), `group_access` (the '
+                    'author arrived in this private channel through the group `name`, put there by `by_id`, who may be '
+                    'the author), `channel_shared` (the author shared this channel with the instance or hub `name`, '
+                    'or added that instance to it). Clients word these themselves.',
      'required': ['kind'],
      'properties': {'kind': {'type': 'string',
                              'enum': ['member_joined', 'member_left', 'call_started', 'call_ended', 'thread_moved',
-                                      'channel_renamed', 'pinned', 'owner_override', 'manager_dismissed']},
+                                      'channel_renamed', 'pinned', 'owner_override', 'bot_token_made',
+                                      'account_recovered', 'account_claimed', 'group_access', 'channel_shared',
+                                      'manager_dismissed']},
                     'call_id': {'type': 'string', 'format': 'uuid'},
                     'conversation_id': {'type': 'string', 'format': 'uuid'},
                     'message_id': {'type': 'string', 'format': 'uuid'},
@@ -1288,6 +1296,20 @@ S('Approval', 'A request in the approvals queue (FEATURES.md section 31).', {
    'created_at': 'time',
    'expires_at?': 'time',
    'requester?': ('#Account', 'The requester, as the decider is shown them.')})
+
+S('Notice', 'Something done that concerns the caller, kept for them until their account is removed (FEATURES.md '
+  'section 21.13). It is not a message and belongs to no conversation. Clients word each kind themselves.', {
+   'id': 'str',
+   'kind': ('enum:recovery_link_used|owner_made|owner_stepped_down|export_started|export_downloaded|override_used',
+            '`recovery_link_used`: a recovery link `by_id` made (none: the command line) was used to sign in to this '
+            'account. To every Owner: `owner_made` and `owner_stepped_down` (`subject_id`, by `by_id`), '
+            '`export_started` and `export_downloaded` (by `by_id`), `override_used` (`by_id` added `subject_id` to '
+            '`conversation_id` by override).'),
+   'by_id?': ('uuid', 'Who did it, when known.'),
+   'subject_id?': ('uuid', 'The account it is about, when not the caller.'),
+   'conversation_id?': ('uuid', 'The conversation it is about, if any.'),
+   'created_at': 'time',
+   'seen_at?': ('time', 'When the caller marked it seen.')})
 
 S('ApprovalSummary', 'What an account may approve, and how many wait.', {
    'may_approve': ('bool', 'The account holds the flag "may approve requests".'),

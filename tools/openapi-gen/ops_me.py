@@ -480,6 +480,19 @@ op('DELETE me/blocks/{account_id}', 'unblockAccount',
    who='Any signed-in person.',
    err='not_found')
 
+op('GET me/notices', 'listNotices',
+   'List the notices kept for the caller, newest first',
+   who='Any signed-in person.',
+   desc=('A notice is something done that concerns the caller, such as a recovery link used on their account, kept '
+         'until the account is removed (FEATURES.md section 21.13). `unseen` counts those not yet marked seen.'),
+   res={'notices': '[#Notice]', 'unseen': 'int'},
+   page='cursor')
+
+op('POST me/notices/seen', 'markNoticesSeen',
+   "Mark all of the caller's notices seen",
+   who='Any signed-in person.',
+   desc='They stay listed, with `seen_at`.')
+
 op('GET me/chat-requests', 'listChatRequests',
    'List the chat requests waiting for the caller',
    who='Any signed-in person.',

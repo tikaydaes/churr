@@ -289,6 +289,10 @@ func (s *Service) DeleteGroup(ctx context.Context, actor model.Account, id model
 	return nil
 }
 
+// groupAccessAlert is the system notice kind of an arrival through a group
+// an Owner or an Admin put the person into (chat.AlertGroupAccess).
+const groupAccessAlert = "group_access"
+
 // putIn puts an account in a group or takes it out, with the channel
 // memberships that follow, and tells everyone who sees the group.
 func (s *Service) putIn(ctx context.Context, actor model.Account, g model.Group, account model.AccountID, add, audit bool) (model.Group, error) {
@@ -299,7 +303,17 @@ func (s *Service) putIn(ctx context.Context, actor model.Account, g model.Group,
 	// Taken before a removal, so a guest who could see the group only by
 	// being in it is still told.
 	before, _ := s.groupAudience(ctx, g)
-	err := s.changeMembership(ctx, "", "group", func(tx store.Tx) (store.MembershipResult, error) {
+	change := func(fn func(tx store.Tx) (store.MembershipResult, error)) error {
+		if add && audit {
+			// An Owner or an Admin putting someone, themself included,
+			// into a group from the console: every private channel the
+			// group brings them into is told who did it, through which
+			// group (review finding H3).
+			return s.changeMembershipLoud(ctx, actor.ID, "group", groupAccessAlert, g.Name, fn)
+		}
+		return s.changeMembership(ctx, "", "group", fn)
+	}
+	err := change(func(tx store.Tx) (store.MembershipResult, error) {
 		var res store.MembershipResult
 		var err error
 		action := "group.member_added"

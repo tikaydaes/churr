@@ -887,6 +887,13 @@ abstract final class Ops {
     'POST',
     '/api/v1/me/chat-requests/{id}/block',
   );
+  // Notices kept for the caller (docs/FEATURES.md section 21.13).
+  static const listNotices = Op('listNotices', 'GET', '/api/v1/me/notices');
+  static const markNoticesSeen = Op(
+    'markNoticesSeen',
+    'POST',
+    '/api/v1/me/notices/seen',
+  );
   // Approvals (docs/FEATURES.md section 31): the requests that wait for
   // whoever may decide them, and asking for a channel while new channels
   // wait for approval.
@@ -993,6 +1000,8 @@ abstract final class Ops {
     declineChatRequest,
     dismissChatRequest,
     blockChatRequester,
+    listNotices,
+    markNoticesSeen,
     getApprovalSummary,
     listApprovals,
     decideApproval,

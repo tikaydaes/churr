@@ -4384,6 +4384,10 @@
     }
   },
   "approvals": "Approvals",
+  "notices": "Notices",
+  "@notices": {"description": "The list of things done that concern the person's account, kept for them (FEATURES.md 21.13)."},
+  "noticesIntro": "Things done that concern your account, kept for you. Nobody else sees this list.",
+  "noticesEmpty": "No notices.",
   "approvalsEmpty": "Nothing waits for your approval.",
   "approvalsAll": "All",
   "approvalKindRegistration": "Registrations",

@@ -6785,6 +6785,16 @@ class L10nEn extends L10n {
   String get approvals => 'Approvals';
 
   @override
+  String get notices => 'Notices';
+
+  @override
+  String get noticesIntro =>
+      'Things done that concern your account, kept for you. Nobody else sees this list.';
+
+  @override
+  String get noticesEmpty => 'No notices.';
+
+  @override
   String get approvalsEmpty => 'Nothing waits for your approval.';
 
   @override

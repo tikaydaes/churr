@@ -16,6 +16,7 @@ import { renderReactions } from './reactions.js';
 import { renderChance, spinLive, spokenResult } from './chance.js';
 import { ROLE_SAYS } from '../hub.js';
 import { ownerOverrideText, managerDismissedText } from '../roles.js';
+import { ATTENTION, alertText } from '../alerts.js';
 
 // roleTag marks a manager or moderator of a channel a hub owns.
 export const roleTag = (role) => (role ? h('span', { class: 'tag lavender', title: ROLE_SAYS[role] }, role) : null);
@@ -35,7 +36,7 @@ export function systemText(m, env) {
     case 'pinned': return `${who} pinned a message`;
     case 'owner_override': return ownerOverrideText(who, env.nameOf(s.by_id));
     case 'manager_dismissed': return managerDismissedText(who, env.nameOf(s.by_id));
-    default: return 'Something happened here';
+    default: return alertText(s.kind, who, s.by_id && !(s.kind === 'group_access' && s.by_id === m.author_id) ? env.nameOf(s.by_id) : '', s.name || '') || 'Something happened here';
   }
 }
 
@@ -134,9 +135,10 @@ export function renderMessage(m, env, opts = {}) {
   if (m.system || (m.via && m.via.kind === 'system')) {
     const s = m.system || {};
     const to = s.kind === 'thread_moved' && s.conversation_id ? env.conversation(s.conversation_id) : null;
-    // An override, and a manager dismissed from the console, want
-    // attention (docs/STYLE.md, pink): nobody can turn them off.
-    return h('div', { class: 'msg-system' + (s.kind === 'owner_override' || s.kind === 'manager_dismissed' ? ' attention' : ''), dataset: s.kind ? { id: m.id, kind: s.kind } : { id: m.id }, role: 'note' },
+    // An override, a manager dismissed and the access alerts want attention
+    // (docs/STYLE.md, pink): they are not ordinary arrivals, and nobody
+    // can turn them off.
+    return h('div', { class: 'msg-system' + (ATTENTION.has(s.kind) ? ' attention' : ''), dataset: s.kind ? { id: m.id, kind: s.kind } : { id: m.id }, role: 'note' },
       // A place may word some kinds itself, with actions (a call's Join).
       (env.systemLine && env.systemLine(m)) || systemText(m, env),
       s.kind === 'thread_moved' && s.conversation_id ? [': ', to

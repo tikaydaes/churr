@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/tikaydaes/churr/internal/chat"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/people"
 	"github.com/tikaydaes/churr/internal/perm"
@@ -296,7 +297,10 @@ func (s *Service) CreateToken(ctx context.Context, actor model.Account, ses mode
 	}
 	secretToken, hash := secret.NewToken(secret.PrefixBot)
 	token := model.Session{AccountID: id, Kind: model.SessionBot, Label: label, CreatedAt: s.now()}
-	err = s.store.Tx(ctx, func(tx store.Tx) error {
+	// Whoever holds the new token reads as the bot, so every conversation
+	// the bot is in that is not public is told, in the same transaction,
+	// who made it (review finding H3).
+	err = s.chat.WithAlert(ctx, id, actor.ID, chat.AlertBotToken, "", func(tx store.Tx) error {
 		have, err := s.botTokens(ctx, tx, id)
 		if err != nil {
 			return err

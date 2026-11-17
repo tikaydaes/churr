@@ -11199,6 +11199,24 @@ abstract class L10n {
   /// **'Approvals'**
   String get approvals;
 
+  /// The list of things done that concern the person's account, kept for them (FEATURES.md 21.13).
+  ///
+  /// In en, this message translates to:
+  /// **'Notices'**
+  String get notices;
+
+  /// No description provided for @noticesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Things done that concern your account, kept for you. Nobody else sees this list.'**
+  String get noticesIntro;
+
+  /// No description provided for @noticesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notices.'**
+  String get noticesEmpty;
+
   /// No description provided for @approvalsEmpty.
   ///
   /// In en, this message translates to:
