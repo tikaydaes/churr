@@ -307,7 +307,7 @@ export function hasRow(c) {
 // join it.
 export function mayJoin(c) {
   if (!c || c.membership || !c.name || c.archived_at || c.locked_at) return false;
-  if (offerOf(c.id)) return true;
+  if (offerOf(c.id) || c.joinable) return true;
   if (c.access === 'knock') return false;
   if (c.private) return !!c.joinable;
   return store.me.role !== 'guest' || !!c.joinable;

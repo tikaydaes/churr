@@ -19625,6 +19625,7 @@ class Conversation extends $pb.GeneratedMessage {
     $core.Iterable<$core.List<$core.int>>? managerIds,
     ConversationChatState? chatState,
     $core.Iterable<$core.List<$core.int>>? invitedIds,
+    $core.bool? joinable,
   }) {
     final result = Conversation._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -19668,6 +19669,7 @@ class Conversation extends $pb.GeneratedMessage {
     if (managerIds != null) result.managerIds.addAll(managerIds);
     if (chatState != null) result.chatState = chatState;
     if (invitedIds != null) result.invitedIds.addAll(invitedIds);
+    if (joinable != null) result.joinable = joinable;
     return result;
   }
 
@@ -19739,6 +19741,7 @@ class Conversation extends $pb.GeneratedMessage {
         enumValues: ConversationChatState.values)
     ..p<$core.List<$core.int>>(
         38, _omitFieldNames ? '' : 'invitedIds', $pb.PbFieldType.PY)
+    ..aOB(39, _omitFieldNames ? '' : 'joinable')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -20080,6 +20083,15 @@ class Conversation extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(38)
   $pb.PbList<$core.List<$core.int>> get invitedIds => $_getList(37);
+
+  @$pb.TagNumber(39)
+  $core.bool get joinable => $_getBF(38);
+  @$pb.TagNumber(39)
+  set joinable($core.bool value) => $_setBool(38, value);
+  @$pb.TagNumber(39)
+  $core.bool hasJoinable() => $_has(38);
+  @$pb.TagNumber(39)
+  void clearJoinable() => $_clearField(39);
 }
 
 /// Present when the conversation is shared with other servers.

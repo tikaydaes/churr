@@ -74,6 +74,13 @@ func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, 
 		}
 		c.InvitedIDs = ids
 	}
+	if m == nil && actor.ID != "" && c.Named() && actor.Role != model.RoleBot {
+		_, ok, err := a.Members().Eligible(ctx, c.ID, actor.ID)
+		if err != nil {
+			return c, err
+		}
+		c.Joinable = ok
+	}
 	if m == nil && actor.ID != "" && c.Named() && c.Private && !c.IsKnock() {
 		// Someone outside a private channel who may join it (ruling R103)
 		// is shown what an outsider of a knock channel is, without its

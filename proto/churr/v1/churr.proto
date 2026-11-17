@@ -1610,6 +1610,7 @@ message Conversation {
   optional int64 last_message_at = 21; // time
   optional int64 member_count = 22;
   repeated bytes member_ids = 23; // identifier
+  optional bool joinable = 39;
   repeated bytes invited_ids = 38; // identifier
   optional bytes moved_from_message_id = 24; // identifier
   optional int64 ticket_number = 25;

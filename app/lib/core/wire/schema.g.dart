@@ -999,6 +999,7 @@ final List<WireMessage> wireMessages = [
     WireField('last_message_at', 21, WireKind.time, WireCard.one, 0),
     WireField('member_count', 22, WireKind.int_, WireCard.one, 0),
     WireField('member_ids', 23, WireKind.uuid, WireCard.list, 0),
+    WireField('joinable', 39, WireKind.bool_, WireCard.one, 0),
     WireField('invited_ids', 38, WireKind.uuid, WireCard.list, 0),
     WireField('moved_from_message_id', 24, WireKind.uuid, WireCard.one, 0),
     WireField('ticket_number', 25, WireKind.int_, WireCard.one, 0),

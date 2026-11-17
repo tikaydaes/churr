@@ -2045,6 +2045,7 @@
    "default_level": 11,
    "id": 3,
    "invited_ids": 38,
+   "joinable": 39,
    "key_epoch": 28,
    "kind": 4,
    "large": 34,

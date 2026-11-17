@@ -23508,6 +23508,11 @@ components:
             type: string
             format: uuid
           description: For ad-hoc channels and sealed chats only, so a client can title them.
+        joinable:
+          type: boolean
+          description: 'Sent to someone outside a named channel who may join it without an invitation or knocking,
+            whatever its access (ruling R103): a group they are in has access, or it was offered to them as a default
+            channel. `joinConversation` joins it.'
         invited_ids:
           type: array
           items:

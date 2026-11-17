@@ -164,11 +164,15 @@ type Conversation struct {
 	MemberIDs     []AccountID `json:"member_ids,omitempty"`
 	// InvitedIDs is who has been invited and has not yet joined (ruling
 	// R103), shown to members only.
-	InvitedIDs         []AccountID `json:"invited_ids,omitempty"`
-	MovedFromMessageID MessageID   `json:"moved_from_message_id,omitempty"`
-	TicketNumber       int         `json:"ticket_number,omitempty"`
-	Shared             *Shared     `json:"shared,omitempty"`
-	ReadOnly           bool        `json:"read_only,omitempty"`
+	InvitedIDs []AccountID `json:"invited_ids,omitempty"`
+	// Joinable is set for someone outside a named channel who may join it
+	// without an invitation or knocking (ruling R103): a group they are in
+	// has access, or it was offered to them as a default channel.
+	Joinable           bool      `json:"joinable,omitempty"`
+	MovedFromMessageID MessageID `json:"moved_from_message_id,omitempty"`
+	TicketNumber       int       `json:"ticket_number,omitempty"`
+	Shared             *Shared   `json:"shared,omitempty"`
+	ReadOnly           bool      `json:"read_only,omitempty"`
 	// ChatState is set on a direct or sealed chat that cannot be written
 	// in: ChatWaiting while the request that started it waits, ChatDeclined
 	// after the person asked declined, ChatClosed once either person closed

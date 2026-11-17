@@ -452,6 +452,7 @@ S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'last_message_at?': 'time',
    'member_count': 'int',
    'member_ids?': ('[uuid]', 'For ad-hoc channels and sealed chats only, so a client can title them.'),
+   'joinable?': ('bool', 'Sent to someone outside a named channel who may join it without an invitation or knocking, whatever its access (ruling R103): a group they are in has access, or it was offered to them as a default channel. `joinConversation` joins it.'),
    'invited_ids?': ('[uuid]', 'Who has been invited and has not yet joined (ruling R103): people included in a group chat, or invited to a named channel, who have not answered. They are not members and get nothing from the conversation. Shown to members only.'),
    'moved_from_message_id?': ('uuid', 'The message whose thread this channel was made from.'),
    'ticket_number?': 'int',

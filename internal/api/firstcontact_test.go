@@ -213,7 +213,7 @@ func TestGroupOffers(t *testing.T) {
 	}
 	listed := false
 	for _, c := range arr(ann.Must(200, "GET", "/api/v1/channels", nil), "conversations") {
-		listed = listed || c.(map[string]any)["id"] == priv
+		listed = listed || (c.(map[string]any)["id"] == priv && c.(map[string]any)["joinable"] == true)
 	}
 	if !listed {
 		t.Fatal("Browse shows the channel her group has access to")

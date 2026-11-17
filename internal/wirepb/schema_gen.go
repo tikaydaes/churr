@@ -996,6 +996,7 @@ var messages = []message{
 		{"last_message_at", 21, kindTime, cardOne, 0, ""},
 		{"member_count", 22, kindInt, cardOne, 0, ""},
 		{"member_ids", 23, kindUuid, cardList, 0, ""},
+		{"joinable", 39, kindBool, cardOne, 0, ""},
 		{"invited_ids", 38, kindUuid, cardList, 0, ""},
 		{"moved_from_message_id", 24, kindUuid, cardOne, 0, ""},
 		{"ticket_number", 25, kindInt, cardOne, 0, ""},
