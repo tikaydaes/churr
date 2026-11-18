@@ -44,7 +44,7 @@ Map<String, Object> _roll(int sides, List<int> rolls) => {
 
 void main() {
   test('the breakpoint is the web chat\'s', () {
-    final js = File('../internal/web/static/shared/message/diceshape.js')
+    final js = File('../internal/web/static/shared/types/dice-roll/diceshape.js')
         .readAsStringSync();
     expect(
       RegExp(r'NGON_MAX_SIDES = (\d+);').firstMatch(js)!.group(1),

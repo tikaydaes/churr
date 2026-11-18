@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { SHEETS } from '../internal/web/static/shared/chance/sheets.js';
 import { deckSheet, slotArt, sprite, loadSheet, setSheetsForTest, paint, unpaint, dress, paintFace, backArt, tileBackDrawing, BASE } from '../internal/web/static/shared/message/chanceart.js';
 import { slots, spokenResult } from '../internal/web/static/shared/message/chance.js';
-import { NGON_MAX_SIDES, DIE_BOX, dieOutline, dieDrawing, dieSvg, fitText, coinFace } from '../internal/web/static/shared/message/diceshape.js';
+import { NGON_MAX_SIDES, DIE_BOX, dieOutline, dieDrawing, dieSvg, fitText, coinFace } from '../internal/web/static/shared/types/dice-roll/diceshape.js';
 
 let failures = 0, checks = 0;
 function check(name, ok, detail) {

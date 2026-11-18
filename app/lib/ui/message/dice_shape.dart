@@ -3,7 +3,7 @@
 // up, with the number it shows inside; past [ngonMaxSides] sides it is a
 // circle. A two-sided die is a coin, as is the result of /flip: heads for
 // 1, tails for 2. The web chat draws the same, with the same constants
-// (internal/web/static/shared/message/diceshape.js).
+// (internal/web/static/shared/types/dice-roll/diceshape.js).
 
 import 'dart:math' as math;
 

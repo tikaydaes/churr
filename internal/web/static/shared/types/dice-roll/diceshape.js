@@ -5,7 +5,7 @@
 // 1, tails for 2. Nothing here touches the page: dieDrawing describes the
 // picture, dieSvg writes it as markup (for tests and the contact sheet),
 // and chanceart.js builds it as elements. The app draws the same
-// (lib/ui/message/dice_shape.dart), with the same constants.
+// (lib/ui/types/dice_roll/dice_shape.dart), with the same constants.
 
 // A die of more sides than this is drawn as a circle.
 export const NGON_MAX_SIDES = 30;

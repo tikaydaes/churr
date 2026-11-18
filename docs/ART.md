@@ -133,8 +133,8 @@ A face is a card code from the registry (`hearts-queen`, `major-16`,
 ### Dice and coins drawn on the fly
 
 Every die but the six-sided one, and every coin, has no sprite: both
-clients draw it as it is shown (web: `shared/message/diceshape.js`; app:
-`lib/ui/message/dice_shape.dart`), in a 64 × 64 box, the size of a cube
+clients draw it as it is shown (web: `shared/types/dice-roll/diceshape.js`; app:
+`lib/ui/types/dice_roll/dice_shape.dart`), in a 64 × 64 box, the size of a cube
 face.
 
 - A die of N sides, for N from 3 to `NGON_MAX_SIDES` (30; `ngonMaxSides`

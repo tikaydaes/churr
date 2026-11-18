@@ -5,14 +5,14 @@
 // server has it (shared/chance/sheets.js, written by tools/art-gen/pack.py)
 // and its index and sprite load; otherwise the slot keeps its text face,
 // which is also what a screen reader reads. Every other die, and a coin,
-// is drawn on the fly (diceshape.js) and needs no sprite.
+// is drawn on the fly (types/dice-roll/diceshape.js) and needs no sprite.
 //
 // Cards and tiles that arrive live lie face down before they are turned
 // over (chance.js): a card shows the card back of the french sprite, at
 // its own deck's size, and a tile the tile back, drawn here by rule.
 
 import { SHEETS } from '../chance/sheets.js';
-import { dieDrawing, CARD } from './diceshape.js';
+import { dieDrawing, CARD } from '../types/dice-roll/diceshape.js';
 
 export const BASE = '/shared/chance/';
 // A face is shown at half its cell (the cell is in sprite units).
