@@ -466,8 +466,9 @@ func (h *Hub) runTrunk(ctx context.Context, conn *wire.Conn) (removed bool) {
 	if _, member := h.topology().cluster.Members[tc.name]; member {
 		h.trunkUp(tc)
 	}
+	read := h.trunkReader(ctx, tc)
 	for {
-		f, raw, err := conn.Read(ctx)
+		f, raw, err := read()
 		if err != nil {
 			var bad *wire.Error
 			if errors.As(err, &bad) {
@@ -475,12 +476,6 @@ func (h *Hub) runTrunk(ctx context.Context, conn *wire.Conn) (removed bool) {
 				continue
 			}
 			return false
-		}
-		h.mu.Lock()
-		delay := h.testDelay[tc.name]
-		h.mu.Unlock()
-		if delay > 0 {
-			time.Sleep(delay) // a test's slow trunk: everything arrives this much later
 		}
 		if tap := h.testTrunkTap.Load(); tap != nil {
 			(*tap)(tc.name, false, f)
@@ -513,6 +508,60 @@ func (h *Hub) runTrunk(ctx context.Context, conn *wire.Conn) (removed bool) {
 			}
 			tc.send(e.Frame(f.ID))
 		}
+	}
+}
+
+// trunkReader returns what reads a trunk's next frame: the connection's own
+// Read, until a test slows a trunk (TestTrunkDelay). From then on frames are
+// read as they arrive and each is handed over its delay after it arrived, in
+// order. Sleeping the delay before each frame instead made a slow trunk carry
+// one frame per delay at most, 16 a second at 60 ms: fewer than a cluster's
+// pings and shared clocks, so what waited to be read, and how late everything
+// came, grew for as long as the test ran.
+var errTrunkClosed = errors.New("hub: the trunk's connection has ended")
+
+func (h *Hub) trunkReader(ctx context.Context, tc *trunkConn) func() (wire.Frame, []byte, error) {
+	type arrival struct {
+		f   wire.Frame
+		raw []byte
+		err error
+		at  time.Time
+	}
+	var arrivals chan arrival
+	return func() (wire.Frame, []byte, error) {
+		if arrivals == nil && h.testDelayed.Load() {
+			arrivals = make(chan arrival, 1024)
+			go func() {
+				for {
+					f, raw, err := tc.conn.Read(ctx)
+					select {
+					case arrivals <- arrival{f, raw, err, time.Now()}:
+					case <-tc.conn.Done():
+						return
+					}
+					var bad *wire.Error
+					if err != nil && !errors.As(err, &bad) {
+						return
+					}
+				}
+			}()
+		}
+		if arrivals == nil {
+			return tc.conn.Read(ctx)
+		}
+		var a arrival
+		select {
+		case a = <-arrivals:
+		case <-tc.conn.Done():
+			return wire.Frame{}, nil, errTrunkClosed
+		}
+		h.mu.Lock()
+		delay := h.testDelay[tc.name]
+		h.mu.Unlock()
+		if wait := time.Until(a.at.Add(delay)); wait > 0 {
+			time.Sleep(wait)
+		}
+		return a.f, a.raw, a.err
 	}
 }
 

@@ -35,11 +35,14 @@ func (h *Hub) TestTrunkUp(name string) bool {
 }
 
 // TestTrunkDelay makes everything that arrives over a trunk arrive this much
-// later: a slow path, in one direction.
+// later: a slow path, in one direction. It is latency and nothing else:
+// each frame is handled d after it arrived, in the order they came, and the
+// trunk carries as many in that time as are sent on it.
 func (h *Hub) TestTrunkDelay(name string, d time.Duration) {
 	h.mu.Lock()
 	h.testDelay[name] = d
 	h.mu.Unlock()
+	h.testDelayed.Store(true)
 }
 
 // TestTrunkTap shows fn every frame this hub sends over a trunk (out true)

@@ -209,8 +209,12 @@ type Hub struct {
 	// What tests hold down or slow: a trunk that is cut, a delay on what
 	// arrives over one, a hub that skips the checks on time (a dishonest
 	// edge), and the batch and window sizes.
-	testCut      map[string]bool
-	testDelay    map[string]time.Duration
+	testCut   map[string]bool
+	testDelay map[string]time.Duration
+	// testDelayed is set once a test has slowed any trunk: from then on
+	// each trunk's frames are read as they arrive and handled their delay
+	// later (trunkReader).
+	testDelayed  atomic.Bool
 	testNoStamp  atomic.Bool
 	testNoWindow atomic.Bool
 	testHold     atomic.Int64
