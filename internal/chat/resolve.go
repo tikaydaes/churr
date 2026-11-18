@@ -43,6 +43,10 @@ type resolver struct {
 	// the modules that claim them (claims.go).
 	claims  string
 	modules *modhost.Registry
+	// off are the modules switched off in the conversation, once offRead
+	// says they have been read (claims.go).
+	off     map[string]bool
+	offRead bool
 }
 
 // AuthorZone implements markdown.ZoneResolver.

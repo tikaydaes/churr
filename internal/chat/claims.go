@@ -44,26 +44,40 @@ func claimsMode(actor model.Account, via *model.Via) string {
 	return claimsSend
 }
 
-// Claims implements markdown.ClaimSource: the claims of the modules that are
-// on in the conversation, where the text's objects are resolved or marked.
-// The claims of a module switched off there are not read at all: their text
-// stays text.
+// Claims implements markdown.ClaimSource: the claims of the modules, where
+// the text's objects are resolved or marked. Whether each module is on in
+// the conversation is asked only when the text holds what it claims
+// (Claimed): the claims of a module switched off there are never resolved,
+// and their text stays text, and a text with nothing claimed in it costs no
+// read of the switches.
 func (r *resolver) Claims() []markdown.Claim {
 	if r.claims == claimsOff || len(r.modules.Claims()) == 0 {
 		return nil
 	}
-	off, err := modulesOff(r.ctx, r.a, r.st.Conversation.ID)
-	if err != nil {
-		r.err = err
-		return nil
-	}
 	var out []markdown.Claim
 	for _, c := range r.modules.Claims() {
-		if !off[c.Module] {
-			out = append(out, markdown.Claim{Kind: c.Kind, Open: c.Open, Close: c.Close, Inside: c.Inside})
-		}
+		out = append(out, markdown.Claim{Kind: c.Kind, Open: c.Open, Close: c.Close, Inside: c.Inside})
 	}
 	return out
+}
+
+// claimOn reports whether some module that claims a kind is on in the
+// conversation; the switches are read once per text, at the first claim.
+func (r *resolver) claimOn(kind string) bool {
+	if !r.offRead {
+		r.offRead = true
+		off, err := modulesOff(r.ctx, r.a, r.st.Conversation.ID)
+		if err != nil {
+			r.err = err
+		}
+		r.off = off
+	}
+	for _, c := range r.modules.Claims() {
+		if c.Kind == kind && !r.off[c.Module] {
+			return true
+		}
+	}
+	return false
 }
 
 // modulesOff is the set of modules switched off in a conversation: by an
@@ -138,6 +152,9 @@ func servedAsText(ctx context.Context, a store.Areas, conv model.ConversationID,
 // the object, so that only what it would resolve is marked, and what it
 // made is thrown away: an edit resolves nothing.
 func (r *resolver) Claimed(kind, inside string) (model.ValueEnvelope, bool) {
+	if !r.claimOn(kind) {
+		return model.ValueEnvelope{}, false
+	}
 	v, ok := r.modules.Resolve(r.ctx, r.st.Actor, r.st.Conversation.ID, kind, inside)
 	if ok && r.claims == claimsEdit {
 		return r.modules.Unresolved(kind)
