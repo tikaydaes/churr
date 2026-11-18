@@ -1,7 +1,6 @@
 import '../conversation/broad_mentions.dart';
 import '../fair/clock.dart';
 import '../models/json.dart';
-import '../ids.dart';
 import '../models/message.dart';
 import 'client.dart';
 import 'operations.dart';
@@ -27,22 +26,6 @@ class EventPage {
 
 /// Messages, reactions, checklists and catch-up.
 extension MessagesApi on ApiClient {
-  /// Asks the server to draw a result (/roll, /flip, /pick, /shuffle,
-  /// /draw, /mahjongg, /tarot; rulings R67 and R68) and posts it as a
-  /// message of its own. [chance] is a `ChanceInput`.
-  Future<Message> postMessageChance(
-    String conversationId,
-    Json chance, {
-    String? parentId,
-  }) async {
-    final j = await call(
-      Ops.postMessage,
-      path: {'id': conversationId},
-      body: {'client_id': newUuid(), 'chance': chance, 'parent_id': ?parentId},
-    );
-    return Message.fromJson(object(j['message']) ?? const {});
-  }
-
   /// The newest [limit] messages, or those before or after a `seq`.
   /// Replies come among top-level messages.
   Future<MessagePage> listMessages(
@@ -75,7 +58,6 @@ extension MessagesApi on ApiClient {
     List<String> fileIds = const [],
     Json? quote,
     bool action = false,
-    Json? chance,
     String? timeZone,
     List<Object?>? instantHints,
     List<Object?>? objectHints,
@@ -90,19 +72,17 @@ extension MessagesApi on ApiClient {
       body: {
         'client_id': clientId,
         'draw_t': ?t,
-        // A chance request stands alone: the server draws the result.
-        if (chance == null) 'text': text,
+        'text': text,
         'parent_id': ?parentId,
         'quote': ?quote,
         if (fileIds.isNotEmpty) 'file_ids': fileIds,
         if (action) 'action': true,
-        'chance': ?chance,
         // What the dates and times in the text mean (ruling R69).
-        if (chance == null) 'time_zone': ?timeZone,
-        if (chance == null && instantHints != null && instantHints.isNotEmpty)
+        'time_zone': ?timeZone,
+        if (instantHints != null && instantHints.isNotEmpty)
           'instant_hints': instantHints,
         // What the author chose for the objects typed (ruling R73).
-        if (chance == null && objectHints != null && objectHints.isNotEmpty)
+        if (objectHints != null && objectHints.isNotEmpty)
           'object_hints': objectHints,
       },
     );

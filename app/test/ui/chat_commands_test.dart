@@ -42,26 +42,30 @@ void main() {
               'order': '0000000000000000!!000000000000005a',
               'author_id': 'me',
               'created_at': DateTime.now().toUtc().toIso8601String(),
-              'fallback': 'Rolled 2d6+3: [4, 2] + 3 = 9',
-              'chance': {
-                'kind': 'roll',
-                'dice': '2d6+3',
-                'rows': [
-                  {
-                    'dice': '2d6+3',
-                    'terms': [
-                      {
-                        'sign': 1,
-                        'count': 2,
-                        'sides': 6,
-                        'rolls': [4, 2],
-                        'value': 6,
-                      },
-                      {'sign': 1, 'value': 3},
-                    ],
-                    'total': 9,
-                  },
-                ],
+              'text': 'Rolled 2d6+3: [4, 2] + 3 = 9',
+              'view': {
+                'kind': 'dice_roll',
+                'level': 1,
+                'by': 'dice',
+                'data': {
+                  'dice': '2d6+3',
+                  'rows': [
+                    {
+                      'dice': '2d6+3',
+                      'terms': [
+                        {
+                          'sign': 1,
+                          'count': 2,
+                          'sides': 6,
+                          'rolls': [4, 2],
+                          'value': 6,
+                        },
+                        {'sign': 1, 'value': 3},
+                      ],
+                      'total': 9,
+                    },
+                  ],
+                },
               },
             },
           },
@@ -87,10 +91,14 @@ void main() {
         await tester.tap(find.byKey(const Key('send')));
         await settle(tester, 10);
         expect(fake.where('POST', '/messages'), isEmpty);
-        expect(fake.where('POST', '/commands').single.body, {
-          'name': 'roll',
-          'text': '2d6+3',
-        });
+        // The draw's input goes with it: its client_id and second.
+        final sent = fake.where('POST', '/commands').single.body as Map;
+        expect(
+          {'name': sent['name'], 'text': sent['text']},
+          {'name': 'roll', 'text': '2d6+3'},
+        );
+        expect(sent['client_id'], isA<String>());
+        expect(sent['draw_t'], isA<int>());
         expect(tester.widget<TextField>(box).controller!.text, isEmpty);
         await tester.pump(const Duration(seconds: 2));
         expect(find.byType(ChanceView), findsOneWidget);
@@ -132,25 +140,29 @@ void main() {
         'order': '0000000000000000!!000000000000001f',
         'author_id': 'me',
         'created_at': DateTime.now().toUtc().toIso8601String(),
-        'fallback': 'Rolled 1d6: [5] = 5',
-        'chance': {
-          'kind': 'roll',
-          'dice': '1d6',
-          'rows': [
-            {
-              'dice': '1d6',
-              'terms': [
-                {
-                  'sign': 1,
-                  'count': 1,
-                  'sides': 6,
-                  'rolls': [5],
-                  'value': 5,
-                },
-              ],
-              'total': 5,
-            },
-          ],
+        'text': 'Rolled 1d6: [5] = 5',
+        'view': {
+          'kind': 'dice_roll',
+          'level': 1,
+          'by': 'dice',
+          'data': {
+            'dice': '1d6',
+            'rows': [
+              {
+                'dice': '1d6',
+                'terms': [
+                  {
+                    'sign': 1,
+                    'count': 1,
+                    'sides': 6,
+                    'rolls': [5],
+                    'value': 5,
+                  },
+                ],
+                'total': 5,
+              },
+            ],
+          },
         },
       };
       late AppState app;

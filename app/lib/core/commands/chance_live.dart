@@ -43,11 +43,10 @@ abstract final class ChanceLive {
     }
   }
 
-  /// Notes the reels of a message that came in live: its chance result or
-  /// its view, and each of its values in the text that moves (inline
+  /// Notes the reels of a message that came in live: its view, and each of its values in the text that moves (inline
   /// dice), as the catalogue says ([spins]).
   static void arrivedMessage(Message m, {DateTime? now}) {
-    if (m.chance != null || viewSpins(m)) arrived(m.id, m.createdAt, now: now);
+    if (viewSpins(m)) arrived(m.id, m.createdAt, now: now);
     for (final e in m.entities) {
       if (objectSpins(e)) arrived(objectId(m.id, e.at), m.createdAt, now: now);
     }

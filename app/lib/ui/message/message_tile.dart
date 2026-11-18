@@ -13,7 +13,6 @@ import '../widgets/controls.dart';
 import '../theme/churr_icons.dart';
 import '../widgets/avatar.dart';
 import 'markdown_view.dart';
-import 'chance_view.dart';
 import 'media.dart';
 import 'message_slots.dart';
 import 'server_image.dart';
@@ -200,8 +199,6 @@ class MessageTile extends StatelessWidget {
                     FairMark(server: server, message: m),
                   if (m.files.isNotEmpty)
                     MessageFiles(server: server, files: m.files),
-                  if (m.chance != null && !m.isDeleted)
-                    ChanceView(messageId: m.id, chance: m.chance!),
                   // A message that shares its author's name line still
                   // shows that it was edited or notified anyway.
                   if (!showAuthor && (m.editedAt != null || m.notifiedAnyway))

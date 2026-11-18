@@ -13,6 +13,8 @@ import '../../core/types/catalogue.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/churr_icons.dart';
 import '../theme/tokens.dart';
+import '../../core/types/chance_kinds.dart';
+import '../message/chance_view.dart';
 import 'dice_roll/dice_roll_view.dart';
 
 /// Draws an `object` entity: the value its [typed] characters stand for,
@@ -63,6 +65,19 @@ InlineSpan drawObject(
       case 'dice_roll':
         return (
           card: DiceRollCard(messageId: m.id, data: r.data!),
+          newer: false,
+        );
+      case 'coin_flip' ||
+          'pick' ||
+          'shuffle' ||
+          'card_draw' ||
+          'tarot_reading':
+        // Drawn by the reels, faces and spreads chance results always had.
+        return (
+          card: ChanceView(
+            messageId: m.id,
+            chance: chanceShape(r.kind!, r.data!)!,
+          ),
           newer: false,
         );
     }

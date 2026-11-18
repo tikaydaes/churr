@@ -74,7 +74,7 @@ void main() {
       helpEntry(named(admin, 'ban'), admin).aliases,
       containsAll(['/kickban', '/kb']),
     );
-    expect(helpEntry(named(admin, 'flip'), admin).notes, [
+    expect(helpEntry(named(admin, 'shrug'), admin).notes, [
       helpWords('replaceable'),
     ]);
   });
@@ -107,8 +107,8 @@ void main() {
   });
 
   test('a name after /help finds its command, never a hidden one', () {
-    expect(helpFind(member, 'flip')?.name, 'flip');
-    expect(helpFind(member, '/flip')?.name, 'flip');
+    expect(helpFind(member, 'shrug')?.name, 'shrug');
+    expect(helpFind(member, '/shrug')?.name, 'shrug');
     expect(helpFind(member, 'kb')?.name, 'ban');
     expect(helpFind(member, 'part')?.name, 'leave');
     expect(helpFind(member, 'trout'), isNull);

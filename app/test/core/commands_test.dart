@@ -104,12 +104,6 @@ void main() {
       expect(mine.aliases, d['aliases']);
       expect(mine.orientation, d['orientation']);
       expect(mine.naming, d['naming']);
-      for (final a in [
-        d['name'] as String,
-        ...(d['aliases'] as List).cast<String>(),
-      ]) {
-        expect(findDeck(a.toUpperCase()), d['name']);
-      }
     }
     expect(cardGlyphs, v['glyphs']);
     expect(cardExtras, (v['extras'] as Map).keys.toSet());
@@ -119,7 +113,6 @@ void main() {
     final v = _read('tarot.json')! as Map;
     for (final s in (v['spreads'] as List).cast<Map>()) {
       expect(tarotSpreads[s['name']]!.positions, s['positions']);
-      expect(findSpread(s['name'] as String), s['name']);
     }
     for (final c in (v['summary_cases'] as List).cast<Map>()) {
       expect(

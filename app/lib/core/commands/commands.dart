@@ -5,7 +5,6 @@
 // (test/core/commands_test.dart). The web chat's copy is
 // internal/web/static/shared/commands.js.
 
-import 'decks.dart';
 
 /// The server-wide ban's two commands (ruling R72). Their names are the
 /// owner's to change; everything else reaches them by these two constants.
@@ -28,13 +27,6 @@ const builtinCommands = <String, (String, bool, bool)>{
   'tableflip': ('text_optional', true, false),
   'unflip': ('text_optional', true, false),
   'spoiler': ('text', true, false),
-  'flip': ('none', false, false),
-  'pick': ('options', false, false),
-  'shuffle': ('options', false, false),
-  'draw': ('draw', false, false),
-  'tarot': ('spread', false, false),
-  'mahjongg': ('count', false, false),
-  'mahjong': ('count', false, false),
   'join': ('channel', true, false),
   'leave': ('channel_optional', false, false),
   'part': ('channel_optional', false, false),
@@ -92,7 +84,6 @@ final commandGroupOf = <String, String>{
     'forms': 'poll rsvp signup approve form',
     'reminders': 'remind watch unwatch',
     'post': 'me shrug tableflip unflip spoiler say slap',
-    'chance': 'flip pick shuffle draw tarot mahjongg mahjong',
     'conversations': 'join leave part msg topic list query clear close knock',
     'members': 'invite kick ban unban exile unexile mute op deop mod unmod names banlist voice devoice',
     'people': 'whois ignore unignore nick whoami time',
@@ -131,7 +122,6 @@ const hiddenCommandAliases = {
 /// Other names for a command.
 const commandAliases = {
   'part': 'leave',
-  'mahjong': 'mahjongg',
   'info': 'version',
   ...hiddenCommandAliases,
 };
@@ -154,13 +144,6 @@ const replaceableCommands = {
   'shrug',
   'tableflip',
   'unflip',
-  'flip',
-  'pick',
-  'shuffle',
-  'draw',
-  'tarot',
-  'mahjongg',
-  'mahjong',
   'slap',
 };
 
@@ -194,18 +177,6 @@ Set<String> hiddenBuiltins(
   ],
 };
 
-/// The results the server draws: never in a sealed chat, which the server
-/// cannot write into.
-const chanceCommands = {
-  'flip',
-  'pick',
-  'shuffle',
-  'draw',
-  'tarot',
-  'mahjongg',
-  'mahjong',
-};
-
 /// The commands the forms builder and the reminders carry out
 /// (`registerFormCommands`, `runRemindCommand`), not `runChatCommand`.
 const formCommandNames = {
@@ -221,18 +192,10 @@ const formCommandNames = {
 const commandErrors = [
   'needs_text',
   'takes_nothing',
-  'needs_options',
-  'too_many_options',
-  'empty_option',
-  'bad_draw',
-  'unknown_deck',
-  'too_many_cards',
   'needs_channel',
   'needs_person',
   'bad_person',
   'bad_duration',
-  'unknown_spread',
-  'bad_count',
   'bad_broadcast_time',
   'mute_too_long',
 ];
@@ -293,24 +256,6 @@ Map<String, Object?> _channelRef(String s) {
   return {'name': s.replaceFirst(RegExp('^#'), '').trim()};
 }
 
-/// The deck a name or alias means, or null.
-String? findDeck(String? name) {
-  final n = (name == null || name.isEmpty ? 'standard' : name).toLowerCase();
-  for (final e in cardDecks.entries) {
-    if (e.key == n || e.value.aliases.contains(n)) return e.key;
-  }
-  return null;
-}
-
-/// The tarot spread a name or alias means, or null.
-String? findSpread(String? name) {
-  final n = (name == null || name.isEmpty ? 'three' : name).toLowerCase();
-  for (final e in tarotSpreads.entries) {
-    if (e.key == n || e.value.aliases.contains(n)) return e.key;
-  }
-  return null;
-}
-
 /// Reads text typed in a composer. Null when the text is not a built-in
 /// command; otherwise `{name, …}` with what was read, or `{name, error}`.
 /// Channel links in the text are written `<#conversation-id>`. [hidden] is
@@ -361,47 +306,6 @@ Map<String, Object?>? parseCommand(
       }
       if (rest.isNotEmpty) out['text'] = rest;
       return out;
-    case 'options':
-      final opts = rest.isEmpty
-          ? <String>[]
-          : [for (final o in rest.split('|')) o.trim()];
-      if (opts.length < 2) return fail('needs_options');
-      if (opts.length > 20) return fail('too_many_options');
-      if (opts.any((o) => o.isEmpty)) return fail('empty_option');
-      out['options'] = opts;
-      return out;
-    case 'draw':
-      var count = 1;
-      var deck = 'standard';
-      if (words.length > 2) return fail('bad_draw');
-      if (words.isNotEmpty) {
-        if (RegExp(r'^\d+$').hasMatch(words[0])) {
-          count = int.parse(words[0]);
-          if (words.length > 1) deck = words[1];
-        } else if (words.length == 1) {
-          deck = words[0];
-        } else {
-          return fail('bad_draw');
-        }
-      }
-      if (count < 1) return fail('bad_draw');
-      final key = findDeck(deck);
-      if (key == null) return fail('unknown_deck');
-      if (count > cardDecks[key]!.cards.length) return fail('too_many_cards');
-      return {'name': name, 'count': count, 'deck': key};
-    case 'spread':
-      final key = words.length > 1 ? null : findSpread(rest);
-      return key == null
-          ? fail('unknown_spread')
-          : {'name': name, 'spread': key};
-    case 'count':
-      final n = rest.isEmpty
-          ? 1
-          : (RegExp(r'^\d+$').hasMatch(rest) ? int.parse(rest) : 0);
-      if (n < 1 || n > cardDecks['mahjong']!.cards.length) {
-        return fail('bad_count');
-      }
-      return {'name': name, 'count': n};
     case 'channel':
       if (rest.isEmpty) return fail('needs_channel');
       out['channel'] = _channelRef(rest);
@@ -474,17 +378,6 @@ Map<String, Object?>? parseCommand(
   }
   return null;
 }
-
-/// The chance request a parsed command asks the server for, or null.
-Map<String, Object?>? chanceRequest(Map<String, Object?> c) =>
-    switch (c['name']) {
-      'flip' => {'kind': 'flip'},
-      'pick' || 'shuffle' => {'kind': c['name'], 'options': c['options']},
-      'draw' => {'kind': 'draw', 'count': c['count'], 'deck': c['deck']},
-      'mahjongg' => {'kind': 'draw', 'count': c['count'], 'deck': 'mahjong'},
-      'tarot' => {'kind': 'tarot', 'spread': c['spread']},
-      _ => null,
-    };
 
 /// A tarot reading's overall energy, by key (testdata/commands/tarot.json,
 /// summary_cases): the major and minor balance, how many are reversed, and

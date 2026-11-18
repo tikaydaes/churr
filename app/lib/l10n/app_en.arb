@@ -2729,56 +2729,6 @@
       }
     }
   },
-  "cmdNeedsOptions": "/{name} needs at least two options, separated by |.",
-  "@cmdNeedsOptions": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "cmdTooManyOptions": "/{name} takes at most 20 options.",
-  "@cmdTooManyOptions": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "cmdEmptyOption": "An option of /{name} is empty.",
-  "@cmdEmptyOption": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "cmdBadDraw": "Write /draw [count] [deck], for example /draw 3 tarot.",
-  "cmdUnknownDeck": "There is no such deck. The decks are: {decks}.",
-  "@cmdUnknownDeck": {
-    "placeholders": {
-      "decks": {
-        "type": "String"
-      }
-    }
-  },
-  "cmdTooManyCards": "That deck does not have that many cards.",
-  "cmdUnknownSpread": "There is no such spread. The spreads are: {spreads}.",
-  "@cmdUnknownSpread": {
-    "placeholders": {
-      "spreads": {
-        "type": "String"
-      }
-    }
-  },
-  "cmdBadCount": "Draw 1 to {max} tiles.",
-  "@cmdBadCount": {
-    "placeholders": {
-      "max": {
-        "type": "int"
-      }
-    }
-  },
   "cmdNeedsChannel": "/{name} needs a channel: type # and pick one.",
   "@cmdNeedsChannel": {
     "placeholders": {
@@ -2806,14 +2756,6 @@
   "cmdBadDuration": "Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).",
   "cmdMuteTooLong": "A time-out lasts at most {days} days, written like 2h, 1d or 4w.",
   "@cmdMuteTooLong": {"placeholders": {"days": {"type": "int"}}},
-  "cmdNotInSealedChance": "/{name} is drawn by the server, which cannot write into a sealed chat.",
-  "@cmdNotInSealedChance": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "cmdNotInSealed": "/{name} is not available in a sealed chat.",
   "@cmdNotInSealed": {
     "placeholders": {

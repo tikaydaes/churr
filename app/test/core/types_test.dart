@@ -1,8 +1,8 @@
 // The catalogue in the app (docs/DESIGN-MODULES.md sections 3.2, 4 and
 // 9.1), as the web chat's e2e/types.mjs holds its own:
 //
-//   1. the dice_roll kind's check, against testdata/types/dice_roll.json,
-//      the cases the server's and the web chat's checks pass too;
+//   1. the chance kinds' checks, against testdata/types/<kind>.json, the
+//      cases the server's and the web chat's checks pass too;
 //   2. the three-step fallback: the kind, its generic rendition, the text,
 //      and the state "this needs a newer app";
 //   3. what moves when it arrives live;
@@ -45,6 +45,35 @@ Message _message(Map<String, dynamic> extra) => Message.fromJson({
 });
 
 void main() {
+  group('the other chance kinds\' checks, as the server\'s', () {
+    for (final kind in [
+      'coin_flip',
+      'pick',
+      'shuffle',
+      'card_draw',
+      'tarot_reading',
+    ]) {
+      final f = jsonDecode(
+        File('../testdata/types/$kind.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      test('$kind: the file is the kind\'s', () {
+        expect(f['kind'], kind);
+        expect(f['level'], catalogueKinds[kind]!.level);
+        expect(catalogueKinds[kind]!.chance, isTrue);
+      });
+      for (final c in (f['valid'] as List).cast<Map>()) {
+        test('$kind valid: ${c['name']}', () {
+          expect(catalogueKinds[kind]!.data(c['data']), isNotNull);
+        });
+      }
+      for (final c in (f['invalid'] as List).cast<Map>()) {
+        test('$kind invalid: ${c['name']}', () {
+          expect(catalogueKinds[kind]!.data(c['data']), isNull);
+        });
+      }
+    }
+  });
+
   group('the kind\'s check, as the server\'s', () {
     test('the file is the kind\'s, at the level the wire names', () {
       expect(_cases['kind'], 'dice_roll');

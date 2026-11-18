@@ -11,6 +11,7 @@
 
 import '../models/json.dart';
 import '../models/message.dart';
+import 'chance_kinds.dart';
 import 'dice_roll.dart';
 
 /// The catalogue level this client reads in full (day-one rule 3). A
@@ -18,22 +19,55 @@ import 'dice_roll.dart';
 const catalogueLevel = 1;
 
 /// One kind this client knows: the lowest level that reads it, its data's
-/// check (which gives what is drawn, or null), and whether it moves when
-/// it arrives live.
+/// check (which gives what is drawn, or null), whether it moves when it
+/// arrives live, and whether it is a built-in chance kind, whose card shows
+/// the shield of its proof by default (DESIGN-FAIR.md section 13).
 class CatalogueKind {
   const CatalogueKind({
     required this.level,
     required this.data,
     this.spins = false,
+    this.chance = false,
   });
   final int level;
   final Json? Function(Object? data) data;
   final bool spins;
+  final bool chance;
 }
 
 /// Every kind this client knows.
 const catalogueKinds = <String, CatalogueKind>{
-  'dice_roll': CatalogueKind(level: 1, data: diceRollData, spins: true),
+  'dice_roll': CatalogueKind(
+    level: 1,
+    data: diceRollData,
+    spins: true,
+    chance: true,
+  ),
+  'coin_flip': CatalogueKind(
+    level: 1,
+    data: coinFlipData,
+    spins: true,
+    chance: true,
+  ),
+  'pick': CatalogueKind(level: 1, data: pickData, spins: true, chance: true),
+  'shuffle': CatalogueKind(
+    level: 1,
+    data: shuffleData,
+    spins: true,
+    chance: true,
+  ),
+  'card_draw': CatalogueKind(
+    level: 1,
+    data: cardDrawData,
+    spins: true,
+    chance: true,
+  ),
+  'tarot_reading': CatalogueKind(
+    level: 1,
+    data: tarotReadingData,
+    spins: true,
+    chance: true,
+  ),
 };
 
 /// How deep a value's renditions are followed: an alt of an alt is the

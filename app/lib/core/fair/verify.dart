@@ -14,7 +14,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../types/catalogue.dart';
 import 'derive.dart';
+import 'kinds.dart';
 import 'pin.dart';
 import 'ecvrf.dart' as ecvrf;
 
@@ -141,21 +143,33 @@ FairCheck verifyMessage(
   if (!r.valid || !_same(r.beta, beta)) {
     return fail('The proof does not check out.');
   }
+  // A kind with a composition of derive 1 is re-derived in full, from its
+  // checked data; a kind this device checks whose data does not hold
+  // together fails; one it does not know is only proved, not re-derived.
   bool rollOk(Object? v) {
     if (v is! Map || v['draw'] is! Map) return true;
     final i = (v['draw'] as Map)['i'];
-    final data = v['data'];
-    if (i is! int) return false;
-    if (v['kind'] != 'dice_roll' || data is! Map || data['rows'] is! List) {
-      return true;
+    if (i is! int || i < 0) return false;
+    final r = readValue(v);
+    final kind = v['kind'];
+    if (r.drawn && !r.removed && !r.alt) {
+      return rederive(r.kind!, r.data!, beta, i) ?? true;
     }
-    return sameRoll(FairStream(beta, i), data['rows'] as List);
+    final def = kind is String ? catalogueKinds[kind] : null;
+    final level = v['level'];
+    if (def != null &&
+        v['removed'] != true &&
+        level is int &&
+        level <= catalogueLevel) {
+      return false;
+    }
+    return true;
   }
 
   var ok = rollOk(m['view']);
   for (final e in (m['entities'] as List? ?? const [])) {
     if (e is Map && e['type'] == 'object') ok = ok && rollOk(e['object']);
   }
-  if (!ok) return fail('A die shown is not the one the proof gives.');
+  if (!ok) return fail('An outcome shown is not the one the proof gives.');
   return FairCheck(FairState.verified, block: block);
 }

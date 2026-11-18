@@ -13,6 +13,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../conversation_support.dart';
 
+/// A runCommand body without its draw's input (client_id and draw_t),
+/// which every command carries.
+Map _asked(Object? body) => Map.of(body! as Map)
+  ..remove('client_id')
+  ..remove('draw_t');
+
 Future<(ServerState, FakeServer)> makeServer() async {
   final fake = FakeServer();
   final db = await conversationCache();
@@ -191,10 +197,15 @@ void main() {
     final c = ComposerController(s, general);
     await c.start();
     await tick(80);
-    expect(c.commands.map((x) => x.name), ['poll', 'standup', 'deploy']);
+    expect(c.commands.map((x) => x.name), [
+      'poll',
+      'standup',
+      'deploy',
+      'roll',
+    ]);
     c.text.text = '/deploy main';
     expect(await c.send(), isA<Sent>());
-    expect(fake.where('POST', '/commands').single.body, {
+    expect(_asked(fake.where('POST', '/commands').single.body), {
       'name': 'deploy',
       'text': 'main',
     });
@@ -213,7 +224,7 @@ void main() {
         'commands': [
           {'name': 'poll', 'kind': 'builtin', 'description': 'Ask'},
           {'name': 'shrug', 'kind': 'saved_reply', 'description': 'Ours'},
-          {'name': 'pick', 'kind': 'bot', 'description': 'Picks lunch'},
+          {'name': 'unflip', 'kind': 'bot', 'description': 'Picks lunch'},
         ],
       },
     );
@@ -222,14 +233,18 @@ void main() {
     await tick(80);
     expect(
       c.hiddenBuiltinNames,
-      containsAll(['shrug', 'pick', 'exile', 'unexile', 'kline', 'unkline']),
+      containsAll(['shrug', 'unflip', 'exile', 'unexile', 'kline', 'unkline']),
     );
     c.text.text = '/shrug';
     expect(await c.send(), isA<Sent>());
-    expect(fake.where('POST', '/commands').single.body, {'name': 'shrug'});
-    c.text.text = '/pick';
+    expect(_asked(fake.where('POST', '/commands').single.body), {
+      'name': 'shrug',
+    });
+    c.text.text = '/unflip';
     expect(await c.send(), isA<Sent>());
-    expect(fake.where('POST', '/commands').last.body, {'name': 'pick'});
+    expect(_asked(fake.where('POST', '/commands').last.body), {
+      'name': 'unflip',
+    });
     // The admin-only commands and their aliases are nothing here: the
     // line is an ordinary message.
     for (final typed in ['/exile @lee', '/kline @lee']) {
@@ -277,10 +292,13 @@ void main() {
     c.text.text = '/shrug fine';
     expect(await c.send(), isA<Sent>());
 
+    // /roll is the dice module's: it goes to the server as typed.
     c.text.text = '/roll 2d6+3';
-    final roll = await c.send();
-    expect(roll, isA<RunBuiltin>());
-    expect((roll as RunBuiltin).parsed, {'name': 'roll', 'args': '2d6+3'});
+    expect(await c.send(), isA<Sent>());
+    expect(_asked(fake.where('POST', '/commands').last.body), {
+      'name': 'roll',
+      'text': '2d6+3',
+    });
     c.text.text = '/kick';
     final kick = await c.send() as RunBuiltin;
     expect(kick.parsed, {'name': 'kick', 'error': 'needs_person'});

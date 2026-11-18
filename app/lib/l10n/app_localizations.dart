@@ -8349,54 +8349,6 @@ abstract class L10n {
   /// **'/{name} takes nothing after it.'**
   String cmdTakesNothing(String name);
 
-  /// No description provided for @cmdNeedsOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'/{name} needs at least two options, separated by |.'**
-  String cmdNeedsOptions(String name);
-
-  /// No description provided for @cmdTooManyOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'/{name} takes at most 20 options.'**
-  String cmdTooManyOptions(String name);
-
-  /// No description provided for @cmdEmptyOption.
-  ///
-  /// In en, this message translates to:
-  /// **'An option of /{name} is empty.'**
-  String cmdEmptyOption(String name);
-
-  /// No description provided for @cmdBadDraw.
-  ///
-  /// In en, this message translates to:
-  /// **'Write /draw [count] [deck], for example /draw 3 tarot.'**
-  String get cmdBadDraw;
-
-  /// No description provided for @cmdUnknownDeck.
-  ///
-  /// In en, this message translates to:
-  /// **'There is no such deck. The decks are: {decks}.'**
-  String cmdUnknownDeck(String decks);
-
-  /// No description provided for @cmdTooManyCards.
-  ///
-  /// In en, this message translates to:
-  /// **'That deck does not have that many cards.'**
-  String get cmdTooManyCards;
-
-  /// No description provided for @cmdUnknownSpread.
-  ///
-  /// In en, this message translates to:
-  /// **'There is no such spread. The spreads are: {spreads}.'**
-  String cmdUnknownSpread(String spreads);
-
-  /// No description provided for @cmdBadCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Draw 1 to {max} tiles.'**
-  String cmdBadCount(int max);
-
   /// No description provided for @cmdNeedsChannel.
   ///
   /// In en, this message translates to:
@@ -8426,12 +8378,6 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'A time-out lasts at most {days} days, written like 2h, 1d or 4w.'**
   String cmdMuteTooLong(int days);
-
-  /// No description provided for @cmdNotInSealedChance.
-  ///
-  /// In en, this message translates to:
-  /// **'/{name} is drawn by the server, which cannot write into a sealed chat.'**
-  String cmdNotInSealedChance(String name);
 
   /// No description provided for @cmdNotInSealed.
   ///

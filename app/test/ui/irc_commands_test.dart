@@ -130,10 +130,19 @@ void main() {
             'who': 'Anyone who can post. Not bots.',
           },
         }),
-        cmd('flip', d: 'Flips a coin'),
-        cmd('pick', d: 'Picks one of the options'),
+        cmd('tableflip', d: 'Adds a flipped table'),
+        cmd('unflip', d: 'Puts the table back'),
         cmd('ban', d: 'Bans someone from this channel'),
-        cmd('draw', d: 'Draws cards'),
+        cmd('shrug', d: 'Adds a shrug'),
+        // /draw is the cards module's: its entry lists the decks.
+        SlashCommand({
+          'name': 'draw',
+          'kind': 'module',
+          'module': 'cards',
+          'description': 'Draws cards',
+          'hint': '[count] [deck]',
+          'help': {'description': 'Draws cards from a freshly shuffled deck.'},
+        }),
       ];
       await tester.runAsync(() async {
         s = await fakeServerState(
@@ -181,16 +190,16 @@ void main() {
       await settleAsync(tester);
 
       // A related command opens its own entry; back goes to the list.
-      await open('flip');
-      final pick = find.byKey(const Key('help-related-pick'));
-      await tester.ensureVisible(pick);
-      await tester.tap(pick);
+      await open('tableflip');
+      final unflip = find.byKey(const Key('help-related-unflip'));
+      await tester.ensureVisible(unflip);
+      await tester.tap(unflip);
       await tester.pump();
-      expect(find.byKey(const Key('help-entry-pick')), findsOneWidget);
+      expect(find.byKey(const Key('help-entry-unflip')), findsOneWidget);
       await tester.tap(find.byKey(const Key('help-back')));
       await tester.pump();
       expect(find.byKey(const Key('help-search')), findsOneWidget);
-      expect(find.byKey(const Key('help-flip')), findsOneWidget);
+      expect(find.byKey(const Key('help-tableflip')), findsOneWidget);
       Navigator.of(tester.element(find.byKey(const Key('help-search')))).pop();
       await settleAsync(tester);
 

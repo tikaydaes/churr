@@ -527,11 +527,6 @@ class Message {
   /// drawn after the author's name.
   bool get action => raw['action'] == true;
 
-  /// A result the server drew for /roll, /flip, /pick, /shuffle, /draw,
-  /// /mahjongg or /tarot (MESSAGE-FORMAT.md section 1.2). No edit changes
-  /// it. Kept raw; lib/ui/message/chance_view.dart draws it.
-  Json? get chance => object(raw['chance']);
-
   bool get isReply => parentId != null;
   bool get isDeleted => deletedAt != null;
   bool get isSystem => system != null;

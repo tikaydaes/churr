@@ -103,6 +103,14 @@ class HelpEntry {
   final List<HelpMoreRow> more;
 }
 
+/// The registry list each of the cards module's commands draws from.
+const _moduleMore = {
+  'draw': 'decks',
+  'tarot': 'spreads',
+  'mahjongg': 'mahjong',
+  'mahjong': 'mahjong',
+};
+
 /// The full entry for a listed command. Related commands are only those
 /// listed here, so a command hidden from this person is never named to
 /// them.
@@ -112,6 +120,10 @@ HelpEntry helpEntry(SlashCommand c, List<SlashCommand> listed) {
     // A module's command: its help comes from the module, through the
     // server, with the names commands have here written in.
     final e = c.raw['help'] as Json? ?? const {};
+    // The cards module's commands list what they draw from.
+    final moduleMore = c.raw['module'] == 'cards'
+        ? _moduleMore[c.name]
+        : null;
     return HelpEntry(
       name: c.name,
       kind: c.kind,
@@ -133,8 +145,8 @@ HelpEntry helpEntry(SlashCommand c, List<SlashCommand> listed) {
       who: e['who'] as String? ?? '',
       notes: const [],
       related: const [],
-      moreKind: null,
-      more: const [],
+      moreKind: moduleMore,
+      more: helpMore(moduleMore),
     );
   }
   if (c.kind != 'builtin') {

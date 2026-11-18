@@ -4910,43 +4910,6 @@ class L10nEn extends L10n {
   }
 
   @override
-  String cmdNeedsOptions(String name) {
-    return '/$name needs at least two options, separated by |.';
-  }
-
-  @override
-  String cmdTooManyOptions(String name) {
-    return '/$name takes at most 20 options.';
-  }
-
-  @override
-  String cmdEmptyOption(String name) {
-    return 'An option of /$name is empty.';
-  }
-
-  @override
-  String get cmdBadDraw =>
-      'Write /draw [count] [deck], for example /draw 3 tarot.';
-
-  @override
-  String cmdUnknownDeck(String decks) {
-    return 'There is no such deck. The decks are: $decks.';
-  }
-
-  @override
-  String get cmdTooManyCards => 'That deck does not have that many cards.';
-
-  @override
-  String cmdUnknownSpread(String spreads) {
-    return 'There is no such spread. The spreads are: $spreads.';
-  }
-
-  @override
-  String cmdBadCount(int max) {
-    return 'Draw 1 to $max tiles.';
-  }
-
-  @override
   String cmdNeedsChannel(String name) {
     return '/$name needs a channel: type # and pick one.';
   }
@@ -4968,11 +4931,6 @@ class L10nEn extends L10n {
   @override
   String cmdMuteTooLong(int days) {
     return 'A time-out lasts at most $days days, written like 2h, 1d or 4w.';
-  }
-
-  @override
-  String cmdNotInSealedChance(String name) {
-    return '/$name is drawn by the server, which cannot write into a sealed chat.';
   }
 
   @override

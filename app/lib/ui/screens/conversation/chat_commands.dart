@@ -6,12 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../core/api/channels.dart';
 import '../../../core/api/errors.dart';
 import '../../../core/api/hubs.dart' show HubsApi, MemberAction;
-import '../../../core/api/messages.dart';
 import '../../../core/api/operations.dart';
 import '../../../core/api/watches.dart';
-import '../../../core/commands/chance_live.dart';
 import '../../../core/commands/commands.dart';
-import '../../../core/commands/decks.dart';
 import '../../../core/commands/remind.dart';
 import '../../../core/forms/presets.dart' show accountZone;
 import '../../../core/instant/zone.dart' show InstantEnv;
@@ -193,14 +190,6 @@ String commandProblem(L10n t, Map<String, Object?> c) {
   return switch (c['error']) {
     'needs_text' => t.cmdNeedsText(name),
     'takes_nothing' => t.cmdTakesNothing(name),
-    'needs_options' => t.cmdNeedsOptions(name),
-    'too_many_options' => t.cmdTooManyOptions(name),
-    'empty_option' => t.cmdEmptyOption(name),
-    'bad_draw' => t.cmdBadDraw,
-    'unknown_deck' => t.cmdUnknownDeck(cardDecks.keys.join(', ')),
-    'too_many_cards' => t.cmdTooManyCards,
-    'unknown_spread' => t.cmdUnknownSpread(tarotSpreads.keys.join(', ')),
-    'bad_count' => t.cmdBadCount(cardDecks['mahjong']!.cards.length),
     'needs_channel' => t.cmdNeedsChannel(name),
     'needs_person' => t.cmdNeedsPerson(name),
     'bad_person' => t.cmdBadPerson(name),
@@ -213,9 +202,7 @@ String commandProblem(L10n t, Map<String, Object?> c) {
 
 /// The words for a command typed where it does not work: in a sealed chat,
 /// which the server cannot write into, or which has no such thing.
-String notInSealed(L10n t, String name) => chanceCommands.contains(name)
-    ? t.cmdNotInSealedChance(name)
-    : t.cmdNotInSealed(name);
+String notInSealed(L10n t, String name) => t.cmdNotInSealed(name);
 
 class _Said implements Exception {
   _Said(this.text);
@@ -319,15 +306,6 @@ Future<String?> _carryOut(
   final conv = s.conversation(here);
   if ((conv?.isSealed ?? false) && !(builtinCommands[name]?.$2 ?? false)) {
     throw _Said(notInSealed(t, name));
-  }
-  final chance = chanceRequest(c);
-  if (chance != null) {
-    final m = await s.api.postMessageChance(here, chance, parentId: r.parentId);
-    // The sender's own result arrived live too: it spins once as it first
-    // appears, whether this answer or the event comes first.
-    ChanceLive.arrivedMessage(m);
-    if (await s.db.message(m.id) == null) await s.db.upsertMessages([m]);
-    return null;
   }
   String who(Account a) => a.name;
   switch (name) {

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:churr/core/commands/chance_live.dart';
+import 'package:churr/core/types/chance_kinds.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_view.dart';
 import 'package:churr/ui/theme/theme.dart';
@@ -17,13 +18,23 @@ import 'package:flutter_test/flutter_test.dart';
 /// the dice; no names are listed, each card's pops up; nothing replays on
 /// a press; reduced motion shows it all at once; the last frame is the
 /// static drawing.
+/// The rolls of dice.json, and a value of each other chance kind of
+/// chance.json in the shape the reels draw.
 List<Map<String, dynamic>> _results() {
   final v = jsonDecode(
     File('../testdata/commands/dice.json').readAsStringSync(),
   ) as Map;
+  final k = jsonDecode(
+    File('../testdata/commands/chance.json').readAsStringSync(),
+  ) as Map;
   return [
     for (final f in (v['fallback'] as List).cast<Map>())
       (f['chance'] as Map).cast<String, dynamic>(),
+    for (final f in (k['texts'] as List).cast<Map>())
+      chanceShape(
+        f['kind'] as String,
+        (f['data'] as Map).cast<String, dynamic>(),
+      )!,
   ];
 }
 
