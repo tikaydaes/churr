@@ -820,6 +820,16 @@ func blobOf(f model.File, purpose string) wireBlob {
 	return wireBlob{ID: string(f.ID), SHA256: f.SHA256, Size: f.Size, MediaType: f.MediaType, Purpose: purpose}
 }
 
+// serverNameOf is the name of an account's home server, empty for an
+// account of this server's own.
+func (s *Service) serverNameOf(ctx context.Context, a store.Areas, id model.AccountID) string {
+	acc, err := a.Accounts().Get(ctx, id)
+	if err != nil {
+		return ""
+	}
+	return acc.ServerName
+}
+
 // profileOf builds the profile of one of this server's own accounts as it
 // travels. Its version is this server's clock, which only grows.
 func (s *Service) profileOf(ctx context.Context, a store.Areas, acc model.Account) (wireProfile, []wireBlob) {
@@ -866,7 +876,10 @@ func (s *Service) wireMessageOf(ctx context.Context, a store.Areas, st store.Str
 			w.Entities = append(w.Entities, we)
 			continue
 		case model.EntityEmoji:
-			if em, err := a.Emoji().Get(ctx, e.EmojiID); err == nil && em.ServerName == "" {
+			// This server's own emoji; and in history, which carries other
+			// servers' messages, the emoji of the author's own server, which
+			// is where a receiver files it.
+			if em, err := a.Emoji().Get(ctx, e.EmojiID); err == nil && (em.ServerName == "" || em.ServerName == s.serverNameOf(ctx, a, m.AuthorID)) {
 				if f, err := a.Files().Get(ctx, em.FileID); err == nil {
 					b := blobOf(f, "emoji")
 					b.ID, b.Name = string(em.ID), em.Name

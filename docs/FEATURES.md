@@ -2795,9 +2795,9 @@ shared through it, and is trusted as its owner. The instances the hub
 joins and approves are trusted to keep the channel's contents from
 people who are not allowed to see them. Nothing is kept from the hub:
 it makes and keeps the keys of every channel it owns and holds each
-of them whole (every message as it stands, its members and the
-profiles of everyone who wrote in it), so its operator can read the
-channel. Nothing of the channel depends on any instance staying: an
+of them whole (every message as it stands, its files and custom
+emoji, its members and the profiles and pictures of everyone who
+wrote in it), so its operator can read the channel. Nothing of the channel depends on any instance staying: an
 instance that leaves takes none of its history away, and an instance
 that joins is given its history by the hub even with every other
 instance switched off. A private channel is still not encrypted against

@@ -470,33 +470,11 @@ func (h *Hub) ephemeral(sc *serverConn, f wire.Frame) error {
 	return nil
 }
 
-// direct passes a sealed direct message on unchanged. The hub checks who it
-// is from and that the signature is theirs; it sees the two names and the
-// size, and cannot open the body. It never holds one for later. One
-// addressed to the hub itself it opens (keys.go); one addressed to another
-// hub of the cluster is carried there in `ask`.
-func (h *Hub) direct(sc *serverConn, f wire.Frame, raw []byte) error {
-	if f.From != sc.name {
-		return wire.Errf(wire.EBadFrame, "A direct message is sent by the server it is from.")
-	}
-	if !wire.VerifyDirect(f, sc.key) {
-		return wire.Errf(wire.EBadSignature, "The direct message's signature does not verify.")
-	}
-	if f.To == h.id.Name {
-		if r := h.limits(sc.name).direct.Take(sc.name); !r.OK {
-			e := wire.Errf(wire.ERateLimited, "Too many direct messages.")
-			e.RetryAfter = max(r.RetryAfterSeconds(), 1)
-			return e
-		}
-		return h.ownDirect(sc.name, sc.key, f)
-	}
-	if _, member := h.topology().cluster.Members[f.To]; member {
-		return h.askHome(sc.name, f.To, raw)
-	}
-	there := h.hubOf(f.To)
-	if there == "" {
-		return wire.Errf(wire.EUnknownServer, "%s is not on this hub or its cluster.", f.To)
-	}
+// takeDirect counts a direct message against its sender's limits: a file
+// chunk (judged by its size, since the hub cannot see what a direct message
+// is) against the file bytes of the hour, anything else against the direct
+// messages of the minute.
+func (h *Hub) takeDirect(sc *serverConn, f wire.Frame) error {
 	lim := h.limits(sc.name)
 	if len(f.Body) >= chunkThreshold {
 		hour := int64(h.now()) / 3600000
@@ -520,6 +498,39 @@ func (h *Hub) direct(sc *serverConn, f wire.Frame, raw []byte) error {
 		e.RetryAfter = max(r.RetryAfterSeconds(), 1)
 		h.refused.Note("direct messages", sc.name, e.RetryAfter)
 		return e
+	}
+	return nil
+}
+
+// direct passes a sealed direct message on unchanged. The hub checks who it
+// is from and that the signature is theirs; it sees the two names and the
+// size, and cannot open the body. It never holds one for later. One
+// addressed to the hub itself it opens (keys.go); one addressed to another
+// hub of the cluster is carried there in `ask`.
+func (h *Hub) direct(sc *serverConn, f wire.Frame, raw []byte) error {
+	if f.From != sc.name {
+		return wire.Errf(wire.EBadFrame, "A direct message is sent by the server it is from.")
+	}
+	if !wire.VerifyDirect(f, sc.key) {
+		return wire.Errf(wire.EBadSignature, "The direct message's signature does not verify.")
+	}
+	if f.To == h.id.Name {
+		// The hub's own: a key asked for, or history or a file for its
+		// holder (keys.go), counted as any direct message is.
+		if err := h.takeDirect(sc, f); err != nil {
+			return err
+		}
+		return h.ownDirect(sc.name, sc.key, f)
+	}
+	if _, member := h.topology().cluster.Members[f.To]; member {
+		return h.askHome(sc.name, f.To, raw)
+	}
+	there := h.hubOf(f.To)
+	if there == "" {
+		return wire.Errf(wire.EUnknownServer, "%s is not on this hub or its cluster.", f.To)
+	}
+	if err := h.takeDirect(sc, f); err != nil {
+		return err
 	}
 	if there != h.id.Name {
 		// A server of another hub of the cluster: the message is carried

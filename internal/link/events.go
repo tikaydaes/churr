@@ -503,6 +503,12 @@ func (a *apply) fileRows(author model.AccountID, files []wireFile, cards []model
 		return nil, nil, err
 	}
 	state := func(size int64) string {
+		if a.s.holder {
+			// The hub keeps every file of the channels it owns, whatever its
+			// size: what an instance may send it is bounded by the hub's
+			// limit on file bytes an hour.
+			return "arriving"
+		}
 		if size > limit || (a.st.MaxBlobBytes > 0 && size > a.st.MaxBlobBytes) {
 			return "too_large"
 		}

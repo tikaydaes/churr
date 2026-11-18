@@ -1,6 +1,7 @@
 package link_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
@@ -141,4 +142,81 @@ func TestAJoinerTakesHistoryFromTheHubAlone(t *testing.T) {
 	if d := c.Server.Link.StatsNow().Dropped; d["history_not_from_home"] != 0 || d["history_unasked"] != 0 {
 		t.Fatalf("c dropped history: %v", d)
 	}
+}
+
+// fileOn is a message's first file as an instance's owner is shown it, once
+// it has arrived there: its address and the bytes it serves.
+func fileOn(t *testing.T, c *testkit.Client, conv, text string) (map[string]any, []byte) {
+	t.Helper()
+	var file map[string]any
+	testkit.Eventually(t, "the file of "+text+" arrives", func() bool {
+		for _, m := range c.Messages(conv) {
+			if m["text"] == text && len(arr(m["files"])) > 0 {
+				file = arr(m["files"])[0].(map[string]any)
+				url, _ := file["url"].(string)
+				return url != "" && file["state"] == nil
+			}
+		}
+		return false
+	})
+	status, _, got := c.Get(file["url"].(string), nil)
+	if status != 200 {
+		t.Fatalf("the file of %q is served with status %d", text, status)
+	}
+	return file, got
+}
+
+// ready reports whether an instance or a hub's holder holds a file's bytes.
+func ready(st store.Store, id string) bool {
+	f, err := st.Files().Get(context.Background(), model.FileID(id))
+	return err == nil && f.BlobKey != "" && (f.State == "" || f.State == "ready")
+}
+
+// The hub fetches every file of a channel it owns from its origin when its
+// message passes, a custom emoji and a picture included, checks each by its
+// hash, keeps it, and serves it: an instance that joins with the author's
+// instance switched off is given every file by the hub.
+func TestTheHubKeepsAndServesFiles(t *testing.T) {
+	l := testkit.NewLinked(t, 3, true)
+	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
+	ch := a.Owner.Channel("drawings", false)
+	stream, local := l.Share(0, ch, "drawings", map[string]any{"listing": "open", "history_days": 30}, 1)
+	if status, out := b.Owner.SendForm("PUT", "/api/v1/me/avatar", "file", "me.png", pngBytes(t)); status != 200 {
+		t.Fatalf("b's owner's picture: %d %v", status, out)
+	}
+	status, made := b.Owner.Form("POST", "/api/v1/emoji", testkit.Part{Field: "name", Content: []byte("party")},
+		testkit.Part{Field: "file", FileName: "party.png", Content: pngBytes(t)})
+	if status != 201 {
+		t.Fatalf("making the emoji: %d %v", status, made)
+	}
+	emojiID := made["emoji"].(map[string]any)["id"].(string)
+	b.Owner.Post(local[1], "well done :party:")
+	content := bytes.Repeat([]byte("a file the hub keeps, in more than one chunk. "), 12000)
+	up := b.Owner.Upload(local[1], "notes.bin", content)
+	b.Owner.Must(201, "POST", "/api/v1/conversations/"+local[1]+"/messages", map[string]any{"text": "with a file", "file_ids": []any{up["id"]}})
+	fileOn(t, a.Owner, ch, "with a file")
+	me := b.Owner.Must(200, "GET", "/api/v1/me", nil)["account"].(map[string]any)
+	avatar, _ := me["avatar_file_id"].(string)
+	if avatar == "" {
+		t.Fatalf("b's owner has no picture: %v", me)
+	}
+	held := l.Hub.Hub.HolderStore()
+	testkit.Eventually(t, "the hub holds the file, the emoji and the picture", func() bool {
+		return ready(held, up["id"].(string)) && ready(held, emojiID) && ready(held, avatar)
+	})
+	f, _ := held.Files().Get(context.Background(), model.FileID(up["id"].(string)))
+	if f.Size != int64(len(content)) {
+		t.Fatalf("the hub holds %d bytes of a file of %d", f.Size, len(content))
+	}
+
+	b.Stop()
+	convC := joinListed(l, 2, stream, "drawings-c")
+	l.Joined(2, stream)
+	c.Owner.HasMessage(convC, "well done :party:")
+	if _, got := fileOn(t, c.Owner, convC, "with a file"); !bytes.Equal(got, content) {
+		t.Fatalf("c was given %d bytes, not the %d posted", len(got), len(content))
+	}
+	testkit.Eventually(t, "c holds the emoji and b's owner's picture, from the hub", func() bool {
+		return ready(c.Server.Store, emojiID) && ready(c.Server.Store, avatar)
+	})
 }

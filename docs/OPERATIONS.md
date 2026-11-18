@@ -279,13 +279,16 @@ owns those channels, and its operator can read them.
 channels it is the home of (`LINK-PROTOCOL.md` section 23a): a SQLite
 database with the same schema and migrations as a server's
 (`holder/churr.db`, migrated when the hub starts, and logged as a
-server's is) and its working space `holder/tmp/`. It holds every
-message of every such channel as it stands, its reactions and forms,
-and the profile of everyone who wrote in it or is in it. Nothing in it
-ages out: it grows with everything said in the hub's channels, for as
-long as each channel lasts, about as a server's database grows with
-the same channels, and a closed channel's share is removed 30 days
-after it closed. `hub.db`, by contrast, holds thirty days of envelopes
+server's is), the channels' files in `holder/files/`, and its working
+space `holder/tmp/`. It holds every message of every such channel as
+it stands, its reactions and forms, the profile and picture of
+everyone who wrote in it or is in it, and every file and custom emoji
+posted in it, whatever its size. Nothing in it ages out: it grows with
+everything said and posted in the hub's channels, for as long as each
+channel lasts, about as a server's data directory grows with the same
+channels (files are most of it), and a closed channel's share is
+removed 30 days after it closed. What one server can send it is
+bounded by the file bytes an hour of `churr-hub limits`. `hub.db`, by contrast, holds thirty days of envelopes
 and stays the size of the traffic. Watch the free space of the data
 directory as you would a server's. A joining instance is given its
 history from `holder/`, and nothing of a channel depends on any

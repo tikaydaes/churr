@@ -64,8 +64,19 @@ func (s *Service) profileFor(ctx context.Context, acc model.Account) (wireProfil
 	if acc.Local() {
 		return s.profileOf(ctx, s.store, acc)
 	}
-	return wireProfile{ID: acc.ID, Server: acc.ServerName, Username: acc.Username, DisplayName: acc.DisplayName, Title: acc.Title,
-		Pronouns: acc.Pronouns, TimeZone: acc.TimeZone, Version: acc.ProfileVersion, Removed: acc.Removed()}, nil
+	p := wireProfile{ID: acc.ID, Server: acc.ServerName, Username: acc.Username, DisplayName: acc.DisplayName, Title: acc.Title,
+		Pronouns: acc.Pronouns, TimeZone: acc.TimeZone, Version: acc.ProfileVersion, Removed: acc.Removed()}
+	// With the picture, once its bytes are here: whoever is given the
+	// profile can then ask this server for it, as a joining instance asks
+	// the hub of a channel it owns.
+	var blobs []wireBlob
+	if acc.AvatarFileID != "" {
+		if f, err := s.store.Files().Get(ctx, acc.AvatarFileID); err == nil && f.BlobKey != "" {
+			p.AvatarFileID = f.ID
+			blobs = append(blobs, blobOf(f, "avatar"))
+		}
+	}
+	return p, blobs
 }
 
 // sendHistory sends a server the snapshot of a conversation: its messages
@@ -574,6 +585,9 @@ type fetchState struct {
 	attempts int
 	next     time.Time
 	xfer     *transfer
+	// asked is the server the file was last asked of: its origin, or the
+	// home hub of the channel it is in (fetchArriving).
+	asked model.ServerID
 }
 
 func (s *Service) fetchOf(id model.FileID) *fetchState {
@@ -583,6 +597,27 @@ func (s *Service) fetchOf(id model.FileID) *fetchState {
 		s.fetches[id] = f
 	}
 	return f
+}
+
+// hubChannelFor picks an active hub-owned channel to ask its home hub for a
+// file whose origin this server shares nothing with any more: one after
+// another, by how many times the file has been asked for, so that a file
+// one hub does not hold is asked of the next.
+func (s *Service) hubChannelFor(ctx context.Context, attempt int) (store.Stream, bool) {
+	streams, err := s.store.Streams().List(ctx, store.StreamActive)
+	if err != nil {
+		return store.Stream{}, false
+	}
+	var held []store.Stream
+	for _, st := range streams {
+		if hubOwned(st) {
+			held = append(held, st)
+		}
+	}
+	if len(held) == 0 {
+		return store.Stream{}, false
+	}
+	return held[attempt%len(held)], true
 }
 
 // streamReaching finds an active stream this server shares with another.
@@ -605,9 +640,13 @@ func (s *Service) streamReaching(ctx context.Context, server model.ServerID) (st
 	return store.Stream{}, false
 }
 
-// fetchArriving asks the origin for every file whose bytes have not come:
-// at once when its event is applied, then with a wait that doubles from 10
-// seconds to an hour, for 7 days, after which the file is unavailable.
+// fetchArriving asks for every file whose bytes have not come: at once when
+// its event is applied, then with a wait that doubles from 10 seconds to an
+// hour, for 7 days, after which the file is unavailable. A file of a channel
+// a hub owns is asked of the channel's home hub, which keeps the channel's
+// files (holder.go); so is a picture or an emoji whose origin this server
+// shares only hub-owned channels with, or none any more. Anything else is
+// asked of its origin, as the hub's holder asks for every file.
 func (s *Service) fetchArriving(ctx context.Context) {
 	files, err := s.store.Streams().ArrivingFiles(ctx, 100)
 	if err != nil {
@@ -629,9 +668,27 @@ func (s *Service) fetchArriving(ctx context.Context) {
 			ok = err == nil
 		}
 		if !ok {
-			if st, ok = s.streamReaching(ctx, af.ServerID); !ok {
-				continue
-			}
+			st, ok = s.streamReaching(ctx, af.ServerID)
+		}
+		s.mu.Lock()
+		attempts := s.fetchOf(af.File.ID).attempts
+		s.mu.Unlock()
+		if !ok && !s.holder {
+			// Its origin is in no stream with this server any more: a
+			// picture or an emoji it was shown in a hub-owned channel's
+			// history. The hubs of those channels keep them.
+			st, ok = s.hubChannelFor(ctx, attempts)
+		}
+		if !ok {
+			continue
+		}
+		target, err := s.store.Peers().Server(ctx, af.ServerID)
+		if hubOwned(st) && !s.holder {
+			target, ok = s.homeHub(ctx, st)
+			err = nil
+		}
+		if err != nil || !ok {
+			continue
 		}
 		s.mu.Lock()
 		state := s.fetchOf(af.File.ID)
@@ -646,15 +703,14 @@ func (s *Service) fetchArriving(ctx context.Context) {
 			state.next = now.Add(min(wait, time.Hour))
 			s.fetching[af.File.ID] = true
 			from := 0
-			if state.xfer != nil && state.xfer.from == af.ServerID {
+			if state.xfer != nil && state.xfer.from == target.ID {
 				from = state.xfer.next // a transfer cut short resumes
 			} else {
 				state.xfer = nil
 			}
+			state.asked = target.ID
 			s.mu.Unlock()
-			if sv, err := s.store.Peers().Server(ctx, af.ServerID); err == nil {
-				s.sendDirect(ctx, st.PeerID, sv, kBlobRequest, "", map[string]any{"stream_id": st.ID, "blob_id": af.File.ID, "from_index": from})
-			}
+			s.sendDirect(ctx, st.PeerID, target, kBlobRequest, "", map[string]any{"stream_id": st.ID, "blob_id": af.File.ID, "from_index": from})
 			continue
 		}
 		s.mu.Unlock()
@@ -702,23 +758,40 @@ func (s *Service) onBlobRequest(ctx context.Context, m directMessage) {
 	for _, ss := range active {
 		in = in || ss.ServerID == m.from.ID
 	}
-	if !in {
+	// The home hub of a channel it owns fetches every file of it, to keep.
+	if !in && !s.isHomeHub(st, m.from) {
 		s.replyError(ctx, m, wire.ENotInStream, "That server is not in the stream.")
 		return
 	}
-	// A custom emoji is asked for by the emoji's id.
+	// A custom emoji is asked for by the emoji's id. (Another server's
+	// emoji is kept here under a file of the same id.)
 	fileID := model.FileID(b.BlobID)
 	if em, err := s.store.Emoji().Get(ctx, model.EmojiID(b.BlobID)); err == nil && em.ServerName == "" {
 		fileID = em.FileID
 	}
 	f, ok, err := s.store.Streams().FileInStream(ctx, fileID, st.ConversationID)
-	if err != nil || !ok || s.blobs == nil {
+	arriving := false
+	if err == nil && !ok && s.holder {
+		// The hub's holder is fetching it from its origin, asked at the
+		// moment its message passed, as the instance asking now was: it
+		// answers once the file has come.
+		if row, gerr := s.store.Files().Get(ctx, fileID); gerr == nil && row.State == "arriving" {
+			arriving = true
+		}
+	}
+	if err != nil || (!ok && !arriving) || s.blobs == nil {
 		s.replyError(ctx, m, wire.ENotFound, "No such file in that stream.")
 		return
 	}
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
+		if arriving {
+			if f, ok = s.awaitFile(fileID, st.ConversationID); !ok {
+				s.replyError(s.ctx, m, wire.ENotFound, "No such file in that stream.")
+				return
+			}
+		}
 		r, err := s.blobs.Get(s.ctx, f.BlobKey)
 		if err != nil {
 			s.replyError(s.ctx, m, wire.ENotFound, "No such file in that stream.")
@@ -745,6 +818,30 @@ func (s *Service) onBlobRequest(ctx context.Context, m directMessage) {
 	}()
 }
 
+// awaitFile waits, for at most a minute, for a file that is arriving here
+// to have come.
+func (s *Service) awaitFile(id model.FileID, conv model.ConversationID) (model.File, bool) {
+	deadline := time.Now().Add(time.Minute)
+	for time.Now().Before(deadline) {
+		f, ok, err := s.store.Streams().FileInStream(s.ctx, id, conv)
+		if err != nil {
+			return f, false
+		}
+		if ok {
+			return f, true
+		}
+		if row, err := s.store.Files().Get(s.ctx, id); err != nil || row.State != "arriving" {
+			return f, false
+		}
+		select {
+		case <-s.ctx.Done():
+			return f, false
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+	return model.File{}, false
+}
+
 // onBlobChunk takes one chunk of a file this server asked for. When the
 // last is in, the length and the hash are checked against what the origin's
 // signed event said, so a relay cannot have swapped the file; then the file
@@ -765,8 +862,14 @@ func (s *Service) onBlobChunk(ctx context.Context, m directMessage) {
 		return
 	}
 	uploader, err := s.store.Accounts().Get(ctx, f.UploaderID)
-	if err != nil || uploader.ServerID != m.from.ID {
-		return // only the file's origin is believed
+	s.mu.Lock()
+	asked := s.fetchOf(id).asked
+	s.mu.Unlock()
+	if err != nil || (uploader.ServerID != m.from.ID && asked != m.from.ID) {
+		// Only the file's origin, or the hub it was asked of, is listened
+		// to; either way the bytes must match the size and hash the
+		// origin's signed event gave.
+		return
 	}
 	s.mu.Lock()
 	state := s.fetchOf(id)

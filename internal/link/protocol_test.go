@@ -921,10 +921,14 @@ func TestFiles(t *testing.T) {
 	if !bytes.Equal(row.SHA256, sum[:]) || row.BlobKey == "" {
 		t.Fatalf("b's row: %+v", row)
 	}
-	// The hub carried the chunks and kept none of them.
+	// The hub's log keeps no file: the chunks are direct messages. The hub
+	// owns the channel and keeps the file itself, in its holder.
 	if bytes.Contains(readDir(t, s.Hub.Dir), []byte("churr file content")) {
-		t.Fatal("the hub's storage holds file content")
+		t.Fatal("the hub's log holds file content")
 	}
+	testkit.Eventually(t, "the hub's holder keeps the file", func() bool {
+		return bytes.Contains(readHeld(t, s.Hub.Dir), content)
+	})
 }
 
 func TestFilesThatMustNotArrive(t *testing.T) {

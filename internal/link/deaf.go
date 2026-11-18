@@ -64,6 +64,9 @@ func (s *Service) deafEarsFor(ctx context.Context, server model.ServerID) ([]dea
 // sendDeafEars sends a server everything this server has for it, over a
 // peer that reaches it. With ask, the receiver answers with its own.
 func (s *Service) sendDeafEars(ctx context.Context, peer model.PeerID, sv store.Server, ask bool, re string) {
+	if s.holder {
+		return // a hub's holder has no accounts, and nobody has blocked anyone of its
+	}
 	if s.isSelf(sv.ID) || sv.Blocked() {
 		return
 	}

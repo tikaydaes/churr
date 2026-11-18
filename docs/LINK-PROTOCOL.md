@@ -1991,7 +1991,11 @@ History is a snapshot, not a replay. The owner sends one or more
 
 - `conversation`, `accounts` and `member_ids` are in the first part
   only. `accounts` holds every current member and every author of a
-  message in the snapshot.
+  message in the snapshot. Whenever the sender holds their bytes, a
+  profile's picture, and a message's custom emoji of its author's own
+  server, are among the part's `blobs`, whichever server the account
+  or the emoji is of, and the receiver fetches them from the sender
+  (section 15).
 - Messages are in `order` across parts, in their current state.
   Deleted messages, earlier versions and tick histories are not sent.
 - `order` is the message's order string on the server that sends the
@@ -2073,19 +2077,22 @@ A file's description travels in the event that uses it (`blobs`,
 section 11). Its bytes travel separately, as chunks in direct
 messages, so that a hub's log never holds a file. Each server ends up
 with its own copy and serves its own members from it; nothing is
-fetched from another server when a member reads.
+fetched from another server when a member reads. In a channel a hub
+owns, the home hub keeps every file too, and serves it: nothing of
+the channel's files depends on the instance they were posted on.
 
 ### Fetching
 
 When a server applies an event with `blobs` it does not already hold
-(by `id`), it asks the event's origin for each:
+(by `id`), it asks the event's origin for each; in a channel a hub
+owns, it asks the channel's home hub:
 
     {"kind": "blob_request", "msg_id": "…", "at": "…",
      "stream_id": "…", "blob_id": "0193a700-…", "from_index": 0}
 
-The origin checks that the asker is in the stream's server list and
-that the blob belongs to something in that stream, then answers with
-chunks:
+The origin checks that the asker is in the stream's server list, or
+is the home hub of a channel the hub owns, and that the blob belongs
+to something in that stream, then answers with chunks:
 
     {"kind": "blob_chunk", "msg_id": "…", "at": "…", "re": "<request>",
      "stream_id": "…", "blob_id": "0193a700-…",
@@ -2106,6 +2113,20 @@ chunks:
 - The receiver then treats the file as an upload of its own: it
   decides `kind` and `media_type` from the content, makes its own
   thumbnail, and stores it. It keeps the file's `id`.
+- **In a channel a hub owns.** The home hub's holder (section 23a)
+  asks the origin for every file of the channel, its custom emoji and
+  the pictures of everyone in it, at the moment the event that names
+  it passes, checks it as any receiver does, and keeps it, whatever its
+  size: what an instance sends the hub is bounded by the hub's limit
+  on file bytes an hour (section 23). An instance asks the home hub,
+  which answers an instance in the channel's list; one it is still
+  fetching it answers once the file has come, waiting at most a
+  minute. A picture or an emoji in a hub-owned channel's history whose
+  origin shares no stream with the asker any more is asked of the home
+  hub of one of its hub-owned channels, the next one at each try. The
+  receiver takes the chunks from the server it asked, and checks them
+  against the size and hash the origin's signed event gave, or the
+  hub's history gave.
 - A file's row exists from the moment its event is applied, with
   `files.state` of `arriving` and no `blob_key`; it becomes `ready`
   when the bytes are stored, `unavailable` when the tries run out,
@@ -2922,7 +2943,7 @@ to honour it and cannot be forced to.
 `churr-hub` is the link package with a log and a clock, and the
 owner of the channels shared through it (section 23a): it makes and
 keeps their stream keys (section 10), and holds each of them whole,
-contents and history, in a copy kept by the same code an
+contents, history and files, in a copy kept by the same code an
 instance keeps a copy with. It has no accounts of its own, no search
 and no API beyond `/link/v1`, `/.well-known/churr` and a status page. Ad-hoc channels and sealed
 chats that cross it are not its own: they stay under the servers
@@ -2953,7 +2974,7 @@ In one data directory:
 | Clocks             | Per server: the figures of section 5, as last measured | Until removed |
 | Absences           | Per server: the last 8 stretches it was disconnected | 24 hours each |
 | Counters           | Per server: envelopes, bytes, refusals          | 30 days       |
-| The holder         | `holder/`: for each channel it is the home of, the channel whole (section 23a, "The hub holds the whole channel"): a database with the instance's schema and migrations (`holder/churr.db`), holding every message as it stands, edited and deleted, its reactions, ticks and forms, and the members and the profile of everyone who wrote or is a member | For as long as the hub has the channel: a closed channel's copy goes when its stream does, 30 days after it closed |
+| The holder         | `holder/`: for each channel it is the home of, the channel whole (section 23a, "The hub holds the whole channel"): a database with the instance's schema and migrations (`holder/churr.db`), holding every message as it stands, edited and deleted, its reactions, ticks and forms, the members and the profile of everyone who wrote or is a member, and the channel's files, custom emoji and pictures (`holder/files/`), each checked by its hash | For as long as the hub has the channel: a closed channel's copy goes when its stream does, 30 days after it closed |
 
 What it keeps of the link itself (envelopes, frames kept for a server,
 its channels' records, roster entries) it keeps as the bytes that
@@ -2974,7 +2995,7 @@ be removed and made again.
 |------------------------------------------------------|-----------------------------------------|
 | Each server's name, keys and network address         | Any message or file of a stream it does not own, or the name of anyone who is in no channel it owns |
 | Which servers are in which stream                    | The kind of a stream it does not own, or what conversation it is |
-| Of each channel it owns: name, description, listing mode, whether it is private, servers, managers and moderators (account identifier, username, home instance), which servers are invited or asking, every key epoch's key, and the whole channel: every message, its members and their profiles | Each server's own name for it, levels, pins |
+| Of each channel it owns: name, description, listing mode, whether it is private, servers, managers and moderators (account identifier, username, home instance), which servers are invited or asking, every key epoch's key, and the whole channel: every message and file, its members and their profiles | Each server's own name for it, levels, pins |
 | For each envelope: stream, origin, size, its stamp (`at`, `n`, `offset`), its key epoch; in a channel it owns, all it says, since it holds the key | In a stream it does not own: who posted, or what kind of event it is |
 | Each server's clock offset, and the latency and jitter of its path, each direction by itself | |
 | For each direct message: from, to, size, time        | What kind it is: an offer, a key, a file chunk and a call pass look alike |
@@ -3394,9 +3415,14 @@ is given it by the hub with every other instance switched off.
   onto it from a direct link, or handed to it within a cluster), the
   holder asks the channel's instances for all they hold of it (section
   13, "History on joining") and takes from the log what came after.
+- **Files.** It fetches every file the channel's events name (an
+  attachment, a card's image, a custom emoji, a member's picture) from
+  its origin when the event passes, checks it by its hash and keeps it
+  (section 15).
 - **What it answers.** The direct messages addressed to the hub that
   are not `key_request` the hub hands to its holder: `history_request`
-  from an instance in the record's list, and `open_request`. The
+  and `blob_request` from an instance in the record's list,
+  `open_request`, and the answers to what the holder asked. The
   answers leave as the hub's own direct messages, signed with the
   hub's key and sealed to the asker. An instance takes them from the
   channel's home hub as it takes the channel's keys from it.

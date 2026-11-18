@@ -108,13 +108,11 @@ The home hub makes and keeps every key of the channels it owns
 
 The home hub holds each channel it owns whole, with the code an instance
 holds a copy with, in a database of its own: every message as it stands,
-its members and the profiles of everyone who wrote in it. It alone sends
-the history a joining instance is given, so nothing of the channel's
-history depends on any instance staying (`docs/LINK-PROTOCOL.md` section
-23a, "The hub holds the whole channel").
-
-**Still to change: files.** A hub-owned channel's files and custom emoji
-still come from the instance they were posted on.
+its files and custom emoji, its members and the profiles and pictures of
+everyone who wrote in it. It alone sends the history a joining instance
+is given, and serves the channel's files, so nothing of the channel
+depends on any instance staying (`docs/LINK-PROTOCOL.md` sections 15
+and 23a, "The hub holds the whole channel").
 
 ## 5a. Modules, types and bots
 
