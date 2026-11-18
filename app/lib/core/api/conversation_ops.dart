@@ -50,7 +50,9 @@ class SlashCommand {
   final Json raw;
   final String name;
 
-  /// `builtin`, `saved_reply` or `bot`.
+  /// `builtin`, `saved_reply`, `bot` or `module` (a built-in module's
+  /// command, /roll, which the server runs; [raw] holds its forms and its
+  /// `help`).
   final String kind;
   final String description;
   final String? hint;

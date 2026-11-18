@@ -14,6 +14,8 @@ package modhost
 
 import (
 	"context"
+
+	"github.com/tikaydaes/churr/internal/model"
 )
 
 // Module is one built-in module: what it declares, and its handler.
@@ -24,6 +26,11 @@ type Module struct {
 	Title string
 	// Commands are the slash commands it answers.
 	Commands []Command
+	// Types are the kinds of argument it reads that are not in the
+	// catalogue: a name and the pattern a value matches whole.
+	Types []DerivedType
+	// PeopleOnly refuses its commands to bots, which make their own.
+	PeopleOnly bool
 	// Claims are the kinds it resolves when a marked object of that kind
 	// is sent (inline dice).
 	Claims  []Claim
@@ -37,6 +44,20 @@ type Command struct {
 	Name    string
 	Hint    string
 	Summary string
+	// Forms are the ways it may be typed, tried in order
+	// (docs/DESIGN-MODULES.md section 5.1). Each slot's kind is `text`, a
+	// kind of the catalogue or one of the module's Types; a `text` slot
+	// may only be last.
+	Forms []model.CommandForm
+	// Help is what /help says of it, with its name written {cmd}.
+	Help model.CommandHelp
+}
+
+// DerivedType is a kind of argument a module declares: a name and the
+// pattern, in Go's syntax, that a value matches whole.
+type DerivedType struct {
+	Name    string
+	Pattern string
 }
 
 // Claim is a kind a module resolves on send: text marked by Open, then a

@@ -2697,8 +2697,9 @@ message ListCommandsResponse {
   repeated Command commands = 3;
 }
 
-// Something that can be typed as `/name` in a conversation.
+// Something that can be typed as `/name` in a conversation, under the name it has here.
 message Command {
+  repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   optional string name = 3;
   optional CommandKind kind = 4;
@@ -2706,6 +2707,49 @@ message Command {
   optional string hint = 6;
   optional bytes bot_id = 7; // identifier
   optional bytes saved_reply_id = 8; // identifier
+  optional string module = 9;
+  repeated CommandForm forms = 10;
+  CommandHelp help = 11;
+}
+
+// One way a command may be typed: its slots in order. A command that takes nothing has a form with none.
+message CommandForm {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated CommandSlot slots = 3;
+}
+
+// One argument of a command's form.
+message CommandSlot {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string hint = 4;
+  optional string kind = 5;
+}
+
+// What `/help` says of a command, in the shape of testdata/commands/help.json's entries.
+message CommandHelp {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string description = 3;
+  repeated CommandHelpArg args = 4;
+  repeated CommandExample examples = 5;
+  optional string where = 6;
+  optional string who = 7;
+}
+
+// What one argument of a command takes.
+message CommandHelpArg {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string about = 4;
+}
+
+// Something to type, and what it does.
+message CommandExample {
+  repeated int32 null_fields = 2;
+  optional string type = 3;
+  optional string then = 4;
 }
 
 message SetCommandsRequest {
@@ -3697,6 +3741,39 @@ message SetModuleRequest {
 message SetModuleResponse {
   repeated int32 null_fields = 2;
   Module module = 3;
+}
+
+message GetCommandSettingsResponse {
+  repeated int32 null_fields = 2;
+  CommandSettings settings = 3;
+}
+
+// The command table (DESIGN-MODULES.md section 6.5): which source of a name wins where two have it, and the names modules' commands have here. A protected built-in always wins.
+message CommandSettings {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated CommandSettingsOrder order = 3;
+  repeated CommandRename renames = 4;
+}
+
+// Another name for a module's command on this server.
+message CommandRename {
+  repeated int32 null_fields = 2;
+  optional string module = 3;
+  optional string command = 4;
+  optional string name = 5;
+}
+
+message UpdateCommandSettingsRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated string order = 3;
+  repeated CommandRename renames = 4;
+}
+
+message UpdateCommandSettingsResponse {
+  repeated int32 null_fields = 2;
+  CommandSettings settings = 3;
 }
 
 message AdminListEmojiResponse {
@@ -6460,6 +6537,7 @@ enum CommandKind {
   COMMAND_KIND_BUILTIN = 1; // "builtin"
   COMMAND_KIND_SAVED_REPLY = 2; // "saved_reply"
   COMMAND_KIND_BOT = 3; // "bot"
+  COMMAND_KIND_MODULE = 4; // "module"
 }
 
 enum WebhookState {
@@ -6639,6 +6717,14 @@ enum UpdateGroupRequestColor {
   UPDATE_GROUP_REQUEST_COLOR_GREEN = 5; // "green"
   UPDATE_GROUP_REQUEST_COLOR_RED = 6; // "red"
   UPDATE_GROUP_REQUEST_COLOR_GREY = 7; // "grey"
+}
+
+enum CommandSettingsOrder {
+  COMMAND_SETTINGS_ORDER_UNSPECIFIED = 0;
+  COMMAND_SETTINGS_ORDER_SAVED_REPLY = 1; // "saved_reply"
+  COMMAND_SETTINGS_ORDER_BOT = 2; // "bot"
+  COMMAND_SETTINGS_ORDER_MODULE = 3; // "module"
+  COMMAND_SETTINGS_ORDER_BUILTIN = 4; // "builtin"
 }
 
 enum WordFilterAction {

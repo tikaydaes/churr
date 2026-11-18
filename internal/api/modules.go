@@ -13,6 +13,8 @@ func init() {
 		a.handle("setModule", a.setModule)
 		a.handle("listConversationModules", a.listConversationModules)
 		a.handle("setConversationModule", a.setConversationModule)
+		a.handle("getCommandSettings", a.getCommandSettings)
+		a.handle("updateCommandSettings", a.updateCommandSettings)
 	})
 }
 
@@ -76,4 +78,27 @@ func (a *API) setConversationModule(r *Request) error {
 		return err
 	}
 	return r.JSON(map[string]any{"module": m})
+}
+
+func (a *API) getCommandSettings(r *Request) error {
+	set, err := a.Commands.CommandSettings(r.Ctx(), r.Actor())
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"settings": set})
+}
+
+func (a *API) updateCommandSettings(r *Request) error {
+	var body struct {
+		Order   []string              `json:"order"`
+		Renames []model.CommandRename `json:"renames"`
+	}
+	if err := r.Decode(&body); err != nil {
+		return err
+	}
+	set, err := a.Commands.SetCommandSettings(r.Ctx(), r.Actor(), body.Order, body.Renames)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"settings": set})
 }

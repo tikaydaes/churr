@@ -73,7 +73,35 @@ type Made struct {
 	View *model.ValueEnvelope
 }
 
-var moduleName = regexp.MustCompile(`^[a-z0-9-]{2,32}$`)
+var (
+	moduleName = regexp.MustCompile(`^[a-z0-9-]{2,32}$`)
+	typeName   = regexp.MustCompile(`^[a-z0-9_]{2,32}$`)
+	slotName   = regexp.MustCompile(`^[a-z0-9_]{1,32}$`)
+)
+
+// checkForms checks a command's forms: at least one; each slot named, and
+// of a kind the host knows (`text`, a kind of the catalogue, or one of the
+// module's types); a `text` slot last, since it takes the rest of the line.
+func checkForms(forms []model.CommandForm, types map[string]bool) error {
+	if len(forms) == 0 {
+		return fmt.Errorf("no forms")
+	}
+	for _, f := range forms {
+		for i, s := range f.Slots {
+			if !slotName.MatchString(s.Name) {
+				return fmt.Errorf("a slot named %q", s.Name)
+			}
+			_, catalogued := wirepb.KindLevel(s.Kind)
+			if s.Kind != "text" && !types[s.Kind] && !catalogued {
+				return fmt.Errorf("the slot %s is of no kind the host knows (%q)", s.Name, s.Kind)
+			}
+			if s.Kind == "text" && i != len(f.Slots)-1 {
+				return fmt.Errorf("the text slot %s is not last", s.Name)
+			}
+		}
+	}
+	return nil
+}
 
 // New checks the modules and registers them: each has a name and a handler;
 // no two share a name, a command or a claimed kind; every command name is
@@ -95,9 +123,22 @@ func New(o Options, mods ...Module) (*Registry, error) {
 			return nil, fmt.Errorf("modhost: module %s has no handler", m.Name)
 		}
 		names[m.Name] = true
+		types := map[string]bool{}
+		for _, ty := range m.Types {
+			if !typeName.MatchString(ty.Name) || types[ty.Name] || ty.Name == "text" {
+				return nil, fmt.Errorf("modhost: module %s: a type named %q is not allowed or not alone", m.Name, ty.Name)
+			}
+			if _, err := regexp.Compile(`^(?:` + ty.Pattern + `)$`); err != nil {
+				return nil, fmt.Errorf("modhost: module %s: the type %s: %w", m.Name, ty.Name, err)
+			}
+			types[ty.Name] = true
+		}
 		for _, c := range m.Commands {
 			if !model.ValidCommandName(c.Name) || r.cmds[c.Name] != nil {
 				return nil, fmt.Errorf("modhost: module %s: command %q is not allowed or not alone", m.Name, c.Name)
+			}
+			if err := checkForms(c.Forms, types); err != nil {
+				return nil, fmt.Errorf("modhost: module %s: /%s: %w", m.Name, c.Name, err)
 			}
 			r.cmds[c.Name] = m
 		}
@@ -199,6 +240,9 @@ func (r *Registry) Command(ctx context.Context, actor model.Account, conv model.
 	m := r.cmds[name]
 	if m == nil {
 		return Made{}, model.ErrNotFound.With("There is no command called /" + name + " here.")
+	}
+	if m.PeopleOnly && actor.Role == model.RoleBot {
+		return Made{}, model.Invalid("name", "The "+title(m)+" module answers people; a bot makes its own.")
 	}
 	if off, err := r.Off(ctx, conv); err != nil {
 		return Made{}, err

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/api/conversation_ops.dart';
+import '../core/commands/chance_live.dart';
 import '../core/commands/commands.dart';
 import '../core/api/errors.dart';
 import '../core/api/messages.dart';
@@ -803,6 +804,9 @@ class ComposerController extends ChangeNotifier {
       // The bot's dialog, when it opens one, shows on the device that
       // ran the command.
       if (interaction != null) FormActions.startedHere.add(interaction);
+      // A module's answer (/roll) spins once as it first appears, whether
+      // this answer or the event comes first.
+      if (m != null && c.kind == 'module') ChanceLive.arrivedMessage(m);
       if (m != null && await server.db.message(m.id) == null) {
         await server.db.upsertMessages([m]);
       }
@@ -810,7 +814,7 @@ class ComposerController extends ChangeNotifier {
       return const Sent();
     } on ApiException catch (e) {
       return SendFailed(
-        e.code == 'unavailable'
+        e.code == 'unavailable' && c.kind == 'bot'
             ? 'That bot is not connected right now.'
             : e.message,
       );

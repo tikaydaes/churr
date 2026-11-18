@@ -321,7 +321,7 @@ export class ScheduledView {
     let items;
     try { items = (await get('/saved-replies')).saved_replies.filter((r) => !r.community); } catch (err) { fill(this.replies, h('p', { class: 'problem' }, err.message)); return; }
     const fields = (r) => [
-      { name: 'name', label: 'Command', required: true, code: true, value: r && r.name, maxLength: 32, hint: 'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others’ names are refused.' },
+      { name: 'name', label: 'Command', required: true, code: true, value: r && r.name, maxLength: 32, hint: 'Typed as /name. Only a fun or game built-in (/shrug, /flip …) may be replaced; the others’ names are refused.' },
       { name: 'text', label: 'What it posts', type: 'textarea', required: true, value: r && r.text, rows: 5 }];
     // A built-in of the same name is replaced for this person (ruling R72).
     const saved = (out) => { if (!out) return; if (out.saved_reply && isBuiltin(out.saved_reply.name)) toast(COMMAND_STRINGS.replacesBuiltinForYou(out.saved_reply.name)); commandsChanged(); this.loadReplies(); };

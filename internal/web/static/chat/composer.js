@@ -1090,10 +1090,12 @@ export class Composer {
       return true;
     }
     // A saved reply posts its text; a bot's command is sent to the bot,
-    // which answers for everyone or for this person alone.
+    // which answers for everyone or for this person alone; a module's
+    // (/roll, /dice) is read and answered by the server, and its card
+    // spins once as it arrives.
     this.clear();
     const out = await post(`/conversations/${this.o.conversationId}/commands`, { name, text: text || undefined, parent_id: this.o.parentId || undefined });
-    if (out.message) putMessage(out.message);
+    if (out.message) putMessage(c.kind === 'module' ? { ...out.message, _live: true } : out.message);
     if (out.interaction_id) store.emit('waiting', { interactionId: out.interaction_id, botId: c.bot_id, conversationId: this.o.conversationId, parentId: this.o.parentId || null });
     return true;
   }

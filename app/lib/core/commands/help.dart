@@ -108,6 +108,35 @@ class HelpEntry {
 /// them.
 HelpEntry helpEntry(SlashCommand c, List<SlashCommand> listed) {
   final here = {for (final x in listed) x.name};
+  if (c.kind == 'module') {
+    // A module's command: its help comes from the module, through the
+    // server, with the names commands have here written in.
+    final e = c.raw['help'] as Json? ?? const {};
+    return HelpEntry(
+      name: c.name,
+      kind: c.kind,
+      summary: c.description.isEmpty
+          ? helpWords('noDescription')
+          : c.description,
+      usage: '/${c.name}${(c.hint ?? '').isEmpty ? '' : ' ${c.hint}'}',
+      args: [
+        for (final a in (e['args'] as List? ?? const []).cast<Json>())
+          (name: a['name'] as String, about: a['about'] as String),
+      ],
+      description: e['description'] as String? ?? '',
+      examples: [
+        for (final x in (e['examples'] as List? ?? const []).cast<Json>())
+          (type: x['type'] as String, then: x['then'] as String),
+      ],
+      aliases: const [],
+      where: e['where'] as String? ?? '',
+      who: e['who'] as String? ?? '',
+      notes: const [],
+      related: const [],
+      moreKind: null,
+      more: const [],
+    );
+  }
   if (c.kind != 'builtin') {
     return HelpEntry(
       name: c.name,

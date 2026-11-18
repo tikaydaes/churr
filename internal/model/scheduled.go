@@ -173,8 +173,6 @@ var BuiltinCommands = []Command{
 	{Name: "tableflip", Kind: CommandBuiltin, Description: "Adds (╯°□°)╯︵ ┻━┻ to the text", Hint: "[text]", Sealed: true, Replaceable: true},
 	{Name: "unflip", Kind: CommandBuiltin, Description: "Adds ┬─┬ノ( º _ ºノ) to the text", Hint: "[text]", Sealed: true, Replaceable: true},
 	{Name: "spoiler", Kind: CommandBuiltin, Description: "Hides the text until the reader selects it", Hint: "text", Sealed: true},
-	{Name: "roll", Kind: CommandBuiltin, Description: "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv; rows separated by commas", Hint: "[dice]", Replaceable: true},
-	{Name: "dice", Kind: CommandBuiltin, Description: "Rolls six-sided dice, rolled by the server: 4 is 4d6, 4+3 is 4d6+3", Hint: "[number]", Replaceable: true},
 	{Name: "flip", Kind: CommandBuiltin, Description: "Flips a coin, flipped by the server", Replaceable: true},
 	{Name: "pick", Kind: CommandBuiltin, Description: "Picks one, picked by the server", Hint: "a | b | c", Replaceable: true},
 	{Name: "shuffle", Kind: CommandBuiltin, Description: "Shuffles them, shuffled by the server", Hint: "a | b | c", Replaceable: true},
@@ -250,6 +248,9 @@ const (
 	CommandBuiltin    = "builtin"
 	CommandSavedReply = "saved_reply"
 	CommandBot        = "bot"
+	// CommandModule is a built-in module's command (/roll, /dice), which
+	// the server runs (docs/DESIGN-MODULES.md section 6.2).
+	CommandModule = "module"
 )
 
 // Command is something that can be typed as `/name` in a conversation
@@ -261,6 +262,12 @@ type Command struct {
 	Hint         string    `json:"hint,omitempty"`
 	BotID        AccountID `json:"bot_id,omitempty"`
 	SavedReplyID string    `json:"saved_reply_id,omitempty"`
+	// Module, Forms and Help are a module's command's: the module that
+	// answers it, the forms it may be typed in, and its help, with the
+	// command's final name written in.
+	Module string        `json:"module,omitempty"`
+	Forms  []CommandForm `json:"forms,omitempty"`
+	Help   *CommandHelp  `json:"help,omitempty"`
 
 	// Sealed: a built-in offered in a sealed chat too.
 	Sealed bool `json:"-"`

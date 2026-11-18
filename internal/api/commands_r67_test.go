@@ -131,10 +131,13 @@ func TestActionAndChance(t *testing.T) {
 	// command has taken is the app's to carry out; /roll is the dice
 	// module's, which the server runs.
 	cmds := names(sam.Must(200, "GET", "/api/v1/commands?conversation_id="+room, nil)["commands"].([]any))
-	for _, n := range []string{"me", "roll", "draw", "join", "quiet", "poll"} {
+	for _, n := range []string{"me", "draw", "join", "quiet", "poll"} {
 		if !cmds[n] {
 			t.Fatalf("/%s is not listed: %v", n, cmds)
 		}
+	}
+	if menu := menuOf(sam, room); menu["roll"] != model.CommandModule || menu["dice"] != model.CommandModule {
+		t.Fatalf("/roll and /dice are the module's: %v", menu)
 	}
 	sam.Refused(400, model.CodeInvalidValue, "POST", convPath(room)+"/commands", map[string]any{"name": "draw", "text": "3"})
 	if m := rolled(sam, room, "roll", "d20"); rollOf(t, m["view"].(map[string]any))["dice"] != "1d20" || m["author_id"] != string(sam.ID) {

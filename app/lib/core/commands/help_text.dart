@@ -3,7 +3,7 @@
 
 /// What /help says: testdata/commands/help.json as it is.
 const helpSource = r'''{
- "description": "What /help says (rulings R67 and R74): the one source both clients draw it from, written into internal/web/static/shared/helptext.js and app/lib/core/commands/help_text.dart by tools/help-gen/gen.py. commands has an entry for every row of commands.json: a description of what it does and who sees the result, its arguments, two or more examples with what happens, where it works, who may use it, and related commands; a row that is another name for a command says same_as. The one-line summary and the usage line are commands.json's description and hint; the aliases, whether it works in a sealed chat, whether it is for admins only and whether a community command may replace it come from commands.json too. more names a list drawn from a registry (dice, decks, spreads, mahjong). decks describes each deck of decks.json; measure_kinds sorts every unit of the measurement table. things is the section on what people can type: each row covers the entity types (entity:), Markdown blocks (block:) and inline spans (inline:) and composer behaviours (composer:) it explains, and the tests fail when a kind the grammars define has no row. live names what a client fills in itself (the reference patterns that apply here, the units). pattern_examples are the cases for the example a client writes for a reference pattern's expression. British spelling, plain words, no jargon.",
+ "description": "What /help says (rulings R67 and R74): the one source both clients draw it from, written into internal/web/static/shared/helptext.js and app/lib/core/commands/help_text.dart by tools/help-gen/gen.py. commands has an entry for every row of commands.json: a description of what it does and who sees the result, its arguments, two or more examples with what happens, where it works, who may use it, and related commands; a row that is another name for a command says same_as. The one-line summary and the usage line are commands.json's description and hint; the aliases, whether it works in a sealed chat, whether it is for admins only and whether a community command may replace it come from commands.json too. more names a list drawn from a registry (decks, spreads, mahjong). decks describes each deck of decks.json; measure_kinds sorts every unit of the measurement table. things is the section on what people can type: each row covers the entity types (entity:), Markdown blocks (block:) and inline spans (inline:) and composer behaviours (composer:) it explains, and the tests fail when a kind the grammars define has no row. live names what a client fills in itself (the reference patterns that apply here, the units). pattern_examples are the cases for the example a client writes for a reference pattern's expression. British spelling, plain words, no jargon.",
  "labels": {
   "commands": "Commands",
   "usage": "Usage",
@@ -225,37 +225,6 @@ const helpSource = r'''{
    "who": "Anyone who can post.",
    "related": ["me", "say"]
   },
-  "roll": {
-   "description": "Rolls dice, rolled by the server, so everyone sees the same result and nobody could have made it up or edited it later. The result shows each die, any dropped ones greyed and struck through, and the total; it spins once for everyone who sees it arrive. Separate rolls with commas to roll several rows at once, each on its own line with its own total. You can also roll inside a sentence with [[2d6+3]] (one row only).",
-   "args": [
-    {"name": "dice", "about": "Nothing rolls one twenty-sided die (d20). NdS rolls N dice of S sides: N may be left out, d% is d100, and a die has 2 to 1,000 sides (a d2 is drawn as a coin). Add kh, kl, dh or dl and a count to keep or drop the highest or lowest, as in 4d6kh3 (k alone keeps the highest, so 3d10k2 drops the lowest). Join terms with + and - and add plain numbers, as in 2d6+3 or d20+1d4-1. adv and dis roll two d20s and keep the higher or the lower. Commas separate rows, as in 4d4+d6, 3d10k2. At most 8 rows, 10 terms a row, 100 dice in all, numbers up to 10,000 and 100 characters."}
-   ],
-   "examples": [
-    {"type": "/roll", "then": "Rolls one d20."},
-    {"type": "/roll 2d6+3", "then": "Rolls two six-sided dice and adds 3."},
-    {"type": "/roll 4d6kh3", "then": "Rolls four six-sided dice and keeps the highest three; the lowest is shown struck through."},
-    {"type": "/roll adv", "then": "Rolls with advantage: two d20s, keeping the higher."},
-    {"type": "/roll 4d4+d6, 3d10k2", "then": "Rolls two rows: four four-sided dice and a six-sided one added up, then three ten-sided dice keeping the highest two."}
-   ],
-   "where": "Channels and chats. Typed in a thread, the roll goes in the thread.",
-   "who": "Anyone who can post.",
-   "related": ["flip", "pick", "draw"]
-  },
-  "dice": {
-   "description": "Rolls six-sided dice, rolled by the server, the same as /roll with a number of d6: /dice 4 is /roll 4d6. Everything /roll takes works here too, rows separated by commas included.",
-   "args": [
-    {"name": "number", "about": "Nothing rolls one d6. A bare number at the start of a row is that many d6; a number after it is added (4+3 is 4d6+3). Anything written with a d is as /roll reads it (2d8 is 2d8)."}
-   ],
-   "examples": [
-    {"type": "/dice", "then": "Rolls one six-sided die."},
-    {"type": "/dice 4", "then": "Rolls four six-sided dice, the same as /roll 4d6."},
-    {"type": "/dice 4+3", "then": "Rolls four six-sided dice and adds 3."},
-    {"type": "/dice 4, 2+1", "then": "Rolls two rows: four d6, then two d6 plus 1."}
-   ],
-   "where": "Channels and chats. Typed in a thread, the roll goes in the thread.",
-   "who": "Anyone who can post.",
-   "related": ["roll", "flip", "draw"]
-  },
   "flip": {
    "description": "Flips a coin, flipped by the server: heads or tails, the same for everyone and impossible to edit. Pressing the result spins it again, but only for show: the outcome does not change.",
    "args": [],
@@ -265,7 +234,7 @@ const helpSource = r'''{
    ],
    "where": "Channels and chats.",
    "who": "Anyone who can post.",
-   "related": ["roll", "pick"]
+   "related": ["pick"]
   },
   "pick": {
    "description": "Picks one of the options you give, picked by the server, so nobody can say you chose. Everyone sees all the options and which one came up.",
@@ -278,7 +247,7 @@ const helpSource = r'''{
    ],
    "where": "Channels and chats.",
    "who": "Anyone who can post.",
-   "related": ["shuffle", "roll", "poll"]
+   "related": ["shuffle", "poll"]
   },
   "shuffle": {
    "description": "Puts the options you give in a random order, shuffled by the server. Handy for speaking orders and rotas: everyone sees the same order.",

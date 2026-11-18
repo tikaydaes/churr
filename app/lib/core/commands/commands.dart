@@ -28,8 +28,6 @@ const builtinCommands = <String, (String, bool, bool)>{
   'tableflip': ('text_optional', true, false),
   'unflip': ('text_optional', true, false),
   'spoiler': ('text', true, false),
-  'roll': ('dice', false, false),
-  'dice': ('dice', false, false),
   'flip': ('none', false, false),
   'pick': ('options', false, false),
   'shuffle': ('options', false, false),
@@ -94,7 +92,7 @@ final commandGroupOf = <String, String>{
     'forms': 'poll rsvp signup approve form',
     'reminders': 'remind watch unwatch',
     'post': 'me shrug tableflip unflip spoiler say slap',
-    'chance': 'roll dice flip pick shuffle draw tarot mahjongg mahjong',
+    'chance': 'flip pick shuffle draw tarot mahjongg mahjong',
     'conversations': 'join leave part msg topic list query clear close knock',
     'members': 'invite kick ban unban exile unexile mute op deop mod unmod names banlist voice devoice',
     'people': 'whois ignore unignore nick whoami time',
@@ -156,8 +154,6 @@ const replaceableCommands = {
   'shrug',
   'tableflip',
   'unflip',
-  'roll',
-  'dice',
   'flip',
   'pick',
   'shuffle',
@@ -201,8 +197,6 @@ Set<String> hiddenBuiltins(
 /// The results the server draws: never in a sealed chat, which the server
 /// cannot write into.
 const chanceCommands = {
-  'roll',
-  'dice',
   'flip',
   'pick',
   'shuffle',
@@ -366,10 +360,6 @@ Map<String, Object?>? parseCommand(
         return {'name': name, 'post': rest.isEmpty ? end : '$rest $end'};
       }
       if (rest.isNotEmpty) out['text'] = rest;
-      return out;
-    case 'dice':
-      // /roll and /dice are the dice module's: the server reads the dice.
-      out['args'] = rest;
       return out;
     case 'options':
       final opts = rest.isEmpty

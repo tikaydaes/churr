@@ -1045,14 +1045,53 @@ S('SavedReply', 'A `/name` command that posts preset text.', {
    'text': 'str',
    'created_at': 'time'})
 
-S('Command', 'Something that can be typed as `/name` in a conversation.', {
-   'name': 'str',
-   'kind': ('enum:builtin|saved_reply|bot',
-            'Built-in commands are carried out by the client with ordinary API calls.'),
+S('Command', 'Something that can be typed as `/name` in a conversation, under the name it has here.', {
+   'name': ('str', 'The final name: a module\'s command may have been given another by an admin (`updateCommandSettings`). Clients parse by it.'),
+   'kind': ('enum:builtin|saved_reply|bot|module',
+            'Built-in commands are carried out by the client with ordinary API calls; the others are run with `runCommand`. '
+            '`module` is a built-in module\'s command (`/roll`, `/dice`), which the server runs.'),
    'description': 'str',
    'hint?': ('str', 'The argument hint.'),
    'bot_id?': 'uuid',
-   'saved_reply_id?': 'uuid'})
+   'saved_reply_id?': 'uuid',
+   'module?': ('str', 'For a module\'s command: the module that answers it.'),
+   'forms?': ('[#CommandForm]', 'For a module\'s command: the ways it may be typed, tried in order (DESIGN-MODULES.md section 5.1).'),
+   'help?': ('#CommandHelp', 'For a module\'s command: what `/help` says of it, from the module, with the names commands have here written in.')})
+
+S('CommandForm', 'One way a command may be typed: its slots in order. A command that takes nothing has a form with none.', {
+   'slots': '[#CommandSlot]'})
+
+S('CommandSlot', 'One argument of a command\'s form.', {
+   'name': 'str',
+   'hint?': ('str', 'Said to the person typing.'),
+   'kind': ('str', '`text`, which takes the rest of the line and is only ever last; a kind of the catalogue; or a type the module declares (`dice`).')})
+
+S('CommandHelp', 'What `/help` says of a command, in the shape of testdata/commands/help.json\'s entries.', {
+   'description': 'str',
+   'args?': '[#CommandHelpArg]',
+   'examples?': '[#CommandExample]',
+   'where?': 'str',
+   'who?': 'str'})
+
+S('CommandHelpArg', 'What one argument of a command takes.', {
+   'name': 'str',
+   'about': 'str'})
+
+S('CommandExample', 'Something to type, and what it does.', {
+   'type': 'str',
+   'then': 'str'})
+
+S('CommandSettings', ('The command table (DESIGN-MODULES.md section 6.5): which source of a name wins where two have it, and '
+                      'the names modules\' commands have here. A protected built-in always wins.'), {
+   'order': ('[enum:saved_reply|bot|module|builtin]',
+             'Each source once, first wins. `saved_reply` is the person\'s own saved reply, then the custom command of the name. '
+             'The default is saved_reply, bot, module, builtin.'),
+   'renames': '[#CommandRename]'})
+
+S('CommandRename', 'Another name for a module\'s command on this server.', {
+   'module': 'str',
+   'command': ('str', 'The name the module gives it.'),
+   'name': ('str', 'The name it has here, instead. Not a protected built-in\'s or a name held back, and no other module command\'s.')})
 
 
 S('Module', 'A built-in module (DESIGN-MODULES.md section 6.2): what it declares, and whether it is on.', {

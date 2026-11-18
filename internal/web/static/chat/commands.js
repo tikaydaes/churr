@@ -92,14 +92,6 @@ async function carryOut(c, ctx, here) {
     await ctx.composer.post({ text: c.post, action: c.action || undefined, parent_id: ctx.parentId || undefined, quote: ctx.composer.quote || undefined });
     return;
   }
-  if (c.name === 'roll' || c.name === 'dice') {
-    // The dice module's commands: the server reads the dice, rolls them
-    // and posts the roll, or says in its own words what it cannot read.
-    ctx.composer.clear();
-    const out = await post(`/conversations/${id}/commands`, { name: c.name, text: c.args || undefined, parent_id: ctx.parentId || undefined });
-    if (out.message) putMessage({ ...out.message, _live: true });
-    return;
-  }
   if (CHANCE.has(c.name)) {
     ctx.composer.clear();
     const out = await post(`/conversations/${id}/messages`, { client_id: crypto.randomUUID(), chance: chanceInput(c), parent_id: ctx.parentId || undefined });

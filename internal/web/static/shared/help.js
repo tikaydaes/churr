@@ -46,6 +46,16 @@ export function findListed(listed, word) {
 // command hidden from this person is never named to them.
 export function entry(c, listed) {
   const here = new Set((listed || []).map((x) => x.name));
+  if (c.kind === 'module') {
+    // A module's command: its help comes from the module, through the
+    // server, with the names commands have here written in.
+    const e = c.help || {};
+    return {
+      name: c.name, kind: c.kind, summary: c.description || words('noDescription'),
+      usage: '/' + c.name + (c.hint ? ' ' + c.hint : ''), args: e.args || [], examples: e.examples || [],
+      description: e.description || '', aliases: [], where: e.where || '', who: e.who || '', notes: [], related: [], more: null,
+    };
+  }
   if (c.kind !== 'builtin') {
     const notes = [isBuiltin(c.name) ? words('replacesBuiltin', { name: c.name }) : ''].filter(Boolean);
     return {

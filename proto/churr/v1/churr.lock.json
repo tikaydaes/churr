@@ -225,7 +225,14 @@
   "CommandKind": {
    "bot": 3,
    "builtin": 1,
+   "module": 4,
    "saved_reply": 2
+  },
+  "CommandSettingsOrder": {
+   "bot": 2,
+   "builtin": 4,
+   "module": 3,
+   "saved_reply": 1
   },
   "ConversationAccess": {
    "knock": 2,
@@ -2018,10 +2025,31 @@
   "Command": {
    "bot_id": 7,
    "description": 5,
+   "forms": 10,
+   "help": 11,
    "hint": 6,
    "kind": 4,
+   "module": 9,
    "name": 3,
    "saved_reply_id": 8
+  },
+  "CommandExample": {
+   "then": 4,
+   "type": 3
+  },
+  "CommandForm": {
+   "slots": 3
+  },
+  "CommandHelp": {
+   "args": 4,
+   "description": 3,
+   "examples": 5,
+   "where": 6,
+   "who": 7
+  },
+  "CommandHelpArg": {
+   "about": 4,
+   "name": 3
   },
   "CommandInvokedFrame": {
    "account_id": 5,
@@ -2030,6 +2058,20 @@
    "interaction_id": 3,
    "parent_id": 4,
    "text": 7
+  },
+  "CommandRename": {
+   "command": 4,
+   "module": 3,
+   "name": 5
+  },
+  "CommandSettings": {
+   "order": 3,
+   "renames": 4
+  },
+  "CommandSlot": {
+   "hint": 4,
+   "kind": 5,
+   "name": 3
   },
   "ConfirmPairingRequest": {
    "handover": 3
@@ -2661,6 +2703,9 @@
   },
   "GetChecklistItemHistoryResponse": {
    "changes": 3
+  },
+  "GetCommandSettingsResponse": {
+   "settings": 3
   },
   "GetConversationResponse": {
    "conversation": 3
@@ -4675,6 +4720,13 @@
   },
   "UpdateBotResponse": {
    "bot": 3
+  },
+  "UpdateCommandSettingsRequest": {
+   "order": 3,
+   "renames": 4
+  },
+  "UpdateCommandSettingsResponse": {
+   "settings": 3
   },
   "UpdateCommunityPresetResponse": {
    "preset": 3

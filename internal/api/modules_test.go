@@ -20,7 +20,6 @@ func TestModuleSwitches(t *testing.T) {
 	elsewhere := sam.Channel("lobby", false, kim)
 	admin := "/api/v1/admin/modules"
 	here := convPath(room) + "/modules"
-	commands := "/api/v1/commands?conversation_id=" + room
 	get := func(m map[string]any) map[string]any {
 		t.Helper()
 		return kim.Must(200, "GET", "/api/v1/messages/"+m["id"].(string), nil)["message"].(map[string]any)
@@ -64,8 +63,8 @@ func TestModuleSwitches(t *testing.T) {
 		t.Fatalf("inline dice while off stay text: %v", got)
 	}
 	kim.Refused(403, model.CodeFeatureOff, "POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "d20"})
-	if cmds := names(arr(kim.Must(200, "GET", commands, nil), "commands")); cmds["roll"] || cmds["dice"] || !cmds["flip"] {
-		t.Fatalf("offered while off: %v", cmds)
+	if menu := menuOf(kim, room); menu["roll"] != "" || menu["dice"] != "" || menu["flip"] != model.CommandBuiltin {
+		t.Fatalf("offered while off: %v", menu)
 	}
 	if typed := kim.Post(room, "and [[1d6]]"); len(diceIn(typed)) != 0 || typed["text"] != "and [[1d6]]" {
 		t.Fatalf("typed while off: %v", typed)

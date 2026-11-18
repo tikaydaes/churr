@@ -6343,7 +6343,7 @@ class L10nEn extends L10n {
 
   @override
   String get savedReplyNameHint =>
-      'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others\' names are refused.';
+      'Typed as /name. Only a fun or game built-in (/shrug, /flip …) may be replaced; the others\' names are refused.';
 
   @override
   String get savedReplyText => 'What it posts';

@@ -53,3 +53,73 @@ type ModuleCommand struct {
 	Hint    string `json:"hint,omitempty"`
 	Summary string `json:"summary"`
 }
+
+// CommandForm is one way a command may be typed (schema CommandForm;
+// docs/DESIGN-MODULES.md section 5.1): its slots in order. A command with no
+// arguments has a form with none.
+type CommandForm struct {
+	Slots []CommandSlot `json:"slots"`
+}
+
+// CommandSlot is one argument of a form (schema CommandSlot): its name, a
+// hint for the person typing, and its kind: `text`, which takes the rest of
+// the line, a kind of the catalogue, or a type the module declares.
+type CommandSlot struct {
+	Name string `json:"name"`
+	Hint string `json:"hint,omitempty"`
+	Kind string `json:"kind"`
+}
+
+// CommandHelp is what /help says of a module's command (schema
+// CommandHelp), in the shape of testdata/commands/help.json's entries. A
+// module writes its command's name as {cmd}, and another of its commands as
+// {cmd:name}; the server writes in the names they have here.
+type CommandHelp struct {
+	Description string           `json:"description"`
+	Args        []CommandHelpArg `json:"args,omitempty"`
+	Examples    []CommandExample `json:"examples,omitempty"`
+	Where       string           `json:"where,omitempty"`
+	Who         string           `json:"who,omitempty"`
+}
+
+// CommandHelpArg is one argument's help.
+type CommandHelpArg struct {
+	Name  string `json:"name"`
+	About string `json:"about"`
+}
+
+// CommandExample is something to type and what it does.
+type CommandExample struct {
+	Type string `json:"type"`
+	Then string `json:"then"`
+}
+
+// The sources of commands, in the order the admin puts them
+// (CommandSettings.Order).
+const (
+	SourceSavedReply = "saved_reply"
+	SourceBot        = "bot"
+	SourceModule     = "module"
+	SourceBuiltin    = "builtin"
+)
+
+// DefaultCommandOrder is the order of the sources before an admin changes
+// it: a person's saved replies and the custom commands, then bots'
+// commands, then the modules', then the built-ins.
+var DefaultCommandOrder = []string{SourceSavedReply, SourceBot, SourceModule, SourceBuiltin}
+
+// CommandSettings is the admin's command table (schema CommandSettings;
+// docs/DESIGN-MODULES.md section 6.5): which source of a name wins where
+// two have it, and the names given to modules' commands. A protected
+// built-in always wins, whatever the order.
+type CommandSettings struct {
+	Order   []string        `json:"order"`
+	Renames []CommandRename `json:"renames"`
+}
+
+// CommandRename gives a module's command another name on this instance.
+type CommandRename struct {
+	Module  string `json:"module"`
+	Command string `json:"command"`
+	Name    string `json:"name"`
+}

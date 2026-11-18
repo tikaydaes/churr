@@ -1,5 +1,7 @@
 // The built-in slash commands (docs/FEATURES.md sections 12.3 and 12.4,
-// ruling R67): the table every client holds and the one grammar they read
+// ruling R67): the table every client holds (the modules' commands, /roll
+// and /dice, are not here: the server lists them, with their help, and runs
+// them) and the one grammar they read
 // typed text by. testdata/commands/commands.json is the table and
 // testdata/commands/parse.json the cases this file is held to
 // (e2e/commands.mjs). Nothing here touches the page, so it runs under Node.
@@ -15,7 +17,7 @@ export const COMMANDS = {
   poll: ['form', false], rsvp: ['form', false], signup: ['form', false], approve: ['form', false], form: ['none', false],
   remind: ['raw', true], watch: ['person', true], unwatch: ['person', true],
   me: ['text', true], shrug: ['text_optional', true], tableflip: ['text_optional', true], unflip: ['text_optional', true], spoiler: ['text', true],
-  roll: ['dice', false], dice: ['dice', false], flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
+  flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
   tarot: ['spread', false], mahjongg: ['count', false], mahjong: ['count', false],
   join: ['channel', true], leave: ['channel_optional', false], part: ['channel_optional', false], msg: ['person_text', true], topic: ['text_optional', false],
   invite: ['person_channel', false], kick: ['person', false], ban: ['person_text', false], unban: ['person', false],
@@ -39,7 +41,7 @@ export const GROUP_OF = {};
 for (const [g, names] of Object.entries({
   forms: 'poll rsvp signup approve form', reminders: 'remind watch unwatch',
   post: 'me shrug tableflip unflip spoiler say slap',
-  chance: 'roll dice flip pick shuffle draw tarot mahjongg mahjong',
+  chance: 'flip pick shuffle draw tarot mahjongg mahjong',
   conversations: 'join leave part msg topic list query clear close knock',
   members: 'invite kick ban unban exile unexile mute op deop mod unmod names banlist voice devoice',
   people: 'whois ignore unignore nick whoami time',
@@ -72,7 +74,7 @@ export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n
 // (commands.json, replaceable). Every other built-in is protected, a new one
 // included: the server refuses its name and aliases to saved replies, custom
 // commands and bot commands, and ignores any made before.
-export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'dice', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong', 'slap']);
+export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong', 'slap']);
 
 // isProtected says whether a name is a protected built-in or one of its
 // aliases.
@@ -96,7 +98,7 @@ export function hiddenBuiltins(listed, admin) {
 
 // The results the server draws: never offered in a sealed chat, which the
 // server cannot write into.
-export const CHANCE = new Set(['roll', 'dice', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
+export const CHANCE = new Set(['flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
 
 export const SHRUG = '¯\\\\\\_(ツ)\\_/¯';
 const ENDINGS = { shrug: SHRUG, tableflip: '(╯°□°)╯︵ ┻━┻', unflip: '┬─┬ノ( º _ ºノ)' };
@@ -197,10 +199,6 @@ export function parse(text, hidden) {
     case 'text_optional':
       if (ENDINGS[name]) return { name, post: (rest ? rest + ' ' : '') + ENDINGS[name] };
       if (rest) out.text = rest;
-      return out;
-    case 'dice':
-      // /roll and /dice are the dice module's: the server reads the dice.
-      out.args = rest;
       return out;
     case 'options': {
       const opts = rest ? rest.split('|').map((o) => o.trim()) : [];
@@ -466,7 +464,7 @@ export function helpGroups(listed, query) {
   const by = {};
   for (const c of listed || []) {
     if (c.kind === 'builtin' && ALIASES[c.name]) continue;
-    const g = c.kind === 'builtin' ? (GROUP_OF[c.name] || 'info') : c.kind === 'saved_reply' ? 'saved' : 'bots';
+    const g = c.kind === 'builtin' ? (GROUP_OF[c.name] || 'info') : c.kind === 'module' ? 'chance' : c.kind === 'saved_reply' ? 'saved' : 'bots';
     if (hit(c)) (by[g] = by[g] || []).push(c);
   }
   return [...GROUPS, 'saved', 'bots'].filter((g) => by[g]).map((g) => [g, by[g]]);

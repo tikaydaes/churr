@@ -98,6 +98,14 @@ class FakeServer {
             'description': 'Deploy a branch',
             'hint': '<branch>',
           },
+          // The dice module's, which the server runs.
+          {
+            'name': 'roll',
+            'kind': 'module',
+            'module': 'dice',
+            'description': 'Rolls dice',
+            'hint': '[dice]',
+          },
         ],
       };
     }

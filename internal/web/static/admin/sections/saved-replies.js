@@ -10,7 +10,7 @@ import { formDialog } from '/shared/form.js';
 export default async function savedReplies(ctx) {
   const replies = (await get('/saved-replies')).saved_replies.filter((r) => r.community);
   const fields = (r) => [
-    { name: 'name', label: 'Command', required: true, code: true, value: r && r.name, maxLength: 32, hint: 'Typed as /name. Not a bot’s command. Only a fun or game built-in (/shrug, /roll …) may be replaced; the server refuses the others’ names.' },
+    { name: 'name', label: 'Command', required: true, code: true, value: r && r.name, maxLength: 32, hint: 'Typed as /name. Not a bot’s command. Only a fun or game built-in (/shrug, /flip …) may be replaced; the server refuses the others’ names.' },
     { name: 'text', label: 'What it posts', type: 'textarea', required: true, value: r && r.text, rows: 6, hint: 'Churr Markdown.' },
   ];
   // A built-in of the same name is replaced on this server (ruling R72):

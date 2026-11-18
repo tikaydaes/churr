@@ -98,6 +98,8 @@ each does.
 | `calls.enabled`, `calls.max_participants`, `calls.max_cameras` | `true`, `50`, `12` |
 | `links.send_presence`, `links.default_max_file_bytes` | `true`, `26214400`        |
 | `tickets.next.<prefix>`             | Next ticket number for a name prefix; starts at `1` |
+| `commands.order`                    | The order of the sources of commands where two have a name (DESIGN-MODULES.md section 6.5): `saved_reply`, `bot`, `module`, `builtin`, each once; that is the default. A protected built-in always wins. Set with `updateCommandSettings` |
+| `commands.renames`                  | `[]`; or a list of `module`, `command`, `name`: a module's command answers to `name` here instead. Set with `updateCommandSettings` |
 | `themes.default_dark`, `themes.default_light` | `null`; or a copy of a theme (`id`, `name`, `kind`, `colours`, `author_id`) set with `setDefaultTheme` (FEATURES section 29) |
 | `link.home_clocks.<peer>`           | Written by the server, not an admin setting. For a hub peer (`<peer>` is its `peers.id`): what that hub last told this server of its clock against each other hub of the hub's cluster, as an object from hub name to `offset_ms`, `uncertainty_ms` and `measured_at`. Absent until the hub has told any. Read after a restart, so the server can stamp events in a channel homed on another hub before its hub's first ping |
 

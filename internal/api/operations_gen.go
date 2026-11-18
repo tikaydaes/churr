@@ -305,6 +305,8 @@ var Operations = []Operation{
 	{ID: "ownerOverrideAdd", Method: "PUT", Path: "/api/v1/admin/channels/{id}/members/{account_id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "adminListModules", Method: "GET", Path: "/api/v1/admin/modules", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "setModule", Method: "PUT", Path: "/api/v1/admin/modules/{name}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
+	{ID: "getCommandSettings", Method: "GET", Path: "/api/v1/admin/commands", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
+	{ID: "updateCommandSettings", Method: "PATCH", Path: "/api/v1/admin/commands", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "adminListEmoji", Method: "GET", Path: "/api/v1/admin/emoji", Auth: AuthUser, Area: "Admin: channels and content", Success: 200, Paging: "cursor"},
 	{ID: "renameEmoji", Method: "PATCH", Path: "/api/v1/admin/emoji/{id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "adminDeleteEmoji", Method: "DELETE", Path: "/api/v1/admin/emoji/{id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 204},

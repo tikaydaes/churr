@@ -4108,7 +4108,7 @@
   "savedRepliesNone": "A saved reply is text you post by typing /name.",
   "newSavedReply": "New saved reply",
   "savedReplyName": "Command",
-  "savedReplyNameHint": "Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others' names are refused.",
+  "savedReplyNameHint": "Typed as /name. Only a fun or game built-in (/shrug, /flip …) may be replaced; the others' names are refused.",
   "savedReplyText": "What it posts",
   "deleteSavedReply": "Delete",
   "groupsTitle": "Groups",

@@ -1664,7 +1664,7 @@ client and the server (`hiddenBuiltins`, `model.HiddenBuiltins`)
 held to `testdata/commands/parse.json`, `hidden_cases`.
 
 **Protected built-ins.** Only the fun and game built-ins are
-replaceable: `/shrug`, `/tableflip`, `/unflip`, `/roll`, `/dice`, `/flip`,
+replaceable: `/shrug`, `/tableflip`, `/unflip`, `/flip`,
 `/pick`, `/shuffle`, `/draw`, `/tarot`, `/mahjongg` and `/mahjong`
 (marked `replaceable` in `commands.json`). Every other built-in, and
 any added later unless someone decides otherwise, is protected: it is
@@ -1735,8 +1735,6 @@ in the command menu and keeps its names from being taken.
 | `/me`        | text                                      | Posts the text as an action (`MESSAGE-FORMAT.md` 1.1) | yes |
 | `/shrug`, `/tableflip`, `/unflip` | `[text]`              | Posts the text with ¯\\_(ツ)_/¯, (╯°□°)╯︵ ┻━┻ or ┬─┬ノ( º _ ºノ) after it | yes |
 | `/spoiler`   | text                                      | Posts `\|\|text\|\|`, the spoiler of Churr Markdown | yes |
-| `/roll`      | `[dice]`                                  | The server rolls dice (`MESSAGE-FORMAT.md` 1.2)   | no |
-| `/dice`      | `[number]`                                | `/roll` with a bare number of d6: `/dice 4` is `/roll 4d6` | no |
 | `/flip`      | none                                      | The server flips a coin                           | no |
 | `/pick`      | `a \| b \| c`                             | The server picks one                              | no |
 | `/shuffle`   | `a \| b \| c`                             | The server shuffles them                          | no |
@@ -1817,9 +1815,10 @@ change.
 
 Every command makes the ordinary request, so every rule of
 `PERMISSIONS.md` applies and a refusal is the server's, shown in its
-words. Only `/roll`, `/dice`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
-and `/tarot` need anything new of the server: it draws their result
-(`/roll` and `/dice` through `runCommand`, the rest as a `chance`).
+words. Only `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` and
+`/tarot` need anything new of the server: it draws their result, as a
+`chance`. `/roll` and `/dice` are not built-ins but the dice module's,
+run with `runCommand` (12.4).
 Arriving live, a result plays once and never again on a press
 (`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
 total; cards and tiles lie face down and are turned over one after
@@ -1908,9 +1907,20 @@ passes; the result names an error the client words itself.
   `/dice 4k3` is `4d6k3`, `/dice 4, 2+1` is `4d6, 2d6+1`; a term written
   with a `d` is as written (`/dice 2d8` is `2d8`); nothing is `1d6`.
 - `/roll` and `/dice` are the dice module's commands
-  (`DESIGN-MODULES.md` section 9.1): the client sends what was typed
+  (`DESIGN-MODULES.md` section 9.1), not built-ins: `listCommands` lists
+  them with the kind `module`, their forms (dice, or nothing) and their
+  help, which comes from the module; the client sends what was typed
   after the name with `runCommand`, and the server reads it, rolls and
-  posts the roll as the person's message. Dice it cannot read are
+  posts the roll as the person's message. They are for people: the
+  module refuses them to bots, and they are not listed for one.
+- **The command table** (`DESIGN-MODULES.md` section 6.5): where a
+  saved reply or custom command, a bot's command, a module's command and
+  a built-in share a name, the admin's order of those sources
+  (`getCommandSettings`, `updateCommandSettings`; by default in that
+  order) says which is listed and which runs; a protected built-in
+  always wins. The admin may give a module's command another name: it
+  then answers to that name only, and its help says so. Each change is
+  written to the audit log. Dice it cannot read are
   refused with `invalid_value` in its words; the grammar is read by the
   server alone (`internal/modules/dice`).
 - **Switching a module off** (`DESIGN-MODULES.md` section 6.5): an admin

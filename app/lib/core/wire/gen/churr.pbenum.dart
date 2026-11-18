@@ -3358,16 +3358,19 @@ class CommandKind extends $pb.ProtobufEnum {
       CommandKind._(2, _omitEnumNames ? '' : 'COMMAND_KIND_SAVED_REPLY');
   static const CommandKind COMMAND_KIND_BOT =
       CommandKind._(3, _omitEnumNames ? '' : 'COMMAND_KIND_BOT');
+  static const CommandKind COMMAND_KIND_MODULE =
+      CommandKind._(4, _omitEnumNames ? '' : 'COMMAND_KIND_MODULE');
 
   static const $core.List<CommandKind> values = <CommandKind>[
     COMMAND_KIND_UNSPECIFIED,
     COMMAND_KIND_BUILTIN,
     COMMAND_KIND_SAVED_REPLY,
     COMMAND_KIND_BOT,
+    COMMAND_KIND_MODULE,
   ];
 
   static final $core.List<CommandKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static CommandKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -4185,6 +4188,39 @@ class UpdateGroupRequestColor extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const UpdateGroupRequestColor._(super.value, super.name);
+}
+
+class CommandSettingsOrder extends $pb.ProtobufEnum {
+  static const CommandSettingsOrder COMMAND_SETTINGS_ORDER_UNSPECIFIED =
+      CommandSettingsOrder._(
+          0, _omitEnumNames ? '' : 'COMMAND_SETTINGS_ORDER_UNSPECIFIED');
+  static const CommandSettingsOrder COMMAND_SETTINGS_ORDER_SAVED_REPLY =
+      CommandSettingsOrder._(
+          1, _omitEnumNames ? '' : 'COMMAND_SETTINGS_ORDER_SAVED_REPLY');
+  static const CommandSettingsOrder COMMAND_SETTINGS_ORDER_BOT =
+      CommandSettingsOrder._(
+          2, _omitEnumNames ? '' : 'COMMAND_SETTINGS_ORDER_BOT');
+  static const CommandSettingsOrder COMMAND_SETTINGS_ORDER_MODULE =
+      CommandSettingsOrder._(
+          3, _omitEnumNames ? '' : 'COMMAND_SETTINGS_ORDER_MODULE');
+  static const CommandSettingsOrder COMMAND_SETTINGS_ORDER_BUILTIN =
+      CommandSettingsOrder._(
+          4, _omitEnumNames ? '' : 'COMMAND_SETTINGS_ORDER_BUILTIN');
+
+  static const $core.List<CommandSettingsOrder> values = <CommandSettingsOrder>[
+    COMMAND_SETTINGS_ORDER_UNSPECIFIED,
+    COMMAND_SETTINGS_ORDER_SAVED_REPLY,
+    COMMAND_SETTINGS_ORDER_BOT,
+    COMMAND_SETTINGS_ORDER_MODULE,
+    COMMAND_SETTINGS_ORDER_BUILTIN,
+  ];
+
+  static final $core.List<CommandSettingsOrder?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static CommandSettingsOrder? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const CommandSettingsOrder._(super.value, super.name);
 }
 
 class WordFilterAction extends $pb.ProtobufEnum {

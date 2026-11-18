@@ -1,6 +1,7 @@
 package storetest
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -65,8 +66,9 @@ func testBotCommands(t *testing.T, s store.Store) {
 	cmds, err := s.Bots().Commands(ctx, one.ID)
 	must(t, err)
 	eq(t, "by name", len(cmds) == 2 && cmds[0].Name == "build" && cmds[1].Name == "deploy", true)
-	eq(t, "what a command carries", cmds[1], model.Command{Name: "deploy", Kind: model.CommandBot, Description: "Deploy a service",
-		Hint: "<service> to <environment>", BotID: one.ID})
+	// A module's fields make a command no longer comparable with ==.
+	eq(t, "what a command carries", fmt.Sprintf("%+v", cmds[1]), fmt.Sprintf("%+v", model.Command{Name: "deploy", Kind: model.CommandBot, Description: "Deploy a service",
+		Hint: "<service> to <environment>", BotID: one.ID}))
 
 	// Another bot cannot take a name, and its own list is left alone.
 	must(t, s.Bots().SetCommands(ctx, two.ID, []model.Command{{Name: "kudos", Description: "Thanks"}}))

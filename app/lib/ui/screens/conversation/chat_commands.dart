@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/api/channels.dart';
-import '../../../core/api/conversation_ops.dart' show ConversationOpsApi;
 import '../../../core/api/errors.dart';
 import '../../../core/api/hubs.dart' show HubsApi, MemberAction;
 import '../../../core/api/messages.dart';
@@ -320,21 +319,6 @@ Future<String?> _carryOut(
   final conv = s.conversation(here);
   if ((conv?.isSealed ?? false) && !(builtinCommands[name]?.$2 ?? false)) {
     throw _Said(notInSealed(t, name));
-  }
-  if (name == 'roll' || name == 'dice') {
-    // The dice module's commands: the server reads the dice, rolls them
-    // and posts the roll, or says in its own words what it cannot read.
-    final (m, _) = await s.api.runCommand(
-      here,
-      name,
-      text: c['args'] as String?,
-      parentId: r.parentId,
-    );
-    if (m != null) {
-      ChanceLive.arrivedMessage(m);
-      if (await s.db.message(m.id) == null) await s.db.upsertMessages([m]);
-    }
-    return null;
   }
   final chance = chanceRequest(c);
   if (chance != null) {

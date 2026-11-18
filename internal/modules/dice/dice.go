@@ -23,17 +23,33 @@ const Name = "dice"
 // grammar's to decide; an inside it refuses stays text.
 const Inside = `(?i)[0-9dkhlavis%+, -]{1,100}`
 
+// TypeDice is the kind of the dice a command is given.
+const TypeDice = "dice"
+
+// forms are the forms of /roll and /dice (docs/DESIGN-MODULES.md section
+// 9.1): dice, or nothing, which is 1d20 for /roll and 1d6 for /dice.
+func forms(hint string) []model.CommandForm {
+	return []model.CommandForm{{Slots: []model.CommandSlot{{Name: "dice", Hint: hint, Kind: TypeDice}}}, {}}
+}
+
 // Module is the dice module, to register with the host.
 func Module() modhost.Module {
 	return modhost.Module{
 		Name:  Name,
 		Title: "Dice",
 		Commands: []modhost.Command{
-			{Name: "roll", Hint: "[dice]", Summary: "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv; rows separated by commas"},
-			{Name: "dice", Hint: "[number]", Summary: "Rolls six-sided dice, rolled by the server: 4 is 4d6, 4+3 is 4d6+3"},
+			{Name: "roll", Hint: "[dice]", Summary: "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv; rows separated by commas",
+				Forms: forms("Dice, such as 2d6+3"), Help: rollHelp},
+			{Name: "dice", Hint: "[dice]", Summary: "Rolls six-sided dice, rolled by the server: 4 is 4d6, 4+3 is 4d6+3",
+				Forms: forms("A number of d6, such as 4 or 4+3"), Help: diceHelp},
 		},
-		Claims:  []modhost.Claim{{Kind: model.KindDiceRoll, Open: "[[", Close: "]]", Pattern: Inside}},
-		Handler: handler{},
+		// The characters dice are written in; what they say is the
+		// grammar's to decide when the command runs.
+		Types: []modhost.DerivedType{{Name: TypeDice, Pattern: Inside}},
+		// A bot rolls its own dice.
+		PeopleOnly: true,
+		Claims:     []modhost.Claim{{Kind: model.KindDiceRoll, Open: "[[", Close: "]]", Pattern: Inside}},
+		Handler:    handler{},
 	}
 }
 

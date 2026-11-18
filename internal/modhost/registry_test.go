@@ -27,6 +27,9 @@ func (f *fake) Resolve(_ context.Context, h *Host, in Marked) (Value, error) {
 	return f.value, f.err
 }
 
+// noArgs is the one form of a command that takes nothing.
+var noArgs = []model.CommandForm{{}}
+
 // roll is a roll of 1d6 that came up n.
 func roll(n int) model.DiceRoll {
 	return model.DiceRoll{Dice: "1d6", Rows: []model.DiceRow{{Dice: "1d6", Total: n,
@@ -35,22 +38,31 @@ func roll(n int) model.DiceRoll {
 
 // The registry refuses modules it could not tell apart or could not run.
 func TestRegistryRefusesWhatItCannotHost(t *testing.T) {
-	ok := Module{Name: "dice", Handler: &fake{}, Commands: []Command{{Name: "roll"}}}
+	ok := Module{Name: "dice", Handler: &fake{}, Commands: []Command{{Name: "roll", Forms: noArgs}}}
 	for name, mods := range map[string][]Module{
-		"a bad name":       {{Name: "Dice!", Handler: &fake{}}},
-		"no handler":       {{Name: "dice"}},
-		"the same name":    {ok, {Name: "dice", Handler: &fake{}}},
-		"the same command": {ok, {Name: "other", Handler: &fake{}, Commands: []Command{{Name: "roll"}}}},
-		"a bad command":    {{Name: "dice", Handler: &fake{}, Commands: []Command{{Name: "Roll Dice"}}}},
-		"an unknown kind":  {{Name: "dice", Handler: &fake{}, Claims: []Claim{{Kind: "no_such_kind", Open: "[[", Close: "]]", Pattern: "x"}}}},
-		"no marks":         {{Name: "dice", Handler: &fake{}, Claims: []Claim{{Kind: model.KindDiceRoll, Pattern: "x"}}}},
-		"a bad pattern":    {{Name: "dice", Handler: &fake{}, Claims: []Claim{{Kind: model.KindDiceRoll, Open: "[[", Close: "]]", Pattern: "("}}}},
+		"a bad name":        {{Name: "Dice!", Handler: &fake{}}},
+		"no handler":        {{Name: "dice"}},
+		"the same name":     {ok, {Name: "dice", Handler: &fake{}}},
+		"the same command":  {ok, {Name: "other", Handler: &fake{}, Commands: []Command{{Name: "roll", Forms: noArgs}}}},
+		"a bad command":     {{Name: "dice", Handler: &fake{}, Commands: []Command{{Name: "Roll Dice", Forms: noArgs}}}},
+		"an unknown kind":   {{Name: "dice", Handler: &fake{}, Claims: []Claim{{Kind: "no_such_kind", Open: "[[", Close: "]]", Pattern: "x"}}}},
+		"no marks":          {{Name: "dice", Handler: &fake{}, Claims: []Claim{{Kind: model.KindDiceRoll, Pattern: "x"}}}},
+		"a bad pattern":     {{Name: "dice", Handler: &fake{}, Claims: []Claim{{Kind: model.KindDiceRoll, Open: "[[", Close: "]]", Pattern: "("}}}},
+		"no forms":          {{Name: "dice", Handler: &fake{}, Commands: []Command{{Name: "roll"}}}},
+		"a slot of no kind": {{Name: "dice", Handler: &fake{}, Commands: []Command{{Name: "roll", Forms: []model.CommandForm{{Slots: []model.CommandSlot{{Name: "dice", Kind: "dice"}}}}}}}},
+		"text not last":     {{Name: "dice", Handler: &fake{}, Commands: []Command{{Name: "roll", Forms: []model.CommandForm{{Slots: []model.CommandSlot{{Name: "a", Kind: "text"}, {Name: "b", Kind: "text"}}}}}}}},
+		"a bad type":        {{Name: "dice", Handler: &fake{}, Types: []DerivedType{{Name: "dice", Pattern: "("}}}},
 	} {
 		if _, err := New(Options{}, mods...); err == nil {
 			t.Errorf("%s was registered", name)
 		}
 	}
 	if _, err := New(Options{}, ok); err != nil {
+		t.Fatal(err)
+	}
+	typed := Module{Name: "dice", Handler: &fake{}, Types: []DerivedType{{Name: "dice", Pattern: "[0-9d]+"}},
+		Commands: []Command{{Name: "roll", Forms: []model.CommandForm{{Slots: []model.CommandSlot{{Name: "dice", Kind: "dice"}}}, {}}}}}
+	if _, err := New(Options{}, typed); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -62,7 +74,7 @@ func TestRegistryRefusesWhatItCannotHost(t *testing.T) {
 func TestRegistryChecksWhatModulesAnswer(t *testing.T) {
 	ctx := context.Background()
 	f := &fake{}
-	r, err := New(Options{}, Module{Name: "dice", Handler: f, Commands: []Command{{Name: "roll"}},
+	r, err := New(Options{}, Module{Name: "dice", Handler: f, Commands: []Command{{Name: "roll", Forms: noArgs}},
 		Claims: []Claim{{Kind: model.KindDiceRoll, Open: "[[", Close: "]]", Pattern: `[0-9d]{1,10}`}}})
 	if err != nil {
 		t.Fatal(err)
@@ -123,5 +135,24 @@ func TestHostRandomness(t *testing.T) {
 		if n := h.Intn(3); n < 0 || n > 2 {
 			t.Fatalf("crypto/rand gave %d", n)
 		}
+	}
+}
+
+// A module that answers people only refuses a bot; any other answers bots
+// too. It is the module's to say, not the host's.
+func TestPeopleOnly(t *testing.T) {
+	ctx := context.Background()
+	f := &fake{reply: Reply{Text: "ok"}}
+	r, err := New(Options{}, Module{Name: "people", PeopleOnly: true, Handler: f, Commands: []Command{{Name: "mine", Forms: noArgs}}},
+		Module{Name: "anyone", Handler: f, Commands: []Command{{Name: "ours", Forms: noArgs}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bot := model.Account{ID: model.NewID[model.AccountID](), Role: model.RoleBot}
+	if _, err := r.Command(ctx, bot, "", "mine", ""); !errors.As(err, new(*model.Error)) || err.(*model.Error).Code != model.CodeInvalidValue {
+		t.Errorf("a bot ran a people-only command: %v", err)
+	}
+	if _, err := r.Command(ctx, bot, "", "ours", ""); err != nil {
+		t.Errorf("a bot was refused a command for anyone: %v", err)
 	}
 }

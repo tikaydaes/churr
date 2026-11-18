@@ -414,6 +414,24 @@ op('PUT admin/modules/{name}', 'setModule',
    res={'module': '#Module'},
    err='forbidden not_found')
 
+op('GET admin/commands', 'getCommandSettings',
+   'Get the command table: the order of the sources and the renames',
+   who='Admins (the owner included).',
+   res={'settings': '#CommandSettings'},
+   err='forbidden')
+
+op('PATCH admin/commands', 'updateCommandSettings',
+   'Change the order of the sources of commands, or rename modules\' commands',
+   who='Admins (the owner included).',
+   desc=('Where a saved reply, a bot\'s command, a module\'s command and a built-in share a name, the source first in '
+         '`order` is the one listed by `listCommands` and run by `runCommand`; a protected built-in always wins. '
+         '`renames` replaces the whole list: a module\'s command then answers to the new name only, its help says so, '
+         'and `listCommands` carries it. A rename to a protected built-in\'s name is refused with `name_taken` naming it, '
+         'and so is one that two modules\' commands would share. Written to the audit log.'),
+   body={'order?': '[str]', 'renames?': '[#CommandRename]'},
+   res={'settings': '#CommandSettings'},
+   err='forbidden name_taken')
+
 op('GET admin/emoji', 'adminListEmoji',
    'List custom emoji with who added each',
    who='Admins (the owner included).',

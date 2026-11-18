@@ -3,6 +3,7 @@ package sched
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -63,47 +64,92 @@ func describe(text string) string {
 }
 
 // List returns everything that can be typed as /name in a conversation, for
-// anyone who can read it: the built-ins, the actor's saved replies, the
-// custom commands, and the commands of bots that are in the conversation.
-// Where a person's saved reply has the name of a custom or bot command,
-// theirs is listed, because theirs is what runs. Where any of them has the
-// name of a built-in, the built-in is not listed: the community's command
-// wins (ruling R72, model.HiddenBuiltins), as do the admin-only built-ins
-// for anyone who is not an admin. A protected built-in always wins: a
-// command of its name made before it was protected is not listed.
+// anyone who can read it: the built-ins, the actor's saved replies and the
+// custom commands, the commands of bots that are in the conversation, and
+// the commands of the built-in modules that are on there, under the names
+// the admin gave them. Where two have one name, the one whose source comes
+// first in the admin's order is listed, because it is what runs (ruling
+// R72; docs/DESIGN-MODULES.md section 6.5); a person's own saved reply
+// comes before the custom command of its name. A protected built-in always
+// wins: a command of its name made before it was protected is not listed.
+// The admin-only built-ins are listed for admins alone; a module that
+// answers people only is not listed for a bot.
 func (c *Commands) List(ctx context.Context, actor model.Account, conv model.ConversationID) ([]model.Command, error) {
 	own, err := c.list(ctx, actor, conv)
 	if err != nil {
 		return nil, err
 	}
-	sealed := own.sealed
-	hidden := model.HiddenBuiltins(own.cmds, actor.Role.IsAdmin())
+	set, err := c.settings(ctx)
+	if err != nil {
+		return nil, err
+	}
 	off, err := c.modules.Off(ctx, conv)
 	if err != nil {
 		return nil, err
 	}
-	var out []model.Command
+	by := map[string][]model.Command{}
+	for _, cmd := range own.cmds {
+		src := model.SourceSavedReply
+		if cmd.Kind == model.CommandBot {
+			src = model.SourceBot
+		}
+		by[src] = append(by[src], cmd)
+	}
+	if !own.sealed {
+		for _, mc := range c.moduleCommands(set) {
+			if off[mc.module.Name] || (mc.module.PeopleOnly && actor.Role == model.RoleBot) || model.ProtectedCommand(mc.name) {
+				continue
+			}
+			by[model.SourceModule] = append(by[model.SourceModule], mc.listed(set))
+		}
+		slices.SortFunc(by[model.SourceModule], func(a, b model.Command) int { return strings.Compare(a.Name, b.Name) })
+	}
+	adminOnly := model.HiddenBuiltins(nil, actor.Role.IsAdmin())
 	for _, b := range model.BuiltinCommands {
 		// A sealed chat carries no forms and nothing the server writes,
 		// so only the built-ins marked for it are offered there (/remind's
-		// reminder arrives somewhere else). A switched-off module's
-		// commands are not offered.
-		if (sealed && !b.Sealed) || hidden[b.Name] || off[c.modules.CommandModule(b.Name)] {
+		// reminder arrives somewhere else).
+		if (own.sealed && !b.Sealed) || adminOnly[b.Name] {
 			continue
 		}
-		out = append(out, b)
+		by[model.SourceBuiltin] = append(by[model.SourceBuiltin], b)
 	}
-	return append(out, own.cmds...), nil
+	won := map[string]string{}
+	for _, b := range by[model.SourceBuiltin] {
+		if !b.Replaceable {
+			won[b.Name] = model.SourceBuiltin
+		}
+	}
+	for _, src := range set.Order {
+		for _, cmd := range by[src] {
+			if _, taken := won[cmd.Name]; !taken {
+				won[cmd.Name] = src
+			}
+		}
+	}
+	// Listed as the menu shows them: the built-ins in the table's order,
+	// then the rest by source.
+	var out []model.Command
+	for _, src := range []string{model.SourceBuiltin, model.SourceSavedReply, model.SourceBot, model.SourceModule} {
+		for _, cmd := range by[src] {
+			if won[cmd.Name] == src {
+				out = append(out, cmd)
+				won[cmd.Name] = ""
+			}
+		}
+	}
+	return out, nil
 }
 
-// listed is what List finds besides the built-ins.
+// listed is what List finds besides the built-ins and the modules.
 type listed struct {
 	cmds   []model.Command
 	sealed bool
 }
 
-// list finds the actor's saved replies, the custom commands and the
-// commands of bots in the conversation.
+// list finds the actor's saved replies, the custom commands (a person's own
+// saved reply hides the custom command of its name) and the commands of
+// bots in the conversation. None has a protected built-in's name.
 func (c *Commands) list(ctx context.Context, actor model.Account, conv model.ConversationID) (listed, error) {
 	st, err := c.perm.Can(ctx, actor, perm.Read, conv)
 	if err != nil {
@@ -120,12 +166,10 @@ func (c *Commands) list(ctx context.Context, actor model.Account, conv model.Con
 			own[r.Name] = true
 		}
 	}
-	taken := map[string]bool{}
 	for _, r := range replies {
 		if (r.Community && own[r.Name]) || model.ProtectedCommand(r.Name) {
 			continue
 		}
-		taken[r.Name] = true
 		out = append(out, model.Command{Name: r.Name, Kind: model.CommandSavedReply, Description: describe(r.Text), SavedReplyID: r.ID})
 	}
 	if st.Conversation.Sealed() {
@@ -136,7 +180,7 @@ func (c *Commands) list(ctx context.Context, actor model.Account, conv model.Con
 		return listed{}, err
 	}
 	for _, b := range bots {
-		if taken[b.Name] || model.ProtectedCommand(b.Name) {
+		if model.ProtectedCommand(b.Name) {
 			continue
 		}
 		b.Kind = model.CommandBot
@@ -145,23 +189,25 @@ func (c *Commands) list(ctx context.Context, actor model.Account, conv model.Con
 	return listed{out, false}, nil
 }
 
-// Ran is what running a command gives back: the message a saved reply
-// posted, or the interaction a bot command started.
+// Ran is what running a command gives back: the message a saved reply or a
+// module posted, or the interaction a bot command started.
 type Ran struct {
 	Message       *model.Message
 	InteractionID string
 }
 
 // Run carries out what was typed as /name in a conversation. The name is
-// looked up among the actor's own saved replies, then the custom commands,
-// then the commands of bots in the conversation, and the first match wins.
-// A saved reply posts its text as the actor, under every rule of posting;
+// looked up source by source in the admin's order (the table, table.go),
+// and the first match wins: the actor's own saved replies then the custom
+// commands; the commands of bots in the conversation; the commands of the
+// built-in modules on there, by the names they have here; the built-ins. A
+// saved reply posts its text as the actor, under every rule of posting;
 // anything typed after its name is refused, so nothing is dropped silently
-// (decision F15). Then a built-in module's command (/roll, /dice) runs
-// through the host, and its answer is posted as the actor's message. The
-// other built-in commands are the client's to carry out, and a protected
-// one is never looked up: a command of its name made before it was
-// protected is ignored.
+// (decision F15). A module's command runs through the host, and its answer
+// is posted as the actor's message; one switched off here is refused with
+// feature_off when nothing else has its name. The built-ins are the
+// client's to carry out, and a protected one is never looked up: a command
+// of its name made before it was protected is ignored.
 func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.ConversationID, parent model.MessageID, name, text string) (Ran, error) {
 	st, err := c.perm.Can(ctx, actor, perm.SendCommand, conv)
 	if err != nil {
@@ -179,59 +225,83 @@ func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.Conv
 	if model.ProtectedCommand(name) {
 		return Ran{}, model.Invalid("name", "That command is carried out by the app, not sent to the server.")
 	}
-	reply, found, err := c.store.Scheduled().ReplyNamed(ctx, actor.ID, name)
-	if err == nil && !found {
-		reply, found, err = c.store.Scheduled().ReplyNamed(ctx, "", name)
-	}
+	set, err := c.settings(ctx)
 	if err != nil {
 		return Ran{}, err
 	}
-	if found {
-		if strings.TrimSpace(text) != "" {
-			return Ran{}, model.Invalid("text", "/"+name+" posts a saved text and takes nothing after its name.")
+	var switchedOff error
+	for _, src := range set.Order {
+		switch src {
+		case model.SourceSavedReply:
+			reply, found, err := c.store.Scheduled().ReplyNamed(ctx, actor.ID, name)
+			if err == nil && !found {
+				reply, found, err = c.store.Scheduled().ReplyNamed(ctx, "", name)
+			}
+			if err != nil {
+				return Ran{}, err
+			}
+			if !found {
+				continue
+			}
+			if strings.TrimSpace(text) != "" {
+				return Ran{}, model.Invalid("text", "/"+name+" posts a saved text and takes nothing after its name.")
+			}
+			if st.Conversation.Sealed() {
+				return Ran{}, model.BadRequest("In a sealed chat the app fetches the saved text and sends it itself.")
+			}
+			posted, err := c.chat.Post(ctx, actor, chat.NewMessage{ConversationID: conv, ParentID: parent, Text: reply.Text,
+				Via: &model.Via{Kind: "command", Name: name}})
+			if err != nil {
+				return Ran{}, err
+			}
+			return Ran{Message: &posted.Message}, nil
+		case model.SourceBot:
+			if c.bots == nil {
+				continue
+			}
+			interaction, found, err := c.bots.RunCommand(ctx, actor, conv, parent, name, strings.TrimSpace(text))
+			if err != nil {
+				return Ran{}, err
+			}
+			if found {
+				return Ran{InteractionID: interaction}, nil
+			}
+		case model.SourceModule:
+			mc, ok := c.moduleCommands(set)[name]
+			if !ok {
+				continue
+			}
+			ran, err := c.runModule(ctx, actor, st, parent, mc, text)
+			if errors.Is(err, model.ErrFeatureOff) {
+				// Off here, it is not in the table: a later source
+				// may have the name.
+				switchedOff = err
+				continue
+			}
+			return ran, err
+		case model.SourceBuiltin:
+			if model.BuiltinCommand(name) {
+				// It is the built-in, which the app carries out.
+				return Ran{}, model.Invalid("name", "That command is carried out by the app, not sent to the server.")
+			}
 		}
-		if st.Conversation.Sealed() {
-			return Ran{}, model.BadRequest("In a sealed chat the app fetches the saved text and sends it itself.")
-		}
-		posted, err := c.chat.Post(ctx, actor, chat.NewMessage{ConversationID: conv, ParentID: parent, Text: reply.Text,
-			Via: &model.Via{Kind: "command", Name: name}})
-		if err != nil {
-			return Ran{}, err
-		}
-		return Ran{Message: &posted.Message}, nil
 	}
-	if c.bots != nil {
-		interaction, found, err := c.bots.RunCommand(ctx, actor, conv, parent, name, strings.TrimSpace(text))
-		if err != nil {
-			return Ran{}, err
-		}
-		if found {
-			return Ran{InteractionID: interaction}, nil
-		}
-	}
-	if c.modules.HasCommand(name) {
-		return c.runModule(ctx, actor, st, parent, name, text)
-	}
-	if model.BuiltinCommand(name) {
-		// No community command of this name: it is the built-in, which
-		// the app carries out.
-		return Ran{}, model.Invalid("name", "That command is carried out by the app, not sent to the server.")
+	if switchedOff != nil {
+		return Ran{}, switchedOff
 	}
 	return Ran{}, model.ErrNotFound.With("There is no command called /" + name + " here.")
 }
 
-// runModule runs a built-in module's command and posts its answer, under
-// every rule of posting. A module answers people, and writes nothing into a
-// sealed chat, which the server cannot write into. A refusal is the
-// module's own sentence, for the person who typed the command.
-func (c *Commands) runModule(ctx context.Context, actor model.Account, st perm.State, parent model.MessageID, name, text string) (Ran, error) {
+// runModule runs a built-in module's command, by the name the module gave
+// it, and posts its answer, under every rule of posting. Nothing is written
+// into a sealed chat, which the server cannot write into. A refusal is the
+// module's own sentence, for the person who typed the command; whether a
+// bot may run it is the module's to say.
+func (c *Commands) runModule(ctx context.Context, actor model.Account, st perm.State, parent model.MessageID, mc moduleCommand, text string) (Ran, error) {
 	if st.Conversation.Sealed() {
-		return Ran{}, model.Invalid("name", "The server cannot write into a sealed chat, so /"+name+" cannot run there.")
+		return Ran{}, model.Invalid("name", "The server cannot write into a sealed chat, so /"+mc.name+" cannot run there.")
 	}
-	if actor.Role == model.RoleBot {
-		return Ran{}, model.Invalid("name", "Built-in modules answer people; a bot makes its own.")
-	}
-	made, err := c.modules.Command(ctx, actor, st.Conversation.ID, name, strings.TrimSpace(text))
+	made, err := c.modules.Command(ctx, actor, st.Conversation.ID, mc.cmd.Name, strings.TrimSpace(text))
 	if err != nil {
 		return Ran{}, err
 	}

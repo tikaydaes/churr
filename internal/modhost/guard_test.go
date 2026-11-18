@@ -105,8 +105,8 @@ func TestHostStore(t *testing.T) {
 		}
 		return Reply{Text: "none"}, nil
 	}}
-	r, err := New(Options{Store: st}, Module{Name: "keeper", Handler: h, Commands: []Command{{Name: "keep"}}},
-		Module{Name: "other", Handler: other, Commands: []Command{{Name: "peek"}}})
+	r, err := New(Options{Store: st}, Module{Name: "keeper", Handler: h, Commands: []Command{{Name: "keep", Forms: noArgs}}},
+		Module{Name: "other", Handler: other, Commands: []Command{{Name: "peek", Forms: noArgs}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func TestPanicIsRefused(t *testing.T) {
 		command: func(context.Context, *Host) (Reply, error) { panic("the dice fell off the table") },
 		resolve: func(context.Context, *Host) (Value, error) { panic("again") },
 	}
-	r, err := New(Options{Failed: f.add}, Module{Name: "dice", Title: "Dice", Handler: h, Commands: []Command{{Name: "roll"}},
+	r, err := New(Options{Failed: f.add}, Module{Name: "dice", Title: "Dice", Handler: h, Commands: []Command{{Name: "roll", Forms: noArgs}},
 		Claims: []Claim{{Kind: model.KindDiceRoll, Open: "[[", Close: "]]", Pattern: `[0-9d]+`}}})
 	if err != nil {
 		t.Fatal(err)
@@ -232,7 +232,7 @@ func TestDeadline(t *testing.T) {
 		return Reply{Text: "too late"}, nil
 	}}
 	r, err := New(Options{Failed: f.add, Store: st, Deadline: 20 * time.Millisecond},
-		Module{Name: "slow", Handler: h, Commands: []Command{{Name: "wait"}}})
+		Module{Name: "slow", Handler: h, Commands: []Command{{Name: "wait", Forms: noArgs}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -255,7 +255,7 @@ func TestDeadline(t *testing.T) {
 		<-ctx.Done()
 		return Reply{}, ctx.Err()
 	}}
-	r, _ = New(Options{Failed: f.add}, Module{Name: "waits", Handler: waits, Commands: []Command{{Name: "wait"}}})
+	r, _ = New(Options{Failed: f.add}, Module{Name: "waits", Handler: waits, Commands: []Command{{Name: "wait", Forms: noArgs}}})
 	if _, err := r.Command(ctx, model.Account{}, "", "wait", ""); !errors.Is(err, context.Canceled) {
 		t.Errorf("a cancelled request: %v", err)
 	}

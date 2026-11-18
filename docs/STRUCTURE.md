@@ -227,6 +227,12 @@ catalogue.
   `unavailable` refusal and `Options.Failed` is told, which the server
   logs and audits (`module.panicked`, `module.timed_out`) and, for a
   panic, switches the module off.
+- A module declares its commands with their forms (slots of `text`, a
+  kind of the catalogue or a `DerivedType` of its own; `text` last),
+  their help (`model.CommandHelp`, with the name written `{cmd}`), and
+  whether it answers people only (`PeopleOnly`), which the registry
+  enforces. `sched` builds the command table from them under the
+  admin's order and renames (`sched/table.go`).
 - `Options.Switches` (`store.Modules`) says where modules are off:
   `(*Registry).Off` gives the set for a conversation, `Command` refuses
   an off module's command with `feature_off` and `Resolve` leaves its

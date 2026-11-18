@@ -21,16 +21,16 @@ func cryptoIntn(n int) int {
 
 // checkMarks checks a new message's action mark, chance request and module
 // view, and draws a chance result (ruling R67). A chance result or a
-// module's answer stands alone, and only a person may ask for one. (A roll
-// is the dice module's answer to /roll, which comes as a view.)
+// module's answer stands alone, and only a person may ask for a chance
+// result. (A roll is the dice module's answer to /roll, which comes as a
+// view.)
 func checkMarks(actor model.Account, in NewMessage) (*model.Chance, error) {
 	if in.Action && in.Text == "" {
 		return nil, model.Invalid("action", "An action needs text: what you are doing.")
 	}
 	if in.View != nil {
-		if actor.Role == model.RoleBot {
-			return nil, model.Invalid("name", "Built-in modules answer people; a bot makes its own.")
-		}
+		// Whether a bot may have a module's answer is the module's to
+		// say (modhost.Module.PeopleOnly); the host has already asked.
 		if in.Text == "" || in.Action || in.Chance != nil || len(in.FileIDs) > 0 || len(in.Cards) > 0 || in.Form != nil {
 			return nil, model.Invalid("view", "A module's answer is a message of its own: its words and its view.")
 		}

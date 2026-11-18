@@ -33072,9 +33072,10 @@ class ListCommandsResponse extends $pb.GeneratedMessage {
   $pb.PbList<Command> get commands => $_getList(2);
 }
 
-/// Something that can be typed as `/name` in a conversation.
+/// Something that can be typed as `/name` in a conversation, under the name it has here.
 class Command extends $pb.GeneratedMessage {
   factory Command({
+    $core.Iterable<$core.int>? emptyFields,
     $core.Iterable<$core.int>? nullFields,
     $core.String? name,
     CommandKind? kind,
@@ -33082,8 +33083,12 @@ class Command extends $pb.GeneratedMessage {
     $core.String? hint,
     $core.List<$core.int>? botId,
     $core.List<$core.int>? savedReplyId,
+    $core.String? module,
+    $core.Iterable<CommandForm>? forms,
+    CommandHelp? help,
   }) {
     final result = Command._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (name != null) result.name = name;
     if (kind != null) result.kind = kind;
@@ -33091,6 +33096,9 @@ class Command extends $pb.GeneratedMessage {
     if (hint != null) result.hint = hint;
     if (botId != null) result.botId = botId;
     if (savedReplyId != null) result.savedReplyId = savedReplyId;
+    if (module != null) result.module = module;
+    if (forms != null) result.forms.addAll(forms);
+    if (help != null) result.help = help;
     return result;
   }
 
@@ -33107,6 +33115,7 @@ class Command extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'Command',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
       createEmptyInstance: Command.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'name')
     ..aE<CommandKind>(4, _omitFieldNames ? '' : 'kind',
@@ -33117,6 +33126,11 @@ class Command extends $pb.GeneratedMessage {
         7, _omitFieldNames ? '' : 'botId', $pb.PbFieldType.OY)
     ..a<$core.List<$core.int>>(
         8, _omitFieldNames ? '' : 'savedReplyId', $pb.PbFieldType.OY)
+    ..aOS(9, _omitFieldNames ? '' : 'module')
+    ..pPM<CommandForm>(10, _omitFieldNames ? '' : 'forms',
+        subBuilder: CommandForm.$_createMessage)
+    ..aOM<CommandHelp>(11, _omitFieldNames ? '' : 'help',
+        subBuilder: CommandHelp.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -33139,6 +33153,212 @@ class Command extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<Command>(Command.$_createMessage);
   static Command? _defaultInstance;
 
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  CommandKind get kind => $_getN(3);
+  @$pb.TagNumber(4)
+  set kind(CommandKind value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKind() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearKind() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get description => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set description($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDescription() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDescription() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get hint => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set hint($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasHint() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearHint() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get botId => $_getN(6);
+  @$pb.TagNumber(7)
+  set botId($core.List<$core.int> value) => $_setBytes(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasBotId() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearBotId() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.List<$core.int> get savedReplyId => $_getN(7);
+  @$pb.TagNumber(8)
+  set savedReplyId($core.List<$core.int> value) => $_setBytes(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasSavedReplyId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearSavedReplyId() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get module => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set module($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasModule() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearModule() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $pb.PbList<CommandForm> get forms => $_getList(9);
+
+  @$pb.TagNumber(11)
+  CommandHelp get help => $_getN(10);
+  @$pb.TagNumber(11)
+  set help(CommandHelp value) => $_setField(11, value);
+  @$pb.TagNumber(11)
+  $core.bool hasHelp() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearHelp() => $_clearField(11);
+  @$pb.TagNumber(11)
+  CommandHelp ensureHelp() => $_ensure(10);
+}
+
+/// One way a command may be typed: its slots in order. A command that takes nothing has a form with none.
+class CommandForm extends $pb.GeneratedMessage {
+  factory CommandForm({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<CommandSlot>? slots,
+  }) {
+    final result = CommandForm._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (slots != null) result.slots.addAll(slots);
+    return result;
+  }
+
+  CommandForm._();
+
+  factory CommandForm.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandForm()..mergeFromBuffer(data, registry);
+  factory CommandForm.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandForm()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CommandForm',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CommandForm.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<CommandSlot>(3, _omitFieldNames ? '' : 'slots',
+        subBuilder: CommandSlot.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandForm clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandForm copyWith(void Function(CommandForm) updates) =>
+      super.copyWith((message) => updates(message as CommandForm))
+          as CommandForm;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CommandForm() / CommandForm.new instead')
+  static CommandForm create() => CommandForm._();
+  static $pb.GeneratedMessage $_createMessage() => CommandForm._();
+  @$core.override
+  CommandForm createEmptyInstance() => CommandForm._();
+  @$core.pragma('dart2js:noInline')
+  static CommandForm getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandForm>(
+          CommandForm.$_createMessage);
+  static CommandForm? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<CommandSlot> get slots => $_getList(2);
+}
+
+/// One argument of a command's form.
+class CommandSlot extends $pb.GeneratedMessage {
+  factory CommandSlot({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? name,
+    $core.String? hint,
+    $core.String? kind,
+  }) {
+    final result = CommandSlot._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (name != null) result.name = name;
+    if (hint != null) result.hint = hint;
+    if (kind != null) result.kind = kind;
+    return result;
+  }
+
+  CommandSlot._();
+
+  factory CommandSlot.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandSlot()..mergeFromBuffer(data, registry);
+  factory CommandSlot.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandSlot()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CommandSlot',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CommandSlot.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOS(4, _omitFieldNames ? '' : 'hint')
+    ..aOS(5, _omitFieldNames ? '' : 'kind')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandSlot clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandSlot copyWith(void Function(CommandSlot) updates) =>
+      super.copyWith((message) => updates(message as CommandSlot))
+          as CommandSlot;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CommandSlot() / CommandSlot.new instead')
+  static CommandSlot create() => CommandSlot._();
+  static $pb.GeneratedMessage $_createMessage() => CommandSlot._();
+  @$core.override
+  CommandSlot createEmptyInstance() => CommandSlot._();
+  @$core.pragma('dart2js:noInline')
+  static CommandSlot getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandSlot>(
+          CommandSlot.$_createMessage);
+  static CommandSlot? _defaultInstance;
+
   @$pb.TagNumber(2)
   $pb.PbList<$core.int> get nullFields => $_getList(0);
 
@@ -33152,49 +33372,282 @@ class Command extends $pb.GeneratedMessage {
   void clearName() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  CommandKind get kind => $_getN(2);
+  $core.String get hint => $_getSZ(2);
   @$pb.TagNumber(4)
-  set kind(CommandKind value) => $_setField(4, value);
+  set hint($core.String value) => $_setString(2, value);
   @$pb.TagNumber(4)
-  $core.bool hasKind() => $_has(2);
+  $core.bool hasHint() => $_has(2);
   @$pb.TagNumber(4)
-  void clearKind() => $_clearField(4);
+  void clearHint() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $core.String get description => $_getSZ(3);
+  $core.String get kind => $_getSZ(3);
   @$pb.TagNumber(5)
-  set description($core.String value) => $_setString(3, value);
+  set kind($core.String value) => $_setString(3, value);
   @$pb.TagNumber(5)
-  $core.bool hasDescription() => $_has(3);
+  $core.bool hasKind() => $_has(3);
   @$pb.TagNumber(5)
-  void clearDescription() => $_clearField(5);
+  void clearKind() => $_clearField(5);
+}
+
+/// What `/help` says of a command, in the shape of testdata/commands/help.json's entries.
+class CommandHelp extends $pb.GeneratedMessage {
+  factory CommandHelp({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? description,
+    $core.Iterable<CommandHelpArg>? args,
+    $core.Iterable<CommandExample>? examples,
+    $core.String? where,
+    $core.String? who,
+  }) {
+    final result = CommandHelp._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (description != null) result.description = description;
+    if (args != null) result.args.addAll(args);
+    if (examples != null) result.examples.addAll(examples);
+    if (where != null) result.where = where;
+    if (who != null) result.who = who;
+    return result;
+  }
+
+  CommandHelp._();
+
+  factory CommandHelp.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandHelp()..mergeFromBuffer(data, registry);
+  factory CommandHelp.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandHelp()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CommandHelp',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CommandHelp.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'description')
+    ..pPM<CommandHelpArg>(4, _omitFieldNames ? '' : 'args',
+        subBuilder: CommandHelpArg.$_createMessage)
+    ..pPM<CommandExample>(5, _omitFieldNames ? '' : 'examples',
+        subBuilder: CommandExample.$_createMessage)
+    ..aOS(6, _omitFieldNames ? '' : 'where')
+    ..aOS(7, _omitFieldNames ? '' : 'who')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandHelp clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandHelp copyWith(void Function(CommandHelp) updates) =>
+      super.copyWith((message) => updates(message as CommandHelp))
+          as CommandHelp;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CommandHelp() / CommandHelp.new instead')
+  static CommandHelp create() => CommandHelp._();
+  static $pb.GeneratedMessage $_createMessage() => CommandHelp._();
+  @$core.override
+  CommandHelp createEmptyInstance() => CommandHelp._();
+  @$core.pragma('dart2js:noInline')
+  static CommandHelp getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandHelp>(
+          CommandHelp.$_createMessage);
+  static CommandHelp? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get description => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set description($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDescription() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDescription() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<CommandHelpArg> get args => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<CommandExample> get examples => $_getList(4);
 
   @$pb.TagNumber(6)
-  $core.String get hint => $_getSZ(4);
+  $core.String get where => $_getSZ(5);
   @$pb.TagNumber(6)
-  set hint($core.String value) => $_setString(4, value);
+  set where($core.String value) => $_setString(5, value);
   @$pb.TagNumber(6)
-  $core.bool hasHint() => $_has(4);
+  $core.bool hasWhere() => $_has(5);
   @$pb.TagNumber(6)
-  void clearHint() => $_clearField(6);
+  void clearWhere() => $_clearField(6);
 
   @$pb.TagNumber(7)
-  $core.List<$core.int> get botId => $_getN(5);
+  $core.String get who => $_getSZ(6);
   @$pb.TagNumber(7)
-  set botId($core.List<$core.int> value) => $_setBytes(5, value);
+  set who($core.String value) => $_setString(6, value);
   @$pb.TagNumber(7)
-  $core.bool hasBotId() => $_has(5);
+  $core.bool hasWho() => $_has(6);
   @$pb.TagNumber(7)
-  void clearBotId() => $_clearField(7);
+  void clearWho() => $_clearField(7);
+}
 
-  @$pb.TagNumber(8)
-  $core.List<$core.int> get savedReplyId => $_getN(6);
-  @$pb.TagNumber(8)
-  set savedReplyId($core.List<$core.int> value) => $_setBytes(6, value);
-  @$pb.TagNumber(8)
-  $core.bool hasSavedReplyId() => $_has(6);
-  @$pb.TagNumber(8)
-  void clearSavedReplyId() => $_clearField(8);
+/// What one argument of a command takes.
+class CommandHelpArg extends $pb.GeneratedMessage {
+  factory CommandHelpArg({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? name,
+    $core.String? about,
+  }) {
+    final result = CommandHelpArg._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (name != null) result.name = name;
+    if (about != null) result.about = about;
+    return result;
+  }
+
+  CommandHelpArg._();
+
+  factory CommandHelpArg.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandHelpArg()..mergeFromBuffer(data, registry);
+  factory CommandHelpArg.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandHelpArg()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CommandHelpArg',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CommandHelpArg.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOS(4, _omitFieldNames ? '' : 'about')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandHelpArg clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandHelpArg copyWith(void Function(CommandHelpArg) updates) =>
+      super.copyWith((message) => updates(message as CommandHelpArg))
+          as CommandHelpArg;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CommandHelpArg() / CommandHelpArg.new instead')
+  static CommandHelpArg create() => CommandHelpArg._();
+  static $pb.GeneratedMessage $_createMessage() => CommandHelpArg._();
+  @$core.override
+  CommandHelpArg createEmptyInstance() => CommandHelpArg._();
+  @$core.pragma('dart2js:noInline')
+  static CommandHelpArg getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandHelpArg>(
+          CommandHelpArg.$_createMessage);
+  static CommandHelpArg? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get name => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set name($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasName() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get about => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set about($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAbout() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearAbout() => $_clearField(4);
+}
+
+/// Something to type, and what it does.
+class CommandExample extends $pb.GeneratedMessage {
+  factory CommandExample({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? type,
+    $core.String? then,
+  }) {
+    final result = CommandExample._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (type != null) result.type = type;
+    if (then != null) result.then = then;
+    return result;
+  }
+
+  CommandExample._();
+
+  factory CommandExample.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandExample()..mergeFromBuffer(data, registry);
+  factory CommandExample.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandExample()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CommandExample',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CommandExample.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'type')
+    ..aOS(4, _omitFieldNames ? '' : 'then')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandExample clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandExample copyWith(void Function(CommandExample) updates) =>
+      super.copyWith((message) => updates(message as CommandExample))
+          as CommandExample;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CommandExample() / CommandExample.new instead')
+  static CommandExample create() => CommandExample._();
+  static $pb.GeneratedMessage $_createMessage() => CommandExample._();
+  @$core.override
+  CommandExample createEmptyInstance() => CommandExample._();
+  @$core.pragma('dart2js:noInline')
+  static CommandExample getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandExample>(
+          CommandExample.$_createMessage);
+  static CommandExample? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get type => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set type($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasType() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearType() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get then => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set then($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasThen() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearThen() => $_clearField(4);
 }
 
 class SetCommandsRequest extends $pb.GeneratedMessage {
@@ -45410,6 +45863,389 @@ class SetModuleResponse extends $pb.GeneratedMessage {
   void clearModule() => $_clearField(3);
   @$pb.TagNumber(3)
   Module ensureModule() => $_ensure(1);
+}
+
+class GetCommandSettingsResponse extends $pb.GeneratedMessage {
+  factory GetCommandSettingsResponse({
+    $core.Iterable<$core.int>? nullFields,
+    CommandSettings? settings,
+  }) {
+    final result = GetCommandSettingsResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (settings != null) result.settings = settings;
+    return result;
+  }
+
+  GetCommandSettingsResponse._();
+
+  factory GetCommandSettingsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetCommandSettingsResponse()..mergeFromBuffer(data, registry);
+  factory GetCommandSettingsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetCommandSettingsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetCommandSettingsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetCommandSettingsResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<CommandSettings>(3, _omitFieldNames ? '' : 'settings',
+        subBuilder: CommandSettings.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetCommandSettingsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetCommandSettingsResponse copyWith(
+          void Function(GetCommandSettingsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetCommandSettingsResponse))
+          as GetCommandSettingsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetCommandSettingsResponse() / GetCommandSettingsResponse.new instead')
+  static GetCommandSettingsResponse create() => GetCommandSettingsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetCommandSettingsResponse._();
+  @$core.override
+  GetCommandSettingsResponse createEmptyInstance() =>
+      GetCommandSettingsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GetCommandSettingsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetCommandSettingsResponse>(
+          GetCommandSettingsResponse.$_createMessage);
+  static GetCommandSettingsResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  CommandSettings get settings => $_getN(1);
+  @$pb.TagNumber(3)
+  set settings(CommandSettings value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSettings() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearSettings() => $_clearField(3);
+  @$pb.TagNumber(3)
+  CommandSettings ensureSettings() => $_ensure(1);
+}
+
+/// The command table (DESIGN-MODULES.md section 6.5): which source of a name wins where two have it, and the names modules' commands have here. A protected built-in always wins.
+class CommandSettings extends $pb.GeneratedMessage {
+  factory CommandSettings({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<CommandSettingsOrder>? order,
+    $core.Iterable<CommandRename>? renames,
+  }) {
+    final result = CommandSettings._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (order != null) result.order.addAll(order);
+    if (renames != null) result.renames.addAll(renames);
+    return result;
+  }
+
+  CommandSettings._();
+
+  factory CommandSettings.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandSettings()..mergeFromBuffer(data, registry);
+  factory CommandSettings.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandSettings()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CommandSettings',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CommandSettings.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pc<CommandSettingsOrder>(
+        3, _omitFieldNames ? '' : 'order', $pb.PbFieldType.KE,
+        valueOf: CommandSettingsOrder.valueOf,
+        enumValues: CommandSettingsOrder.values,
+        defaultEnumValue:
+            CommandSettingsOrder.COMMAND_SETTINGS_ORDER_UNSPECIFIED)
+    ..pPM<CommandRename>(4, _omitFieldNames ? '' : 'renames',
+        subBuilder: CommandRename.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandSettings clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandSettings copyWith(void Function(CommandSettings) updates) =>
+      super.copyWith((message) => updates(message as CommandSettings))
+          as CommandSettings;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CommandSettings() / CommandSettings.new instead')
+  static CommandSettings create() => CommandSettings._();
+  static $pb.GeneratedMessage $_createMessage() => CommandSettings._();
+  @$core.override
+  CommandSettings createEmptyInstance() => CommandSettings._();
+  @$core.pragma('dart2js:noInline')
+  static CommandSettings getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandSettings>(
+          CommandSettings.$_createMessage);
+  static CommandSettings? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<CommandSettingsOrder> get order => $_getList(2);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<CommandRename> get renames => $_getList(3);
+}
+
+/// Another name for a module's command on this server.
+class CommandRename extends $pb.GeneratedMessage {
+  factory CommandRename({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? module,
+    $core.String? command,
+    $core.String? name,
+  }) {
+    final result = CommandRename._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (module != null) result.module = module;
+    if (command != null) result.command = command;
+    if (name != null) result.name = name;
+    return result;
+  }
+
+  CommandRename._();
+
+  factory CommandRename.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandRename()..mergeFromBuffer(data, registry);
+  factory CommandRename.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CommandRename()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CommandRename',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CommandRename.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'module')
+    ..aOS(4, _omitFieldNames ? '' : 'command')
+    ..aOS(5, _omitFieldNames ? '' : 'name')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandRename clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CommandRename copyWith(void Function(CommandRename) updates) =>
+      super.copyWith((message) => updates(message as CommandRename))
+          as CommandRename;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CommandRename() / CommandRename.new instead')
+  static CommandRename create() => CommandRename._();
+  static $pb.GeneratedMessage $_createMessage() => CommandRename._();
+  @$core.override
+  CommandRename createEmptyInstance() => CommandRename._();
+  @$core.pragma('dart2js:noInline')
+  static CommandRename getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CommandRename>(
+          CommandRename.$_createMessage);
+  static CommandRename? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get module => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set module($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasModule() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearModule() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get command => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set command($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCommand() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearCommand() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get name => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set name($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasName() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearName() => $_clearField(5);
+}
+
+class UpdateCommandSettingsRequest extends $pb.GeneratedMessage {
+  factory UpdateCommandSettingsRequest({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<$core.String>? order,
+    $core.Iterable<CommandRename>? renames,
+  }) {
+    final result = UpdateCommandSettingsRequest._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (order != null) result.order.addAll(order);
+    if (renames != null) result.renames.addAll(renames);
+    return result;
+  }
+
+  UpdateCommandSettingsRequest._();
+
+  factory UpdateCommandSettingsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateCommandSettingsRequest()..mergeFromBuffer(data, registry);
+  factory UpdateCommandSettingsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateCommandSettingsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateCommandSettingsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: UpdateCommandSettingsRequest.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPS(3, _omitFieldNames ? '' : 'order')
+    ..pPM<CommandRename>(4, _omitFieldNames ? '' : 'renames',
+        subBuilder: CommandRename.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCommandSettingsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCommandSettingsRequest copyWith(
+          void Function(UpdateCommandSettingsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as UpdateCommandSettingsRequest))
+          as UpdateCommandSettingsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdateCommandSettingsRequest() / UpdateCommandSettingsRequest.new instead')
+  static UpdateCommandSettingsRequest create() =>
+      UpdateCommandSettingsRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      UpdateCommandSettingsRequest._();
+  @$core.override
+  UpdateCommandSettingsRequest createEmptyInstance() =>
+      UpdateCommandSettingsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static UpdateCommandSettingsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateCommandSettingsRequest>(
+          UpdateCommandSettingsRequest.$_createMessage);
+  static UpdateCommandSettingsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<$core.String> get order => $_getList(2);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<CommandRename> get renames => $_getList(3);
+}
+
+class UpdateCommandSettingsResponse extends $pb.GeneratedMessage {
+  factory UpdateCommandSettingsResponse({
+    $core.Iterable<$core.int>? nullFields,
+    CommandSettings? settings,
+  }) {
+    final result = UpdateCommandSettingsResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (settings != null) result.settings = settings;
+    return result;
+  }
+
+  UpdateCommandSettingsResponse._();
+
+  factory UpdateCommandSettingsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateCommandSettingsResponse()..mergeFromBuffer(data, registry);
+  factory UpdateCommandSettingsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateCommandSettingsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateCommandSettingsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: UpdateCommandSettingsResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<CommandSettings>(3, _omitFieldNames ? '' : 'settings',
+        subBuilder: CommandSettings.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCommandSettingsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCommandSettingsResponse copyWith(
+          void Function(UpdateCommandSettingsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as UpdateCommandSettingsResponse))
+          as UpdateCommandSettingsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdateCommandSettingsResponse() / UpdateCommandSettingsResponse.new instead')
+  static UpdateCommandSettingsResponse create() =>
+      UpdateCommandSettingsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      UpdateCommandSettingsResponse._();
+  @$core.override
+  UpdateCommandSettingsResponse createEmptyInstance() =>
+      UpdateCommandSettingsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static UpdateCommandSettingsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateCommandSettingsResponse>(
+          UpdateCommandSettingsResponse.$_createMessage);
+  static UpdateCommandSettingsResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  CommandSettings get settings => $_getN(1);
+  @$pb.TagNumber(3)
+  set settings(CommandSettings value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSettings() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearSettings() => $_clearField(3);
+  @$pb.TagNumber(3)
+  CommandSettings ensureSettings() => $_ensure(1);
 }
 
 class AdminListEmojiResponse extends $pb.GeneratedMessage {

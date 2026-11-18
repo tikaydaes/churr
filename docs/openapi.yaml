@@ -11546,7 +11546,7 @@ paths:
       description: |-
         **Who:** Any account that can read the conversation: its members, and for a public channel every owner, admin and member.
 
-        The built-in commands, the caller's saved replies, the custom commands (community saved replies), and the commands of bots that are in the conversation. The whole list.
+        The built-in commands, the caller's saved replies, the custom commands (community saved replies), the commands of bots that are in the conversation, and the commands of the built-in modules on here, with their forms and help. The whole list, one entry a name: where two sources have a name, the one first in the admin's order (`getCommandSettings`), which is what runs; a protected built-in always wins.
       parameters:
       - name: conversation_id
         in: query
@@ -11687,7 +11687,7 @@ paths:
       description: |-
         **Who:** Any local member of the conversation, at any level. Not while timed out.
 
-        The server looks the name up in this order and stops at the first match: the caller's own saved replies, custom commands, commands of bots in this conversation, then the commands of the built-in modules (`/roll` and `/dice`, DESIGN-MODULES.md section 9.1). No match is `not_found`. A module switched off in the conversation (`listConversationModules`) refuses with `feature_off`; a module that fails or does not answer within 2 seconds gives `unavailable`. A module's command posts its answer as a message from the caller, its words as the text and its value as the `view`; a person only, never in a sealed chat, and what the module refuses (dice it cannot read) is `invalid_value` in its words. A saved reply or custom command is posted as a message from the caller, who must be allowed to post; text after its name is refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot `command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives `unavailable`. Built-in commands are carried out by the client with ordinary calls and are refused here with `invalid_value`; so is a protected built-in's name even where an older saved reply or bot command has it.
+        The server looks the name up source by source in the admin's order (`getCommandSettings`; by default the caller's own saved replies, custom commands, commands of bots in this conversation, then the commands of the built-in modules, `/roll` and `/dice`, DESIGN-MODULES.md section 9.1, under the names they have here, then the built-ins) and stops at the first match. No match is `not_found`. A module switched off in the conversation (`listConversationModules`) refuses with `feature_off`; a module that fails or does not answer within 2 seconds gives `unavailable`. A module's command posts its answer as a message from the caller, its words as the text and its value as the `view`; a person only, never in a sealed chat, and what the module refuses (dice it cannot read) is `invalid_value` in its words. A saved reply or custom command is posted as a message from the caller, who must be allowed to post; text after its name is refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot `command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives `unavailable`. Built-in commands are carried out by the client with ordinary calls and are refused here with `invalid_value`; so is a protected built-in's name even where an older saved reply or bot command has it.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -16974,6 +16974,119 @@ paths:
       - session_locked
       - forbidden
       - not_found
+      - rate_limited
+      - internal
+  /api/v1/admin/commands:
+    get:
+      operationId: getCommandSettings
+      tags: ['Admin: channels and content']
+      summary: 'Get the command table: the order of the sources and the renames'
+      description: '**Who:** Admins (the owner included).'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [settings]
+                properties:
+                  settings:
+                    $ref: '#/components/schemas/CommandSettings'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetCommandSettingsResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - rate_limited
+      - internal
+    patch:
+      operationId: updateCommandSettings
+      tags: ['Admin: channels and content']
+      summary: Change the order of the sources of commands, or rename modules' commands
+      description: |-
+        **Who:** Admins (the owner included).
+
+        Where a saved reply, a bot's command, a module's command and a built-in share a name, the source first in `order` is the one listed by `listCommands` and run by `runCommand`; a protected built-in always wins. `renames` replaces the whole list: a module's command then answers to the new name only, its help says so, and `listCommands` carries it. A rename to a protected built-in's name is refused with `name_taken` naming it, and so is one that two modules' commands would share. Written to the audit log.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: array
+                  items:
+                    type: string
+                renames:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CommandRename'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateCommandSettingsRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [settings]
+                properties:
+                  settings:
+                    $ref: '#/components/schemas/CommandSettings'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateCommandSettingsResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `name_taken`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - name_taken
       - rate_limited
       - internal
   /api/v1/admin/emoji:
@@ -25549,15 +25662,18 @@ components:
           format: date-time
     Command:
       type: object
-      description: Something that can be typed as `/name` in a conversation.
+      description: Something that can be typed as `/name` in a conversation, under the name it has here.
       required: [name, kind, description]
       properties:
         name:
           type: string
+          description: 'The final name: a module''s command may have been given another by an admin (`updateCommandSettings`).
+            Clients parse by it.'
         kind:
           type: string
-          enum: [builtin, saved_reply, bot]
-          description: Built-in commands are carried out by the client with ordinary API calls.
+          enum: [builtin, saved_reply, bot, module]
+          description: Built-in commands are carried out by the client with ordinary API calls; the others are run
+            with `runCommand`. `module` is a built-in module's command (`/roll`, `/dice`), which the server runs.
         description:
           type: string
         hint:
@@ -25569,6 +25685,111 @@ components:
         saved_reply_id:
           type: string
           format: uuid
+        module:
+          type: string
+          description: 'For a module''s command: the module that answers it.'
+        forms:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandForm'
+          description: 'For a module''s command: the ways it may be typed, tried in order (DESIGN-MODULES.md section
+            5.1).'
+        help:
+          $ref: '#/components/schemas/CommandHelp'
+          description: 'For a module''s command: what `/help` says of it, from the module, with the names commands
+            have here written in.'
+    CommandForm:
+      type: object
+      description: 'One way a command may be typed: its slots in order. A command that takes nothing has a form
+        with none.'
+      required: [slots]
+      properties:
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandSlot'
+    CommandSlot:
+      type: object
+      description: One argument of a command's form.
+      required: [name, kind]
+      properties:
+        name:
+          type: string
+        hint:
+          type: string
+          description: Said to the person typing.
+        kind:
+          type: string
+          description: '`text`, which takes the rest of the line and is only ever last; a kind of the catalogue;
+            or a type the module declares (`dice`).'
+    CommandHelp:
+      type: object
+      description: What `/help` says of a command, in the shape of testdata/commands/help.json's entries.
+      required: [description]
+      properties:
+        description:
+          type: string
+        args:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandHelpArg'
+        examples:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandExample'
+        where:
+          type: string
+        who:
+          type: string
+    CommandHelpArg:
+      type: object
+      description: What one argument of a command takes.
+      required: [name, about]
+      properties:
+        name:
+          type: string
+        about:
+          type: string
+    CommandExample:
+      type: object
+      description: Something to type, and what it does.
+      required: [type, then]
+      properties:
+        type:
+          type: string
+        then:
+          type: string
+    CommandSettings:
+      type: object
+      description: 'The command table (DESIGN-MODULES.md section 6.5): which source of a name wins where two have
+        it, and the names modules'' commands have here. A protected built-in always wins.'
+      required: [order, renames]
+      properties:
+        order:
+          type: array
+          items:
+            type: string
+            enum: [saved_reply, bot, module, builtin]
+          description: Each source once, first wins. `saved_reply` is the person's own saved reply, then the custom
+            command of the name. The default is saved_reply, bot, module, builtin.
+        renames:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandRename'
+    CommandRename:
+      type: object
+      description: Another name for a module's command on this server.
+      required: [module, command, name]
+      properties:
+        module:
+          type: string
+        command:
+          type: string
+          description: The name the module gives it.
+        name:
+          type: string
+          description: The name it has here, instead. Not a protected built-in's or a name held back, and no other
+            module command's.
     Module:
       type: object
       description: 'A built-in module (DESIGN-MODULES.md section 6.2): what it declares, and whether it is on.'

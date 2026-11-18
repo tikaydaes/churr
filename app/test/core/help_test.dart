@@ -74,18 +74,45 @@ void main() {
       helpEntry(named(admin, 'ban'), admin).aliases,
       containsAll(['/kickban', '/kb']),
     );
-    expect(helpEntry(named(admin, 'roll'), admin).notes, [
+    expect(helpEntry(named(admin, 'flip'), admin).notes, [
       helpWords('replaceable'),
     ]);
   });
 
+  test('a module\'s command has the help the server gives with it', () {
+    final roll = SlashCommand({
+      'name': 'roll',
+      'kind': 'module',
+      'module': 'dice',
+      'description': 'Rolls dice',
+      'hint': '[dice]',
+      'help': {
+        'description': 'Rolls dice, rolled by the server.',
+        'args': [
+          {'name': 'dice', 'about': 'Such as 2d6.'},
+        ],
+        'examples': [
+          {'type': '/roll', 'then': 'Rolls one d20.'},
+          {'type': '/roll 2d6', 'then': 'Rolls two.'},
+        ],
+        'who': 'People.',
+      },
+    });
+    final e = helpEntry(roll, [roll]);
+    expect(e.description, 'Rolls dice, rolled by the server.');
+    expect(e.usage, '/roll [dice]');
+    expect(e.args.single.name, 'dice');
+    expect(e.examples.length, 2);
+    expect(e.who, 'People.');
+  });
+
   test('a name after /help finds its command, never a hidden one', () {
-    expect(helpFind(member, 'roll')?.name, 'roll');
-    expect(helpFind(member, '/roll')?.name, 'roll');
+    expect(helpFind(member, 'flip')?.name, 'flip');
+    expect(helpFind(member, '/flip')?.name, 'flip');
     expect(helpFind(member, 'kb')?.name, 'ban');
     expect(helpFind(member, 'part')?.name, 'leave');
     expect(helpFind(member, 'trout'), isNull);
-    expect(helpFind(member, 'roll dice'), isNull);
+    expect(helpFind(member, 'flip coin'), isNull);
     for (final n in ['exile', 'kline', 'broadcast', 'amsg']) {
       expect(helpFind(member, n), isNull, reason: n);
       expect(helpFind(admin, n), isNotNull, reason: n);

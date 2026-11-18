@@ -44,6 +44,8 @@ String commandGroupName(L10n t, String group) => switch (group) {
 String helpGroupOf(SlashCommand c) => switch (c.kind) {
   'builtin' => commandGroupOf[c.name] ?? 'info',
   'saved_reply' => 'saved',
+  // A module's commands (/roll, /dice) are games of chance.
+  'module' => 'chance',
   _ => 'bots',
 };
 

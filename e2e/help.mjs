@@ -51,12 +51,19 @@ check('/leave names /part', entry(admin.find((c) => c.name === 'leave'), admin).
 check('/ban names /kickban and /kb', ['/kickban', '/kb'].every((a) => entry(admin.find((c) => c.name === 'ban'), admin).aliases.includes(a)));
 
 // /help <word>.
-check('/help roll finds /roll', findListed(member, 'roll')?.name === 'roll');
-check('/help /roll finds /roll', findListed(member, '/roll')?.name === 'roll');
+check('/help flip finds /flip', findListed(member, 'flip')?.name === 'flip');
+check('/help /flip finds /flip', findListed(member, '/flip')?.name === 'flip');
+// A module's command (/roll) has the help the server gives with it.
+const roll = { name: 'roll', kind: 'module', module: 'dice', description: 'Rolls dice', hint: '[dice]',
+  help: { description: 'Rolls dice, rolled by the server.', args: [{ name: 'dice', about: 'Such as 2d6.' }], examples: [{ type: '/roll', then: 'Rolls one d20.' }, { type: '/roll 2d6', then: 'Rolls two.' }], where: 'Channels.', who: 'People.' } };
+const withRoll = [...member, roll];
+check('/help roll finds the module\'s /roll', findListed(withRoll, 'roll') === roll);
+const re = entry(roll, withRoll);
+check('a module\'s command has its help from the server', re.description === roll.help.description && re.examples.length === 2 && re.args[0].name === 'dice' && re.usage === '/roll [dice]' && re.who === 'People.');
 check('/help kb finds /ban', findListed(member, 'kb')?.name === 'ban');
 check('/help part finds /leave', findListed(member, 'part')?.name === 'leave');
 check('/help trout is a search', findListed(member, 'trout') === null);
-check('/help two words is a search', findListed(member, 'roll dice') === null);
+check('/help two words is a search', findListed(member, 'flip coin') === null);
 for (const n of ['exile', 'kline', 'broadcast', 'amsg']) {
   check(`/help ${n} finds nothing for someone who is not an admin`, findListed(member, n) === null);
   check(`/help ${n} finds it for an admin`, findListed(admin, n) !== null);

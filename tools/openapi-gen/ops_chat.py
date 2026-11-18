@@ -964,8 +964,10 @@ op('PUT conversations/{id}/modules/{name}', 'setConversationModule',
 op('GET commands', 'listCommands',
    'List the commands available in a conversation',
    who='Any account that can read the conversation: its members, and for a public channel every owner, admin and member.',
-   desc=("The built-in commands, the caller's saved replies, the custom commands (community saved replies), and the "
-         'commands of bots that are in the conversation. The whole list.'),
+   desc=("The built-in commands, the caller's saved replies, the custom commands (community saved replies), the "
+         'commands of bots that are in the conversation, and the commands of the built-in modules on here, with their '
+         'forms and help. The whole list, one entry a name: where two sources have a name, the one first in the admin\'s '
+         'order (`getCommandSettings`), which is what runs; a protected built-in always wins.'),
    q=['conversation_id!:uuid:The conversation the person is typing in.'],
    res={'commands': '[#Command]'},
    err='not_found')
@@ -973,9 +975,10 @@ op('GET commands', 'listCommands',
 op('POST conversations/{id}/commands', 'runCommand',
    'Run a bot command, a built-in module\'s command or a saved reply',
    who='Any local member of the conversation, at any level. Not while timed out.',
-   desc=("The server looks the name up in this order and stops at the first match: the caller's own saved replies, "
-         'custom commands, commands of bots in this conversation, then the commands of the built-in modules (`/roll` '
-         'and `/dice`, DESIGN-MODULES.md section 9.1). No match is `not_found`. A module switched off in the conversation (`listConversationModules`) refuses with '
+   desc=("The server looks the name up source by source in the admin's order (`getCommandSettings`; by default the "
+         "caller's own saved replies, custom commands, commands of bots in this conversation, then the commands of the "
+         'built-in modules, `/roll` and `/dice`, DESIGN-MODULES.md section 9.1, under the names they have here, then the '
+         'built-ins) and stops at the first match. No match is `not_found`. A module switched off in the conversation (`listConversationModules`) refuses with '
          '`feature_off`; a module that fails or does not answer within 2 seconds gives `unavailable`. A module\'s command posts its answer '
          'as a message from the caller, its words as the text and its value as the `view`; a person only, never in a '
          'sealed chat, and what the module refuses (dice it cannot read) is `invalid_value` in its words. A saved reply or '

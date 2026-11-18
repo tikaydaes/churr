@@ -10410,7 +10410,7 @@ abstract class L10n {
   /// No description provided for @savedReplyNameHint.
   ///
   /// In en, this message translates to:
-  /// **'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others\' names are refused.'**
+  /// **'Typed as /name. Only a fun or game built-in (/shrug, /flip …) may be replaced; the others\' names are refused.'**
   String get savedReplyNameHint;
 
   /// No description provided for @savedReplyText.
