@@ -227,9 +227,28 @@ func TestWellKnownAndFingerprints(t *testing.T) {
 	if err := json.Unmarshal(raw, &fields); err != nil {
 		t.Fatal(err)
 	}
-	for _, f := range []string{"churr", "kind", "name", "sign_key", "box_key", "box_key_sig", "link"} {
+	for _, f := range []string{"churr", "kind", "name", "sign_key", "box_key", "box_key_sig", "link", "vrf_keys"} {
 		if _, ok := fields[f]; !ok {
 			t.Errorf("the document lacks %s", f)
+		}
+		if f == "vrf_keys" {
+			// Each entry of the VRF key history is a key, its start and
+			// the signing key's signature, and nothing else.
+			var entries []map[string]json.RawMessage
+			if err := json.Unmarshal(fields[f], &entries); err != nil || len(entries) == 0 {
+				t.Errorf("vrf_keys is %s", fields[f])
+			}
+			for _, e := range entries {
+				for _, g := range []string{"key", "began", "sig"} {
+					if _, ok := e[g]; !ok {
+						t.Errorf("a vrf_keys entry lacks %s", g)
+					}
+					delete(e, g)
+				}
+				if len(e) != 0 {
+					t.Errorf("a vrf_keys entry has extra fields %v", e)
+				}
+			}
 		}
 		delete(fields, f)
 	}
@@ -239,6 +258,9 @@ func TestWellKnownAndFingerprints(t *testing.T) {
 	var doc wire.WellKnown
 	json.Unmarshal(raw, &doc)
 	if err := doc.Check("a.localhost"); err != nil {
+		t.Fatal(err)
+	}
+	if err := wire.CheckVRFKeys("a.localhost", doc.SignKey, doc.VRFKeys); err != nil {
 		t.Fatal(err)
 	}
 	made := a.Owner.Must(201, "POST", "/api/v1/admin/peers/invitations", map[string]any{"expires_in_seconds": 3600})
