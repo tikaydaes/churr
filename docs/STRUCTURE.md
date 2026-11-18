@@ -45,6 +45,8 @@ The module is `github.com/tikaydaes/churr`.
         memguard/                   the memory guard: how much memory there is, and when it is short
         markdown/                   Churr Markdown: parse, entities, plain text
         wirepb/                     the contract in Protocol Buffers: JSON to protobuf and back (WIRE-PROTOBUF.md)
+        modhost/                    the host of the built-in modules: the contract, registry and checks
+        modules/                    one package per built-in module (DESIGN-MODULES.md section 6.2)
         store/                      the storage interface
           sqlite/                   SQLite backend
           postgres/                 PostgreSQL backend
@@ -205,6 +207,21 @@ render.
 - `Plain(text string, entities []model.Entity) string`, for search
   text, fallbacks and notification bodies.
 - Passes the corpus in `testdata/markdown`.
+
+**`modhost`** — the host of the built-in modules
+(`DESIGN-MODULES.md` section 6.2): our own Go, compiled in, that
+answers commands and resolves the objects it claims with values of the
+catalogue.
+
+- `Module` (name, commands, claims, handler) and `Handler`, whose
+  entry points are `Command` and `Resolve`; further entry points are
+  interfaces of their own, so a module that needs none never changes.
+- `Host`, all a module may reach: the verified actor and conversation,
+  and randomness from `crypto/rand`.
+- `New(Options, ...Module) (*Registry, error)`; `(*Registry).Command`,
+  `Resolve`, `Unresolved`, `Claims`, `Commands`. The registry refuses a
+  reply with no text, holds every value to its kind's schema and check,
+  and stamps its level and the module's name.
 
 ### Storage
 
@@ -583,8 +600,8 @@ above, except where the last column says so.
 | Layer | Packages | May also import |
 |-------|----------|-----------------|
 | 0 | `model`, `version` | Nothing of ours |
-| 1 | `config`, `secret`, `ratelimit`, `markdown`, `memguard` | |
-| 2 | `store` and its backends | |
+| 1 | `config`, `secret`, `ratelimit`, `markdown`, `memguard`, `wirepb`, `modhost` | `modhost` imports `model`, `markdown`, `instant` and `wirepb` only |
+| 2 | `store` and its backends; `modules/*` | `modules/*` import `modhost` and `model` only |
 | 3 | `blob`, `perm` | `perm` imports `store` and `model` only |
 | 4 | `notify`, `search`, `mod`, `preview` | |
 | 5 | `live`, `push` | `push` may import `live` (to ask whether an account is active) |
@@ -608,6 +625,9 @@ Further rules:
 | `web` imports `version` and nothing else of ours | The pages talk to the API like any client |
 | `hub` imports `link`, `secret`, `config`, `ratelimit`, `acme`, `version`, `model`, and `store`, `chat`, `perm`, `blob`, `forms` | The hub owns the channels it is the home of and holds them whole, with the code an instance holds a channel with: `store` (and its SQLite backend and migrations), `chat`, `perm`, `forms` (for polls) and `blob`'s disk store, built into its holder, and the `link` service that applies their events. It still has no accounts of its own, no API, no live connections, no search and no notifications: it may not import `api`, `web`, `live`, `people`, `auth`, `notify`, `search`, `push` or `bots` |
 | `relay` imports `config`, `ratelimit`, `acme`, `version` | A relay has no store, no model and no link code |
+| `modhost` never imports `store` or `chat` | Both `churr` and `churr-hub` must host modules; storage, posting and the clock reach it through small interfaces |
+| `modules/*` import `modhost` and `model` and nothing else of ours, and no `net`, `os/exec`, `syscall`, `plugin` or `unsafe` | A module reaches no database, no socket and no other feature |
+| Only `server` and `hub` import `modules/*` | No feature leans on a module being there; `server` registers them, as it connects every feature |
 | Only `preview`, `push`, `blob`, `auth`, `link`, `acme`, `importer` and `relay` make outbound connections | These are the rows of the outside-connections table. A test checks that nothing else dials |
 | Only `calls` imports Pion; only `auth` imports the WebAuthn, OIDC and SAML libraries; only `blob` imports the object-store client | Each large dependency has one owner |
 

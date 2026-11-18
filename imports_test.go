@@ -20,9 +20,9 @@ const module = "github.com/tikaydaes/churr/"
 // layer or above, except as mayAlso says.
 var layers = map[string]int{
 	"model": 0, "version": 0, "instant": 0, "timing": 0, "unicodename": 0,
-	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1, "wirepb": 1, "memguard": 1,
-	"store": 2,
-	"blob":  3, "perm": 3, "notices": 3,
+	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1, "wirepb": 1, "memguard": 1, "modhost": 1,
+	"store": 2, "modules": 2,
+	"blob": 3, "perm": 3, "notices": 3,
 	"notify": 4, "search": 4, "mod": 4, "preview": 4,
 	"live": 5, "push": 5,
 	"people": 6, "chat": 6,
@@ -39,6 +39,9 @@ var mayAlso = map[string][]string{
 	"push":  {"live"},
 	"chat":  {"people"},
 	"sched": {"forms"},
+	// The host of the built-in modules reads text and values as the
+	// foundations do (docs/DESIGN-MODULES.md section 6.2).
+	"modhost": {"markdown", "wirepb"},
 }
 
 // onlyThese lists packages whose imports of ours are spelled out in full.
@@ -47,7 +50,21 @@ var onlyThese = map[string][]string{
 	"web":   {"version"},
 	"hub":   {"link", "secret", "config", "ratelimit", "acme", "version", "model", "store", "chat", "perm", "blob", "forms"},
 	"relay": {"config", "ratelimit", "acme", "version"},
+	// The host must run in churr and in churr-hub: storage, posting and
+	// the clock reach it through small interfaces.
+	"modhost": {"model", "markdown", "instant", "wirepb"},
+	// A built-in module reaches only the host's toolkit and the model's
+	// types: no database, no socket, no other feature.
+	"modules": {"modhost", "model"},
 }
+
+// moduleUsers are the only packages that import a built-in module: the
+// places that register them. No feature leans on a module being there.
+var moduleUsers = []string{"server", "hub"}
+
+// noDialing are the standard packages a built-in module may not import: it
+// makes no connections of its own.
+var noDialing = []string{"net", "os/exec", "plugin", "syscall", "unsafe"}
 
 // owners lists the large dependencies that have one owner each.
 var owners = []struct {
@@ -135,10 +152,20 @@ func check(t *testing.T, dir, file string, isTest bool, target string) {
 			}
 		}
 	}
+	if !isTest && strings.HasPrefix(dir, "internal/modules/") {
+		for _, p := range noDialing {
+			if target == p || strings.HasPrefix(target, p+"/") {
+				t.Errorf("%s imports %s: a built-in module makes no connections and reaches nothing the host does not hand it", file, target)
+			}
+		}
+	}
 	if !strings.HasPrefix(target, module+"internal/") || isTest {
 		return
 	}
 	to := strings.TrimPrefix(target, module+"internal/")
+	if top(to) == "modules" && !contains(moduleUsers, top(strings.TrimPrefix(dir, "internal/"))) {
+		t.Errorf("%s imports %s: only %v import a built-in module, to register it", file, to, moduleUsers)
+	}
 
 	if strings.HasPrefix(dir, "cmd/") {
 		if !contains([]string{"config", "version", "server", "hub", "relay"}, top(to)) {
