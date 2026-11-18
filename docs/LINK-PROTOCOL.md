@@ -1422,7 +1422,7 @@ at all.
 ### Wire shapes
 
 **A message on the wire** (the schema's `Message`; its `quote`,
-`cards`, `form`, `via`, `sealed` and `chance` are the client
+`cards`, `form`, `via`, `sealed`, `chance` and `view` are the client
 schema's messages, and each entity is the client schema's with
 `stream_id` beside it) is the message object of
 `MESSAGE-FORMAT.md` section 1 with these differences:
@@ -1456,8 +1456,20 @@ schema's messages, and each entity is the client schema's with
   kind, cards from the named deck) and refuses the event as `invalid`
   if not; it cannot tell whether the draw was fair, and takes the
   origin's word for that. A server too old to know them shows the text,
-  or the `fallback`. A roll is no `chance`: its `text` travels, and its
-  `view` does not travel yet, so a peer shows the roll as its text.
+  or the `fallback`.
+- `view` (the message as a value of the catalogue, such as a roll) and
+  each `object` entity's value travel as the origin holds them, in
+  events, in history and from a hub's holder. Every receiver holds each
+  value to its kind's check (`DESIGN-MODULES.md` section 4.2; for
+  `dice_roll`, `testdata/types/dice_roll.json`). One that fails falls
+  back a step: to its `alt`, checked the same way, or to nothing, so a
+  view is left off and an object entity is dropped, and its characters
+  read as text. That is no refusal: the message still arrives, with its
+  text. A value of a kind the receiver does not know, or of a level above
+  the one its check reads, is carried unchanged, its data the bytes it
+  came as. As with `chance`, the check is of the shape, not the
+  fairness. A sealed message carries none: its values travel inside its
+  payload.
 
 **`blobs`** lists every file an event refers to: attachments, card
 images, the via icon, custom emoji, an avatar.

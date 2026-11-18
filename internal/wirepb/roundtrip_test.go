@@ -427,6 +427,13 @@ func TestKinds(t *testing.T) {
 	if lv, ok := KindLevel("dice_roll"); !ok || lv != 1 {
 		t.Errorf("dice_roll is level %d (%v)", lv, ok)
 	}
+	// The server's checks of the kinds (model.CheckValue) read the levels
+	// the schema gives them.
+	for kind, lv := range model.KindLevels() {
+		if want, ok := KindLevel(kind); !ok || want != lv {
+			t.Errorf("model checks %s at level %d; the schema has %d (%v)", kind, lv, want, ok)
+		}
+	}
 	if _, err := EncodeKind("no_such_kind", v); err == nil {
 		t.Error("a kind the catalogue does not have was encoded")
 	}

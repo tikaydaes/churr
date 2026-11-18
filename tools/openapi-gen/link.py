@@ -260,7 +260,7 @@ M('Message', [('id', 'uuid'), ('author_id', 'uuid'), ('client_id', 'str'), ('par
               ('text', 'str'), ('entities', '[#Entity]'), ('files', '[#File]'), ('cards', '[client:Card]'),
               ('form', 'client:Form'), ('fallback', 'str'), ('via', 'client:Via'), ('system', 'value'),
               ('sealed', 'client:SealedPayload'), ('quiet', 'bool'), ('action', 'bool'), ('chance', 'client:Chance'),
-              ('created_at', 'time'), ('edited_at', 'time')],
+              ('created_at', 'time'), ('edited_at', 'time'), ('view', 'client:ValueEnvelope')],
   'A message as it travels between servers (section 11, "A message on the wire").')
 M('Profile', [('id', 'uuid'), ('server', 'str'), ('username', 'str'), ('display_name', 'str'), ('title', 'str'),
               ('pronouns', 'str'), ('time_zone', 'str'), ('bot', 'bool'), ('avatar_file_id', 'uuid'), ('version', 'int'),

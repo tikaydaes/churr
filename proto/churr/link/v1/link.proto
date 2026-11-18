@@ -740,6 +740,7 @@ message Message {
   .churr.v1.Chance chance = 17;
   optional int64 created_at = 18; // time
   optional int64 edited_at = 19; // time
+  .churr.v1.ValueEnvelope view = 20;
 }
 
 // An account's profile as it travels (section 14).

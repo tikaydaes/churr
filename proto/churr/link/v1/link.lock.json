@@ -450,7 +450,8 @@
    "sealed": 14,
    "system": 13,
    "text": 6,
-   "via": 12
+   "via": 12,
+   "view": 20
   },
   "ModAction": {
    "action": 3,
