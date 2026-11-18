@@ -596,6 +596,10 @@ type streamRT struct {
 	// joinedHave is, in a hub-owned channel, what the hub's log held of
 	// each origin when it last let a server in (hubchan.go).
 	joinedHave map[string]int64
+	// startHave is, for a server that has just joined a hub-owned channel,
+	// where the hub's log starts for it: of each origin, what the log
+	// delivers to it is above this, and the snapshot gives it the rest.
+	startHave map[string]int64
 	// history is how a server that has just joined waits, before applying
 	// anything after the event that let it in, for the snapshot that tells
 	// it who the members are: historyHere is set when the last part has

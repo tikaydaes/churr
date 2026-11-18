@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/tikaydaes/churr/internal/link"
 	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/testkit"
@@ -151,6 +153,36 @@ func TestHubChannelKeysComeOnlyFromTheHub(t *testing.T) {
 	c.Owner.Post(convC, "c is in")
 	a.Owner.HasMessage(ch, "c is in")
 	b.Owner.HasMessage(local[1], "c is in")
+}
+
+// What is said just after an instance is let in reaches it by the hub's log,
+// and the snapshot it asked for is cut later still: such a message is in
+// both. The instance takes it once, from the log, and rejects nothing.
+func TestSaidWhileTheSnapshotIsCutIsTakenOnce(t *testing.T) {
+	defer link.SetHistoryAnswerDelay(1500 * time.Millisecond)()
+	l := testkit.NewLinked(t, 3, true)
+	a, c := l.Servers[0], l.Servers[2]
+	ch := a.Owner.Channel("busy", false)
+	stream, local := l.Share(0, ch, "busy", map[string]any{"listing": "open", "history_days": 30}, 1)
+	a.Owner.Post(ch, "before c")
+	l.Servers[1].Owner.HasMessage(local[1], "before c")
+	convC := joinListed(l, 2, stream, "busy-c")
+	testkit.Eventually(t, "c is in", func() bool { return streamState(l, 2, stream) == "active" })
+	a.Owner.Post(ch, "just after c was let in")
+	l.Servers[1].Owner.Post(local[1], "and from b")
+	c.Owner.HasMessage(convC, "before c")
+	c.Owner.HasMessage(convC, "just after c was let in")
+	c.Owner.HasMessage(convC, "and from b")
+	for _, text := range []string{"before c", "just after c was let in", "and from b"} {
+		if n := countText(c.Owner, convC, text); n != 1 {
+			t.Fatalf("c holds %q %d times", text, n)
+		}
+	}
+	r := c.Server.Link.StatsNow().Rejected
+	delete(r, "duplicate")
+	if len(r) != 0 {
+		t.Fatalf("c rejected %v", r)
+	}
 }
 
 // An instance leaves a hub-owned channel for good, and an instance that joins

@@ -490,6 +490,13 @@ func SetFirstHistoryWait(d time.Duration) func() {
 	return func() { firstHistoryWait.Store(old) }
 }
 
+// SetHistoryAnswerDelay makes every server wait before it answers a request
+// for a joining server's snapshot, and returns the function that puts it back.
+func SetHistoryAnswerDelay(d time.Duration) func() {
+	old := historyAnswerDelay.Swap(int64(d))
+	return func() { historyAnswerDelay.Store(old) }
+}
+
 // TestOutboxHistory gives every event waiting in a stream's outbox a past: so
 // many tries, and so many refusals for its stamp, the last of them now.
 func (s *Service) TestOutboxHistory(stream model.StreamID, tries, refusals int) error {

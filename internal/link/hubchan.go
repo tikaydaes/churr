@@ -859,6 +859,10 @@ func (s *Service) joinedHub(ctx context.Context, st store.Stream, rec wire.Chann
 	if !rt.historyHere && rt.historyWait == nil {
 		rt.historyWait = make(chan struct{})
 	}
+	rt.startHave = map[string]int64{}
+	for origin, n := range have {
+		rt.startHave[origin] = n
+	}
 	rt.mu.Unlock()
 	s.holdForAnnouncements(st.ID, true)
 	err := s.store.Tx(ctx, func(tx store.Tx) error {
@@ -907,6 +911,10 @@ func (s *Service) joinedHub(ctx context.Context, st store.Stream, rec wire.Chann
 var firstHistoryWait atomic.Int64
 
 func init() { firstHistoryWait.Store(int64(5 * time.Second)) }
+
+// historyAnswerDelay, when a test sets it, is how long a server waits before
+// it answers a request for the snapshot a joining server is owed.
+var historyAnswerDelay atomic.Int64
 
 // askFirstHistory is how a server that has joined a hub-owned channel gets
 // the snapshot a joining server is owed: it asks the channel's servers for

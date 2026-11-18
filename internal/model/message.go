@@ -334,6 +334,20 @@ func OrderAt(order string) int64 {
 	return at
 }
 
+// OrderStamp reads the origin and the counter back out of an order string;
+// ok is false for a text that is not one. A message no stamp places has an
+// empty origin.
+func OrderStamp(order string) (origin string, n int64, ok bool) {
+	if len(order) < 16+1+1+16 || order[16] != '!' || order[len(order)-17] != '!' {
+		return "", 0, false
+	}
+	n, err := strconv.ParseInt(order[len(order)-16:], 16, 64)
+	if err != nil {
+		return "", 0, false
+	}
+	return order[17 : len(order)-17], n, true
+}
+
 // Deleted reports whether the message has been deleted.
 func (m Message) Deleted() bool { return !m.DeletedAt.IsZero() }
 

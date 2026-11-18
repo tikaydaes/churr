@@ -1941,7 +1941,11 @@ answers, and asks again after 5 seconds while none has. The instance
 asked answers an instance in the hub-signed list. It cuts the snapshot
 once it holds every origin's events up to the `have` the hub sent
 beside the record that let the asker in (or after 10 seconds): from
-that moment the hub took nothing under an older epoch. Nobody sends a
+that moment the hub took nothing under an older epoch. The joining
+instance takes from the snapshot only the messages stamped at or below
+where the hub's log started for it (the `have` beside the record that
+let it in); one stamped above that reaches it by the log, and is taken
+from there. Nobody sends a
 hub-owned channel's history unasked, and an instance takes none that it
 did not ask for. Wherever this section says "the owner" of history,
 read the instance that answered.

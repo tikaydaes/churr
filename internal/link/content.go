@@ -269,6 +269,25 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 		s.count(func(stats *Stats) { stats.Dropped["history_not_from_owner"]++ })
 		return
 	}
+	// A server that has just joined a hub-owned channel is delivered, from
+	// the hub's log, every event above where the log started for it. A
+	// message of the snapshot stamped above that start comes by the log
+	// too, and is taken from there and not from here: it is not applied
+	// twice.
+	rtH := s.rt(st.ID)
+	rtH.mu.Lock()
+	start := rtH.startHave
+	rtH.mu.Unlock()
+	if hubOwned(st) && start != nil {
+		kept := h.Messages[:0]
+		for _, hm := range h.Messages {
+			if origin, n, ok := model.OrderStamp(hm.Order); ok && origin != "" && n > start[origin] {
+				continue
+			}
+			kept = append(kept, hm)
+		}
+		h.Messages = kept
+	}
 	err = s.again(ctx, func() error {
 		return s.chat.RemoteTx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
 			conv, err := tx.Conversations().Get(ctx, st.ConversationID)
@@ -427,6 +446,9 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 		go func() {
 			defer s.wg.Done()
 			s.awaitHave(s.ctx, st.ID, have, 10*time.Second)
+			if d := historyAnswerDelay.Load(); d > 0 {
+				time.Sleep(time.Duration(d)) // a test plays a server slow to answer
+			}
 			select {
 			case <-s.ctx.Done():
 			case rt.jobs <- func() {
