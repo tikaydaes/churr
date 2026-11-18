@@ -2024,7 +2024,9 @@ who shares the channel chooses the number of days, and the hub's
 record says it to every instance (`history_days`). An instance that
 has been let in asks the home hub for its snapshot at once, with
 `history_request` carrying `first: true`, and asks again after 5
-seconds while the hub has not answered. It asks no other instance, and
+seconds while the hub has not answered (a net for a request or answer
+lost on the way: the hub answers every request it is given, at once or
+as soon as it can, below). It asks no other instance, and
 takes a hub-owned channel's history from the home hub and from nobody
 else (`history_not_from_home` otherwise), under the key the cluster
 roster gives that hub, as it takes the channel's keys; an answer to its
@@ -2032,10 +2034,15 @@ own request from the hub that was the home when it asked is taken too,
 though the home has changed hands since. An instance that still waits
 for its history when a record tells it the home has changed hands asks
 the new home at once. The hub answers
-an instance in the record's list. It cuts the snapshot once it holds
+an instance in the record's list. A request that reaches the holder
+before the record that lets the asker in, or before the holder has made
+its copy of the channel, is kept for a minute and answered the moment
+the holder takes a record of the channel; it is not refused. It cuts the snapshot once it holds
 every origin's events up to the `have` it sent beside the record that
-let the asker in (or after 10 seconds): from that moment it took
-nothing under an older epoch. The joining instance takes from the
+let the asker in, waking as its own counters move: from that moment it
+took nothing under an older epoch. If it does not hold that much
+within 10 seconds it answers with what it has, marked `short` (below),
+and tells the instance with `history_more` the moment it does. The joining instance takes from the
 snapshot only the messages stamped at or below where the hub's log
 started for it (the `have` beside the record that let it in); one
 stamped above that reaches it by the log, and is taken from there.
@@ -2045,8 +2052,10 @@ history with every other instance of the channel switched off.
 
 The holder may not yet hold all that was said before its hub became
 the home (below). It answers with what it has, and marks every part
-`short: true`; it notes the instance, and when nobody owes it the
-channel's earlier history any more it sends each instance it noted
+`short: true`; it notes the instance, and whenever the history grows
+(one that owed it some has given it all it holds), and when nobody owes
+it the channel's earlier history any more, it sends each instance it
+noted
 
     {"kind": "history_more", "msg_id": "…", "at": "…", "stream_id": "…"}
 
@@ -2069,7 +2078,12 @@ record, each of which may hold a part. It asks each of them, with
 `history_request` carrying `first: true`, and keeps asking, in rounds
 from 5 seconds apart doubling to 2 minutes, at once when one of them
 connects to the hub or a trunk comes up, and again after the hub
-restarts, until each has answered. One is taken off the list when the
+restarts, until each has answered. The rounds are a net: an instance
+that is asked before it can answer (it does not yet hold the record
+that makes the hub its channel's home, as when the channel is moving
+onto the hub) keeps the request for a minute and answers the moment it
+takes a record of the channel, rather than refusing it; one still
+applying what it was delivered answers once it has. One is taken off the list when the
 last part of its answer is stored, when it answers `unknown_stream`
 (it holds nothing of the channel), or when it is on neither the hub
 nor its cluster any more; the answer of the hub it was handed over
@@ -3572,7 +3586,10 @@ is given it by the hub with every other instance switched off.
   `open_request`, and the answers to what the holder asked. The
   answers leave as the hub's own direct messages, signed with the
   hub's key and sealed to the asker. An instance takes them from the
-  channel's home hub as it takes the channel's keys from it.
+  channel's home hub as it takes the channel's keys from it. What comes
+  for the holder while it is not connected to its hub (the hub has just
+  started, and an instance connected first) the hub keeps, the last 256
+  messages, and hands it the moment it connects.
 - **What it never does.** It originates nothing: it has no accounts,
   and no event of any channel is its own. It holds nothing of a
   channel homed on another hub, and nothing of an ad-hoc channel or a
@@ -3969,7 +3986,7 @@ a refusal:
 |---------|------|
 | Taken: logged, delivered to this hub's servers of the stream, shipped on | Otherwise |
 | Held already: counted as taken, nothing more | Its `origin_event_id` is in this hub's log, or its `n` is not above the origin's last here |
-| Put off: nothing written, the origin's counter unmoved, the stream asked for again (`sync`) after 300 ms, then less and less often up to 38 s | This hub has not yet been sent the stream's record or control frame, or the origin's key (its hub's list of servers); or `prev` shows an envelope of the origin is missing |
+| Put off: nothing written, the origin's counter unmoved, the stream asked for again (`sync`) the moment what it waited for arrives (a record of the stream, or a hub's list of servers); a missing envelope is asked for at once. As a net under that, it is asked for again after 300 ms, then less and less often up to 38 s | This hub has not yet been sent the stream's record or control frame, or the origin's key (its hub's list of servers); or `prev` shows an envelope of the origin is missing |
 | Refused: not logged, the origin's counter moved past it, reported in `relay_ack` and back to the origin's hub | It is malformed, unstamped or over size; its signature is not its origin's; its origin is not on the side it came from; its `at` is not above the origin's last here |
 
 Every reason for a refusal is a check the edge hub made first, on the

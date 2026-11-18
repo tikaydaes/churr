@@ -675,9 +675,20 @@ func (s *Service) runMove(ctx context.Context, id string) {
 	}
 	rt := s.rt(mv.StreamID)
 	if !rt.moving.TryLock() {
-		return
+		// One is running: it runs again before it lets go, and so takes in
+		// whatever this run was asked for (an answer that has just come).
+		rt.moveAgain.Store(true)
+		if !rt.moving.TryLock() {
+			return
+		}
 	}
-	defer rt.moving.Unlock()
+	defer func() {
+		rt.moving.Unlock()
+		if rt.moveAgain.Swap(false) && ctx.Err() == nil {
+			s.runMove(ctx, id)
+		}
+	}()
+	rt.moveAgain.Store(false)
 	if mv, err = s.store.Streams().Move(ctx, id); err != nil {
 		return
 	}

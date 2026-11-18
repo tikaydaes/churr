@@ -51,6 +51,9 @@ type directMessage struct {
 	raw  json.RawMessage
 	from store.Server
 	peer model.PeerID
+	// kept is when a request that could not be answered yet was first kept
+	// to be answered later (keepAsk); zero for one just arrived.
+	kept time.Time
 }
 
 // reaches reports whether a server can be reached over a peer: it is the
@@ -135,6 +138,17 @@ func (s *Service) ask(ctx context.Context, peer model.PeerID, to store.Server, k
 // sendDirectAwait is sendDirect that registers ch for the answer before the
 // frame leaves.
 func (s *Service) sendDirectAwait(ctx context.Context, peer model.PeerID, to store.Server, kind string, fields map[string]any, ch chan directMessage) (string, error) {
+	return s.sendDirectNoted(ctx, peer, to, kind, fields, ch, nil)
+}
+
+// sendDirectNoted is sendDirectAwait that also calls note with the new
+// message's msg_id before the frame leaves, so that whatever the answer is
+// checked against (a request for history noted as this server's own) is in
+// place however soon the answer comes: an answer quick enough to arrive
+// before the sender looked again must still be known as the answer to this
+// server's own request. What was noted for a frame that could not leave names
+// a request nobody will answer, and does no harm.
+func (s *Service) sendDirectNoted(ctx context.Context, peer model.PeerID, to store.Server, kind string, fields map[string]any, ch chan directMessage, note func(id string)) (string, error) {
 	pc := s.connOf(peer)
 	if pc == nil {
 		return "", model.ErrUnavailable.With("The link to " + to.Name + " is not connected.")
@@ -152,6 +166,9 @@ func (s *Service) sendDirectAwait(ctx context.Context, peer model.PeerID, to sto
 	s.mu.Lock()
 	s.replies[id] = ch
 	s.mu.Unlock()
+	if note != nil {
+		note(id)
+	}
 	f.ID = pc.conn.NextID()
 	if err := pc.conn.Send(f); err != nil {
 		s.mu.Lock()

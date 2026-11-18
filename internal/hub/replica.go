@@ -278,6 +278,7 @@ func (h *Hub) onTrunkRecord(tc *trunkConn, f wire.Frame) error {
 	tc.mu.Unlock()
 	h.forgetRoute(rec.StreamID)
 	h.tellChannels()
+	h.resumePutOff(rec.StreamID)
 	return nil
 }
 

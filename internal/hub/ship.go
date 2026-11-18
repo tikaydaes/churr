@@ -327,6 +327,47 @@ var relayWait atomic.Int64
 
 func init() { relayWait.Store(int64(trunkHold)) }
 
+// putOffWait is the first wait before a neighbour is asked again for what
+// this hub put off; it doubles with each batch in a row that puts something
+// off. Tests lengthen it, to show that nothing waits for it.
+var putOffWait atomic.Int64
+
+func init() { putOffWait.Store(int64(300 * time.Millisecond)) }
+
+// SetPutOffWait changes the first wait before what was put off is asked for
+// again, and returns a function that puts it back. It is for tests.
+func SetPutOffWait(d time.Duration) func() {
+	old := putOffWait.Swap(int64(d))
+	return func() { putOffWait.Store(old) }
+}
+
+// resumePutOff asks each neighbour again, at once, for what this hub put off
+// of the streams named (of every stream, with none): what they waited for
+// has arrived. What still cannot be taken is put off again.
+func (h *Hub) resumePutOff(ids ...string) {
+	for _, tc := range h.liveTrunks() {
+		var again []string
+		tc.mu.Lock()
+		if len(ids) == 0 {
+			for id := range tc.putOffs {
+				again = append(again, id)
+			}
+			clear(tc.putOffs)
+		} else {
+			for _, id := range ids {
+				if tc.putOffs[id] {
+					again = append(again, id)
+					delete(tc.putOffs, id)
+				}
+			}
+		}
+		tc.mu.Unlock()
+		for _, id := range again {
+			tc.send(wire.Frame{Frame: wire.FSync, Streams: map[string]wire.SyncStream{id: {Have: h.haveOf(id)}}, Done: true})
+		}
+	}
+}
+
 // ship is one trunk's sender. It runs for the life of the connection.
 func (h *Hub) ship(tc *trunkConn) {
 	h.logMu.Lock()
@@ -886,12 +927,18 @@ func (h *Hub) onRelay(tc *trunkConn, f wire.Frame) error {
 		tc.send(wire.Frame{Frame: wire.FSync, Streams: map[string]wire.SyncStream{id: {Have: h.haveOf(id)}}, Done: true})
 	}
 	if len(later) > 0 {
-		// Asked for again when what was missing has had time to come: soon
-		// at first, then less and less often, so that a neighbour that sends
-		// what can never be taken costs little.
+		// Asked for again the moment what was missing arrives: the record
+		// that brings the stream here or opens it, or the list of servers of
+		// the origin's hub (resumePutOff). The wait is the net under that,
+		// for what is lost on the way: soon at first, then less and less
+		// often, so that a neighbour that sends what can never be taken
+		// costs little.
 		tc.mu.Lock()
-		wait := 300 * time.Millisecond << min(tc.putOff, 7)
+		wait := time.Duration(putOffWait.Load()) << min(tc.putOff, 7)
 		tc.putOff++
+		for id := range later {
+			tc.putOffs[id] = true
+		}
 		tc.mu.Unlock()
 		go func() {
 			select {

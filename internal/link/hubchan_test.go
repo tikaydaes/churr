@@ -362,11 +362,6 @@ func TestListingModesAndJoining(t *testing.T) {
 // moderators, removing a server, closing the channel. The operator's last
 // resort does the same from the hub's own machine.
 func TestManagersChangeTheRecord(t *testing.T) {
-	// Each instance takes its members from the hub's snapshot; a request
-	// for it that goes unanswered at first is asked again after the short
-	// waits its neighbours use, not the seconds a real instance waits.
-	defer link.SetFirstHistoryWait(300 * time.Millisecond)()
-	defer link.SetHistoryOwedWait(500 * time.Millisecond)()
 	s := share(t, 3, true, nil)
 	a, b, c := s.Servers[0], s.Servers[1], s.Servers[2]
 	stream := string(s.stream)

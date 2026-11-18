@@ -215,6 +215,7 @@ func (h *Hub) serveHolder(r *http.Request, conn *wire.Conn) {
 	conn.Send(h.clusterFrame())
 	h.resendChannels(sc)
 	h.resendHandedOver(sc)
+	h.flushHolder(sc)
 	h.nudgeHolder("")
 	ctx := r.Context()
 	for {
@@ -281,11 +282,40 @@ func (h *Hub) holderDirect(sc *serverConn, f wire.Frame, raw []byte) error {
 }
 
 // toHolder hands the holder a direct message addressed to the hub that the
-// hub does not answer itself. Nil if the holder is not connected: whoever
-// sent it asks again.
+// hub does not answer itself. One that comes while the holder is not
+// connected (the hub has just started, and an instance was quicker to
+// connect than its own holder) is kept, the last forHolderMax of them, and
+// handed over the moment the holder connects.
 func (h *Hub) toHolder(f wire.Frame) {
-	if sc := h.holderConn(); sc != nil {
-		sc.conn.Send(wire.Frame{Frame: wire.FDirect, ID: sc.conn.NextID(), From: f.From, To: f.To, Body: f.Body, Sig: f.Sig})
+	out := wire.Frame{Frame: wire.FDirect, From: f.From, To: f.To, Body: f.Body, Sig: f.Sig}
+	h.mu.Lock()
+	sc := h.held
+	if sc == nil {
+		h.forHolder = append(h.forHolder, out)
+		if len(h.forHolder) > forHolderMax {
+			h.forHolder = h.forHolder[len(h.forHolder)-forHolderMax:]
+		}
+	}
+	h.mu.Unlock()
+	if sc != nil {
+		out.ID = sc.conn.NextID()
+		sc.conn.Send(out)
+	}
+}
+
+// forHolderMax is how many direct messages are kept for a holder that is not
+// connected.
+const forHolderMax = 256
+
+// flushHolder hands a holder that has just connected what was kept for it.
+func (h *Hub) flushHolder(sc *serverConn) {
+	h.mu.Lock()
+	kept := h.forHolder
+	h.forHolder = nil
+	h.mu.Unlock()
+	for _, f := range kept {
+		f.ID = sc.conn.NextID()
+		sc.conn.Send(f)
 	}
 }
 

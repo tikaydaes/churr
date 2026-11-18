@@ -349,6 +349,12 @@ func (s *Service) settleOwedAs(ctx context.Context, id model.StreamID, name stri
 		return
 	}
 	s.store.Settings().Set(ctx, owedKey(id), owed, "")
+	if answered {
+		// The history has grown, though it is not whole yet: every instance
+		// given a short snapshot is told now, and is given what there is.
+		rt := s.rt(id)
+		s.onJobs(rt, func() { s.tellShortAs(s.ctx, id, "", true) })
+	}
 }
 
 // resumeOwed starts asking again, after the holder has started, for every
@@ -447,13 +453,10 @@ func (s *Service) askOwed(ctx context.Context, id model.StreamID) {
 				continue
 			}
 			ch := make(chan directMessage, 4)
-			msg, err := s.sendDirectAwait(ctx, st.PeerID, sv, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch)
+			msg, err := s.sendDirectNoted(ctx, st.PeerID, sv, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch, rt.noteAsked(name))
 			if err != nil {
-				break // the hub is not connected: the next round
+				break // the hub is not connected: asked again when it is (Nudge)
 			}
-			rt.mu.Lock()
-			rt.firstAsked[msg] = name
-			rt.mu.Unlock()
 			// The parts are taken as they arrive (onHistory), which settles
 			// the server's debt with the last of them; this only waits to see
 			// whether it answered at all.
@@ -543,7 +546,13 @@ func (s *Service) noteShort(ctx context.Context, id model.StreamID, name string,
 // earlier history is now complete to ask for it again; with a name, that
 // instance only, which has just connected.
 func (s *Service) tellShort(ctx context.Context, id model.StreamID, only string) {
-	if s.historyPending(ctx, s.store, id) {
+	s.tellShortAs(ctx, id, only, false)
+}
+
+// tellShortAs is tellShort that, with grown, tells them though the history
+// is not whole yet: it has grown since they were given their snapshot.
+func (s *Service) tellShortAs(ctx context.Context, id model.StreamID, only string, grown bool) {
+	if !grown && s.historyPending(ctx, s.store, id) {
 		return
 	}
 	st, err := s.store.Streams().Get(ctx, id)
@@ -612,13 +621,10 @@ func (s *Service) askHistoryAgain(ctx context.Context, id model.StreamID) {
 	}
 	rt := s.rt(id)
 	ch := make(chan directMessage, 4)
-	msg, err := s.sendDirectAwait(ctx, st.PeerID, hub, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch)
+	msg, err := s.sendDirectNoted(ctx, st.PeerID, hub, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch, rt.noteAsked(hub.Name))
 	if err != nil {
 		return
 	}
-	rt.mu.Lock()
-	rt.firstAsked[msg] = hub.Name
-	rt.mu.Unlock()
 	select {
 	case <-ctx.Done():
 	case <-time.After(30 * time.Second):

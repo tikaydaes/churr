@@ -485,6 +485,7 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 	// again.
 	defer func() {
 		s.takeEarlyKeys(ctx, id)
+		s.answerEarlyAsks(ctx, id)
 		rt := s.rt(id)
 		s.onJobs(rt, func() { s.retryHeld(s.ctx, rt, true) })
 	}()
@@ -762,13 +763,24 @@ func (s *Service) joinedEpoch(id model.StreamID, rec wire.ChannelRecord, have ma
 }
 
 // awaitHave waits, for at most a while, until this server holds every
-// origin's events up to the counters given.
-func (s *Service) awaitHave(ctx context.Context, id model.StreamID, have map[string]int64, most time.Duration) {
-	deadline := time.Now().Add(most)
-	for time.Now().Before(deadline) {
+// origin's events up to the counters given, and reports whether it does. It
+// wakes whenever a counter of the stream moves (progressed), not on a timer.
+func (s *Service) awaitHave(ctx context.Context, id model.StreamID, have map[string]int64, most time.Duration) bool {
+	rt := s.rt(id)
+	deadline := time.NewTimer(most)
+	defer deadline.Stop()
+	for {
+		// The channel is taken before the counters are read: a move between
+		// the two closes it, and is not missed.
+		rt.mu.Lock()
+		if rt.progress == nil {
+			rt.progress = make(chan struct{})
+		}
+		moved := rt.progress
+		rt.mu.Unlock()
 		servers, err := s.store.Streams().Servers(ctx, id)
 		if err != nil {
-			return
+			return false
 		}
 		behind := false
 		for _, ss := range servers {
@@ -777,13 +789,38 @@ func (s *Service) awaitHave(ctx context.Context, id model.StreamID, have map[str
 			}
 		}
 		if !behind {
-			return
+			return true
 		}
 		select {
 		case <-ctx.Done():
-			return
-		case <-time.After(100 * time.Millisecond):
+			return false
+		case <-deadline.C:
+			return false
+		case <-moved:
 		}
+	}
+}
+
+// progressed wakes whatever waits for this server's counters of a stream to
+// move (awaitHave): one has, its transaction committed.
+func (rt *streamRT) progressed() {
+	rt.mu.Lock()
+	if rt.progress != nil {
+		close(rt.progress)
+		rt.progress = nil
+	}
+	rt.mu.Unlock()
+}
+
+// noteAsked returns what notes a request for the snapshot a joining server
+// is owed as this server's own, asked of the server named: called before the
+// request leaves (sendDirectNoted), so an answer that comes at once is known
+// for the answer it is.
+func (rt *streamRT) noteAsked(name string) func(string) {
+	return func(msg string) {
+		rt.mu.Lock()
+		rt.firstAsked[msg] = name
+		rt.mu.Unlock()
 	}
 }
 
@@ -996,13 +1033,10 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 		}
 		for _, sv := range ask {
 			ch := make(chan directMessage, 4)
-			msg, err := s.sendDirectAwait(ctx, st.PeerID, sv, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch)
+			msg, err := s.sendDirectNoted(ctx, st.PeerID, sv, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch, rt.noteAsked(sv.Name))
 			if err != nil {
 				continue
 			}
-			rt.mu.Lock()
-			rt.firstAsked[msg] = sv.Name
-			rt.mu.Unlock()
 			// The parts are handled as they arrive (onHistory); this only
 			// waits to see whether the server answered at all.
 			select {

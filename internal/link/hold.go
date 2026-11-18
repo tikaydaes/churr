@@ -467,6 +467,7 @@ func (s *Service) giveUp(ctx context.Context, rt *streamRT, e *heldEvent) {
 		if err := s.store.Streams().Applied(ctx, st.ID, e.o.origin.ServerID, n, 0); err != nil {
 			s.log.Warn("link: a held event could not be let go", "stream", st.ID, "err", err)
 		}
+		rt.progressed()
 	}
 	s.count(func(stats *Stats) { stats.HeldExpired++ })
 	s.log.Debug("link: a held event's message never came", "stream", st.ID, "origin", e.env.Origin, "n", e.env.N, "type", e.o.in.Type, "message", e.target)

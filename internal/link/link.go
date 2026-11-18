@@ -564,8 +564,10 @@ type streamRT struct {
 	work   sync.Mutex
 	record sync.Mutex
 	// moving is held while a move of the stream onto a hub is being run
-	// (move.go): one run at a time.
-	moving sync.Mutex
+	// (move.go): one run at a time. moveAgain says a run was asked for while
+	// one was going: the one going runs again before it lets go.
+	moving    sync.Mutex
+	moveAgain atomic.Bool
 	// jobs is the stream's queue: delivered envelopes are applied one at a
 	// time, as they come, by one goroutine, off the connection's reader.
 	jobs chan func()
@@ -642,6 +644,15 @@ type streamRT struct {
 	// another hub has its new home's key sent ahead of the record by which
 	// the old home handed it over whenever the two take different paths.
 	earlyKeys []earlyKey
+	// earlyAsks are requests for the stream's history that came before this
+	// server could answer them (it did not yet hold the record that names
+	// the asker, or the channel at all), kept for a minute and answered when
+	// a record of the stream is taken (content.go).
+	earlyAsks []earlyKey
+	// progress is closed and replaced whenever this server's counter of
+	// some origin of the stream moves: what waits until it holds so much of
+	// each origin wakes then (awaitHave).
+	progress chan struct{}
 	// sent and acked are, for a stream this server keeps the log of, the
 	// highest log position sent to and acknowledged by the other server.
 	// cursor is, for any other stream, the last position of the
@@ -718,10 +729,14 @@ func (s *Service) background() {
 			return
 		case <-tick.C:
 			n++
-			s.retryOutbox(s.ctx)
-			s.tickMoves(s.ctx, n)
+			if !retriesOff.Load() {
+				s.retryOutbox(s.ctx)
+				s.tickMoves(s.ctx, n)
+			}
 			if n%10 == 0 {
-				s.fetchArriving(s.ctx)
+				if !retriesOff.Load() {
+					s.fetchArriving(s.ctx)
+				}
 				s.forgetDirect()
 			}
 			if n%60 == 0 {

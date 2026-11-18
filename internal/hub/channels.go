@@ -352,6 +352,9 @@ func (h *Hub) tellChannels() {
 			h.db.Exec(`UPDATE channels SET told = 1, also = '[]' WHERE stream_id = ? AND (SELECT version FROM streams WHERE id = ?) = ?`, id, id, c.rec.Version)
 		}
 		m.Unlock()
+		// What a neighbour sent of the channel before this record (one that
+		// opens it here, or lets its origin in) is asked for again now.
+		h.resumePutOff(id)
 	}
 }
 

@@ -255,6 +255,9 @@ type Hub struct {
 	// connection while it is connected (holder.go).
 	holder *holder
 	held   *serverConn
+	// forHolder are the direct messages for the holder that came while it
+	// was not connected, handed to it when it connects (holder.go).
+	forHolder []wire.Frame
 }
 
 // TestTap shows fn the bytes of every frame the hub receives from a server,

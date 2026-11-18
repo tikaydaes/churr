@@ -125,6 +125,13 @@ func (s *Service) sendHistory(ctx context.Context, st store.Stream, to store.Ser
 
 // sendHistoryAs is sendHistory as the answer to a request, when re is one.
 func (s *Service) sendHistoryAs(ctx context.Context, st store.Stream, to store.Server, re string) {
+	s.sendHistoryShort(ctx, st, to, re, false)
+}
+
+// sendHistoryShort is sendHistoryAs that, with behind, marks a holder's
+// snapshot short whatever else: the holder does not yet hold all that the
+// hub's log held when it let the asker in.
+func (s *Service) sendHistoryShort(ctx context.Context, st store.Stream, to store.Server, re string, behind bool) {
 	since := model.Time(0)
 	limit := true
 	switch st.Kind {
@@ -134,7 +141,7 @@ func (s *Service) sendHistoryAs(ctx context.Context, st store.Stream, to store.S
 	case store.StreamSealed:
 		limit = false // the devices handle their own history
 	}
-	s.sendHistoryRange(ctx, st, to, 0, 0, since, limit, true, re)
+	s.sendHistoryRangeShort(ctx, st, to, 0, 0, since, limit, true, re, behind)
 }
 
 // historyFloor returns the earliest first join, in a private channel, of
@@ -169,6 +176,12 @@ func (s *Service) historyFloor(ctx context.Context, conv model.ConversationID, s
 // when throughAt is not 0, at or before it: times of the stream's reference
 // clock.
 func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to store.Server, afterAt, throughAt int64, since model.Time, messages, first bool, re string) {
+	s.sendHistoryRangeShort(ctx, st, to, afterAt, throughAt, since, messages, first, re, false)
+}
+
+// sendHistoryRangeShort is sendHistoryRange that, with behind, marks a
+// holder's snapshot short (sendHistoryShort).
+func (s *Service) sendHistoryRangeShort(ctx context.Context, st store.Stream, to store.Server, afterAt, throughAt int64, since model.Time, messages, first bool, re string, behind bool) {
 	conv, err := s.store.Conversations().Get(ctx, st.ConversationID)
 	if err != nil {
 		return
@@ -178,7 +191,7 @@ func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to stor
 	// that instance, to tell it to ask again once it has the rest.
 	short := false
 	if first && s.holder && hubOwned(st) {
-		short = s.historyPending(ctx, s.store, st.ID)
+		short = behind || s.historyPending(ctx, s.store, st.ID)
 		if !s.isHomeHub(st, to) {
 			s.noteShort(ctx, st.ID, to.Name, short)
 		}
@@ -654,6 +667,14 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 	}
 	st, err := s.store.Streams().Get(ctx, b.StreamID)
 	if err != nil || !s.answersFor(st, m.from) || st.PeerID != m.peer {
+		// A hub's holder asked before its copy of the channel is made, or an
+		// instance asked by a hub before it holds the record that makes the
+		// hub the channel's home (a channel moving onto it): answered when a
+		// record of the channel is taken. An instance that holds nothing of
+		// the stream (no copy of it at all) says so.
+		if ((err == nil && st.ConversationID != "") || (err != nil && s.holder)) && s.keepAsk(ctx, b.StreamID, m) {
+			return
+		}
 		s.replyError(ctx, m, wire.EUnknownStream, "No such stream here.")
 		return
 	}
@@ -669,6 +690,12 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 	// becomes the home: what was said before the hub held the channel.
 	home := s.isHomeHub(st, m.from)
 	if !in && !home {
+		// The record that lets the asker in, or names the asking hub the
+		// home, may not have reached this server yet: the request is
+		// answered when it does.
+		if s.keepAsk(ctx, st.ID, m) {
+			return
+		}
 		s.replyError(ctx, m, wire.ENotInStream, "That server is not in the stream.")
 		return
 	}
@@ -708,7 +735,7 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 		s.wg.Add(1)
 		go func() {
 			defer s.wg.Done()
-			s.awaitHave(s.ctx, st.ID, have, 10*time.Second)
+			whole := s.awaitHave(s.ctx, st.ID, have, 10*time.Second)
 			if d := historyAnswerDelay.Load(); d > 0 {
 				time.Sleep(time.Duration(d)) // a test plays a server slow to answer
 			}
@@ -716,14 +743,70 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 			case <-s.ctx.Done():
 			case rt.jobs <- func() {
 				if cur, err := s.store.Streams().Get(s.ctx, st.ID); err == nil && cur.State == store.StreamActive {
-					s.sendHistoryAs(s.ctx, cur, m.from, m.MsgID)
+					s.sendHistoryShort(s.ctx, cur, m.from, m.MsgID, !whole)
 				}
 			}:
+			}
+			if !whole && s.holder {
+				// Cut before the holder held all the log had when it let the
+				// asker in: the snapshot went short, and the asker is told to
+				// ask again the moment the holder does hold it.
+				if s.awaitHave(s.ctx, st.ID, have, 24*time.Hour) {
+					s.onJobs(rt, func() { s.tellShort(s.ctx, st.ID, m.from.Name) })
+				}
 			}
 		}()
 		return
 	}
 	s.sendHistoryRange(ctx, st, m.from, b.AfterAt, b.ThroughAt, 0, true, false, m.MsgID)
+}
+
+// keepAsk keeps a request for a stream's history that this server cannot
+// answer yet, to answer when a record of the stream is taken
+// (answerEarlyAsks), and reports whether it did. It keeps one only where a
+// record may make it answerable: on a hub's holder, and from a hub that may
+// be the channel's home. A request is kept for a minute from when it came,
+// at most sixteen per stream; one asked of an instance by its hub's holder is
+// asked again besides, whenever the instance connects.
+func (s *Service) keepAsk(ctx context.Context, id model.StreamID, m directMessage) bool {
+	if !s.holder && !s.mayBeHome(ctx, m) {
+		return false
+	}
+	now := time.Now()
+	if m.kept.IsZero() {
+		m.kept = now
+	}
+	if now.Sub(m.kept) > keyWait {
+		return false // waited its minute: answered as it stands
+	}
+	rt := s.rt(id)
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	kept := rt.earlyAsks[:0]
+	for _, k := range rt.earlyAsks {
+		if k.until.After(now) {
+			kept = append(kept, k)
+		}
+	}
+	rt.earlyAsks = append(kept, earlyKey{m: m, until: m.kept.Add(keyWait)})
+	if len(rt.earlyAsks) > 16 {
+		rt.earlyAsks = rt.earlyAsks[len(rt.earlyAsks)-16:]
+	}
+	return true
+}
+
+// answerEarlyAsks answers again, after a record of a stream was taken, the
+// requests for its history kept because they came too soon. One that still
+// cannot be answered is kept again, until its minute is up.
+func (s *Service) answerEarlyAsks(ctx context.Context, id model.StreamID) {
+	rt := s.rt(id)
+	rt.mu.Lock()
+	asks := rt.earlyAsks
+	rt.earlyAsks = nil
+	rt.mu.Unlock()
+	for _, k := range asks {
+		s.onHistoryRequest(ctx, k.m)
+	}
 }
 
 // recoverSince asks for the messages stamped after a time of the stream's

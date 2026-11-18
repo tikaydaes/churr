@@ -116,6 +116,9 @@ type trunkConn struct {
 	started  atomic.Bool
 	// putOff counts the batches in a row of which something was put off.
 	putOff int
+	// putOffs are the streams something was put off for, to be asked for
+	// again the moment what they wait for arrives (resumePutOff).
+	putOffs map[string]bool
 }
 
 func (tc *trunkConn) send(f wire.Frame) error {
@@ -425,7 +428,8 @@ func (h *Hub) serveTrunk(r *http.Request, conn *wire.Conn) {
 // the neighbour said the trunk is over for good.
 func (h *Hub) runTrunk(ctx context.Context, conn *wire.Conn) (removed bool) {
 	tc := &trunkConn{h: h, name: conn.Remote.Name, conn: conn, key: conn.Remote.SignKey, theirs: map[string]wire.SyncStream{},
-		skip: map[string]map[string]int64{}, routed: map[string]bool{}, told: map[string]int64{}, wake: make(chan struct{}, 1)}
+		skip: map[string]map[string]int64{}, routed: map[string]bool{}, told: map[string]int64{}, wake: make(chan struct{}, 1),
+		putOffs: map[string]bool{}}
 	// The stretch the trunk was down for is noted before anything is read
 	// from it: what the other side took in that time arrives now, with old
 	// times.

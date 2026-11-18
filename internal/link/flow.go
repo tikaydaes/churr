@@ -1301,6 +1301,7 @@ func (s *Service) settleDelivered(ctx context.Context, rt *streamRT, st store.St
 	if released && rt.hold.lowest(env.Origin) == 0 {
 		delete(rt.hold.seen, env.Origin)
 	}
+	rt.progressed()
 	if rej != nil {
 		s.log.Debug("link: a delivered event was not applied", "stream", st.ID, "origin", env.Origin, "n", env.N, "type", o.in.Type, "why", rej.reason)
 		s.noteRejected(ctx, st, env, rej)

@@ -503,6 +503,9 @@ func (s *Service) TestDeaf(on bool) { s.testDeaf.Store(on) }
 // channel waits for its history before asking for it, and returns the
 // function that puts the wait back.
 func SetFirstHistoryWait(d time.Duration) func() {
+	if retriesOff.Load() {
+		return func() {} // SetRetriesUntimed wins
+	}
 	old := firstHistoryWait.Swap(int64(d))
 	return func() { firstHistoryWait.Store(old) }
 }
@@ -511,6 +514,9 @@ func SetFirstHistoryWait(d time.Duration) func() {
 // rounds of asking for a channel's earlier history, and returns the function
 // that puts it back.
 func SetHistoryOwedWait(d time.Duration) func() {
+	if retriesOff.Load() {
+		return func() {} // SetRetriesUntimed wins
+	}
 	old := owedWait.Swap(int64(d))
 	return func() { owedWait.Store(old) }
 }
@@ -519,8 +525,30 @@ func SetHistoryOwedWait(d time.Duration) func() {
 // channel waits for its snapshot before it applies what it is delivered, and
 // returns the function that puts it back.
 func SetHistoryWaitMax(d time.Duration) func() {
+	if retriesOff.Load() {
+		return func() {} // SetRetriesUntimed wins
+	}
 	old := historyWaitMax.Swap(int64(d))
 	return func() { historyWaitMax.Store(old) }
+}
+
+// SetRetriesUntimed switches off every timer that asks or sends again: the
+// waits between asking for a channel's history again (an instance's and the
+// holder's), the wait before what was delivered is applied without the
+// snapshot, the wait before an event that failed is tried again, and the
+// ticks that submit an outbox again and take a move on again. What still
+// works is what is told. It returns the function that puts them back.
+func SetRetriesUntimed() func() {
+	hour := int64(time.Hour)
+	first, owed, max, fail := firstHistoryWait.Swap(hour), owedWait.Swap(hour), historyWaitMax.Swap(hour), failRetryBase.Swap(hour)
+	retriesOff.Store(true)
+	return func() {
+		firstHistoryWait.Store(first)
+		owedWait.Store(owed)
+		historyWaitMax.Store(max)
+		failRetryBase.Store(fail)
+		retriesOff.Store(false)
+	}
 }
 
 // SetDeafToHome has the server of that name leave every request for a

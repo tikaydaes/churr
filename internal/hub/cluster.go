@@ -584,6 +584,8 @@ func (h *Hub) onHubServers(from *trunkConn, f wire.Frame) error {
 	for _, tc := range h.liveTrunks() {
 		h.sendRecordsTo(tc)
 	}
+	// What was put off for an origin this hub did not know is asked for again.
+	h.resumePutOff()
 	return nil
 }
 
