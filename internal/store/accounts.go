@@ -92,6 +92,11 @@ type Accounts interface {
 	// least one conversation together, which is what lets a guest or bot
 	// see another account.
 	SharesConversation(ctx context.Context, a, b model.AccountID) (bool, error)
+	// WroteWhereSeen reports whether author has a message, deleted or not,
+	// in a conversation viewer is a member of, from viewer's first join
+	// there on (members.visible_from): a message the viewer is shown, with
+	// its author's name, whether or not the author is still a member.
+	WroteWhereSeen(ctx context.Context, viewer, author model.AccountID) (bool, error)
 
 	// Bans, what admins see of an account, and who an account shares a
 	// conversation with: bans.go.

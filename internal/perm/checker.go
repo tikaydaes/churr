@@ -274,6 +274,27 @@ func (c *Checker) CanSeeAccount(ctx context.Context, actor, target model.Account
 	return nil
 }
 
+// CanSeeProfile is CanSeeAccount for reading an account's profile, and one
+// more: the author of a message the actor is shown stays known by name and
+// picture, whether or not they are still a member. Someone who has left, or
+// whose instance has left a shared channel, still wrote what they wrote.
+// Nothing else follows from it: starting a chat, presence and the rest go by
+// CanSeeAccount.
+func (c *Checker) CanSeeProfile(ctx context.Context, actor, target model.Account) error {
+	err := c.CanSeeAccount(ctx, actor, target)
+	if !errors.Is(err, model.ErrNotFound) {
+		return err
+	}
+	wrote, werr := c.s.Accounts().WroteWhereSeen(ctx, actor.ID, target.ID)
+	if werr != nil {
+		return werr
+	}
+	if !wrote {
+		return err
+	}
+	return nil
+}
+
 // blockedBy reports whether target has blocked actor, while blocking is on.
 func (c *Checker) blockedBy(ctx context.Context, set Settings, actor, target model.AccountID) (bool, error) {
 	if !set.BlockingEnabled {

@@ -293,7 +293,13 @@ recipient under the same rules as a read.
 - Presence, status, availability and the do not disturb mark go only
   to accounts that share a conversation with the person.
 - A removed account stays visible as the author of its messages,
-  shown as a former member.
+  shown as a former member. So, for reading the profile, does anyone
+  who has left, and anyone whose instance has left a shared channel:
+  whoever is shown a message is shown its author's profile, name and
+  picture (`perm.CanSeeProfile`: a message in a conversation the viewer
+  is a member of, from the viewer's first join there). Nothing else
+  follows from it: starting a chat, presence and the rest go by the
+  table above.
 - Owner, admin and `member` roles see every group and who is in it.
   A guest or bot sees only the groups it is in and the groups added
   to its conversations (decision P6).

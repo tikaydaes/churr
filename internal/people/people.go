@@ -123,7 +123,9 @@ func (s *Service) Get(ctx context.Context, actor model.Account, id model.Account
 	if err != nil {
 		return a, err
 	}
-	if err := s.perm.CanSeeAccount(ctx, actor, a); err != nil {
+	// Its profile: also the author of a message the actor is shown, after
+	// leaving (perm.CanSeeProfile).
+	if err := s.perm.CanSeeProfile(ctx, actor, a); err != nil {
 		return model.Account{}, err
 	}
 	hidden := notify.ReadPrefs(a).HideLastSeen

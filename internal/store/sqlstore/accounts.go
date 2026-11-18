@@ -538,6 +538,17 @@ func (a accounts) SharesConversation(ctx context.Context, x, y model.AccountID) 
 	return err == nil, err
 }
 
+func (a accounts) WroteWhereSeen(ctx context.Context, viewer, author model.AccountID) (bool, error) {
+	var one int
+	err := a.rd.QueryRowContext(ctx, `
+		SELECT 1 FROM messages g JOIN members m ON m.conversation_id = g.conversation_id
+		WHERE g.author_id = ? AND m.account_id = ? AND g.created_at >= m.visible_from LIMIT 1`, string(author), string(viewer)).Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
 func scanPromotion(s scanner) (model.OwnerPromotion, error) {
 	var p model.OwnerPromotion
 	err := s.Scan(str(&p.AccountID), str(&p.ByID), tm(&p.CreatedAt), tm(&p.EffectiveAt))

@@ -152,6 +152,16 @@ func testAccounts(t *testing.T, s store.Store) {
 		must(t, err)
 		no, _ := s.Accounts().SharesConversation(ctx, owner.ID, guests[1].ID)
 		eq(t, "shares a conversation", yes && !no, true)
+		// A message guests[1] wrote in the channel, from before it left:
+		// guests[0] is shown it, and so its author.
+		join(t, s, c.ID, guests[1].ID, model.LevelMember)
+		post(t, s, c.ID, guests[1].ID, "", "before leaving")
+		_, err = s.Members().RemoveDirect(ctx, c.ID, guests[1].ID)
+		must(t, err)
+		wrote, err := s.Accounts().WroteWhereSeen(ctx, guests[0].ID, guests[1].ID)
+		must(t, err)
+		never, _ := s.Accounts().WroteWhereSeen(ctx, guests[1].ID, guests[0].ID)
+		eq(t, "wrote where seen", wrote && !never, true)
 	})
 
 	t.Run("roles and ownership", func(t *testing.T) {

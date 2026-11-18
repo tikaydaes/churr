@@ -175,11 +175,16 @@ func TestHistoryOutlivesAnInstanceThatLeft(t *testing.T) {
 	l.Joined(2, stream)
 	c.Owner.HasMessage(convC, "from a, kept")
 	c.Owner.HasMessage(convC, "from b, kept after b is gone")
-	// c holds b's person with the name a showed. (The API shows a remote
-	// account only to someone it shares a conversation with, and a person
-	// whose instance has left is no longer a member.)
-	acc, err := c.Server.Store.Accounts().Get(context.Background(), model.AccountID(author))
-	if err != nil || name == nil || acc.Username != name {
-		t.Fatalf("b's person reached c as %q (%v), not %v", acc.Username, err, name)
+	// b's person is shown by name on a and on c, though no longer a member
+	// anywhere: whoever is shown a message is shown its author.
+	for i, ts := range []*testkit.TestServer{a, c} {
+		acc := ts.Owner.Must(200, "GET", "/api/v1/accounts/"+author, nil)["account"].(map[string]any)
+		if name == nil || acc["username"] != name {
+			t.Fatalf("on %d b's person is %v, not %v", i, acc["username"], name)
+		}
+	}
+	stored, err := c.Server.Store.Accounts().Get(context.Background(), model.AccountID(author))
+	if err != nil || stored.Username != name {
+		t.Fatalf("c holds b's person as %q (%v)", stored.Username, err)
 	}
 }
