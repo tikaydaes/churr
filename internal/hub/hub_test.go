@@ -3,6 +3,7 @@ package hub
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -157,6 +158,13 @@ func TestHubWellKnown(t *testing.T) {
 	body := rec.Body.String()
 	if rec.Code != 200 || !strings.Contains(body, `"kind":"hub"`) || !strings.Contains(body, "box_key_sig") || rec.Header().Get("Cache-Control") != "max-age=3600" {
 		t.Fatalf("%d %s", rec.Code, body)
+	}
+	// The VRF key history, signed by the key the document names: anyone
+	// checks a draw the hub made against it with no account.
+	var w wire.WellKnown
+	if err := json.Unmarshal(rec.Body.Bytes(), &w); err != nil || w.Check(w.Name) != nil || len(w.VRFKeys) != 1 ||
+		string(w.VRFKeys[0].Key) != string(h.keys.VRFPublic()) {
+		t.Fatalf("the hub's VRF keys at its well-known address: %v %+v", err, w.VRFKeys)
 	}
 }
 

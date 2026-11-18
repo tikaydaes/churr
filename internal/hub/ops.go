@@ -40,12 +40,18 @@ func (h *Hub) roster() (wire.Frame, int64, error) {
 		rs.SignKey, rs.BoxKey, rs.BoxKeySig, rs.JoinedAt = sign, box, sig, model.Time(joined)
 		ro.Servers = append(ro.Servers, rs)
 	}
+	rows.Close()
 	// And the servers of the cluster's other hubs: a server shares
 	// channels with them, seals keys to them and checks their signatures,
 	// exactly as with the servers of its own hub.
 	t := h.topology()
 	for name, rs := range t.servers {
 		ro.Servers = append(ro.Servers, wire.RosterServer{Name: name, SignKey: rs.signKey, BoxKey: rs.boxKey, BoxKeySig: rs.boxKeySig, JoinedAt: model.Time(rs.joinedAt)})
+	}
+	// Each with the VRF key history the hub keeps for it (vrf.go), read
+	// once the rows are let go: the database has one connection.
+	for i := range ro.Servers {
+		ro.Servers[i].VRFKeys = vrfKeysOf(h.db, ro.Servers[i].Name)
 	}
 	sort.Slice(ro.Servers, func(i, j int) bool { return ro.Servers[i].Name < ro.Servers[j].Name })
 	f, err := wire.SignBlock(wire.FRoster, ro, h.keys)

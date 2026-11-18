@@ -192,7 +192,7 @@ func (h *Hub) authorize(d wire.Frame, proof, th []byte) error {
 		if !bytes.Equal(signKey, d.SignKey) || !bytes.Equal(boxKey, d.BoxKey) {
 			return wire.Errf(wire.EKeyMismatch, "%s is pinned with other keys.", d.Name)
 		}
-		return nil
+		return h.pinServerVRF(d.Name, d.VRFKeys)
 	case !errors.Is(err, sql.ErrNoRows):
 		return err
 	}
@@ -253,6 +253,13 @@ func (h *Hub) authorize(d wire.Frame, proof, th []byte) error {
 		}
 		if _, err := tx.Exec(`INSERT INTO servers (name, sign_key, box_key, box_key_sig, joined_at, state) VALUES (?, ?, ?, ?, ?, 'active')`,
 			d.Name, []byte(d.SignKey), []byte(d.BoxKey), []byte(d.BoxKeySig), now); err != nil {
+			return err
+		}
+		// A server removed once and invited again keeps the VRF key
+		// history it had: another one is refused.
+		if _, err := pinVRF(tx, d.Name, d.VRFKeys); errors.Is(err, errVRFSwapped) {
+			return wire.Errf(wire.EKeyMismatch, "%s shows a VRF key history other than the one this hub keeps for it.", d.Name)
+		} else if err != nil {
 			return err
 		}
 		return bumpRoster(tx)

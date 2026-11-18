@@ -491,6 +491,10 @@ func (h *Hub) ownServers() (wire.Frame, error) {
 		rs.SignKey, rs.BoxKey, rs.BoxKeySig, rs.JoinedAt = sign, box, sig, model.Time(joined)
 		ro.Servers = append(ro.Servers, rs)
 	}
+	rows.Close()
+	for i := range ro.Servers {
+		ro.Servers[i].VRFKeys = vrfKeysOf(h.db, ro.Servers[i].Name)
+	}
 	return wire.SignBlock(wire.FHubServers, ro, h.keys)
 }
 
@@ -554,6 +558,15 @@ func (h *Hub) onHubServers(from *trunkConn, f wire.Frame) error {
 			if _, err := tx.Exec(`INSERT INTO hub_servers (name, hub, sign_key, box_key, box_key_sig, joined_at) VALUES (?, ?, ?, ?, ?, ?)`,
 				rs.Name, ro.Hub, []byte(rs.SignKey), []byte(rs.BoxKey), []byte(rs.BoxKeySig), int64(rs.JoinedAt)); err != nil {
 				return err
+			}
+			// Its VRF key history, as its own hub keeps it: kept here too,
+			// for the records of channels it is in (vrf.go).
+			if len(rs.VRFKeys) > 0 && wire.CheckVRFKeys(rs.Name, rs.SignKey, rs.VRFKeys) == nil {
+				if _, err := pinVRF(tx, rs.Name, rs.VRFKeys); errors.Is(err, errVRFSwapped) {
+					h.log.Warn("a hub lists a server with a VRF key history other than the one kept here; the kept one stands", "hub", ro.Hub, "server", rs.Name)
+				} else if err != nil {
+					return err
+				}
 			}
 			delete(before, rs.Name)
 		}

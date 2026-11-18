@@ -353,7 +353,7 @@ func NewWith(cfg config.Hub, opts Options) (*Hub, error) {
 	// One writer at a time is all SQLite allows, and the hub's work is
 	// small: one connection keeps every statement in order.
 	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(schema); err != nil {
+	if _, err := db.Exec(schema + vrfSchema); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("opening the hub's database: %w", err)
 	}

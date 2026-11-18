@@ -104,6 +104,7 @@ func (h *Hub) saveChannel(tx *sql.Tx, c *channel, also []string) error {
 	}
 	c.rec.Version++
 	c.rec.Hub, c.rec.HubKey, c.rec.HomeHub, c.rec.At = h.id.Name, wire.Bytes(h.keys.SignPublic()), h.id.Name, h.now()
+	h.recordVRF(tx, c) // vrf.go
 	if c.homeTo != "" {
 		c.rec.HomeHub = c.homeTo // the record that hands the channel over (replica.go)
 	}
