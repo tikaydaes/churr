@@ -562,7 +562,7 @@ final List<WireMessage> wireMessages = [
   WireMessage('ValueEnvelope', WireShape.object, 0, pb.ValueEnvelope.new, const [
     WireField('kind', 3, WireKind.string, WireCard.one, 0),
     WireField('level', 4, WireKind.int_, WireCard.one, 0),
-    WireField('data', 5, WireKind.bytes, WireCard.one, 0),
+    WireField('data', 5, WireKind.data, WireCard.one, 0),
     WireField('alt', 6, WireKind.msg, WireCard.one, 89),
     WireField('by', 7, WireKind.string, WireCard.one, 0),
     WireField('source', 8, WireKind.string, WireCard.one, 0),
@@ -4359,6 +4359,12 @@ const Map<String, WireOperation> wireOperations = {
   'removeLibraryTheme': WireOperation(-1, {400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}),
   'setDefaultTheme': WireOperation(545, {200: 546, 400: 9, 401: 9, 403: 9, 404: 9, 429: 9, 500: 9}),
 };
+
+/// Every kind of the catalogue: its name, the lowest catalogue level that reads its data in full,
+/// and the message its data is.
+const List<WireValueKind> wireValueKinds = [
+  WireValueKind('dice_roll', 1, 697),
+];
 
 /// The message of the error shape.
 const int wireErrorMessage = 9;

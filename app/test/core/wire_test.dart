@@ -132,6 +132,141 @@ void main() {
     );
   });
 
+  // A value of the catalogue (internal/wirepb TestKinds): its data is its
+  // kind's object in JSON and that kind's message as bytes on the wire,
+  // and data this build cannot read is kept as the bytes it came as.
+  test('a value\'s data is its kind\'s object, or the bytes it came as', () {
+    final roll = {
+      'dice': '2d6+3, 4d6kh3',
+      'rows': [
+        {
+          'dice': '2d6+3',
+          'terms': [
+            {
+              'sign': 1,
+              'count': 2,
+              'sides': 6,
+              'rolls': [4, 1],
+              'value': 5,
+            },
+            {'sign': 1, 'value': 3},
+          ],
+          'total': 8,
+        },
+        {
+          'dice': '4d6kh3',
+          'terms': [
+            {
+              'sign': 1,
+              'count': 4,
+              'sides': 6,
+              'keep': 'kh',
+              'keep_n': 3,
+              'rolls': [6, 1, 5, 2],
+              'dropped': [1],
+              'value': 13,
+            },
+          ],
+          'total': 13,
+        },
+      ],
+    };
+    expect(
+      wireValueKinds.map(
+        (k) => (k.name, k.level, wireMessages[k.message].name),
+      ),
+      [('dice_roll', 1, 'DiceRoll')],
+    );
+    final mi = Wire.messageNamed('ValueEnvelope')!;
+    final envelope = {
+      'kind': 'dice_roll',
+      'level': 1,
+      'by': 'dice',
+      'data': roll,
+    };
+    final bytes = Wire.encodeMessage(mi, envelope)!;
+    final onWire = pb.ValueEnvelope.fromBuffer(bytes);
+    final asRoll = pb.DiceRoll.fromBuffer(onWire.data);
+    expect(asRoll.unknownFields.isEmpty, isTrue);
+    expect(asRoll.rows.length, 2);
+    expect(difference(Wire.decodeMessage(mi, bytes), envelope), isNull);
+
+    // As a client is sent it: a message's view and an object entity.
+    final msg = {
+      'id': '0193a6f2-7c1e-7b3a-9f0e-000000000001',
+      'text': 'Rolled',
+      'view': envelope,
+      'entities': [
+        {'type': 'object', 'at': 0, 'len': 6, 'object': envelope},
+      ],
+    };
+    final mm = Wire.messageNamed('Message')!;
+    final mb = Wire.encodeMessage(mm, msg)!;
+    expect(difference(Wire.decodeMessage(mm, mb), msg), isNull);
+    final m = Message.fromJson(
+      (Wire.decodeMessage(mm, mb) as Map).cast<String, dynamic>(),
+    );
+    expect((m.raw['view'] as Map)['data'], roll);
+    expect(m.entities.single.raw['object'], envelope);
+
+    // An object of a kind this build does not know has no protobuf form.
+    expect(
+      Wire.encodeMessage(mi, {
+        'kind': 'tarot_spread',
+        'level': 4,
+        'data': {
+          'cards': [1, 2],
+        },
+      }),
+      isNull,
+    );
+    final frame = {
+      'type': 'message.created',
+      'at': '2026-11-13T09:30:00.000Z',
+      'message': {
+        'id': '0193a6f2-7c1e-7b3a-9f0e-000000000001',
+        'text': 'x',
+        'view': {
+          'kind': 'tarot_spread',
+          'level': 4,
+          'data': {
+            'cards': [1, 2],
+          },
+        },
+      },
+    };
+    final env = pb.Envelope.fromBuffer(Wire.encodeFrame(frame));
+    expect(env.hasJson(), isTrue);
+    expect(difference(Wire.decodeFrame(env.writeToBuffer()), frame), isNull);
+
+    // Bytes of a kind it does not know, and of a dice_roll with a field
+    // newer than this schema: text, and the same bytes again.
+    final future = [3 << 3, 7]; // field 3, a varint
+    final newer = [...asRoll.writeToBuffer(), 0x98, 0x06, 1]; // field 99: 1
+    for (final (name, in_) in [
+      (
+        'an unknown kind',
+        pb.ValueEnvelope(kind: 'tarot_spread', data: future).writeToBuffer(),
+      ),
+      (
+        'a newer dice_roll',
+        pb.ValueEnvelope(kind: 'dice_roll', data: newer).writeToBuffer(),
+      ),
+    ]) {
+      final got = Wire.decodeMessage(mi, in_) as Map;
+      expect(got['data'], isA<String>(), reason: name);
+      expect(Wire.encodeMessage(mi, got), in_, reason: name);
+    }
+    // A known kind's data that is not protobuf at all is an error.
+    expect(
+      () => Wire.decodeMessage(
+        mi,
+        pb.ValueEnvelope(kind: 'dice_roll', data: [0xff]).writeToBuffer(),
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('the models read the same from a protobuf frame as from JSON', () {
     var messages = 0;
     for (final v in vectors('frames.jsonl')) {

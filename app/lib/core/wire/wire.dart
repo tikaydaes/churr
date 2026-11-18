@@ -17,6 +17,16 @@
 /// what it does not know: a field or an enum value from a newer server is
 /// left out, and a frame of a type this build has never heard of gives
 /// null.
+///
+/// A value of the catalogue (a message's `view`, an `object` entity;
+/// docs/DESIGN-MODULES.md section 4.1, docs/WIRE-PROTOBUF.md) carries its
+/// `data` as its kind's message in bytes on the wire and as its kind's
+/// object in JSON, as the server's codec does (internal/wirepb, readData
+/// and appendData). Data of a kind this build does not know, or holding
+/// fields newer than its schema, is not read into an object at all: it is
+/// kept as the bytes it came as, base64url text in the JSON, so that the
+/// value goes back out byte for byte (day-one rule 5). No reader draws that
+/// text: the catalogue falls back to the value's `alt`, then to the text.
 library;
 
 import 'dart:convert';
@@ -64,6 +74,9 @@ abstract final class Wire {
   };
   static final Map<String, int> _messageByName = {
     for (var i = 0; i < wireMessages.length; i++) wireMessages[i].name: i,
+  };
+  static final Map<String, WireValueKind> _valueKinds = {
+    for (final k in wireValueKinds) k.name: k,
   };
 
   // ---- the HTTP API
@@ -183,7 +196,9 @@ abstract final class Wire {
         // Not hasField, which says an empty `bytes` is not there.
         final raw = m.getFieldOrNull(f.number);
         if (raw != null) {
-          final v = _readOne(f, raw);
+          final v = f.kind == WireKind.data
+              ? _readData(raw as List<int>, _kindOf(def, m))
+              : _readOne(f, raw);
           if (!identical(v, _skip)) out[f.json] = v;
         }
       } else if (f.card == WireCard.list) {
@@ -223,6 +238,53 @@ abstract final class Wire {
         }
       });
     }
+  }
+
+  /// The text of the field named `kind` beside a value's data.
+  static Object? _kindOf(WireMessage def, GeneratedMessage m) {
+    final f = def.byName['kind'];
+    return f == null ? null : m.getFieldOrNull(f.number);
+  }
+
+  /// A value's data as JSON: the object of its kind when this build knows
+  /// the kind and every field and value in it; otherwise the bytes it came
+  /// as, as base64url text.
+  static Object _readData(List<int> raw, Object? kind) {
+    final k = kind is String ? _valueKinds[kind] : null;
+    if (k != null) {
+      final m = wireMessages[k.message].make();
+      try {
+        m.mergeFromBuffer(raw);
+      } on InvalidProtocolBufferException catch (e) {
+        throw FormatException(e.message);
+      }
+      if (_whole(k.message, m)) return _read(k.message, m)!;
+    }
+    return base64Url.encode(raw).replaceAll('=', '');
+  }
+
+  /// Whether message [index] holds nothing this schema lacks: no field it
+  /// does not number and no enum value it does not name, all the way down.
+  /// Data read into an object must be the same bytes written back.
+  static bool _whole(int index, GeneratedMessage m) {
+    if (m.unknownFields.isNotEmpty) return false;
+    for (final f in wireMessages[index].fields) {
+      if (f.kind != WireKind.msg && f.kind != WireKind.enum_) continue;
+      if (f.card == WireCard.umap) return false; // no kind's data has one
+      final v = m.getFieldOrNull(f.number);
+      if (v == null) continue;
+      final values = v is List ? v : (v is Map ? v.values : [v]);
+      for (final e in values) {
+        if (f.kind == WireKind.msg) {
+          if (!_whole(f.ref, e as GeneratedMessage)) return false;
+        } else {
+          final names = wireEnums[f.ref].names;
+          final n = (e as ProtobufEnum).value;
+          if (n <= 0 || n >= names.length || names[n].isEmpty) return false;
+        }
+      }
+    }
+    return true;
   }
 
   static List<dynamic> _readList(WireField f, List list) => [
@@ -295,6 +357,9 @@ abstract final class Wire {
         return _readFrame(v as pb.Envelope) ?? _skip;
       case WireKind.const_:
         return f.text;
+      case WireKind.data:
+        // Read by _readObject, which knows the kind beside it.
+        return base64Url.encode(v as List<int>).replaceAll('=', '');
     }
   }
 
@@ -398,6 +463,8 @@ abstract final class Wire {
       } else if (f.card != WireCard.one &&
           ((v is List && v.isEmpty) || (v is Map && v.isEmpty))) {
         empties.add(f.number);
+      } else if (f.kind == WireKind.data) {
+        m.setField(f.number, _writeData(v, obj['kind']));
       } else {
         _writeField(m, f, v);
       }
@@ -449,6 +516,35 @@ abstract final class Wire {
     }
   }
 
+  /// A value's data on the wire: the object of the kind named beside it,
+  /// as that kind's message in bytes; or text, data that came as bytes of a
+  /// kind this build could not read, going back as the same bytes. An
+  /// object of a kind this build does not know has no protobuf form, and
+  /// what holds it goes as JSON, unchanged.
+  static List<int> _writeData(Object v, Object? kind) {
+    if (v is String) return _bytes(v);
+    if (v is! Map) throw const _Misfit('not an object');
+    final k = kind is String ? _valueKinds[kind] : null;
+    if (k == null) throw const _Misfit('a kind the catalogue lacks');
+    return _write(k.message, v).writeToBuffer();
+  }
+
+  /// The bytes of base64url text, exactly as the server writes it.
+  static List<int> _bytes(Object v) {
+    if (v is! String || v.contains('=')) {
+      throw const _Misfit('not base64url');
+    }
+    try {
+      final b = base64Url.decode(base64Url.normalize(v));
+      if (base64Url.encode(b).replaceAll('=', '') != v) {
+        throw const _Misfit('not base64url');
+      }
+      return b;
+    } on FormatException {
+      throw const _Misfit('not base64url');
+    }
+  }
+
   static Object? _writeOne(WireField f, Object? v) {
     if (f.kind == WireKind.value) return _writeValue(v);
     if (v == null) throw const _Misfit('null inside a list or map');
@@ -469,18 +565,7 @@ abstract final class Wire {
       case WireKind.time:
         return Int64(_parseTime(v));
       case WireKind.bytes:
-        if (v is! String || v.contains('=')) {
-          throw const _Misfit('not base64url');
-        }
-        try {
-          final b = base64Url.decode(base64Url.normalize(v));
-          if (base64Url.encode(b).replaceAll('=', '') != v) {
-            throw const _Misfit('not base64url');
-          }
-          return b;
-        } on FormatException {
-          throw const _Misfit('not base64url');
-        }
+        return _bytes(v);
       case WireKind.enum_:
         final e = wireEnums[f.ref];
         final n = v is String && v.isNotEmpty ? e.names.indexOf(v) : -1;
@@ -494,6 +579,7 @@ abstract final class Wire {
         return _writeFrame(v.cast<String, dynamic>());
       case WireKind.value:
       case WireKind.const_:
+      case WireKind.data:
         throw const _Misfit('not a field');
     }
   }

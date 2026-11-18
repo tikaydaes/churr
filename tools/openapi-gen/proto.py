@@ -448,7 +448,7 @@ def go_text(b, frames, ops, lock, kinds):
     return ''.join(out)
 
 
-def dart_text(b, frames, ops, lock):
+def dart_text(b, frames, ops, lock, kinds):
     mi, ei = index(b)
 
     def q(s):
@@ -464,8 +464,6 @@ def dart_text(b, frames, ops, lock):
             q(name), m['shape'], m.get('extra_num', 0), name))
         for f in m['fields']:
             j, num, kind, card, ref, const = field_row(f, mi, ei)
-            if kind == 'data':
-                kind = 'bytes'     # the app's codec keeps a value's data as bytes: base64url in its JSON
             out.append('    WireField(%s, %d, WireKind.%s, WireCard.%s, %d%s),\n' % (
                 q(j), num, kind + ('_' if kind in ('double', 'int', 'bool', 'enum', 'const') else ''), card, ref,
                 ', ' + q(const) if const else ''))
@@ -485,7 +483,11 @@ def dart_text(b, frames, ops, lock):
             continue
         res = ', '.join('%d: %d' % (s, mi[m]) for s, m in o['res'].items())
         out.append('  %s: WireOperation(%d, {%s}),\n' % (q(o['id']), mi[o['req']] if o['req'] else -1, res))
-    out.append('};\n\n/// The message of the error shape.\nconst int wireErrorMessage = %d;\n\n'
+    out.append('};\n\n/// Every kind of the catalogue: its name, the lowest catalogue level that reads its data in full,\n'
+               '/// and the message its data is.\nconst List<WireValueKind> wireValueKinds = [\n')
+    for k, m, lv in kinds:
+        out.append('  WireValueKind(%s, %d, %d),\n' % (q(k), lv, mi[m]))
+    out.append('];\n\n/// The message of the error shape.\nconst int wireErrorMessage = %d;\n\n'
                '/// The version of the schema this table was written from.\nconst int wireSchemaVersion = %d;\n'
                % (mi['Error'], VERSION))
     return ''.join(out)
@@ -539,7 +541,7 @@ def write(doc, root):
             subprocess.run(['gofmt', '-w', go], check=True)
     dart = os.path.join(root, 'app', 'lib', 'core', 'wire', 'schema.g.dart')
     if os.path.isdir(os.path.dirname(dart)):
-        put(dart, dart_text(b, frames, ops, lock))
+        put(dart, dart_text(b, frames, ops, lock, kinds))
     annotate(doc, ops)
     return ('proto/churr/v1/churr.proto: %d messages, %d enums, %d frames, %d operations with a body.'
             % (len(b.msgs), len(b.enums), len(frames), sum(1 for o in ops if o['req'] or o['res'])), b.skipped)

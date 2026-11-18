@@ -32,6 +32,11 @@ enum WireKind {
 
   /// Always the same text, and not on the wire.
   const_,
+
+  /// A value's data (docs/DESIGN-MODULES.md section 4.1): its kind's
+  /// message as bytes on the wire, its kind's object in JSON. The field
+  /// named `kind` beside it says which kind ([WireValueKind]).
+  data,
 }
 
 enum WireCard {
@@ -107,6 +112,16 @@ class WireFrame {
   const WireFrame(this.type, this.number, this.message);
   final String type;
   final int number;
+  final int message;
+}
+
+/// One kind of the catalogue: its name, the lowest catalogue level that
+/// reads its data in full, and the message its data is, by its place in
+/// the table.
+class WireValueKind {
+  const WireValueKind(this.name, this.level, this.message);
+  final String name;
+  final int level;
   final int message;
 }
 
