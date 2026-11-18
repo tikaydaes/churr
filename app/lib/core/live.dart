@@ -7,6 +7,7 @@ import 'package:web_socket_channel/io.dart';
 import 'api/client.dart';
 import 'api/errors.dart';
 import 'api/operations.dart';
+import 'fair/clock.dart';
 import 'models/json.dart';
 import 'wire/wire.dart';
 
@@ -248,10 +249,13 @@ class LiveConnection {
     }
   }
 
-  void _pong() {
+  void _pong(String? serverTime) {
     if (!_sincePing.isRunning) return;
     _sincePing.stop();
     lastDelay = _sincePing.elapsed;
+    // Keeps the clock a draw is stamped by current, the pong's age half
+    // its round trip.
+    learnServerTime(serverTime, null, lastDelay!);
     for (final c in _pongWaiters) {
       if (!c.isCompleted) c.complete(lastDelay!);
     }
@@ -520,6 +524,8 @@ class LiveConnection {
       switch (type) {
         case 'hello':
           _helloDue?.cancel();
+          // The server's time, known before any draw (fair/clock.dart).
+          learnServerTime(f['server_time'] as String?);
           connectionId = f['connection_id'] as String?;
           // Kept for the next reconnect, which may be to a server that
           // has just started and cannot say yet. An older server never
@@ -594,7 +600,7 @@ class LiveConnection {
         if (f['type'] == 'pong') {
           _pongDue?.cancel();
           _pongDue = null;
-          _pong();
+          _pong(f['server_time'] as String?);
           return;
         }
         chain = chain.then((_) => failed ? null : handle(f)).catchError((

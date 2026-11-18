@@ -241,10 +241,11 @@ extension ConversationOpsApi on ApiClient {
   }) async {
     // A module's command may take chance: its client_id and second are its
     // draw's input (docs/FAIR.md section 6).
+    // Its second is stamped as it is sent, and a refusal of its draw is
+    // shown, never sent again by itself.
     final clientId = newUuid();
-    final j = await withDrawClock(
-      drawT(),
-      (t) => call(
+    final j = await sendDraw(
+      () => call(
         Ops.runCommand,
         path: {'id': conversationId},
         body: {
@@ -252,7 +253,7 @@ extension ConversationOpsApi on ApiClient {
           if (text != null && text.isNotEmpty) 'text': text,
           'parent_id': ?parentId,
           'client_id': clientId,
-          'draw_t': t,
+          'draw_t': drawT(),
         },
       ),
     );

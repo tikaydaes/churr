@@ -6,7 +6,7 @@
 // docs/openapi.yaml, named in the comments by its operationId.
 
 import { forgetDrafts, browserStorage } from './drafts.js';
-import { drawT, learnServerTime } from './fair/clock.js';
+import { WINDOW, learnDateHeader, learnServerTime } from './fair/clock.js';
 
 export class ApiError extends Error {
   constructor(status, body) {
@@ -80,12 +80,16 @@ export async function api(method, path, body, opts = {}) {
   else if (body !== undefined) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
   if (opts.signal) init.signal = opts.signal;
   let res;
+  const began = Date.now();
   try {
     res = await fetch(url, init);
   } catch (err) {
     if (err.name === 'AbortError') throw err;
     throw new ApiError(0);
   }
+  // Every answer keeps the clock a draw is stamped by current
+  // (fair/clock.js), until the live connection says better.
+  learnDateHeader(res.headers.get('Date'));
   if (opts.raw && res.ok) return res;
   let data = {};
   if (res.status !== 204) {
@@ -101,16 +105,23 @@ export async function api(method, path, body, opts = {}) {
     await new Promise((r) => setTimeout(r, (err.retryAfter || 1) * 1000));
     return api(method, path, body, { ...opts, tries: (opts.tries || 0) + 1 });
   }
-  // A draw's second too far from the server's clock, or one the server
-  // cannot vouch for just after it started (docs/FAIR.md section 6): the
-  // clock is corrected by the server's time and the post sent once more,
-  // with the same client_id and the corrected second, a second later if
-  // that is the same one.
-  if (err.code === 'clock' && body && body.draw_t && !opts.clockTried) {
-    learnServerTime(err.serverTime);
-    let t = drawT();
-    if (t <= body.draw_t) { await new Promise((r) => setTimeout(r, 1100)); t = drawT(); }
-    return api(method, path, { ...body, draw_t: t }, { ...opts, clockTried: true });
+  // A draw refused for its second or its nonce (docs/FAIR.md section 6).
+  // An honest client is never refused, so this is not routine: it is shown
+  // to the person, noted on the device, and never sent again by itself. A
+  // refusal's server time is learnt for later posts only. A request that
+  // took longer than the window to be answered is the network, and is
+  // said to be.
+  if ((err.code === 'clock' || err.code === 'conflict') && body && body.draw_t) {
+    const why = err.code === 'clock' ? learnServerTime(err.serverTime) : null;
+    const took = Date.now() - began;
+    err.drawRefused = true;
+    if (took > WINDOW * 1000) {
+      err.message = `The roll took ${Math.round(took / 1000)} seconds to reach the server and come back, longer than a draw may take: that is the network, not a refusal. Roll again.`;
+    } else {
+      err.message = 'The server refused this roll. ' + err.message + (why ? ' ' + why : '');
+    }
+    console.warn('churr: a draw was refused', { code: err.code, client_id: body.client_id, draw_t: body.draw_t, server_time: err.serverTime, took_ms: took });
+    throw err;
   }
   if (err.code === 'fresh_check_required' && freshHandler && !opts.noFresh) {
     if (await freshHandler()) return api(method, path, body, { ...opts, noFresh: true });

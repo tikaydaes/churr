@@ -12,7 +12,7 @@ import { Histories, comparePin, pinHistory } from '../internal/web/static/shared
 import { DERIVE, Stream, block, draw, isPrimitive, sameRoll } from '../internal/web/static/shared/fair/derive.js';
 import { verifyMessage } from '../internal/web/static/shared/fair/verify.js';
 import { kindAsks, kindClaims, rederive } from '../internal/web/static/shared/fair/kinds.js';
-import { clockOffset, drawT, learnServerTime } from '../internal/web/static/shared/fair/clock.js';
+import { clockOffset, drawT, inWindow, learnDateHeader, learnServerTime, resetClock } from '../internal/web/static/shared/fair/clock.js';
 
 const file = new URL('../testdata/ecvrf/vectors.json', import.meta.url);
 const vf = JSON.parse(readFileSync(file, 'utf8'));
@@ -217,14 +217,56 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
 }
 
 // The second a draw is asked for: this clock, corrected by the server's
-// time a `clock` refusal gives.
+// time from ordinary traffic before any draw; a time more than five minutes
+// from this device's clock is taken only when nothing else has been learnt.
 {
   const now = 1790000000000;
+  resetClock();
   check(drawT(now) === 1790000000, 'clock: the second of the clock as it is');
-  learnServerTime(new Date(now + 30000).toISOString(), now);
-  check(clockOffset() === 30000 && drawT(now) === 1790000030, 'clock: corrected by the server\'s time');
+  check(learnDateHeader(new Date(now + 4000).toUTCString(), now) === null && clockOffset() === 4500, 'clock: a Date header, at its middle second, until the live connection speaks');
+  learnServerTime(new Date(now + 30000).toISOString(), now, 400);
+  check(clockOffset() === 30200 && drawT(now) === 1790000030, 'clock: corrected by the live connection, the pong\'s age half its round trip');
+  learnDateHeader(new Date(now).toUTCString(), now);
+  check(clockOffset() === 30200, 'clock: a Date header does not overrule the live connection');
   learnServerTime('not a time', now);
-  check(clockOffset() === 30000, 'clock: a time that cannot be read changes nothing');
+  check(clockOffset() === 30200, 'clock: a time that cannot be read changes nothing');
+  const why = learnServerTime(new Date(now + 6 * 60000).toISOString(), now);
+  check(clockOffset() === 30200 && /6 minutes/.test(why || ''), 'clock: a stated time six minutes off is refused, and says so');
+  resetClock();
+  check(learnServerTime(new Date(now + 6 * 60000).toISOString(), now) === null && clockOffset() === 360000, 'clock: with nothing else learnt, a time six minutes off is taken');
+  resetClock();
+  check(inWindow(1790000000, now + 10000) && !inWindow(1790000000, now + 11000), 'clock: a second is inside its window for 10 seconds');
+}
+
+// A refused draw is never sent again by the client itself: the request is
+// made once, the person is told, and the refusal's time is learnt for later
+// posts only; one that took longer than the window is said to be the
+// network.
+{
+  const { api } = await import('../internal/web/static/shared/api.js');
+  const quiet = console.warn;
+  console.warn = () => {};
+  let calls = 0;
+  let delay = 0;
+  const realNow = Date.now;
+  globalThis.fetch = async () => {
+    calls++;
+    if (delay) { const t0 = realNow(); Date.now = () => t0 + delay; }
+    return new Response(JSON.stringify({ error: { code: 'clock', message: 'The draw\'s second is more than 10 seconds from the server\'s clock.', server_time: new Date(realNow() + 20000).toISOString() } }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } });
+  };
+  resetClock();
+  const body = { name: 'roll', text: 'd6', client_id: '01a1ee00-0000-7000-8000-0000000000c1', draw_t: drawT() };
+  let err = null;
+  try { await api('POST', '/conversations/x/commands', body); } catch (e) { err = e; }
+  check(calls === 1 && err && err.drawRefused && err.message.startsWith('The server refused this roll.'), 'api: a clock refusal is shown, never sent again');
+  check(Math.abs(clockOffset() - 20000) < 2000, 'api: a clock refusal\'s time is learnt for later posts');
+  delay = 12000; calls = 0; err = null;
+  try { await api('POST', '/conversations/x/commands', { ...body, draw_t: drawT() }); } catch (e) { err = e; }
+  Date.now = realNow;
+  check(calls === 1 && err && /the network, not a refusal/.test(err.message), 'api: a refusal that took longer than the window is the network');
+  console.warn = quiet;
+  resetClock();
 }
 
 if (failed) {

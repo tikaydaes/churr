@@ -720,6 +720,13 @@ class CacheDb extends SqlDb {
         {'outbox'},
       );
 
+  /// Replaces what an outbox row carries besides its text (its `extra`).
+  Future<void> setOutboxExtra(String clientId, Json? extra) => run(
+    'UPDATE outbox SET extra = ? WHERE client_id = ?',
+    [extra == null ? null : jsonEncode(extra), clientId],
+    {'outbox'},
+  );
+
   Future<void> removeFromOutbox(String clientId) =>
       run('DELETE FROM outbox WHERE client_id = ?', [clientId], {'outbox'});
 }

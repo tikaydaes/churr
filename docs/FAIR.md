@@ -232,7 +232,17 @@ the server to that one call site.
 server's, as `draw_t`; and the message's `client_id` as the nonce, made
 before it is sent. A post that takes chance (a module's command through
 `runCommand`, a message with inline dice) needs both, or it is refused
-with `invalid_value`.
+with `invalid_value`. `draw_t` is stamped when the post is sent, never
+when it is queued: a message waiting in an outbox takes its second when it
+goes out.
+
+**The client's clock.** A client knows the server's time before its first
+draw and keeps it current from ordinary traffic: the live connection's
+`hello` and every `pong` carry `server_time` (taken as received, a pong's
+age half its round trip), and every answer of the API its `Date` header,
+taken only until the live connection has said. A stated time more than five
+minutes from the device's own clock is not taken once another has been
+learnt, and a failure that turned on it says so.
 
 **An honest client is never refused.** Nothing an honest client does
 gets a draw refused: its clock is kept to the server's, a restart or a
@@ -265,13 +275,32 @@ clock may step backwards: the server keeps the highest second its clock has
 shown and holds the window's lower bound, and the letting go of seconds, to
 it, so a step back never reopens a second it has let go.
 
-**A retry gets the same draw.** A client retries a post with the same
-`client_id` and the same `draw_t`. The same person sending the same
-`client_id` in the same conversation is given the message it made, with
-its block, by the ordinary `client_id` rule, whatever the clock says: that
-is not a second draw. A post that failed before it was stored, sent again
-with the same pair, is drawn again, to the same result. So a server cannot
-re-roll by failing a request.
+**A retry gets the same draw.** A post that got no answer (the network
+failed, the request timed out) is sent again with the same `client_id` and
+the same `draw_t`, and only while that second is still inside the window;
+after that it is not sent again, the person is told "The roll did not go
+through", and rolls again themselves. The same person sending the same
+`client_id` in the same conversation is given the message it made, with its
+block, by the ordinary `client_id` rule, whatever the clock says: that is
+not a second draw. A post that failed before it was stored, sent again with
+the same pair, is drawn again, to the same result. So a server cannot
+re-roll by failing a request. A nonce the server has seen is never sent
+with another second: a retry that changes the second takes a new
+`client_id`, and only the person makes one, by rolling again.
+
+**A refused draw is not sent again.** A client never resends a draw refused
+with `clock` or `conflict`, by itself or when the person retries the
+message: it shows "The server refused this roll" with the server's reason
+and notes it on the device. A refusal's `server_time` is learnt for later
+posts only. When the request took longer than the window to be answered,
+which the client measures, the client says it was the network instead.
+
+**What remains.** A server can still decline a draw after working it out:
+it holds the key, so it can compute the result as the request arrives and
+refuse the post when it does not like it. The person sees the refusal (and
+the server's audit records it), and if they roll again, that is a new
+draw with a new nonce, which the server could not have worked out before
+it arrived: a blind second draw, not a choice among known ones.
 
 **Who is protected from whom.** The person cannot predict or choose the
 result: it needs the server's key. The server cannot predict it before

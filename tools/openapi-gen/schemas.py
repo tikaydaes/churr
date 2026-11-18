@@ -12,7 +12,7 @@ S('Error', 'The error shape every failed request returns (CONVENTIONS.md, Errors
                          'A plain sentence a client may show. `name_taken` is for usernames, group handles, emoji and command names, and reserved names; never for a channel name, since those need not be unique.'),
              'field?': ('str', 'With `invalid_value`: the request field that was wrong.'),
              'retry_after_seconds?': ('int', 'With `rate_limited` and `slow_mode`.'),
-             'server_time?': ('time', "With `clock`: the server's time when it answered, by which the client corrects its clock (FAIR.md section 6).")}})
+             'server_time?': ('time', "With `clock`: the server's time when it answered, which the client learns for later posts; it never sends the refused draw again (FAIR.md section 6).")}})
 
 S('Server', 'What a server says about itself before and after sign-in.', {
    'name': ('str', "The host name of the server's public address."),
@@ -990,13 +990,15 @@ S('MessageInput', 'A new message. It needs at least one of text, a file, a card,
    'client_id?': ('uuid',
                   'Made by the client. Sending the same one again in the same conversation within 24 hours returns '
                   'the message already created. Required in a sealed chat, and in a message that takes chance (inline '
-                  'dice): it is the nonce of its draw, with `draw_t` (FAIR.md section 6). A client retries a post with '
-                  'the same client_id, never a new one: the same post sent again is given the message it made, with '
-                  'the same draw.'),
+                  'dice): it is the nonce of its draw, with `draw_t` (FAIR.md section 6). A client retries a post that got '
+                  'no answer with the same client_id and draw_t, only while that second is inside the window: the same '
+                  'post sent again is given the message it made, with the same draw. A nonce the server has seen is '
+                  'never sent with another second.'),
    'draw_t?': ('int', 'With a message that takes chance (inline dice): the second, in Unix time by the client\'s clock corrected to '
                      'the server\'s, that with `client_id` is its draw\'s input (FAIR.md section 6). It must be within 10 '
                      'seconds of the server\'s clock, or the post is refused with `clock` and `server_time`; a pair of second '
-                     'and client_id draws once.'),
+                     'and client_id draws once. Stamped when the post is sent, never when it is queued. An honest client is '
+                     'never refused, and never sends a refused draw again.'),
    'text?': ('str', 'Churr Markdown.', {'maxLength': 16000}),
    'file_ids?': ('[uuid]',
                  'Files already uploaded to this conversation, in display order. Up to ten. In a sealed chat: the '

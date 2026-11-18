@@ -856,9 +856,10 @@ class SyncEngine implements LiveDelegate {
         text: text,
         createdAt: _now(),
         state: 'pending',
-        // The second of its draw, if anything in it takes chance: kept,
-        // so a retry sends the same input (docs/FAIR.md section 6).
-        extra: {...?extra, 'draw_t': drawT()},
+        // The second of its draw is stamped when it is first sent, not
+        // now: a message queued while offline goes out later
+        // (flushOutbox, docs/FAIR.md section 6).
+        extra: extra,
       ),
     );
     unawaited(flushOutbox());
@@ -888,6 +889,34 @@ class SyncEngine implements LiveDelegate {
         ];
         if (waiting.isEmpty) return;
         for (final item in waiting) {
+          // The second of its draw, if anything in it takes chance: stamped
+          // as it is first sent, and written down first, so a send that
+          // gets no answer is sent again with the same pair and is given
+          // the same draw. Its client_id was made when it was queued, but
+          // the server has seen it only once it is sent. A message that may
+          // roll keeps its pair only while its second is inside the draw's
+          // window: after that it is not sent again, and the person rolls
+          // again themselves (docs/FAIR.md section 6).
+          var drawSecond = item.extra?['draw_t'] == null
+              ? null
+              : asInt(item.extra?['draw_t']);
+          if (drawSecond == null) {
+            drawSecond = drawT();
+            await db.setOutboxExtra(item.clientId, {
+              ...?item.extra,
+              'draw_t': drawSecond,
+            });
+          } else if (item.extra?['draw_refused'] == true ||
+              mayRoll(item.text) && !inDrawWindow(drawSecond)) {
+            // A refused draw is never sent again, by the app or by the
+            // person: the same pair would be refused again.
+            await db.setOutboxState(
+              item.clientId,
+              'failed',
+              error: rollDidNotGoThrough,
+            );
+            continue;
+          }
           try {
             var cannotRead = const <String>[];
             var broadRefused = false;
@@ -895,9 +924,7 @@ class SyncEngine implements LiveDelegate {
               item.conversationId,
               clientId: item.clientId,
               text: item.text,
-              drawT: item.extra?['draw_t'] == null
-                  ? null
-                  : asInt(item.extra?['draw_t']),
+              drawT: drawSecond,
               parentId: item.parentId,
               quote: object(item.extra?['quote']),
               fileIds: strings(item.extra?['file_ids']),
@@ -927,6 +954,13 @@ class SyncEngine implements LiveDelegate {
           } on ApiException catch (err) {
             if (err.isTransient) {
               return; // Stays pending; sent after the next `ready`.
+            }
+            if (err.code == 'clock' || err.code == 'conflict') {
+              await db.setOutboxExtra(item.clientId, {
+                ...?item.extra,
+                'draw_t': drawSecond,
+                'draw_refused': true,
+              });
             }
             await db.setOutboxState(
               item.clientId,

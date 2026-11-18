@@ -12,6 +12,8 @@
 //   onReady(frame)     the replay is over; frame.new_conversation_ids
 //   onState(state)     'connecting' | 'catching-up' | 'live' | 'offline' | 'signed-out' | 'locked'
 
+import { learnServerTime } from './fair/clock.js';
+
 const SUBPROTOCOL = 'churr.v1';
 // The retry interval before the first, second, … reconnect, in seconds.
 // The wait itself is drawn at random around it (reconnectDelay), so a
@@ -138,6 +140,8 @@ export class Live {
     if (f.type.includes('.')) { this.h.onEvent && this.h.onEvent(f); return; }
     switch (f.type) {
       case 'hello':
+        // The server's time, known before any draw (fair/clock.js).
+        learnServerTime(f.server_time);
         this.attempt = 0;
         this.heartbeat = (f.heartbeat_seconds || 30) * 1000;
         // Kept for the next reconnect, which may be to a server that has
@@ -168,7 +172,7 @@ export class Live {
         break;
       case 'pong':
         clearTimeout(this.timers.pong);
-        this.ponged();
+        this.ponged(f.server_time);
         break;
       default:
         // `ack` and `error` answer frames this client sent; nothing here
@@ -181,9 +185,12 @@ export class Live {
   // from a ping to its pong (`/ping`, ruling R74). Nothing is added to the
   // protocol for it. delay is the last one measured, in milliseconds, or
   // null before the first pong.
-  ponged() {
+  ponged(serverTime) {
     if (this.pingAt == null) return;
     this.delay = Math.round(performance.now() - this.pingAt);
+    // Keeps the clock a draw is stamped by current, the pong's age half
+    // its round trip.
+    learnServerTime(serverTime, Date.now(), this.delay);
     this.pingAt = null;
     for (const w of this.pongWaiters || []) w(this.delay);
     this.pongWaiters = [];

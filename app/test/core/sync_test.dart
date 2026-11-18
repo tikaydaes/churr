@@ -4,6 +4,7 @@ import 'package:churr/core/api/client.dart';
 import 'package:churr/core/db/account_tables.dart';
 import 'package:churr/core/db/cache_db.dart';
 import 'package:churr/core/db/conversation_queries.dart';
+import 'package:churr/core/fair/clock.dart';
 import 'package:churr/core/models/conversation.dart';
 import 'package:churr/core/models/json.dart';
 import 'package:churr/core/models/message.dart';
@@ -926,11 +927,62 @@ void main() {
       expect(server.posts, isEmpty, reason: 'the connection is not ready');
       expect((await db.outbox()).single.clientId, id);
 
+      expect(
+        (await db.outbox()).single.extra?['draw_t'],
+        isNull,
+        reason: 'the second of its draw is stamped as it is sent, not queued',
+      );
+
       server.conversations = {'c1': conv('c1', lastSeq: 10)};
+      final before = drawT();
       await sync.onReady([]);
-      expect(server.posts.single, {'client_id': id, 'text': 'hello'});
+      final sent = server.posts.single;
+      expect(sent['client_id'], id);
+      expect(sent['text'], 'hello');
+      expect(asInt(sent['draw_t']) >= before && asInt(sent['draw_t']) <= drawT(), isTrue);
       expect(await db.outbox(), isEmpty);
       expect((await db.messages('c1')).single.text, 'hello');
+    });
+
+    test('a roll that got no answer keeps its pair inside the window, and after it is not sent again', () async {
+      server.conversations = {'c1': conv('c1', lastSeq: 10)};
+      Future<void> queue(String id, int second) => db.addToOutbox(
+        OutboxItem(
+          clientId: id,
+          conversationId: 'c1',
+          text: 'I hit for [[2d6]]',
+          createdAt: DateTime.now(),
+          state: 'pending',
+          extra: {'draw_t': second},
+        ),
+      );
+      await queue('01a1ee00-0000-7000-8000-0000000000a1', drawT() - 2);
+      await queue('01a1ee00-0000-7000-8000-0000000000a2', drawT() - 60);
+      await sync.onReady([]);
+      expect(server.posts.map((p) => p['client_id']), ['01a1ee00-0000-7000-8000-0000000000a1']);
+      final left = (await db.outbox()).single;
+      expect(left.clientId, '01a1ee00-0000-7000-8000-0000000000a2');
+      expect(left.failed, isTrue);
+      expect(left.error, rollDidNotGoThrough);
+    });
+
+    test('a refused draw is shown and never sent again, by the app or by a retry', () async {
+      server.conversations = {'c1': conv('c1', lastSeq: 10)};
+      await sync.onReady([]);
+      server.onPost = (r) => http.Response(
+        '{"error":{"code":"conflict","message":"That client_id has drawn already."}}',
+        409,
+      );
+      final id = await sync.send('c1', 'roll [[d20]]');
+      await pumpEventQueue();
+      final item = (await db.outbox()).single;
+      expect(item.failed, isTrue);
+      expect(item.error, startsWith('The server refused this roll.'));
+      server.onPost = null;
+      await sync.retry(id);
+      await pumpEventQueue();
+      expect(server.posts, hasLength(1));
+      expect((await db.outbox()).single.error, rollDidNotGoThrough);
     });
 
     test('reconciled by the event when it comes first: one message, no pending row', () async {

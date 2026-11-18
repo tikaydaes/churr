@@ -22527,8 +22527,8 @@ components:
             server_time:
               type: string
               format: date-time
-              description: 'With `clock`: the server''s time when it answered, by which the client corrects its
-                clock (FAIR.md section 6).'
+              description: 'With `clock`: the server''s time when it answered, which the client learns for later
+                posts; it never sends the refused draw again (FAIR.md section 6).'
     Server:
       type: object
       description: What a server says about itself before and after sign-in.
@@ -25461,16 +25461,18 @@ components:
           format: uuid
           description: 'Made by the client. Sending the same one again in the same conversation within 24 hours
             returns the message already created. Required in a sealed chat, and in a message that takes chance (inline
-            dice): it is the nonce of its draw, with `draw_t` (FAIR.md section 6). A client retries a post with
-            the same client_id, never a new one: the same post sent again is given the message it made, with the
-            same draw.'
+            dice): it is the nonce of its draw, with `draw_t` (FAIR.md section 6). A client retries a post that
+            got no answer with the same client_id and draw_t, only while that second is inside the window: the same
+            post sent again is given the message it made, with the same draw. A nonce the server has seen is never
+            sent with another second.'
         draw_t:
           type: integer
           format: int64
           description: 'With a message that takes chance (inline dice): the second, in Unix time by the client''s
             clock corrected to the server''s, that with `client_id` is its draw''s input (FAIR.md section 6). It
             must be within 10 seconds of the server''s clock, or the post is refused with `clock` and `server_time`;
-            a pair of second and client_id draws once.'
+            a pair of second and client_id draws once. Stamped when the post is sent, never when it is queued. An
+            honest client is never refused, and never sends a refused draw again.'
         text:
           type: string
           description: Churr Markdown.

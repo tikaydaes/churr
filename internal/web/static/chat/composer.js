@@ -7,7 +7,7 @@
 // channel's current name and is sent as `<#conversation-id>` (section
 // 9.26). Everything else in it is plain characters.
 
-import { drawT } from '/shared/fair/clock.js';
+import { drawT, inWindow } from '/shared/fair/clock.js';
 import { post, patch, get, del, upload } from '/shared/api.js';
 import { h, icon, iconButton, toast, fill, bytes, openMenu, place, fold, dateTime, avatar, confirmDialog } from '/shared/dom.js';
 import { broadHint, beforeSend, confirmLine, BROAD_WAS_PLAIN } from '/shared/md/broad.js';
@@ -969,6 +969,8 @@ export class Composer {
       this.afterPost(m, out.cannot_read_ids || [], out.broad_mentions_refused === true);
     } catch (err) {
       if (err.code === 'slow_mode') { this.dropPending(pending); this.setText(content.text || ''); this.slow(err.retryAfter || 5); return; }
+      // A refused draw is never sent again: the same pair would be refused.
+      if (err.drawRefused) pending._drawRefused = true;
       if (r.byId.has(pending.id)) { pending._failed = err.message; pending._v++; store.emit('messages', this.o.conversationId); } else throw err;
     }
   }
@@ -978,8 +980,17 @@ export class Composer {
     if (r.byId.has(p.id)) { r.list.splice(r.list.indexOf(p), 1); r.byId.delete(p.id); store.emit('messages', this.o.conversationId); }
   }
 
-  // retry sends a message that failed again, with the same client_id.
+  // retry sends a message that failed again, with the same client_id and
+  // draw_t: the same post, which the server gives the same draw. A message
+  // that may roll (inline dice) keeps its pair only while its second is
+  // inside the draw's window: after that it is not sent, and the person
+  // rolls again themselves (docs/FAIR.md section 6).
   async retry(p) {
+    if (p._drawRefused || (/\[\[/.test(p._content.text || '') && !inWindow(p._content.draw_t))) {
+      p._failed = 'The roll did not go through. Send it again as a new message to roll again.'; p._v++;
+      store.emit('messages', this.o.conversationId);
+      return;
+    }
     p._failed = null; p._v++;
     store.emit('messages', this.o.conversationId);
     try {

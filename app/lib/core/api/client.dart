@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
+import '../fair/clock.dart';
 import '../models/json.dart';
 import '../session_store.dart';
 import '../wire/wire.dart';
@@ -328,6 +329,9 @@ class ApiClient {
         throw ApiException.network(e);
       }
       if (auth) _readRateLimit(res.headers);
+      // Every answer keeps the clock a draw is stamped by current
+      // (fair/clock.dart), until the live connection says better.
+      learnDateHeader(res.headers['date']);
       if (res.statusCode < 300 || res.statusCode == 304) return res;
 
       final err = ApiException.fromResponse(res.statusCode, _decode(res, op));

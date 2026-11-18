@@ -86,9 +86,10 @@ extension MessagesApi on ApiClient {
           'object_hints': objectHints,
       },
     );
+    // A refusal of its draw is shown, never sent again by itself.
     final j = drawT == null
         ? await send(null)
-        : await withDrawClock(drawT, send);
+        : await sendDraw(() => send(drawT));
     onCannotRead?.call(strings(j['cannot_read_ids']));
     // The text held @channel, @here or @everyone that the author may not
     // use there: it was stored as plain text (ruling R64).
