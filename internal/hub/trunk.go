@@ -1121,7 +1121,7 @@ func (h *Hub) passEphemeral(env wire.Envelope, from string) {
 	}
 	var local []string
 	for _, n := range r.local {
-		if n != env.Origin {
+		if n != env.Origin && n != h.id.Name {
 			local = append(local, n)
 		}
 	}

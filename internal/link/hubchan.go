@@ -485,7 +485,7 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 	rt.record.Lock()
 	defer rt.record.Unlock()
 	self := s.id.Name
-	member, invited := rec.Has(self), false
+	member, invited := s.inChannel(rec), false
 	for _, n := range rec.Invited {
 		invited = invited || n == self
 	}
@@ -493,6 +493,10 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 	if errors.Is(err, model.ErrNotFound) {
 		switch {
 		case rec.Closed || rec.Prepared:
+		case s.holds(rec):
+			// The hub this holder is the holder of has become the channel's
+			// home: it keeps the channel whole from here (holder.go).
+			return s.holdChannel(ctx, pc, f, rec)
 		case invited:
 			// A manager invited this server: its owner sees an offer.
 			hub, err := s.hubRow(ctx, s.store, pc.peer, rec.HomeHub)
@@ -653,7 +657,7 @@ func (s *Service) adoptEpoch(ctx context.Context, id model.StreamID) {
 		return
 	}
 	rec, err := s.channelOf(ctx, s.store, id)
-	if err != nil || rec.Prepared || rec.Closed || !rec.Has(s.id.Name) || rec.Epoch <= st.KeyEpoch {
+	if err != nil || rec.Prepared || rec.Closed || !s.inChannel(rec) || rec.Epoch <= st.KeyEpoch {
 		return
 	}
 	if _, err := s.keyOf(ctx, s.store, id, rec.Epoch); err != nil {
@@ -842,7 +846,7 @@ func (s *Service) reapplyRecords(ctx context.Context, peer model.PeerID) {
 		if st.PeerID != peer || !hubOwned(st) {
 			continue
 		}
-		if rec, err := s.channelOf(ctx, s.store, st.ID); err == nil && rec.Has(s.id.Name) {
+		if rec, err := s.channelOf(ctx, s.store, st.ID); err == nil && s.inChannel(rec) {
 			s.store.Tx(ctx, func(tx store.Tx) error { return s.putList(ctx, tx, st.ID, rec.Servers, rec.Version) })
 		}
 	}
@@ -917,11 +921,17 @@ func init() { firstHistoryWait.Store(int64(5 * time.Second)) }
 var historyAnswerDelay atomic.Int64
 
 // askFirstHistory is how a server that has joined a hub-owned channel gets
-// the snapshot a joining server is owed: it asks the channel's servers for
-// it, one after another, longest-standing first and those that have just
-// joined with it last, and again after a wait while none has answered. No
-// server sends it unasked. Without it this server would know none of the
-// channel's members, and would take nothing they say.
+// the snapshot a joining server is owed: it asks the channel's home hub,
+// which keeps the channel whole, and asks again after a wait while the hub
+// has not answered. Nobody sends it unasked, and no member instance is asked:
+// the history does not depend on any instance staying. Without it this
+// server would know none of the channel's members, and would take nothing
+// they say.
+//
+// A hub's holder that has just become the home of a channel is the one that
+// asks the channel's instances instead, one after another, longest-standing
+// first: they hold what was said before the hub held the channel, and give
+// the hub all of it (onHistoryRequest).
 func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 	rt := s.rt(id)
 	here := func() bool {
@@ -929,7 +939,11 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 		defer rt.mu.Unlock()
 		return rt.historyHere
 	}
-	for try := 0; try < 6; try++ {
+	tries := 6
+	if s.holder {
+		tries = 60 // the hub's copy waits on nobody's leave; it keeps asking
+	}
+	for try := 0; try < tries; try++ {
 		if try > 0 {
 			select {
 			case <-ctx.Done():
@@ -945,25 +959,17 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 		if err != nil {
 			return
 		}
-		var names, fresh []string
-		for _, n := range rec.Servers {
-			if has(rec.Joined, n) {
-				fresh = append(fresh, n)
-			} else {
-				names = append(names, n)
+		var ask []store.Server
+		if s.holds(rec) {
+			for _, name := range rec.Servers {
+				if sv, err := s.store.Peers().ServerByName(ctx, name); err == nil && name != s.id.Name {
+					ask = append(ask, sv)
+				}
 			}
+		} else if hub, ok := s.homeHub(ctx, st); ok {
+			ask = []store.Server{hub}
 		}
-		names = append(names, fresh...)
-		asked := map[string]bool{s.id.Name: true}
-		for _, name := range names {
-			if asked[name] || !rec.Has(name) {
-				continue
-			}
-			asked[name] = true
-			sv, err := s.store.Peers().ServerByName(ctx, name)
-			if err != nil {
-				continue
-			}
+		for _, sv := range ask {
 			ch := make(chan directMessage, 4)
 			msg, err := s.sendDirectAwait(ctx, st.PeerID, sv, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch)
 			if err != nil {
@@ -1010,9 +1016,9 @@ func (s *Service) keyHolders(ctx context.Context, st store.Stream, epoch int64) 
 }
 
 // openers are the servers to ask to open an envelope this server cannot
-// read (section 13): those that may hold its key. In a hub-owned channel the
-// channel's other servers, longest-standing first; elsewhere whoever holds
-// the key.
+// read (section 13): those that may hold its key. In a hub-owned channel its
+// home hub, then the channel's other servers, longest-standing first;
+// elsewhere whoever holds the key.
 func (s *Service) openers(ctx context.Context, st store.Stream, epoch int64) []store.Server {
 	if !hubOwned(st) {
 		return s.keyHolders(ctx, st, epoch)
@@ -1021,7 +1027,12 @@ func (s *Service) openers(ctx context.Context, st store.Stream, epoch int64) []s
 	if err != nil {
 		return nil
 	}
+	// The home hub first: its holder has taken every envelope of the
+	// channel under every epoch's key (holder.go).
 	var out []store.Server
+	if hub, ok := s.homeHub(ctx, st); ok && !s.holder {
+		out = append(out, hub)
+	}
 	for _, name := range rec.Servers {
 		if name == s.id.Name {
 			continue

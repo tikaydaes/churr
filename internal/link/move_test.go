@@ -410,6 +410,14 @@ func TestMoveOntoHub(t *testing.T) {
 	f.say(f.amy, f.conv[0], "after a 000")
 	f.say(f.bo, f.conv[1], "after b 000")
 	f.same()
+	// The hub holds the channel whole from the move on: what was said over
+	// the direct link before it too, which the two instances gave it.
+	testkit.Eventually(t, "the hub holds what was said before the move and after it", func() bool {
+		_, held := heldMessages(t, f.Hub, f.stream)
+		_, before := held["before a 000"]
+		_, after := held["after b 000"]
+		return before && after && len(held) >= len(f.posted)
+	})
 	if len(f.posted) < 10 {
 		t.Fatalf("only %d messages were posted while the move ran", len(f.posted))
 	}

@@ -231,7 +231,7 @@ brackets when that is known. Nothing else. `churr-hub version` and
 
 | Flag | Environment | Default | Meaning |
 |------|-------------|---------|---------|
-| `-data` | `CHURR_HUB_DATA` | `./hub-data` | Data directory: `hub.db`, `keys/`, `certs/` |
+| `-data` | `CHURR_HUB_DATA` | `./hub-data` | Data directory: `hub.db`, `holder/`, `keys/`, `certs/` |
 | `-hostname` | `CHURR_HUB_HOSTNAME` | Required | The hub's public host name |
 | `-behind-proxy` | `CHURR_HUB_BEHIND_PROXY` | `false` | As for `churr` |
 | `-http` | `CHURR_HUB_HTTP` | `:80`, or `127.0.0.1:8473` behind a proxy | |
@@ -260,7 +260,7 @@ does:
   server may submit, for one server or as the default. `churr-hub
   status` prints what the status page shows.
 - There is no `churr-hub backup`. Stop the hub and copy its data
-  directory.
+  directory, `holder/` included.
 - `churr-hub channels` lists the channels the hub owns, and those of
   other hubs of its cluster that it carries or lists, each with its
   home hub, its managers and moderators, and "(private)" after the
@@ -270,11 +270,30 @@ does:
   (`LINK-PROTOCOL.md` section 23). They work only on the channel's
   home hub.
 
-A hub's data directory holds its keys, thirty days of envelopes, and
-the stream keys of every channel it is the home of, sealed under the
-key file in `keys/`. With both, the envelopes can be read: the hub owns
-those channels, and its operator can read them. Losing the directory
-loses the hub's identity; the servers would have to join again.
+A hub's data directory holds its keys, thirty days of envelopes, the
+stream keys of every channel it is the home of, sealed under the key
+file in `keys/`, and in `holder/` every such channel whole. The hub
+owns those channels, and its operator can read them.
+
+**The hub needs real storage.** `holder/` is the hub's copy of the
+channels it is the home of (`LINK-PROTOCOL.md` section 23a): a SQLite
+database with the same schema and migrations as a server's
+(`holder/churr.db`, migrated when the hub starts, and logged as a
+server's is) and its working space `holder/tmp/`. It holds every
+message of every such channel as it stands, its reactions and forms,
+and the profile of everyone who wrote in it or is in it. Nothing in it
+ages out: it grows with everything said in the hub's channels, for as
+long as each channel lasts, about as a server's database grows with
+the same channels, and a closed channel's share is removed 30 days
+after it closed. `hub.db`, by contrast, holds thirty days of envelopes
+and stays the size of the traffic. Watch the free space of the data
+directory as you would a server's. A joining instance is given its
+history from `holder/`, and nothing of a channel depends on any
+instance staying, so losing `holder/` loses the history the hub would
+give: copy it with the rest of the directory.
+
+Losing the directory loses the hub's identity; the servers would have
+to join again.
 
 #### Several hubs: a cluster
 

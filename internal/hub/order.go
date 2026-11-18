@@ -206,8 +206,9 @@ func (h *Hub) catchUp(sc *serverConn, f wire.Frame) error {
 	if err != nil {
 		return err
 	}
-	// The log is served only to servers in the stream's current list.
-	if !st.has(sc.name) {
+	// The log is served only to servers in the stream's current list, and
+	// to the hub's holder of a channel the hub is the home of.
+	if !st.has(sc.name) && !(sc.holder && h.holderOf(st)) {
 		return wire.Errf(wire.ENotInStream, "%s is not in that stream.", sc.name)
 	}
 	have := h.haveOf(st.id)

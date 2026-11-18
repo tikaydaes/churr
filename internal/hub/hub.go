@@ -7,11 +7,13 @@
 // which the hub can refuse and cannot change. It forwards sealed direct
 // messages between servers without being able to open them.
 //
-// It has no accounts, no messages and no search. It owns the channels shared
+// It has no accounts of its own and no search. It owns the channels shared
 // through it (channels.go): it keeps their records and, as the home hub of a
 // channel, makes and keeps every key epoch's stream key, sealed at rest
-// (keys.go). It never holds a server's private key, and it does not open the
-// envelopes it carries.
+// (keys.go), and holds the channel whole in its holder (holder.go), which
+// opens and applies the channel's envelopes with the code an instance runs.
+// It never holds a server's private key. Its log keeps envelopes as they
+// travel, sealed.
 package hub
 
 import (
@@ -249,6 +251,10 @@ type Hub struct {
 	// seenDirect are the direct messages addressed to the hub itself in the
 	// last ten minutes (keys.go).
 	seenDirect directSeen
+	// holder is the hub's holder while the hub is serving, and held its
+	// connection while it is connected (holder.go).
+	holder *holder
+	held   *serverConn
 }
 
 // TestTap shows fn the bytes of every frame the hub receives from a server,
@@ -314,6 +320,8 @@ type serverConn struct {
 	key  []byte
 	// pinger measures the server's clock (clock.go).
 	pinger *wire.Pinger
+	// holder marks the hub's own holder's connection (holder.go).
+	holder bool
 }
 
 // New opens the hub's data directory: its key and its database. Nothing
@@ -575,6 +583,13 @@ func (h *Hub) Run(ctx context.Context) error {
 			}
 		}()
 	}
+	// The hub's holder keeps the channels it is the home of whole
+	// (holder.go).
+	if err := h.startHolder(ctx); err != nil {
+		h.http.Close()
+		return err
+	}
+	defer h.stopHolder()
 	h.log.Info("the hub is listening", "address", ln.Addr().String(), "name", h.id.Name, "fingerprint", h.Fingerprint())
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
@@ -651,6 +666,7 @@ func (h *Hub) Sweep() int64 {
 	h.db.Exec(`DELETE FROM stream_ctl WHERE stream_id IN (SELECT id FROM streams WHERE state = 'closed' AND closed_at < ?)`, before)
 	h.db.Exec(`DELETE FROM streams WHERE state = 'closed' AND closed_at < ?`, before)
 	h.db.Exec(`DELETE FROM invites WHERE expires_at < ?`, int64(h.now()))
+	h.sweepHeld()
 	return n
 }
 

@@ -85,6 +85,11 @@ func (h *Hub) serveLink(w http.ResponseWriter, r *http.Request) {
 		h.serveTrunk(r, conn)
 		return
 	}
+	if conn.Remote.Name == h.id.Name {
+		// The hub's own holder (holder.go).
+		h.serveHolder(r, conn)
+		return
+	}
 	sc := &serverConn{name: conn.Remote.Name, conn: conn, key: conn.Remote.SignKey}
 	// What the hub sends a server is written by the connection's own
 	// goroutine, in the order it was sent: a server whose socket is slow
@@ -171,6 +176,9 @@ func (h *Hub) serveLink(w http.ResponseWriter, r *http.Request) {
 // one.
 func (h *Hub) authorize(d wire.Frame, proof, th []byte) error {
 	if d.Name == h.id.Name {
+		if h.isHolder(d) {
+			return nil // the hub's own holder, which holds the hub's keys
+		}
 		return wire.Errf(wire.EAuthFailed, "That is the hub's own name.")
 	}
 	var signKey, boxKey []byte
@@ -346,6 +354,9 @@ func (h *Hub) lock(id string) *sync.Mutex {
 func (h *Hub) connOf(name string) *serverConn {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	if name == h.id.Name {
+		return h.held // the hub's own holder (holder.go)
+	}
 	return h.conns[name]
 }
 

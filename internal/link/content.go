@@ -141,7 +141,7 @@ func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to stor
 		size = 0
 	}
 	var held []historyMessage
-	if conv.HistoryFromJoin() {
+	if conv.HistoryFromJoin() && !s.isHomeHub(st, to) {
 		// A private channel's history goes to a server only from the
 		// first join of the earliest of its accounts there: what was said
 		// before is not theirs (ruling R87).
@@ -260,9 +260,15 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 		}
 	} else if hubOwned(st) {
 		// Only as the answer to this server's own request: nobody sends a
-		// hub-owned channel's history unasked.
+		// hub-owned channel's history unasked. And only from the channel's
+		// home hub, which keeps it whole; the hub's own holder takes it from
+		// the instances it asked when the hub became the home.
 		if m.Re == "" {
 			s.count(func(stats *Stats) { stats.Dropped["history_unasked"]++ })
+			return
+		}
+		if !s.holder && m.from.Name != st.HomeHub {
+			s.count(func(stats *Stats) { stats.Dropped["history_not_from_home"]++ })
 			return
 		}
 	} else if st.OwnerServerID != m.from.ID {
@@ -403,6 +409,13 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 	go s.fetchArriving(s.ctx)
 }
 
+// isHomeHub reports whether a server is the home hub of a hub-owned channel:
+// the owner of all of it, whom its instances give history and files to, and
+// whom they take them from.
+func (s *Service) isHomeHub(st store.Stream, sv store.Server) bool {
+	return hubOwned(st) && st.HomeHub != "" && sv.Name == st.HomeHub && !s.isSelf(sv.ID)
+}
+
 // onHistoryRequest answers a server that fell behind further than the log
 // reaches with the messages created in the range it names.
 func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
@@ -431,8 +444,27 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 	for _, ss := range active {
 		in = in || ss.ServerID == m.from.ID
 	}
-	if !in {
+	// The home hub of a channel it owns asks for all of it, once, when it
+	// becomes the home: what was said before the hub held the channel.
+	home := s.isHomeHub(st, m.from)
+	if !in && !home {
 		s.replyError(ctx, m, wire.ENotInStream, "That server is not in the stream.")
+		return
+	}
+	if home {
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			rt := s.rt(st.ID)
+			select {
+			case <-s.ctx.Done():
+			case rt.jobs <- func() {
+				if cur, err := s.store.Streams().Get(s.ctx, st.ID); err == nil && cur.State == store.StreamActive {
+					s.sendHistoryRange(s.ctx, cur, m.from, 0, 0, 0, true, true, m.MsgID)
+				}
+			}:
+			}
+		}()
 		return
 	}
 	if b.First && hubOwned(st) {
@@ -469,6 +501,13 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 // in name order.
 func (s *Service) recoverSince(ctx context.Context, st store.Stream, afterAt int64) {
 	fields := map[string]any{"stream_id": st.ID, "after_at": afterAt, "through_at": 0}
+	if hubOwned(st) && !s.holder {
+		// A hub-owned channel's home hub keeps all of it.
+		if hub, ok := s.homeHub(ctx, st); ok {
+			s.ask(ctx, st.PeerID, hub, kHistoryRequest, fields, 30*time.Second)
+		}
+		return
+	}
 	if !st.Owned() && !hubOwned(st) {
 		if owner, err := s.ownerOf(ctx, st); err == nil {
 			s.sendDirect(ctx, st.PeerID, owner, kHistoryRequest, "", fields)

@@ -47,6 +47,9 @@ func (h *Hub) topology() *topology { return h.topo.Load() }
 // hubOf names the hub a server is on: this one for a server of its own, ""
 // for a name nobody in the cluster knows.
 func (h *Hub) hubOf(server string) string {
+	if server == h.id.Name {
+		return h.id.Name // the hub's own holder (holder.go)
+	}
 	if rs, ok := h.topology().servers[server]; ok {
 		return rs.hub
 	}
@@ -448,9 +451,12 @@ func (h *Hub) sendClusterToAll() {
 	for _, t := range h.trunks {
 		trunks = append(trunks, t)
 	}
-	conns := make([]*serverConn, 0, len(h.conns))
+	conns := make([]*serverConn, 0, len(h.conns)+1)
 	for _, c := range h.conns {
 		conns = append(conns, c)
+	}
+	if h.held != nil {
+		conns = append(conns, h.held)
 	}
 	h.mu.Unlock()
 	for _, t := range trunks {

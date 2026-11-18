@@ -1227,8 +1227,9 @@ Must hold:
 directory, apart from any server's. Its tables are made, and columns
 added to them, by the hub itself when it opens the database
 (`internal/hub/hub.go`); there are no migration files. It holds names
-of servers and hubs, public keys, stream identifiers, channel records
-and ciphertext, never a stream key. Most of it follows from
+of servers and hubs, public keys, stream identifiers, channel records,
+envelopes as they travel (ciphertext), and the stream keys of the
+channels it is the home of, sealed at rest. Most of it follows from
 `LINK-PROTOCOL.md` sections 23 to 23b. Three parts serve trunks and
 the moving of a channel's home:
 
@@ -1237,6 +1238,25 @@ the moving of a channel's home:
 | `stream_ctl`        | For a stream a server owns that crosses a trunk: the owner's last control frame as it was relayed (`frame`), and `floors`, per member server, what the home hub's log held of each origin when that server joined. Deleted with the stream's other rows when the stream has been closed long enough. |
 | `channels.offer`    | A channel's home offered to another hub (`churr-hub rehome`) and not yet settled, as JSON: the signed record that hands it over, the hub it goes to, when the offer was made, and whether it is being called off. Empty otherwise. While it is set the hub signs nothing more for that channel. |
 | `trunks.farewell`   | On a hub that has left its cluster: the roster that says so, owed to the neighbour it left through, kept until it has been sent over that trunk. Null otherwise. A trunk's `state` is `pending`, `active`, `leaving` or `removed`. |
+
+### The hub's holder database
+
+The hub holds every channel it is the home of whole (`LINK-PROTOCOL.md`
+section 23a, "The hub holds the whole channel") in a second database,
+`holder/churr.db` under its data directory, with the instance's schema
+and the instance's migrations (section 16), run when the hub starts.
+Its files are in `holder/files/`, as a server keeps its own. It is the
+database of a server with no accounts of its own: one row in `peers`
+(the hub itself, dialled on the hub's internal connection), the
+servers of the hub's roster in `servers`, and for each channel a
+`streams` row, its `stream_channels` record, its `stream_keys`, and a
+`conversations` row of kind `channel` with no creator, holding the
+channel's messages, reactions, ticks, forms, members and the shadow
+accounts of everyone who wrote in it or is in it, as any instance's
+copy holds them. A closed channel's rows are removed when the hub
+sweeps its stream, 30 days after it closed. Nothing else in it ages:
+no retention runs there, and `conversations.retention_seconds` is
+null.
 
 ## 12. Sealed chats
 

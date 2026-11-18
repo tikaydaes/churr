@@ -85,6 +85,12 @@ type Deps struct {
 	// an offset this server measures beyond a small bound is reported as
 	// the path's asymmetry and not applied (clock.go).
 	ClockSynced bool
+	// Holder makes the service a hub's holder (holder.go): it runs inside
+	// churr-hub under the hub's own name and keys, dials the hub on an
+	// internal connection, and keeps every channel the hub is the home of
+	// whole, as an instance keeps its copy, without being one of the
+	// channel's instances.
+	Holder bool
 }
 
 // Service is the link to other servers.
@@ -101,6 +107,8 @@ type Service struct {
 	now      func() model.Time
 	// clockSynced is Deps.ClockSynced.
 	clockSynced bool
+	// holder is Deps.Holder.
+	holder bool
 
 	id wire.Identity
 	// self is this server's own row in `servers`. It is there so a
@@ -273,7 +281,7 @@ func New(d Deps) (*Service, error) {
 		d.HTTPClient = http.DefaultClient
 	}
 	s := &Service{store: d.Store, keys: d.Keys, chat: d.Chat, perm: d.Perm, blobs: d.Blobs, log: d.Log, http: d.HTTPClient,
-		presence: d.Presence, tmpDir: d.TmpDir, now: d.Now, clockSynced: d.ClockSynced,
+		presence: d.Presence, tmpDir: d.TmpDir, now: d.Now, clockSynced: d.ClockSynced, holder: d.Holder,
 		id:    wire.Identity{Name: d.Name, Kind: wire.KindServer, Keys: d.Keys, URL: d.URL, Software: "churr/" + version.String()},
 		conns: map[model.PeerID]*peerConn{}, dialers: map[model.PeerID]context.CancelFunc{}, rts: map[model.StreamID]*streamRT{},
 		seen: map[string]model.Time{}, replies: map[string]chan directMessage{}, rosters: map[model.PeerID]int64{},

@@ -19,8 +19,9 @@ import (
 // The hub makes every key epoch's key of a channel it owns and keeps each,
 // sealed at rest: every server holds the hub's keys and no other, a server
 // holds none from before it joined or after it was removed, and nothing the
-// hub stores or is sent holds a key in the clear. The hub does not open
-// envelopes in this version, so no content reaches its storage either.
+// hub stores or is sent holds a key in the clear, its holder's database
+// included. Its log keeps the envelopes sealed, as they travel; what it reads
+// of them its holder keeps (TestTheHubHoldsTheWholeChannel).
 func TestHubMakesKeysAndKeepsThemSealed(t *testing.T) {
 	l := testkit.NewLinked(t, 3, true)
 	var mu sync.Mutex
@@ -86,10 +87,11 @@ func TestHubMakesKeysAndKeepsThemSealed(t *testing.T) {
 		t.Fatalf("the hub received %v", frames)
 	}
 	stored := readDir(t, l.Hub.Dir)
-	if len(stored) < 1000 || len(received) < 1000 {
+	holder := readHeld(t, l.Hub.Dir)
+	if len(stored) < 1000 || len(received) < 1000 || !bytes.Contains(holder, []byte("PLAINTEXT-ALPHA")) {
 		t.Fatalf("the hub stored %d bytes and received %d", len(stored), len(received))
 	}
-	for where, hay := range map[string][]byte{"storage": stored, "frames received": received} {
+	for where, hay := range map[string][]byte{"storage": stored, "frames received": received, "holder": holder} {
 		for what, key := range keys {
 			for enc, needle := range map[string][]byte{
 				"raw":       key,
@@ -103,7 +105,7 @@ func TestHubMakesKeysAndKeepsThemSealed(t *testing.T) {
 			}
 		}
 		for _, text := range []string{"PLAINTEXT-ALPHA", "PLAINTEXT-BRAVO", "PLAINTEXT-CHARLIE", "PLAINTEXT-DELTA", "message.created", "author_id"} {
-			if bytes.Contains(hay, []byte(text)) {
+			if where != "holder" && bytes.Contains(hay, []byte(text)) {
 				t.Errorf("the hub's %s contains %q", where, text)
 			}
 		}

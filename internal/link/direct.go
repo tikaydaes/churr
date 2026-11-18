@@ -199,6 +199,11 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 			return drop("unknown_sender")
 		}
 		from, fromHub = row, true
+		// What is sent back to a hub is sealed to the box key its cluster's
+		// roster gives it.
+		if box := s.clusterHubBox(pc.peer, f.From); len(box) == 32 {
+			from.BoxKey = box
+		}
 	} else {
 		row, err := s.store.Peers().ServerByName(ctx, f.From)
 		if err != nil {
@@ -228,8 +233,13 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 		return drop("malformed")
 	}
 	m.raw, m.from, m.peer = plain, from, pc.peer.ID
-	if fromHub && m.Kind != kKey && m.Kind != kError {
-		return drop("not_from_a_hub") // a hub sends keys and answers, and nothing else
+	if fromHub && m.Kind != kKey && m.Kind != kError && m.Kind != kHistory && m.Kind != kBlobChunk && m.Kind != kOpened &&
+		m.Kind != kHistoryRequest && m.Kind != kBlobRequest {
+		// A hub sends the keys of the channels it is the home of, and
+		// answers for them: their history, their files, an envelope opened.
+		// It asks for their history and their files, which it keeps.
+		// Nothing else.
+		return drop("not_from_a_hub")
 	}
 	s.hear(from.Name)
 	// File chunks have their own limit, by bytes.

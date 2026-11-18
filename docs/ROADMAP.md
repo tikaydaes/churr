@@ -106,11 +106,15 @@ stays private on a hub and can never be listed or opened. Built
 The home hub makes and keeps every key of the channels it owns
 (`docs/LINK-PROTOCOL.md` sections 10 and 23a).
 
-**Still to change: the hub reads and holds its own channels.** The hub does
-not yet open the envelopes it carries, keep the channel's contents, send the
-history a joining instance is given, or hold the channel's files; history
-and files still come from member instances. `docs/DESIGN-MODULES.md`
-section 8 says what changes.
+The home hub holds each channel it owns whole, with the code an instance
+holds a copy with, in a database of its own: every message as it stands,
+its members and the profiles of everyone who wrote in it. It alone sends
+the history a joining instance is given, so nothing of the channel's
+history depends on any instance staying (`docs/LINK-PROTOCOL.md` section
+23a, "The hub holds the whole channel").
+
+**Still to change: files.** A hub-owned channel's files and custom emoji
+still come from the instance they were posted on.
 
 ## 5a. Modules, types and bots
 

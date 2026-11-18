@@ -351,7 +351,7 @@ func TestReconnect(t *testing.T) {
 
 // Case 11: a hub invitation made with --for is refused for another name.
 // Case 67: the status page names no server and no stream. Case 63 is in
-// TestHubCannotRead.
+// TestWhatTheHubStores.
 func TestHubInvitationForAnotherName(t *testing.T) {
 	h := testkit.NewHub(t)
 	a := testkit.NewServer(t, testkit.Options{Hostname: "a.localhost"})
@@ -969,10 +969,27 @@ func TestFilesThatMustNotArrive(t *testing.T) {
 	}
 }
 
+// readDir is every byte a hub keeps of the link in its data directory: its
+// database, without its key files and without its holder's database, which
+// is the hub's copy of the channels it owns (readHeld).
 func readDir(t *testing.T, dir string) []byte {
+	t.Helper()
+	return readTree(t, dir, filepath.Join(dir, "holder"))
+}
+
+// readHeld is every byte of a hub's holder: the channels it owns, whole.
+func readHeld(t *testing.T, dir string) []byte {
+	t.Helper()
+	return readTree(t, filepath.Join(dir, "holder"), "")
+}
+
+func readTree(t *testing.T, dir, skip string) []byte {
 	t.Helper()
 	var all []byte
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && info.IsDir() && skip != "" && path == skip {
+			return filepath.SkipDir
+		}
 		if err != nil || info.IsDir() || strings.Contains(path, string(filepath.Separator)+"keys"+string(filepath.Separator)) {
 			return err
 		}
@@ -986,13 +1003,16 @@ func readDir(t *testing.T, dir string) []byte {
 	return all
 }
 
-// Case 63: the hub's storage, searched byte for byte, contains no message
-// text, file content, channel name or username. Case 66: the hub's log
+// Case 63: the hub's own storage of the link (its log, the channels'
+// records and keys), searched byte for byte, contains no message text, file
+// content or username: an envelope is kept as it travels, sealed. The hub
+// owns the channel and reads it, and keeps it whole in its holder's
+// database, which holds every message. Case 66: the hub's log
 // holds nothing older than 30 days after the janitor runs. Case 67: the
 // status page names no server and no stream. Case 64: a server over the
 // hub's submit limit gets rate_limited with retry_after_seconds, and an
 // oversized envelope gets too_large.
-func TestHubCannotRead(t *testing.T) {
+func TestWhatTheHubStores(t *testing.T) {
 	s := share(t, 3, true, nil)
 	b := s.Servers[1]
 	s.ann.Post(s.conv[0], "the quarterly numbers are XYZZY-PLUGH")
@@ -1028,6 +1048,14 @@ func TestHubCannotRead(t *testing.T) {
 	// stream's identifier.
 	if !bytes.Contains(stored, []byte("a.localhost")) || !bytes.Contains(stored, []byte(s.stream)) {
 		t.Error("the hub's storage lacks what it is supposed to hold")
+	}
+	// And its holder holds the channel whole: every message, and who said
+	// it.
+	held := readHeld(t, s.Hub.Dir)
+	for _, text := range []string{"XYZZY-PLUGH", "FROBOZZ-MAGIC", "zebediah", "Zeb Example"} {
+		if !bytes.Contains(held, []byte(text)) {
+			t.Errorf("the hub's holder does not hold %q", text)
+		}
 	}
 
 	// 67.
@@ -1066,6 +1094,7 @@ func TestHubCannotRead(t *testing.T) {
 	if !limited {
 		t.Fatal("six envelopes passed a limit of two a minute")
 	}
+	link.AllowUntypedForTest("future.thing") // a kind no schema has, sealed on purpose
 	huge, _ := s.link(1).TestSealNext(s.stream, "future.thing", map[string]any{}, 0)
 	huge.Ciphertext = append(huge.Ciphertext, make([]byte, wire.MaxEnvelopeBytes)...)
 	if answer, err := s.link(1).TestSubmit(s.stream, huge); err != nil || answer.Code != wire.ETooLarge {

@@ -85,6 +85,7 @@ The module is `github.com/tikaydaes/churr`.
         server/                     builds a running server out of the packages above
         hub/                        the hub: envelope log, ordering checks, the channels it
                                     owns and their directory and stream keys (keys.go),
+                                    the holder that keeps them whole (holder.go),
                                     trunks and clusters (cluster.go, trunk.go, ship.go,
                                     replica.go)
         themes/                     colour themes: an account's own, the library, defaults
@@ -458,7 +459,9 @@ links it: it is imported only from `_test.go` files.
   requests and removals by its moderators and managers, and the
   copy's managers kept to the hub's list. `move.go`: moving a
   direct-link channel onto a hub.
-  `cluster.go`: the roster of hubs joined by trunks.
+  `cluster.go`: the roster of hubs joined by trunks. `holder.go`: the
+  service as a hub's holder (`Deps.Holder`), which keeps every channel
+  its hub is the home of whole.
 - `FetchFile`: gets a shared conversation's file from the server it
   came from and checks it against the hash in the signed event.
 - `(*Service).Outbound`, which `chat` calls through its hook, and
@@ -524,8 +527,15 @@ envelope log in its own small SQLite file, the shared-clock checks on
 what it forwards, the record of every channel it owns with its
 managers and moderators and the directory it serves, the stream keys of
 the channels it is the home of (made by the hub, sealed at rest, and
-sent to their instances), trunks to other hubs and the cluster roster,
-the status page.
+sent to their instances), its holder (`holder.go`), trunks to other
+hubs and the cluster roster, the status page. The holder keeps every
+channel the hub is the home of whole: it is a `link.Service` built
+with `Deps.Holder`, over a `chat.Service`, a `perm.Checker` and a disk
+file store, on a database of the hub's own with the instance's schema
+and migrations (`holder/churr.db`). It dials the hub on a loopback
+listener of its own under the hub's name and keys, and the hub serves
+it what it serves an instance, without putting it in any channel's
+list.
 
 **`approvals`** — the instance's approvals queue (`FEATURES.md` section
 31): a registry of kinds (registrations, channel requests, webhook
@@ -596,7 +606,7 @@ Further rules:
 | No package calls `store` to answer an access question itself | `perm` is the only authority |
 | Packages in layer 7 do not import each other | A feature that needs another declares a small interface, and `server` connects them. `calls.Passes` is implemented by `link`; `chat.Outbound` by `link`; `bots` reaches `forms` through `chat` |
 | `web` imports `version` and nothing else of ours | The pages talk to the API like any client |
-| `hub` imports `link`, `secret`, `config`, `ratelimit`, `acme`, `version`, `model` | A hub must not be able to do what a server does. (`link/wire` imports `wirepb` for the client schema's messages inside events; a hub does not open an event in this version, and links that code without calling it) |
+| `hub` imports `link`, `secret`, `config`, `ratelimit`, `acme`, `version`, `model`, and `store`, `chat`, `perm`, `blob` | The hub owns the channels it is the home of and holds them whole, with the code an instance holds a channel with: `store` (and its SQLite backend and migrations), `chat`, `perm` and `blob`'s disk store, built into its holder, and the `link` service that applies their events. It still has no accounts of its own, no API, no live connections, no search and no notifications: it may not import `api`, `web`, `live`, `people`, `auth`, `notify`, `search`, `push` or `bots` |
 | `relay` imports `config`, `ratelimit`, `acme`, `version` | A relay has no store, no model and no link code |
 | Only `preview`, `push`, `blob`, `auth`, `link`, `acme`, `importer` and `relay` make outbound connections | These are the rows of the outside-connections table. A test checks that nothing else dials |
 | Only `calls` imports Pion; only `auth` imports the WebAuthn, OIDC and SAML libraries; only `blob` imports the object-store client | Each large dependency has one owner |

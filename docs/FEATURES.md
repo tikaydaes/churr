@@ -2794,8 +2794,13 @@ a direct link (ruling R94). The hub owns it, as it owns every channel
 shared through it, and is trusted as its owner. The instances the hub
 joins and approves are trusted to keep the channel's contents from
 people who are not allowed to see them. Nothing is kept from the hub:
-it makes and keeps the keys of every channel it owns, so its operator
-can read the channel. A private channel is still not encrypted against
+it makes and keeps the keys of every channel it owns and holds each
+of them whole (every message as it stands, its members and the
+profiles of everyone who wrote in it), so its operator can read the
+channel. Nothing of the channel depends on any instance staying: an
+instance that leaves takes none of its history away, and an instance
+that joins is given its history by the hub even with every other
+instance switched off. A private channel is still not encrypted against
 the hub or its instances: for that, use a sealed chat. Being private
 keeps out, as well as it can, the people nobody invited.
 
@@ -2836,7 +2841,9 @@ The full rules are PERMISSIONS.md section 14.1 and LINK-PROTOCOL.md
 section 23a.
 
 Stored: `stream_channels.managers`, `stream_channels.moderators`,
-`stream_channels.private`, `knocks`.
+`stream_channels.private`, `knocks`. On the hub: the channel's record
+and keys, and the whole channel in the hub's holder (`holder/` in its
+data directory, `OPERATIONS.md`).
 
 ### 21.6 Locking a private channel
 

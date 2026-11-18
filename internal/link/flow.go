@@ -171,6 +171,9 @@ func (s *Service) emitOwn(ctx context.Context, st store.Stream, typ string, fiel
 // emitOwnID is emitOwn for an event whose origin event id the caller chose,
 // so that it can tell afterwards whether the event has been acknowledged.
 func (s *Service) emitOwnID(ctx context.Context, st store.Stream, id, typ string, fields map[string]any, epoch int64, wait bool) error {
+	if s.holder {
+		return nil // a hub's holder originates nothing (holder.go)
+	}
 	plain, err := s.plainOf(typ, fields)
 	if err != nil {
 		return err

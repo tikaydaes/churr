@@ -86,6 +86,9 @@ func (h *Hub) routeFor(st stream) *route {
 		}
 	}
 	sort.Strings(r.local)
+	if h.holderOf(st) {
+		r.local = append(r.local, h.id.Name) // the hub's own holder (holder.go)
+	}
 	return r
 }
 

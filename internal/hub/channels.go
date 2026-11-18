@@ -267,6 +267,16 @@ func (h *Hub) sendRecord(c channel, f wire.Frame, to []string) {
 	}
 }
 
+// audienceOf is audience, and the hub's own holder of a channel the hub is
+// the home of, which is sent its every record (holder.go).
+func (h *Hub) audienceOf(c channel) []string {
+	to := audience(c)
+	if h.owned(c) && !c.rec.Prepared {
+		to = append(to, h.id.Name)
+	}
+	return to
+}
+
 // audience is who a record is sent to: while it is only prepared, the server
 // that brought it and nobody else; otherwise the servers that have just
 // joined first, the channel's other servers, and the servers invited to it.
@@ -309,7 +319,7 @@ func (h *Hub) tellChannels() {
 		h.db.QueryRow(`SELECT also FROM channels WHERE stream_id = ?`, id).Scan(&also)
 		if err == nil {
 			if f, err := h.recordFrame(c); err == nil {
-				to := audience(c)
+				to := h.audienceOf(c)
 				var extra []string
 				json.Unmarshal([]byte(also), &extra)
 				for _, n := range extra {
@@ -357,7 +367,7 @@ func (h *Hub) resendChannels(sc *serverConn) {
 			sc.conn.Send(wire.Frame{Frame: wire.FError, Code: wire.EForbidden, StreamID: id, Message: "The request to join was declined."})
 			h.db.Exec(`UPDATE channels SET declined = ? WHERE stream_id = ?`, string(mustJSON(without(c.declined, sc.name))), id)
 		}
-		if err == nil && !c.rec.Closed && has(audience(c), sc.name) {
+		if err == nil && !c.rec.Closed && has(h.audienceOf(c), sc.name) {
 			if f, err := h.recordFrame(c); err == nil {
 				h.sendKeys(c, []string{sc.name})
 				h.sendRecord(c, f, []string{sc.name})

@@ -22,8 +22,9 @@ import (
 // the home hub and from nobody else. A hub that only carries a channel homed
 // elsewhere holds none of its keys.
 //
-// Direct messages addressed to the hub itself are opened here. The only one
-// it answers is key_request.
+// Direct messages addressed to the hub itself are opened here. The hub
+// answers key_request; every other kind (history and files asked for, and
+// the answers to what the holder asked) it hands to its holder (holder.go).
 
 // keyPlace names a stream key's row for the sealing at rest.
 func keyPlace(stream string, epoch int64) string {
@@ -166,6 +167,9 @@ func (h *Hub) TestStreamKeys(stream string) map[int64][]byte {
 // boxKeyOf is the box key of a server anywhere in the cluster: what a direct
 // message to it is sealed to.
 func (h *Hub) boxKeyOf(name string) ([]byte, bool) {
+	if name == h.id.Name {
+		return h.keys.BoxPublic(), true // the hub's own holder (holder.go)
+	}
 	if rs, remote := h.topology().servers[name]; remote {
 		return rs.boxKey, len(rs.boxKey) == 32
 	}
@@ -218,7 +222,9 @@ func (h *Hub) sendKeys(c channel, to []string) {
 		return
 	}
 	for _, name := range to {
-		if c.rec.Has(name) && has(servers, name) {
+		// The hub's own holder keeps the channel whole, and is given every
+		// key of it (holder.go).
+		if (c.rec.Has(name) && has(servers, name)) || name == h.id.Name {
 			h.sendDirect(name, "key", "", map[string]any{"stream_id": c.rec.StreamID, "epoch": c.rec.Epoch, "key": wire.Bytes(key),
 				"version": c.rec.Version})
 		}
@@ -283,7 +289,12 @@ func (h *Hub) ownDirect(from string, fromKey []byte, f wire.Frame) error {
 		return nil
 	}
 	if m.Kind != "key_request" {
-		return nil // nothing else is asked of a hub
+		// History and files of the channels the hub is the home of are its
+		// holder's to give, and what the holder asked for is its to take.
+		if from != h.id.Name {
+			h.toHolder(f)
+		}
+		return nil
 	}
 	refuse := func(code, message string) error {
 		h.sendDirect(from, "error", m.MsgID, map[string]any{"code": code, "message": message})
@@ -299,7 +310,7 @@ func (h *Hub) ownDirect(from string, fromKey []byte, f wire.Frame) error {
 	key, servers, err := h.streamKey(h.db, m.StreamID, m.Epoch)
 	// In the channel now, and in the list the epoch began for: a server is
 	// never given a key from before it joined or after it left.
-	if err != nil || !c.rec.Has(from) || !has(servers, from) {
+	if err != nil || (from != h.id.Name && (!c.rec.Has(from) || !has(servers, from))) {
 		return refuse(wire.EForbidden, "That server was not in the channel for that epoch.")
 	}
 	h.sendDirect(from, "key", m.MsgID, map[string]any{"stream_id": m.StreamID, "epoch": m.Epoch, "key": wire.Bytes(key),

@@ -931,6 +931,9 @@ func (s *Service) onRoster(ctx context.Context, pc *peerConn, f wire.Frame) erro
 // publishes itself, where it can be fetched. A mismatch blocks the server
 // and tells the owner.
 func (s *Service) confirmRosterName(p store.Peer, sv store.Server) {
+	if s.holder {
+		return // the roster is the holder's own hub's
+	}
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()

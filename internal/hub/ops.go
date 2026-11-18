@@ -91,6 +91,9 @@ func (h *Hub) Reconcile() {
 			}
 		}
 		f, _, err := h.roster()
+		if hc := h.holderConn(); hc != nil && err == nil {
+			hc.conn.Send(f) // the hub's own holder learns every server's keys
+		}
 		for _, c := range conns {
 			if _, active := h.keyOf(c.name); !active {
 				c.conn.CloseWith(wire.ErrorFrame(0, wire.EBlocked, "This server has been removed from the hub."))

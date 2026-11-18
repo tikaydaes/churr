@@ -1414,6 +1414,9 @@ func (s *Service) joined(ctx context.Context, st store.Stream, c wire.Control, h
 func (s *Service) announceMembers(ctx context.Context, id model.StreamID) {
 	defer s.kickStream(ctx, id, true)
 	defer s.holdForAnnouncements(id, false)
+	if s.holder {
+		return // a hub's holder has no members of its own to announce
+	}
 	deadline := time.Now().Add(30 * time.Second)
 	for {
 		st, err := s.store.Streams().Get(ctx, id)

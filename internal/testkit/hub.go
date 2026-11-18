@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"sync"
@@ -96,7 +97,7 @@ func hubClient() *http.Client {
 // start runs the hub on its data directory and its port.
 func (h *TestHub) start(ln net.Listener) {
 	h.t.Helper()
-	cfg := config.Hub{Common: config.Common{Data: h.Dir, Hostname: h.Name, LogLevel: "error"}, KeepDays: 30}
+	cfg := config.Hub{Common: config.Common{Data: h.Dir, Hostname: h.Name, LogLevel: hubLogLevel()}, KeepDays: 30}
 	url := fmt.Sprintf("ws://%s:%d/link/v1", h.Name, h.port)
 	hubPorts.Store(h.Name, h.port)
 	hb, err := hub.NewWith(cfg, hub.Options{Listener: ln, URL: url, HTTPClient: hubClient(),
@@ -145,6 +146,15 @@ func (h *TestHub) start(ln net.Listener) {
 	}
 }
 
+// hubLogLevel is what a test hub logs: errors, or with CHURR_TEST_LOG set to
+// warn or debug, more, as a test's servers do.
+func hubLogLevel() string {
+	if v := os.Getenv("CHURR_TEST_LOG"); v == "warn" || v == "debug" {
+		return v
+	}
+	return "error"
+}
+
 // Stop stops the hub, as a crash or a shutdown does. Its data stays. Stop on
 // a stopped hub does nothing.
 func (h *TestHub) Stop() {
@@ -162,7 +172,7 @@ func (h *TestHub) Offline(fn func(hb *hub.Hub) error) error {
 	if h.stop != nil {
 		h.t.Fatal("testkit: Offline is for a hub that has been stopped")
 	}
-	cfg := config.Hub{Common: config.Common{Data: h.Dir, Hostname: h.Name, LogLevel: "error"}, KeepDays: 30}
+	cfg := config.Hub{Common: config.Common{Data: h.Dir, Hostname: h.Name, LogLevel: hubLogLevel()}, KeepDays: 30}
 	hb, err := hub.NewWith(cfg, hub.Options{URL: fmt.Sprintf("ws://%s:%d/link/v1", h.Name, h.port),
 		Now: func() model.Time { return model.Now() + model.Time(h.skew.Load()) }})
 	if err != nil {

@@ -73,6 +73,9 @@ const restampFast = 5
 func (r outboxRecord) stamp() wire.Stamp { return wire.Stamp{At: r.At, N: r.N, Offset: r.Offset} }
 
 func (s *Service) putOutbox(ctx context.Context, a store.Areas, st store.Stream, id, typ string, fields map[string]any, stamp wire.Stamp, epoch int64) error {
+	if s.holder {
+		return nil // a hub's holder originates nothing (holder.go)
+	}
 	if _, has := fields["at"]; !has {
 		fields["at"] = s.now()
 	}

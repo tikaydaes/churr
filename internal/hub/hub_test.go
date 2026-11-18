@@ -15,7 +15,7 @@ import (
 )
 
 // The hub with servers on it is tested from internal/link, where real
-// servers dial it (TestShareThroughHub, TestHubCannotRead and the rest).
+// servers dial it (TestShareThroughHub, TestWhatTheHubStores and the rest).
 // These are the operator's commands by themselves.
 
 func newHub(t *testing.T) *Hub {

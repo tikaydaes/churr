@@ -657,6 +657,13 @@ func logLevel() slog.Level {
 	return slog.LevelError
 }
 
+// Stop stops the server, as one that is switched off: it says goodbye on its
+// links and serves nothing more. Restart brings it back on the same data.
+func (ts *TestServer) Stop() {
+	ts.t.Helper()
+	ts.stop()
+}
+
 // Restart stops the server and starts it again on the same data and the
 // same address, as a restart of the process does: everything it held in
 // memory is gone, and what it does next it does from what it wrote down.

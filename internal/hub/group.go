@@ -345,6 +345,9 @@ func (h *Hub) writeLocked(jobs []*submitJob) error {
 					others = append(others, n)
 				}
 			}
+			if h.holderOf(*st) {
+				others = append(others, h.id.Name) // the hub's own holder (holder.go)
+			}
 			// What is delivered is what was stored, with its place in the log
 			// beside it.
 			all = append(all, taken{raw: wire.WithPlace(stored, pos, prev), origin: name, to: others})
