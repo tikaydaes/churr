@@ -380,6 +380,26 @@ List<FairVerdict> validateFair(Map<String, Object?> doc, {FairKeys? keys}) {
         ),
       );
     }
+    // A draw numbers its objects once each, in order (FAIR.md section 3):
+    // a document lists them as the message does, so indexes that repeat or
+    // fall back are refused. Where each stands in the message, and so
+    // whether one was left out, is the message's check, not the document's.
+    final ids = [
+      for (final o in objects)
+        if (o is Map && o['i'] is int) o['i'] as int,
+    ];
+    for (var n = 1; n < ids.length; n++) {
+      if (ids[n] <= ids[n - 1]) {
+        out.add(
+          const FairVerdict(
+            'outcome',
+            false,
+            "The objects' indexes repeat or are out of order: a draw numbers its objects once each, in the order they stand.",
+          ),
+        );
+        break;
+      }
+    }
   } else {
     out.add(
       const FairVerdict(
@@ -474,6 +494,8 @@ Map<String, Object?> exportFairMessage(Map m, [List<int>? named]) {
         (named != null && named.isNotEmpty && !named.contains(i))) {
       continue;
     }
+    // A roll an edit changed keeps its index and claims no outcome.
+    if (v['removed'] == true) continue;
     final o = <String, Object?>{'i': i, 'kind': v['kind']};
     final r = readValue(v);
     if (r.drawn && !r.removed && beta != null) {

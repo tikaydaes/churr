@@ -58,6 +58,7 @@ export function judge(res, objects) {
     for (const i of named) {
       const o = of.find((x) => x.i === i);
       if (!o) return { state: 'failed', why: `It names outcome ${i} of the draw, which nothing in this message took.` };
+      if (o.removed) return { state: 'failed', why: `It names outcome ${i} of the draw, which an edit took away.` };
       if (!o.ok) return { state: 'failed', why: 'An outcome it stands on is not the one the proof gives.' };
       if (!o.known) return { state: 'unknown', why: 'An outcome it stands on is of a kind this browser cannot work out, so it is proved but not checked here.' };
     }

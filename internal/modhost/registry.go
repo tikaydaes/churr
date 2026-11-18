@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sync/atomic"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -303,18 +304,29 @@ func (r *Registry) Resolve(ctx context.Context, actor model.Account, conv model.
 	}
 	var v Value
 	var drew *model.ValueDraw
+	// The call's host, kept safely: a module that did not answer in time
+	// may still be running.
+	var host atomic.Pointer[Host]
 	err := r.call(ctx, c.module, actor, conv, kind, draws, func(ctx context.Context, h *Host) error {
 		var err error
+		host.Store(h)
 		v, err = c.module.Handler.Resolve(ctx, h, Marked{Kind: kind, Text: text})
 		drew = h.drew()
 		return err
 	})
+	var env model.ValueEnvelope
+	if err == nil && v.Kind == kind {
+		env, err = r.envelope(c.module, v)
+	}
 	if err != nil || v.Kind != kind {
+		// No value is kept: an index it took is the next object's.
+		if h := host.Load(); h != nil {
+			giveBack(draws, h)
+		}
 		return model.ValueEnvelope{}, false
 	}
-	env, err := r.envelope(c.module, v)
 	env.Draw = drew
-	return env, err == nil
+	return env, true
 }
 
 // Unresolved is the value of a marked object of a claimed kind that nothing

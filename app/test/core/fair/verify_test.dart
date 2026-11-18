@@ -9,6 +9,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:churr/core/fair/indexes.dart';
 import 'package:churr/core/fair/pin.dart';
 import 'package:churr/core/fair/verify.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,6 +37,60 @@ void main() {
     final r = check(message());
     expect(r.state, FairState.verified, reason: r.why);
     expect(r.block['t'], 1790000000);
+  });
+
+  test('the canonical object indexes, as testdata/fair/indexes.json', () {
+    final f = jsonDecode(
+      File('../testdata/fair/indexes.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final cases = f['cases'] as List;
+    expect(cases.length, greaterThanOrEqualTo(20));
+    ObjectIndex of(Map c) => (
+      at: c['at'] as int? ?? 0,
+      drew: c['drew'] == true,
+      i: c['i'] as int?,
+      removed: c['removed'] == true,
+    );
+    for (final c in cases.cast<Map<String, dynamic>>()) {
+      final got = checkIndexes(
+        c['view'] == null ? null : of(c['view'] as Map),
+        [for (final o in c['objects'] as List) of(o as Map)],
+        c['edited'] == true,
+      );
+      expect(got == null, c['ok'], reason: '${c['name']}: $got');
+    }
+  });
+
+  test('indexes not the canonical ones fail as such', () {
+    for (final change in <void Function(Map<String, dynamic>)>[
+      (m) => (m['entities'] as List)[0]['object']['draw']['i'] = 2,
+      (m) => (m['entities'] as List)[0]['object']['draw']['i'] = 0,
+      (m) => (m['entities'] as List)[0]['object'] = {
+        'kind': 'dice_roll',
+        'level': 1,
+        'by': 'dice',
+        'removed': true,
+        'draw': {'i': 1},
+      },
+    ]) {
+      final m = message();
+      change(m);
+      final r = check(m);
+      expect(r.state, FairState.failed);
+      expect(r.why, contains('numbered'));
+    }
+    final edited = message()
+      ..['edited_at'] = v['message']['created_at']
+      ..['entities'][0]['object'] = {
+        'kind': 'dice_roll',
+        'level': 1,
+        'by': 'dice',
+        'removed': true,
+        'draw': {'i': 1},
+      };
+    final r = check(edited);
+    expect(r.state, FairState.verified, reason: r.why);
+    expect(r.objects.any((o) => o.removed && o.i == 1), isTrue);
   });
 
   test('a message with no draw has nothing to check', () {

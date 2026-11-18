@@ -11,6 +11,7 @@ import { isPublicKey, proofToHash, verify } from '../internal/web/static/shared/
 import { Histories, comparePin, pinHistory } from '../internal/web/static/shared/fair/pin.js';
 import { DERIVE, Stream, block, draw, isPrimitive, sameRoll } from '../internal/web/static/shared/fair/derive.js';
 import { verifyMessage } from '../internal/web/static/shared/fair/verify.js';
+import { checkIndexes } from '../internal/web/static/shared/fair/indexes.js';
 import { kindAsks, kindClaims, rederive } from '../internal/web/static/shared/fair/kinds.js';
 import { clockOffset, drawT, inWindow, learnDateHeader, learnServerTime, resetClock } from '../internal/web/static/shared/fair/clock.js';
 
@@ -191,6 +192,23 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
   await changed('a die of the card', (m) => { const t = m.view.data.rows[0].terms[0]; t.rolls[0] = t.rolls[0] === 1 ? 2 : 1; });
   await changed('an inline total', (m) => { m.entities[0].object.data.rows[0].total += 1; });
   await changed('another object index', (m) => { m.view.draw.i = 5; });
+  // Indexes not the canonical ones fail as such, whatever they re-derive to.
+  const numbered = async (what, fn) => {
+    const m = structuredClone(mv.message);
+    fn(m);
+    const r = await verifyMessage(m, ctx);
+    check(r.state === 'failed' && /numbered/.test(r.why), `verify: indexes not canonical fail: ${what}`);
+  };
+  await numbered('the inline roll at 2', (m) => { m.entities[0].object.draw.i = 2; });
+  await numbered('the inline roll repeats 0', (m) => { m.entities[0].object.draw.i = 0; });
+  await numbered('a removed roll on a message never edited', (m) => { m.entities[0].object = { kind: 'dice_roll', level: 1, by: 'dice', removed: true, draw: { i: 1 } }; });
+  {
+    const m = structuredClone(mv.message);
+    m.edited_at = m.created_at;
+    m.entities[0].object = { kind: 'dice_roll', level: 1, by: 'dice', removed: true, draw: { i: 1 } };
+    const r = await verifyMessage(m, ctx);
+    check(r.state === 'verified' && r.objects.some((o) => o.removed && o.i === 1), 'verify: an edited roll keeps its index, removed, and the message checks out');
+  }
   await changed('another beta', (m) => { m.fair.beta = m.fair.proof.slice(0, 43); });
   await changed('another second', (m) => { m.fair.t += 1; });
   await changed('a second far from the message\'s time', (m) => { m.created_at = new Date((m.fair.t + 11) * 1000).toISOString(); });
@@ -214,6 +232,14 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
   // as a shared conversation gives it.
   const remote = await verifyMessage(mv.message, { server: 'b.example', keysOf: (n) => (n === mv.server ? { keys: mv.keys } : null) });
   check(remote.state === 'verified', 'verify: a draw checks under the history given for its owner');
+}
+
+// The canonical object indexes, held to testdata/fair/indexes.json as Go
+// and the app are.
+{
+  const xf = JSON.parse(readFileSync(new URL('../testdata/fair/indexes.json', import.meta.url), 'utf8'));
+  check(xf.cases.length >= 20, 'indexes: the cases are there');
+  for (const c of xf.cases) check((checkIndexes(c.view, c.objects, c.edited) === null) === c.ok, `indexes: ${c.name}`);
 }
 
 // The second a draw is asked for: this clock, corrected by the server's

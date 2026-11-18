@@ -15,6 +15,7 @@
 import { verify } from './ecvrf.js';
 import { DERIVE } from './derive.js';
 import { rederive } from './kinds.js';
+import { checkIndexes, indexesOf } from './indexes.js';
 import { read, KINDS, LEVEL } from '../types/catalogue.js';
 
 // How far a draw's second may be from its message's time: the server's
@@ -78,6 +79,11 @@ export async function verifyMessage(m, ctx) {
   if (!key || !same(key, pk)) return fail(`The roll was not proved with the key ${block.owner} had at the time.`);
   const r = await verify(pk, proof, utf8(block.alpha));
   if (!r.valid || !same(r.beta, beta)) return fail('The proof does not check out.');
+  // The values are numbered by the one rule, or a server could have tried
+  // indexes until an outcome suited it (docs/FAIR.md section 3).
+  const ix = indexesOf(m);
+  const badIndexes = checkIndexes(ix.view, ix.objects, ix.edited);
+  if (badIndexes) return fail('The outcomes are not numbered as the draw numbers them. ' + badIndexes);
   const objects = [];
   const check = async (where, v) => {
     if (!v || !v.draw) return;
@@ -85,6 +91,11 @@ export async function verifyMessage(m, ctx) {
     // checked data; one this client does not know is only proved, not
     // re-derived, and says so.
     const r = read(v);
+    if (v.removed) {
+      // A roll an edit changed: it keeps its index and shows no outcome.
+      objects.push({ where, i: v.draw.i, ok: true, known: true, removed: true, kind: v.kind, data: null });
+      return;
+    }
     let ok = true, known = false;
     if (r.step === 'kind' && !r.removed && !r.alt && Number.isSafeInteger(v.draw.i) && v.draw.i >= 0) {
       const again = await rederive(v.kind, r.data, beta, v.draw.i);

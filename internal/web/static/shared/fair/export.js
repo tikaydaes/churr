@@ -25,6 +25,8 @@ export async function exportMessage(m, objects) {
   for (const { value: v } of drawnValues(m)) {
     const i = v.draw.i;
     if (named && !named.has(i)) continue;
+    // A roll an edit changed keeps its index and claims no outcome.
+    if (v.removed) continue;
     const r = read(v);
     const o = { i, kind: v.kind };
     if (r.step === 'kind' && !r.removed && beta) {

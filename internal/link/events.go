@@ -653,7 +653,13 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 		// The proof of the message's draw, checked; what took chance from
 		// a draw that fails is shown as its text (fair.go).
 		var ok bool
-		if m.Fair, ok = a.fairOf(w); !ok {
+		if m.Fair, ok = a.fairOf(w); ok && m.Fair != nil {
+			// The block checks out: its values must be numbered by the
+			// one rule, or the block and its values go as if it had not.
+			ok = a.canonical(w, &m)
+		}
+		if !ok {
+			m.Fair = nil
 			dropDrawn(&m)
 		}
 		if m.Fair != nil {

@@ -54,6 +54,15 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 	}
 	before := roll("2d6")
 	gone := roll("d4")
+	// A roll whose proof checks out but whose value claims another object
+	// index than the one rule gives: the server could have tried indexes
+	// until an outcome suited it. It arrives as its text, and is audited.
+	renumbered := roll("3d6")
+	if a.Server.Store.Dialect() == "postgres" {
+		a.Exec(`UPDATE messages SET view = replace(view::text, '"i":0', '"i":1')::jsonb WHERE id = ?`, renumbered["id"])
+	} else {
+		a.Exec(`UPDATE messages SET view = replace(view, '"i":0', '"i":1') WHERE id = ?`, renumbered["id"])
+	}
 	a.Owner.Must(200, "DELETE", "/api/v1/messages/"+gone["id"].(string), nil)
 	_, local := l.Share(0, ch, "tavern-here", map[string]any{"history_days": 30}, 1)
 
@@ -68,6 +77,9 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 		if string(a1) != string(b1) {
 			t.Fatalf("the proof changed on the way: %s, sent %s", b1, a1)
 		}
+	}
+	if got := rollOn(b.Owner, local[1], renumbered["text"].(string)); got["view"] != nil || got["fair"] != nil {
+		t.Fatalf("a roll with an index not the canonical one arrived as a roll: %v", got)
 	}
 	// A deleted roll came in the history as its marker, with its proof.
 	b.Owner.HasMessage(local[1], honest["text"].(string))
@@ -95,8 +107,8 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 	}
 	audit := b.Owner.Must(200, "GET", "/api/v1/admin/audit?action=link.fair_block_dropped", nil)
 	entries, _ := audit["entries"].([]any)
-	if len(entries) != 1 {
-		t.Fatalf("the drop was audited %d times: %v", len(entries), audit)
+	if len(entries) != 2 {
+		t.Fatalf("the drops were audited %d times, not for the renumbered roll and the forged one: %v", len(entries), audit)
 	}
 	// Inline dice of a forged draw are text too.
 	a.Owner.Post(ch, "and [[1d6]]")

@@ -112,5 +112,13 @@ func (o *Objects) Stream() (*Stream, error) {
 	return s, nil
 }
 
+// Return takes back the last stream given, for an object that made no value
+// with it: the next object takes its index (docs/FAIR.md section 3).
+func (o *Objects) Return(s *Stream) {
+	if s != nil && o.next > 0 && s.Object() == o.next-1 {
+		o.next--
+	}
+}
+
 // Taken is how many objects have taken a stream.
 func (o *Objects) Taken() int { return int(o.next) }

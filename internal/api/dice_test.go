@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modules/dice"
 	"github.com/tikaydaes/churr/internal/testkit"
@@ -128,6 +129,21 @@ func TestInlineDice(t *testing.T) {
 	}
 	if gone := after[1]["object"].(map[string]any); gone["removed"] != true || gone["data"] != nil {
 		t.Fatalf("changed dice are marked removed: %v", after[1])
+	}
+	// The changed roll keeps its object index, and the edit is dated, so the
+	// indexes are still the canonical ones (docs/FAIR.md section 3).
+	if gone := after[1]["object"].(map[string]any); gone["draw"] == nil || gone["draw"].(map[string]any)["i"] != float64(1) || e["edited_at"] == nil {
+		t.Fatalf("changed dice keep their index on a dated edit: %v %v", after[1], e["edited_at"])
+	}
+	var ev model.Message
+	remarshal(t, e, &ev)
+	view, objs := fair.IndexesOf(ev.View, ev.Entities)
+	if err := fair.CheckIndexes(view, objs, !ev.EditedAt.IsZero()); err != nil {
+		t.Fatalf("after the edit: %v", err)
+	}
+	view, objs = fair.IndexesOf(nil, func() []model.Entity { var o model.Message; remarshal(t, m, &o); return o.Entities }())
+	if err := fair.CheckIndexes(view, objs, false); err != nil {
+		t.Fatalf("as posted: %v", err)
 	}
 
 	// Dice added in an edit are not rolled either.

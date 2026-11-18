@@ -37,9 +37,30 @@ that does not know a message's number says so rather than guessing.
 
 **Objects.** A message has one draw. Each chance object in it (the roll a
 command made, each inline roll `[[...]]`, each value a module made) takes
-an object index `i`, from 0, in order of appearance: a command's own
-value first, then the objects of the text in the order their characters
-stand. The index an object took is recorded with it (section 8).
+an object index `i`, recorded with it (section 8), by one rule, the same
+for every message, so that a server cannot try indexes until an outcome
+suits it:
+
+- the command's own value (the message's `view`), when it took chance, is
+  object 0;
+- the object entities that took chance follow, in the order of their
+  position `at` in the text, from 1 when the view took chance and from 0
+  when it did not;
+- with no gap and no repeat, and nothing else takes an index (an object
+  that asked for chance and made no value gives its index back to the next
+  one).
+
+An edit never adds a chance object. A roll it changes is marked `removed`
+and keeps its entity and its index (it shows no outcome); one whose
+characters it deletes is gone and leaves its index unused. So on an edited
+message the indexes still rise with the position and never repeat, and a
+gap is left only by a deletion; a message never edited has no gap, and a
+`removed` object on it is refused. A message that drew is never quickly
+corrected: every edit of it sets `edited_at`. A message whose indexes are not
+these fails its check (section 9). A card's `fair_mark` names objects of this
+set only. `testdata/fair/indexes.json` holds layouts accepted and refused;
+Go (`fair.CheckIndexes`), the web chat (`shared/fair/indexes.js`) and the
+app (`lib/core/fair/indexes.dart`) give the same answer for each.
 
 **Blocks.** Object i's stream is the blocks
 
@@ -338,6 +359,9 @@ joins.
 - `invalid`: primitives every implementation refuses, having taken
   nothing.
 
+`testdata/fair/indexes.json` holds layouts of a message's chance values
+whose object indexes are and are not the canonical ones (section 3).
+
 An implementation passes when every block, value, result and word count
 is the same, and every invalid primitive is refused. The Go test writes
 the file only when told to (`CHURR_WRITE_FAIR_VECTORS=1`), which was done
@@ -372,8 +396,9 @@ it asked for, in order. A value whose kind has its own derivation, such as
 The message's `client_id` is served with it whenever it carries a block:
 it is the nonce of its input. The block is stored with the message, never
 edited, carried unchanged by the link and by a channel's history, and kept
-on its marker when it is deleted. An edit that rolls nothing (inline dice changed are marked
-`removed`) keeps it.
+on its marker when it is deleted. An edit rolls nothing and keeps it: inline
+dice it changes are marked `removed`, keeping their object index, and dice it
+writes are marked `removed` with no `draw` (section 3).
 
 ## 9. Checking a draw
 
@@ -390,14 +415,15 @@ owner (`/.well-known/churr`, a pin, a hub channel's record):
 4. `pk` is the key the owner's history had in force at the message's
    `created_at`: the last entry to have begun by then.
 5. `ECVRF_verify(pk, proof, UTF-8(alpha))` holds and gives `beta`.
-6. Every value with `draw` is re-derived from `stream(i, ·)` of `beta`: a
+6. The object indexes are the canonical ones (section 3).
+7. Every value with `draw` is re-derived from `stream(i, ·)` of `beta`: a
    roll's every die, every dropped die, every value and total
    (section 5); every other kind's outcome by its composition
    (section 5a). A value of a kind the checker knows whose data does not
    hold together fails; one of a kind it does not know is proved but not
    re-derived.
 
-**A server receiving a message** over the link checks 1 to 5, with the
+**A server receiving a message** over the link checks 1 to 6, with the
 looser bound of 3: the owner must be the author's server, and the history
 is its own for its own people, the pin of a direct link, or the hub
 channel's record. A block that fails is dropped, and with it every value
@@ -407,7 +433,7 @@ re-derived on the server beyond each kind's own check; the clients
 re-derive them.
 
 **The clients** (the web chat, `shared/fair/verify.js`; the app,
-`lib/core/fair/verify.dart`) check 1 to 6 against the history they pinned
+`lib/core/fair/verify.dart`) check 1 to 7 against the history they pinned
 for the block's owner, by name, and draw the shield (`DESIGN-FAIR.md`
 section 13) from that check alone: "Verified", a shield with a tick, or,
 plainly, "Not verified" with why, a warning mark (a check that was made and
@@ -449,7 +475,9 @@ pass or fail with its reason:
    order of `stream(i, ·)` of `beta` (sections 3 and 4), give the claimed
    results; a primitive derive 1 does not have fails, and those after it on
    that object are not checked; a dice result is compared by its rows'
-   rolls, dropped dice, values and totals;
+   rolls, dropped dice, values and totals; objects whose indexes repeat or
+   fall back in the order listed fail (a document carries no positions, so
+   whether one was left out is the message's check, section 3);
 4. **alpha**: it is `"<t>|<nonce>"` in the one spelling of section 6, its
    second shown as a time;
 5. **key**: when a server is named and its published history is to hand,

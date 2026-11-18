@@ -686,7 +686,10 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 	// Strictly inside the window: a window of 0 seconds (allowed, and what
 	// switches quick corrections off) holds no edit, even one made in the
 	// same millisecond as the message.
-	quick := now.Sub(m.CreatedAt) < time.Duration(quickSeconds)*time.Second
+	// A message that drew is never quickly corrected: its edited_at says it
+	// was edited, which a verifier needs to read its object indexes
+	// (docs/FAIR.md section 3).
+	quick := now.Sub(m.CreatedAt) < time.Duration(quickSeconds)*time.Second && m.Fair == nil
 	// An edit resolves no objects: those it leaves alone keep their
 	// values, and the rest are marked removed (claims.go).
 	inst := in.Instants

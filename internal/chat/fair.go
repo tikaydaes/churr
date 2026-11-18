@@ -148,6 +148,14 @@ func (d *drawer) Stream() (*fair.Stream, error) {
 	return d.objs.Stream()
 }
 
+// Return implements modhost.Returner: an object that took a stream and made
+// no value gives its index back.
+func (d *drawer) Return(s *fair.Stream) {
+	if d.objs != nil {
+		d.objs.Return(s)
+	}
+}
+
 // draw makes the message's draw: the one its second and client_id fix.
 func (d *drawer) draw() error {
 	if d.s.fair == nil {

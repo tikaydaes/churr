@@ -688,7 +688,9 @@ its `DiceRoll` holding the expression written out in full and one row
 with each term as it fell and the total. An edit keeps the
 roll of dice it leaves exactly as they were (the same characters, in
 the same place among the message's dice); dice it writes or changes get
-a value with `removed: true`, no data and nothing rolled. An author's
+a value with `removed: true`, no data and nothing rolled, and dice it
+changes keep the `draw` index of the roll they replace (`FAIR.md`
+section 3). An edit of a message that drew always sets `edited_at`. An author's
 object hint names inline dice with kind `dice`. Bots, webhooks, imports and commands
 get no inline dice, and a sealed chat has none: the text stays as
 typed. Clients draw the typed text, each die (drawn as a `/roll`

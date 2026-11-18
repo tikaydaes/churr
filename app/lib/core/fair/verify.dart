@@ -16,6 +16,7 @@ import 'dart:typed_data';
 
 import '../types/catalogue.dart';
 import 'derive.dart';
+import 'indexes.dart';
 import 'kinds.dart';
 import 'pin.dart';
 import 'ecvrf.dart' as ecvrf;
@@ -45,7 +46,7 @@ class FairCheck {
   /// Each value that took chance from the draw: its object index, whether
   /// it checks out, and whether its outcome was worked out here ([known])
   /// or only proved, its kind being one this device cannot derive.
-  final List<({int i, bool ok, bool known})> objects;
+  final List<({int i, bool ok, bool known, bool removed})> objects;
 }
 
 /// Bytes from base64url (padding allowed), or null.
@@ -153,14 +154,28 @@ FairCheck verifyMessage(
   if (!r.valid || !_same(r.beta, beta)) {
     return fail('The proof does not check out.');
   }
+  // The values are numbered by the one rule, or a server could have tried
+  // indexes until an outcome suited it (docs/FAIR.md section 3).
+  final ix = indexesOf(m);
+  final badIndexes = checkIndexes(ix.view, ix.objects, ix.edited);
+  if (badIndexes != null) {
+    return fail(
+      'The outcomes are not numbered as the draw numbers them. $badIndexes',
+    );
+  }
   // A kind with a composition of derive 1 is re-derived in full, from its
   // checked data; a kind this device checks whose data does not hold
   // together fails; one it does not know is only proved, not re-derived.
-  final objects = <({int i, bool ok, bool known})>[];
+  final objects = <({int i, bool ok, bool known, bool removed})>[];
   bool rollOk(Object? v) {
     if (v is! Map || v['draw'] is! Map) return true;
     final i = (v['draw'] as Map)['i'];
     if (i is! int || i < 0) return false;
+    if (v['removed'] == true) {
+      // A roll an edit changed: it keeps its index and shows no outcome.
+      objects.add((i: i, ok: true, known: true, removed: true));
+      return true;
+    }
     final r = readValue(v);
     final kind = v['kind'];
     var ok = true, known = false;
@@ -181,7 +196,7 @@ FairCheck verifyMessage(
         known = true;
       }
     }
-    objects.add((i: i, ok: ok, known: known));
+    objects.add((i: i, ok: ok, known: known, removed: false));
     return ok;
   }
 

@@ -51,6 +51,14 @@ check('good: alpha is well formed, its time shown', one(good, 'alpha').ok === tr
 check('good: the key is the server\'s, in force then', one(good, 'key').ok === true && one(good, 'key').why.includes(mv.server), one(good, 'key'));
 check('good: every verdict has its reason', good.every((v) => typeof v.why === 'string' && v.why.length > 10));
 
+// Indexes that repeat or fall back are refused: a draw numbers its objects
+// once each (FAIR.md section 3).
+const twice = await validate({ ...doc, objects: [doc.objects[0], { ...doc.objects[1], i: doc.objects[0].i }] }, keys);
+check('objects that share an index are refused', verdict(twice, 'outcome').some((v) => v.ok === false && /repeat or are out of order/.test(v.why)));
+const backwards = await validate({ ...doc, objects: [doc.objects[1], doc.objects[0]] }, keys);
+check('objects whose indexes fall back are refused', verdict(backwards, 'outcome').some((v) => v.ok === false && /out of order/.test(v.why)));
+check('good: indexes in order pass', !verdict(good, 'outcome').some((v) => /out of order/.test(v.why)));
+
 // A proof tampered with: the proof fails, beta no longer matches it; the
 // outcomes, from beta, are still what beta gives.
 const flip = (s) => { const c = s.split(''); const at = 20; c[at] = c[at] === 'A' ? 'B' : 'A'; return c.join(''); };

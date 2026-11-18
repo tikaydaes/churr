@@ -56,6 +56,22 @@ func (a *apply) fairOf(w wireMessage) (*model.FairBlock, bool) {
 	return w.Fair, true
 }
 
+// canonical holds a message whose block checked out to the canonical object
+// indexes (docs/FAIR.md section 3), as stored here: its view, and its object
+// entities after their kinds' checks, so an object that fell back to text
+// leaves a gap and fails it too. One that fails is treated as a failed
+// block: dropped, with its values, and audited.
+func (a *apply) canonical(w wireMessage, m *model.Message) bool {
+	view, objs := fair.IndexesOf(m.View, m.Entities)
+	err := fair.CheckIndexes(view, objs, !w.EditedAt.IsZero())
+	if err == nil {
+		return true
+	}
+	a.s.audit(a.ctx, a.tx, "", "link.fair_block_dropped", "stream", string(a.st.ID), map[string]any{"message_id": w.ID,
+		"origin": a.origin.Name, "owner": w.Fair.Owner, "why": err.Error()})
+	return false
+}
+
 // vrfHistory is the VRF key history this server holds for a server, by name.
 func (a *apply) vrfHistory(name string) []fair.Key {
 	var keys []wire.VRFKey

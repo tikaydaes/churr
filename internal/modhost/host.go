@@ -39,6 +39,20 @@ type Draws interface {
 	Stream() (*fair.Stream, error)
 }
 
+// Returner is Draws that takes back the last stream it gave, for an object
+// that took one and then made no value: the next object takes the index, so
+// the indexes stay the canonical ones, with no gap (docs/FAIR.md section 3).
+type Returner interface {
+	Return(*fair.Stream)
+}
+
+// giveBack returns a call's stream when its value was not kept.
+func giveBack(draws Draws, h *Host) {
+	if r, ok := draws.(Returner); ok && h.stream != nil {
+		r.Return(h.stream)
+	}
+}
+
 // errNoDraw is chance asked for where no draw is to be had.
 var errNoDraw = errors.New("modhost: this call has no draw to take chance from")
 

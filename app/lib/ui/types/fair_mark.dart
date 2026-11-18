@@ -80,6 +80,12 @@ FairCheck fairCheckOf(ServerState server, Message m) {
               'It names outcome $i of the draw, which nothing in this message took.',
         );
       }
+      if (o.removed) {
+        return (
+          state: FairState.failed,
+          why: 'It names outcome $i of the draw, which an edit took away.',
+        );
+      }
       if (!o.ok) {
         return (
           state: FairState.failed,

@@ -1,0 +1,26 @@
+{
+ "description": "Layouts of a message's chance values and whether their object indexes are the canonical ones (docs/FAIR.md section 3). view is the message's own value (null for none): drew and i, or removed. objects are its object entities, in the order they are listed (not always the order of at): at, drew and i, removed. edited says the message has been edited. Go (internal/fair), the web chat (shared/fair/indexes.js) and the app (lib/core/fair/indexes.dart) all give ok for each.",
+ "cases": [
+  {"name": "a roll and two inline rolls", "edited": false, "view": {"drew": true, "i": 0}, "objects": [{"at": 4, "drew": true, "i": 1}, {"at": 20, "drew": true, "i": 2}], "ok": true},
+  {"name": "inline rolls alone start at 0", "edited": false, "view": null, "objects": [{"at": 0, "drew": true, "i": 0}, {"at": 9, "drew": true, "i": 1}], "ok": true},
+  {"name": "a view that took no chance does not take 0", "edited": false, "view": {"drew": false}, "objects": [{"at": 3, "drew": true, "i": 0}], "ok": true},
+  {"name": "a command's value alone", "edited": false, "view": {"drew": true, "i": 0}, "objects": [], "ok": true},
+  {"name": "objects listed out of order are numbered by position", "edited": false, "view": null, "objects": [{"at": 30, "drew": true, "i": 1}, {"at": 2, "drew": true, "i": 0}], "ok": true},
+  {"name": "objects that took no chance are not counted", "edited": false, "view": null, "objects": [{"at": 0, "drew": false}, {"at": 5, "drew": true, "i": 0}, {"at": 9, "drew": false}, {"at": 14, "drew": true, "i": 1}], "ok": true},
+  {"name": "an edit that deleted a roll leaves a gap", "edited": true, "view": null, "objects": [{"at": 0, "drew": true, "i": 0}, {"at": 8, "drew": true, "i": 2}], "ok": true},
+  {"name": "an edit that changed a roll keeps its index, removed", "edited": true, "view": null, "objects": [{"at": 0, "drew": true, "i": 0}, {"at": 8, "drew": true, "i": 1, "removed": true}, {"at": 16, "drew": true, "i": 2}], "ok": true},
+  {"name": "an edit wrote new dice, not rolled", "edited": true, "view": null, "objects": [{"at": 0, "drew": true, "i": 0}, {"at": 8, "drew": false, "removed": true}], "ok": true},
+  {"name": "the command's value is not 0", "edited": false, "view": {"drew": true, "i": 1}, "objects": [], "ok": false},
+  {"name": "inline rolls start at 1 with no view drawn", "edited": false, "view": null, "objects": [{"at": 0, "drew": true, "i": 1}], "ok": false},
+  {"name": "an object repeats the view's 0", "edited": false, "view": {"drew": true, "i": 0}, "objects": [{"at": 0, "drew": true, "i": 0}], "ok": false},
+  {"name": "two objects share an index", "edited": false, "view": null, "objects": [{"at": 0, "drew": true, "i": 0}, {"at": 5, "drew": true, "i": 0}], "ok": false},
+  {"name": "indexes against the order of position", "edited": false, "view": null, "objects": [{"at": 2, "drew": true, "i": 1}, {"at": 30, "drew": true, "i": 0}], "ok": false},
+  {"name": "a gap on a message never edited", "edited": false, "view": null, "objects": [{"at": 0, "drew": true, "i": 0}, {"at": 8, "drew": true, "i": 2}], "ok": false},
+  {"name": "an index far past the rest", "edited": false, "view": {"drew": true, "i": 0}, "objects": [{"at": 0, "drew": true, "i": 57}], "ok": false},
+  {"name": "a removed roll on a message never edited", "edited": false, "view": null, "objects": [{"at": 0, "drew": true, "i": 0, "removed": true}], "ok": false},
+  {"name": "removed dice on a message never edited", "edited": false, "view": null, "objects": [{"at": 0, "drew": false, "removed": true}], "ok": false},
+  {"name": "an edited message repeats an index", "edited": true, "view": null, "objects": [{"at": 0, "drew": true, "i": 1}, {"at": 8, "drew": true, "i": 1}], "ok": false},
+  {"name": "an edited message against the order of position", "edited": true, "view": null, "objects": [{"at": 0, "drew": true, "i": 2}, {"at": 8, "drew": true, "i": 0}], "ok": false},
+  {"name": "the message's own value removed", "edited": true, "view": {"drew": true, "i": 0, "removed": true}, "objects": [], "ok": false}
+ ]
+}

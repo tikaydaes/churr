@@ -82,6 +82,31 @@ void main() {
     expect([for (final v in outcomes(vs)) v.ok], [true, false]);
   });
 
+  test('objects whose indexes repeat or fall back are refused', () {
+    bool refused(List<FairVerdict> vs) => outcomes(
+      vs,
+    ).any((v) => v.ok == false && v.why.contains('out of order'));
+    expect(refused(validateFair(doc, keys: keys)), isFalse);
+    expect(
+      refused(
+        validateFair(
+          changed((d) => ((d['objects'] as List)[1] as Map)['i'] = 0),
+          keys: keys,
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      refused(
+        validateFair(
+          changed((d) => d['objects'] = (d['objects'] as List).reversed.toList()),
+          keys: keys,
+        ),
+      ),
+      isTrue,
+    );
+  });
+
   test('a malformed alpha is said so', () {
     final nonce = readAlpha(doc['alpha'] as String)!.nonce;
     for (final bad in [

@@ -176,7 +176,10 @@ func isResolved(e model.Entity) bool {
 
 // keepResolved gives the resolved objects of an edited text the values they
 // had, where the same characters stand in the same place among the
-// message's resolved objects; the rest stay marked removed.
+// message's resolved objects; the rest stay marked removed. A removed one in
+// the place of a value that took chance keeps that value's object index
+// (docs/FAIR.md section 3): an edit never adds a chance object, and a roll it
+// changes keeps its index, so the indexes stay the canonical ones.
 func keepResolved(oldText string, old []model.Entity, newText string, now []model.Entity) []model.Entity {
 	ou, nu := utf16.Encode([]rune(oldText)), utf16.Encode([]rune(newText))
 	typed := func(u []uint16, e model.Entity) string {
@@ -202,6 +205,10 @@ func keepResolved(oldText string, old []model.Entity, newText string, now []mode
 			kept := before[n]
 			kept.At, kept.Len = e.At, e.Len
 			out[i] = kept
+		} else if n < len(before) && before[n].Object.Draw != nil && e.Object.Removed {
+			removed := *e.Object
+			removed.Draw = &model.ValueDraw{I: before[n].Object.Draw.I}
+			out[i].Object = &removed
 		}
 		n++
 	}

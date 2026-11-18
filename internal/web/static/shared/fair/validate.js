@@ -170,6 +170,12 @@ export async function validate(doc, keys = null) {
       if (results.length > prims.length) out.push({ id: 'outcome', i, j: prims.length, ok: false, why: 'More results are claimed than primitives asked.' });
     }
     if (!(doc.objects || []).some((o) => o && Array.isArray(o.primitives) && o.primitives.length)) out.push({ id: 'outcome', i: null, j: null, ok: null, why: 'No primitive was given, so no outcome was checked.' });
+    // A draw numbers its objects once each, in order (FAIR.md section 3): a
+    // document lists them as the message does, so indexes that repeat or
+    // fall back are refused. Where each stands in the message, and so
+    // whether one was left out, is the message's check, not the document's.
+    const ids = (doc.objects || []).map((o) => o && o.i).filter((i) => Number.isSafeInteger(i));
+    if (ids.some((i, n) => n > 0 && i <= ids[n - 1])) out.push({ id: 'outcome', i: null, j: null, ok: false, why: 'The objects\' indexes repeat or are out of order: a draw numbers its objects once each, in the order they stand.' });
   } else {
     out.push({ id: 'outcome', i: null, j: null, ok: false, why: 'Without a beta nothing can be re-derived.' });
   }
