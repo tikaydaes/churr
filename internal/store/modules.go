@@ -7,9 +7,10 @@ import (
 )
 
 // Modules is what the built-in modules keep (docs/DESIGN-MODULES.md section
-// 6.2): the `module_values` table, each module's keys and bytes per scope.
-// The host of the modules checks keys and the size of one value; this area
-// keeps the totals.
+// 6.2): the `module_values` table, each module's keys and bytes per scope;
+// and where they are switched off (section 6.5): the `module_switches`
+// table. The host of the modules checks keys and the size of one value;
+// this area keeps the totals.
 type Modules interface {
 	// Value returns the bytes stored under a key. found is false when
 	// there are none.
@@ -22,4 +23,13 @@ type Modules interface {
 	PutValue(ctx context.Context, k model.ModuleKey, value []byte, perConversation, perModule int64) error
 	// DeleteValue removes a key. A key with nothing stored is no error.
 	DeleteValue(ctx context.Context, k model.ModuleKey) error
+
+	// Off lists the modules switched off for the whole instance, and those
+	// switched off in a conversation by its own managers (none for "").
+	// A module in neither list is on there.
+	Off(ctx context.Context, conv model.ConversationID) (instance, here []string, err error)
+	// SetOff switches a module off, or with off false on again, for the
+	// whole instance (conv "") or in one conversation. Switching to what
+	// it already is changes nothing and is no error.
+	SetOff(ctx context.Context, module string, conv model.ConversationID, off bool) error
 }

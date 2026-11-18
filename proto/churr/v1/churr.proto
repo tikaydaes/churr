@@ -2655,6 +2655,42 @@ message SendScheduledNowResponse {
   Message message = 4;
 }
 
+message ListConversationModulesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Module modules = 3;
+}
+
+// A built-in module (DESIGN-MODULES.md section 6.2): what it declares, and whether it is on.
+message Module {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string title = 4;
+  optional bool on = 5;
+  optional bool server_on = 6;
+  repeated ModuleCommand commands = 7;
+  repeated string claims = 8;
+}
+
+// A command a built-in module declares.
+message ModuleCommand {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string hint = 4;
+  optional string summary = 5;
+}
+
+message SetConversationModuleRequest {
+  repeated int32 null_fields = 2;
+  optional bool on = 3;
+}
+
+message SetConversationModuleResponse {
+  repeated int32 null_fields = 2;
+  Module module = 3;
+}
+
 message ListCommandsResponse {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -3645,6 +3681,22 @@ message DismissManagerResponse {
 message OwnerOverrideAddResponse {
   repeated int32 null_fields = 2;
   Member member = 3;
+}
+
+message AdminListModulesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Module modules = 3;
+}
+
+message SetModuleRequest {
+  repeated int32 null_fields = 2;
+  optional bool on = 3;
+}
+
+message SetModuleResponse {
+  repeated int32 null_fields = 2;
+  Module module = 3;
 }
 
 message AdminListEmojiResponse {

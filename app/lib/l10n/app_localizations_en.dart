@@ -5577,6 +5577,23 @@ class L10nEn extends L10n {
   }
 
   @override
+  String get modulesTab => 'Modules';
+
+  @override
+  String get modulesAbout =>
+      'Built-in parts of Churr that answer commands and draw cards. Off here, a module’s commands do nothing in this channel and what it made shows as its text; on again, its cards come back.';
+
+  @override
+  String get modulesManagersOnly =>
+      'The channel’s managers switch these off and on.';
+
+  @override
+  String get modulesServerOff => 'Switched off on this server.';
+
+  @override
+  String get modulesNone => 'This server has no built-in modules.';
+
+  @override
   String get patternsTab => 'References';
 
   @override

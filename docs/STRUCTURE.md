@@ -225,7 +225,14 @@ catalogue.
 - Every call into a module runs on its own goroutine under a 2 s
   deadline, with panics recovered: the person gets an ordinary
   `unavailable` refusal and `Options.Failed` is told, which the server
-  logs and audits (`module.panicked`, `module.timed_out`).
+  logs and audits (`module.panicked`, `module.timed_out`) and, for a
+  panic, switches the module off.
+- `Options.Switches` (`store.Modules`) says where modules are off:
+  `(*Registry).Off` gives the set for a conversation, `Command` refuses
+  an off module's command with `feature_off` and `Resolve` leaves its
+  claims as text. `List` and `Module` give what each declares, for the
+  switches' operations in `chat/modules.go`; `chat` serves what an off
+  module made as its text when it presents messages.
 - `New(Options, ...Module) (*Registry, error)`; `(*Registry).Command`,
   `Resolve`, `Unresolved`, `Claims`, `Commands`. The registry refuses a
   reply with no text, holds every value to its kind's schema and check,

@@ -746,6 +746,7 @@ moderator or manager of it (ruling R99).
 | Close any form                            | Managers | – |       |
 | Read and download `collect` form answers  | Managers, and the form's author | – | Never who answered what on an anonymous form |
 | Define the channel's own reference patterns (`set_reference_patterns`, ruling R73) | Managers | – | Named channels. Anyone who can see the channel may list them |
+| Switch a built-in module off in the channel, or on again (`set_modules`, DESIGN-MODULES.md 6.5) | Managers | – | Named channels. Not on what the server has off. Anyone who can read the channel may list them |
 | Set who may use broad mentions in the channel (`broad_mentions`) | Managers | – | Section 5 note 4 |
 | Shorten retention                         | Managers | – | Named channels only [2] |
 | Set any retention, or none                | Managers who are admins | Admins, from the console | Named channels only [2] |
@@ -1006,6 +1007,7 @@ Checklist history has no hidden state.
 | Change server settings and sign-in policy      | Y  | Y  | –  | –  | –  | –  |
 | Define sections                                | Y  | Y  | –  | –  | –  | –  |
 | Define the server's reference patterns (`define_reference_patterns`, ruling R73) | Y | Y | – | – | – | – |
+| Switch built-in modules on and off for the server (`manage_modules`, DESIGN-MODULES.md 6.5) | Y | Y | – | – | – | – |
 | Add custom emoji                               | Y  | Y  | [7] | – | –  | –  |
 | Remove custom emoji                            | Y  | Y  | Own [7] | – | – | –  |
 | Community saved replies, community status presets | Y | Y | –  | –  | –  | –  |

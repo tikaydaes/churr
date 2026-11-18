@@ -30,3 +30,26 @@ type ModuleKey struct {
 	Account      AccountID
 	Key          string
 }
+
+// BuiltinModule is a built-in module as the admin console and a channel's
+// settings list it (schema Module): what it declares, and whether it is on.
+type BuiltinModule struct {
+	Name  string `json:"name"`
+	Title string `json:"title"`
+	// On is whether it is on where it was asked about: the instance, or a
+	// conversation.
+	On bool `json:"on"`
+	// ServerOn is whether the instance has it on; a channel cannot switch
+	// on what the instance has off.
+	ServerOn bool            `json:"server_on"`
+	Commands []ModuleCommand `json:"commands"`
+	// Claims are the kinds it resolves when they are sent.
+	Claims []string `json:"claims"`
+}
+
+// ModuleCommand is a command a module declares (schema ModuleCommand).
+type ModuleCommand struct {
+	Name    string `json:"name"`
+	Hint    string `json:"hint,omitempty"`
+	Summary string `json:"summary"`
+}

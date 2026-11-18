@@ -32591,6 +32591,422 @@ class SendScheduledNowResponse extends $pb.GeneratedMessage {
   Message ensureMessage() => $_ensure(2);
 }
 
+class ListConversationModulesResponse extends $pb.GeneratedMessage {
+  factory ListConversationModulesResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<Module>? modules,
+  }) {
+    final result = ListConversationModulesResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (modules != null) result.modules.addAll(modules);
+    return result;
+  }
+
+  ListConversationModulesResponse._();
+
+  factory ListConversationModulesResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListConversationModulesResponse()..mergeFromBuffer(data, registry);
+  factory ListConversationModulesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListConversationModulesResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListConversationModulesResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListConversationModulesResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<Module>(3, _omitFieldNames ? '' : 'modules',
+        subBuilder: Module.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListConversationModulesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListConversationModulesResponse copyWith(
+          void Function(ListConversationModulesResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListConversationModulesResponse))
+          as ListConversationModulesResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListConversationModulesResponse() / ListConversationModulesResponse.new instead')
+  static ListConversationModulesResponse create() =>
+      ListConversationModulesResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListConversationModulesResponse._();
+  @$core.override
+  ListConversationModulesResponse createEmptyInstance() =>
+      ListConversationModulesResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListConversationModulesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListConversationModulesResponse>(
+          ListConversationModulesResponse.$_createMessage);
+  static ListConversationModulesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<Module> get modules => $_getList(2);
+}
+
+/// A built-in module (DESIGN-MODULES.md section 6.2): what it declares, and whether it is on.
+class Module extends $pb.GeneratedMessage {
+  factory Module({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? name,
+    $core.String? title,
+    $core.bool? on,
+    $core.bool? serverOn,
+    $core.Iterable<ModuleCommand>? commands,
+    $core.Iterable<$core.String>? claims,
+  }) {
+    final result = Module._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (name != null) result.name = name;
+    if (title != null) result.title = title;
+    if (on != null) result.on = on;
+    if (serverOn != null) result.serverOn = serverOn;
+    if (commands != null) result.commands.addAll(commands);
+    if (claims != null) result.claims.addAll(claims);
+    return result;
+  }
+
+  Module._();
+
+  factory Module.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Module()..mergeFromBuffer(data, registry);
+  factory Module.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Module()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Module',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Module.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOS(4, _omitFieldNames ? '' : 'title')
+    ..aOB(5, _omitFieldNames ? '' : 'on')
+    ..aOB(6, _omitFieldNames ? '' : 'serverOn')
+    ..pPM<ModuleCommand>(7, _omitFieldNames ? '' : 'commands',
+        subBuilder: ModuleCommand.$_createMessage)
+    ..pPS(8, _omitFieldNames ? '' : 'claims')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Module clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Module copyWith(void Function(Module) updates) =>
+      super.copyWith((message) => updates(message as Module)) as Module;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Module() / Module.new instead')
+  static Module create() => Module._();
+  static $pb.GeneratedMessage $_createMessage() => Module._();
+  @$core.override
+  Module createEmptyInstance() => Module._();
+  @$core.pragma('dart2js:noInline')
+  static Module getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Module>(Module.$_createMessage);
+  static Module? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get title => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set title($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasTitle() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTitle() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get on => $_getBF(4);
+  @$pb.TagNumber(5)
+  set on($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasOn() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearOn() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.bool get serverOn => $_getBF(5);
+  @$pb.TagNumber(6)
+  set serverOn($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasServerOn() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearServerOn() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $pb.PbList<ModuleCommand> get commands => $_getList(6);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$core.String> get claims => $_getList(7);
+}
+
+/// A command a built-in module declares.
+class ModuleCommand extends $pb.GeneratedMessage {
+  factory ModuleCommand({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? name,
+    $core.String? hint,
+    $core.String? summary,
+  }) {
+    final result = ModuleCommand._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (name != null) result.name = name;
+    if (hint != null) result.hint = hint;
+    if (summary != null) result.summary = summary;
+    return result;
+  }
+
+  ModuleCommand._();
+
+  factory ModuleCommand.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModuleCommand()..mergeFromBuffer(data, registry);
+  factory ModuleCommand.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModuleCommand()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModuleCommand',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ModuleCommand.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOS(4, _omitFieldNames ? '' : 'hint')
+    ..aOS(5, _omitFieldNames ? '' : 'summary')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModuleCommand clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModuleCommand copyWith(void Function(ModuleCommand) updates) =>
+      super.copyWith((message) => updates(message as ModuleCommand))
+          as ModuleCommand;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ModuleCommand() / ModuleCommand.new instead')
+  static ModuleCommand create() => ModuleCommand._();
+  static $pb.GeneratedMessage $_createMessage() => ModuleCommand._();
+  @$core.override
+  ModuleCommand createEmptyInstance() => ModuleCommand._();
+  @$core.pragma('dart2js:noInline')
+  static ModuleCommand getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ModuleCommand>(
+          ModuleCommand.$_createMessage);
+  static ModuleCommand? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get name => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set name($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasName() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get hint => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set hint($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasHint() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearHint() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get summary => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set summary($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSummary() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearSummary() => $_clearField(5);
+}
+
+class SetConversationModuleRequest extends $pb.GeneratedMessage {
+  factory SetConversationModuleRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? on,
+  }) {
+    final result = SetConversationModuleRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (on != null) result.on = on;
+    return result;
+  }
+
+  SetConversationModuleRequest._();
+
+  factory SetConversationModuleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetConversationModuleRequest()..mergeFromBuffer(data, registry);
+  factory SetConversationModuleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetConversationModuleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetConversationModuleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetConversationModuleRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'on')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetConversationModuleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetConversationModuleRequest copyWith(
+          void Function(SetConversationModuleRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as SetConversationModuleRequest))
+          as SetConversationModuleRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetConversationModuleRequest() / SetConversationModuleRequest.new instead')
+  static SetConversationModuleRequest create() =>
+      SetConversationModuleRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      SetConversationModuleRequest._();
+  @$core.override
+  SetConversationModuleRequest createEmptyInstance() =>
+      SetConversationModuleRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetConversationModuleRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetConversationModuleRequest>(
+          SetConversationModuleRequest.$_createMessage);
+  static SetConversationModuleRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get on => $_getBF(1);
+  @$pb.TagNumber(3)
+  set on($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOn() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearOn() => $_clearField(3);
+}
+
+class SetConversationModuleResponse extends $pb.GeneratedMessage {
+  factory SetConversationModuleResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Module? module,
+  }) {
+    final result = SetConversationModuleResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (module != null) result.module = module;
+    return result;
+  }
+
+  SetConversationModuleResponse._();
+
+  factory SetConversationModuleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetConversationModuleResponse()..mergeFromBuffer(data, registry);
+  factory SetConversationModuleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetConversationModuleResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetConversationModuleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetConversationModuleResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Module>(3, _omitFieldNames ? '' : 'module',
+        subBuilder: Module.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetConversationModuleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetConversationModuleResponse copyWith(
+          void Function(SetConversationModuleResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as SetConversationModuleResponse))
+          as SetConversationModuleResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetConversationModuleResponse() / SetConversationModuleResponse.new instead')
+  static SetConversationModuleResponse create() =>
+      SetConversationModuleResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      SetConversationModuleResponse._();
+  @$core.override
+  SetConversationModuleResponse createEmptyInstance() =>
+      SetConversationModuleResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetConversationModuleResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetConversationModuleResponse>(
+          SetConversationModuleResponse.$_createMessage);
+  static SetConversationModuleResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Module get module => $_getN(1);
+  @$pb.TagNumber(3)
+  set module(Module value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasModule() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearModule() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Module ensureModule() => $_ensure(1);
+}
+
 class ListCommandsResponse extends $pb.GeneratedMessage {
   factory ListCommandsResponse({
     $core.Iterable<$core.int>? emptyFields,
@@ -44798,6 +45214,202 @@ class OwnerOverrideAddResponse extends $pb.GeneratedMessage {
   void clearMember() => $_clearField(3);
   @$pb.TagNumber(3)
   Member ensureMember() => $_ensure(1);
+}
+
+class AdminListModulesResponse extends $pb.GeneratedMessage {
+  factory AdminListModulesResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<Module>? modules,
+  }) {
+    final result = AdminListModulesResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (modules != null) result.modules.addAll(modules);
+    return result;
+  }
+
+  AdminListModulesResponse._();
+
+  factory AdminListModulesResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AdminListModulesResponse()..mergeFromBuffer(data, registry);
+  factory AdminListModulesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AdminListModulesResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AdminListModulesResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AdminListModulesResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<Module>(3, _omitFieldNames ? '' : 'modules',
+        subBuilder: Module.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AdminListModulesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AdminListModulesResponse copyWith(
+          void Function(AdminListModulesResponse) updates) =>
+      super.copyWith((message) => updates(message as AdminListModulesResponse))
+          as AdminListModulesResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use AdminListModulesResponse() / AdminListModulesResponse.new instead')
+  static AdminListModulesResponse create() => AdminListModulesResponse._();
+  static $pb.GeneratedMessage $_createMessage() => AdminListModulesResponse._();
+  @$core.override
+  AdminListModulesResponse createEmptyInstance() =>
+      AdminListModulesResponse._();
+  @$core.pragma('dart2js:noInline')
+  static AdminListModulesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AdminListModulesResponse>(
+          AdminListModulesResponse.$_createMessage);
+  static AdminListModulesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<Module> get modules => $_getList(2);
+}
+
+class SetModuleRequest extends $pb.GeneratedMessage {
+  factory SetModuleRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? on,
+  }) {
+    final result = SetModuleRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (on != null) result.on = on;
+    return result;
+  }
+
+  SetModuleRequest._();
+
+  factory SetModuleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetModuleRequest()..mergeFromBuffer(data, registry);
+  factory SetModuleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetModuleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetModuleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetModuleRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'on')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetModuleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetModuleRequest copyWith(void Function(SetModuleRequest) updates) =>
+      super.copyWith((message) => updates(message as SetModuleRequest))
+          as SetModuleRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetModuleRequest() / SetModuleRequest.new instead')
+  static SetModuleRequest create() => SetModuleRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetModuleRequest._();
+  @$core.override
+  SetModuleRequest createEmptyInstance() => SetModuleRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetModuleRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetModuleRequest>(
+          SetModuleRequest.$_createMessage);
+  static SetModuleRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get on => $_getBF(1);
+  @$pb.TagNumber(3)
+  set on($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOn() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearOn() => $_clearField(3);
+}
+
+class SetModuleResponse extends $pb.GeneratedMessage {
+  factory SetModuleResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Module? module,
+  }) {
+    final result = SetModuleResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (module != null) result.module = module;
+    return result;
+  }
+
+  SetModuleResponse._();
+
+  factory SetModuleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetModuleResponse()..mergeFromBuffer(data, registry);
+  factory SetModuleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetModuleResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetModuleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetModuleResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Module>(3, _omitFieldNames ? '' : 'module',
+        subBuilder: Module.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetModuleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetModuleResponse copyWith(void Function(SetModuleResponse) updates) =>
+      super.copyWith((message) => updates(message as SetModuleResponse))
+          as SetModuleResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetModuleResponse() / SetModuleResponse.new instead')
+  static SetModuleResponse create() => SetModuleResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetModuleResponse._();
+  @$core.override
+  SetModuleResponse createEmptyInstance() => SetModuleResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetModuleResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetModuleResponse>(
+          SetModuleResponse.$_createMessage);
+  static SetModuleResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Module get module => $_getN(1);
+  @$pb.TagNumber(3)
+  set module(Module value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasModule() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearModule() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Module ensureModule() => $_ensure(1);
 }
 
 class AdminListEmojiResponse extends $pb.GeneratedMessage {

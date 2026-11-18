@@ -11412,6 +11412,132 @@ paths:
       - conflict
       - rate_limited
       - internal
+  /api/v1/conversations/{id}/modules:
+    get:
+      operationId: listConversationModules
+      tags: [Commands]
+      summary: List the built-in modules as they stand in a conversation
+      description: |-
+        **Who:** Any account that can read the conversation.
+
+        Each with whether the server has it on and whether it is on here. A sealed chat runs none.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [modules]
+                properties:
+                  modules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Module'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListConversationModulesResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/modules/{name}:
+    put:
+      operationId: setConversationModule
+      tags: [Commands]
+      summary: Switch a built-in module off in a channel, or on again
+      description: |-
+        **Who:** Managers of a named channel.
+
+        Off, its commands are not offered or run in the channel, inline objects it claims stay text, and what it made there is served as its text; on again, it is all served as before. Switching on what the server has off is refused with `feature_off`. Written to the audit log.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - $ref: '#/components/parameters/PathName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: ['on']
+              properties:
+                'on':
+                  type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetConversationModuleRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [module]
+                properties:
+                  module:
+                    $ref: '#/components/schemas/Module'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetConversationModuleResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `timed_out`, `archived`, `feature_off`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - timed_out
+      - archived
+      - feature_off
+      - not_found
+      - rate_limited
+      - internal
   /api/v1/commands:
     get:
       operationId: listCommands
@@ -11561,7 +11687,7 @@ paths:
       description: |-
         **Who:** Any local member of the conversation, at any level. Not while timed out.
 
-        The server looks the name up in this order and stops at the first match: the caller's own saved replies, custom commands, commands of bots in this conversation, then the commands of the built-in modules (`/roll` and `/dice`, DESIGN-MODULES.md section 9.1). No match is `not_found`. A module's command posts its answer as a message from the caller, its words as the text and its value as the `view`; a person only, never in a sealed chat, and what the module refuses (dice it cannot read) is `invalid_value` in its words. A saved reply or custom command is posted as a message from the caller, who must be allowed to post; text after its name is refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot `command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives `unavailable`. Built-in commands are carried out by the client with ordinary calls and are refused here with `invalid_value`; so is a protected built-in's name even where an older saved reply or bot command has it.
+        The server looks the name up in this order and stops at the first match: the caller's own saved replies, custom commands, commands of bots in this conversation, then the commands of the built-in modules (`/roll` and `/dice`, DESIGN-MODULES.md section 9.1). No match is `not_found`. A module switched off in the conversation (`listConversationModules`) refuses with `feature_off`; a module that fails or does not answer within 2 seconds gives `unavailable`. A module's command posts its answer as a message from the caller, its words as the text and its value as the `view`; a person only, never in a sealed chat, and what the module refuses (dice it cannot read) is `invalid_value` in its words. A saved reply or custom command is posted as a message from the caller, who must be allowed to post; text after its name is refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot `command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives `unavailable`. Built-in commands are carried out by the client with ordinary calls and are refused here with `invalid_value`; so is a protected built-in's name even where an older saved reply or bot command has it.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -11614,7 +11740,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`, `timed_out`, `archived`.'
+          description: 'Codes: `forbidden`, `timed_out`, `archived`, `feature_off`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -11639,6 +11765,7 @@ paths:
       - forbidden
       - timed_out
       - archived
+      - feature_off
       - not_found
       - blocked_by_filter
       - rate_limited
@@ -16731,6 +16858,122 @@ paths:
       - not_found
       - conflict
       - already_exists
+      - rate_limited
+      - internal
+  /api/v1/admin/modules:
+    get:
+      operationId: adminListModules
+      tags: ['Admin: channels and content']
+      summary: List the built-in modules with what each declares
+      description: |-
+        **Who:** Admins (the owner included).
+
+        Each with whether the server has it on. A module that panics is switched off and the audit log says so.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [modules]
+                properties:
+                  modules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Module'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminListModulesResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - rate_limited
+      - internal
+  /api/v1/admin/modules/{name}:
+    put:
+      operationId: setModule
+      tags: ['Admin: channels and content']
+      summary: Switch a built-in module on or off for the whole server
+      description: |-
+        **Who:** Admins (the owner included).
+
+        Off, its commands are not offered or run anywhere, inline objects it claims stay text, and what it made is served as its text; on again, it is all served as before. A channel that switched it off itself stays off. Written to the audit log.
+      parameters:
+      - $ref: '#/components/parameters/PathName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: ['on']
+              properties:
+                'on':
+                  type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetModuleRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [module]
+                properties:
+                  module:
+                    $ref: '#/components/schemas/Module'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetModuleResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
       - rate_limited
       - internal
   /api/v1/admin/emoji:
@@ -25326,6 +25569,46 @@ components:
         saved_reply_id:
           type: string
           format: uuid
+    Module:
+      type: object
+      description: 'A built-in module (DESIGN-MODULES.md section 6.2): what it declares, and whether it is on.'
+      required: [name, title, 'on', server_on, commands, claims]
+      properties:
+        name:
+          type: string
+          description: Its own name, `[a-z0-9-]{2,32}`; the `by` of every value it makes.
+        title:
+          type: string
+        'on':
+          type: boolean
+          description: 'Whether it is on where asked: on the server in the admin''s list, in the conversation in
+            a conversation''s. Where it is off its commands are not offered or run, the objects it claims stay text,
+            and what it made is served as its text, with no `view` or object; switched on again, they are served
+            as before.'
+        server_on:
+          type: boolean
+          description: Whether the server has it on. A channel cannot switch on what the server has off.
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModuleCommand'
+        claims:
+          type: array
+          items:
+            type: string
+          description: The kinds it resolves when a message is sent (`dice_roll` for inline dice).
+    ModuleCommand:
+      type: object
+      description: A command a built-in module declares.
+      required: [name, summary]
+      properties:
+        name:
+          type: string
+        hint:
+          type: string
+          description: The argument hint.
+        summary:
+          type: string
     Bot:
       type: object
       description: A bot account with what admins see about it.

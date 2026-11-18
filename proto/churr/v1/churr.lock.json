@@ -1437,6 +1437,9 @@
    "emoji": 3,
    "next_cursor": 4
   },
+  "AdminListModulesResponse": {
+   "modules": 3
+  },
   "AdminLockChannelResponse": {
    "channel": 3
   },
@@ -3017,6 +3020,9 @@
   "ListCommandsResponse": {
    "commands": 3
   },
+  "ListConversationModulesResponse": {
+   "modules": 3
+  },
   "ListConversationsResponse": {
    "conversations": 3,
    "next_cursor": 4
@@ -3391,6 +3397,19 @@
   },
   "ModerateHubChannelResponse": {
    "channel": 3
+  },
+  "Module": {
+   "claims": 8,
+   "commands": 7,
+   "name": 3,
+   "on": 5,
+   "server_on": 6,
+   "title": 4
+  },
+  "ModuleCommand": {
+   "hint": 4,
+   "name": 3,
+   "summary": 5
   },
   "MoveThreadToChannelRequest": {
    "name": 3
@@ -4127,6 +4146,12 @@
   "SetCommandsResponse": {
    "commands": 3
   },
+  "SetConversationModuleRequest": {
+   "on": 3
+  },
+  "SetConversationModuleResponse": {
+   "module": 3
+  },
   "SetDefaultThemeRequest": {
    "kind": 3,
    "theme_id": 4
@@ -4155,6 +4180,12 @@
   },
   "SetMemberMayPostResponse": {
    "member": 3
+  },
+  "SetModuleRequest": {
+   "on": 3
+  },
+  "SetModuleResponse": {
+   "module": 3
   },
   "SetMyAvatarResponse": {
    "account": 3

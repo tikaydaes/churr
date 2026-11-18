@@ -94,6 +94,11 @@ func quoteExcerpt(text string, start, end *int) string {
 // messages.
 func (s *Service) shape(ctx context.Context, a store.Areas, st perm.State, msgs []model.Message) {
 	s.withUnsent(ctx, a, st.Conversation, msgs)
+	if err := servedAsText(ctx, a, st.Conversation.ID, msgs); err != nil {
+		// What a switched-off module made is then served as stored, the
+		// lesser harm than serving nothing.
+		s.log.Warn("the switched-off modules could not be read", "conversation", st.Conversation.ID, "err", err)
+	}
 	for i := range msgs {
 		if !st.Conversation.Sealed() {
 			msgs[i].ClientID = ""
@@ -876,6 +881,13 @@ func (s *Service) PresentFor(ctx context.Context, actor model.Account, msgs []mo
 	}
 	if err := s.fillForms(ctx, s.store, actor.ID, msgs); err != nil {
 		return err
+	}
+	// They come from any number of conversations, each with its own
+	// switches.
+	for i := range msgs {
+		if err := servedAsText(ctx, s.store, msgs[i].ConversationID, msgs[i:i+1]); err != nil {
+			return err
+		}
 	}
 	for i := range msgs {
 		msgs[i].ClientID = ""

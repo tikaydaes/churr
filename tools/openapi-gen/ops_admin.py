@@ -397,6 +397,23 @@ op('PUT admin/channels/{id}/members/{account_id}', 'ownerOverrideAdd',
    res={'member': '#Member'},
    err='forbidden not_found conflict already_exists archived fresh_check_required')
 
+op('GET admin/modules', 'adminListModules',
+   'List the built-in modules with what each declares',
+   who='Admins (the owner included).',
+   desc='Each with whether the server has it on. A module that panics is switched off and the audit log says so.',
+   res={'modules': '[#Module]'},
+   err='forbidden')
+
+op('PUT admin/modules/{name}', 'setModule',
+   'Switch a built-in module on or off for the whole server',
+   who='Admins (the owner included).',
+   desc=('Off, its commands are not offered or run anywhere, inline objects it claims stay text, and what it made is '
+         'served as its text; on again, it is all served as before. A channel that switched it off itself stays off. '
+         'Written to the audit log.'),
+   body={'on': 'bool'},
+   res={'module': '#Module'},
+   err='forbidden not_found')
+
 op('GET admin/emoji', 'adminListEmoji',
    'List custom emoji with who added each',
    who='Admins (the owner included).',

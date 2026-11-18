@@ -9225,6 +9225,36 @@ abstract class L10n {
   /// **'{typed} kept as plain text.'**
   String objectSaidPlain(String typed);
 
+  /// No description provided for @modulesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Modules'**
+  String get modulesTab;
+
+  /// No description provided for @modulesAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in parts of Churr that answer commands and draw cards. Off here, a module’s commands do nothing in this channel and what it made shows as its text; on again, its cards come back.'**
+  String get modulesAbout;
+
+  /// No description provided for @modulesManagersOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The channel’s managers switch these off and on.'**
+  String get modulesManagersOnly;
+
+  /// No description provided for @modulesServerOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched off on this server.'**
+  String get modulesServerOff;
+
+  /// No description provided for @modulesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no built-in modules.'**
+  String get modulesNone;
+
   /// No description provided for @patternsTab.
   ///
   /// In en, this message translates to:

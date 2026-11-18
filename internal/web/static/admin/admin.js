@@ -32,6 +32,7 @@ start({
     s('reference-patterns', 'Reference patterns', 'Channels'),
     s('emoji', 'Emoji', 'Channels'),
     s('saved-replies', 'Saved replies', 'Channels'),
+    s('modules', 'Modules', 'Channels'),
     s('status-presets', 'Status presets', 'Channels'),
     s('themes', 'Themes', 'Channels'),
     s('word-filter', 'Word filter', 'Moderation'),

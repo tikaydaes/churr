@@ -1360,6 +1360,12 @@ screen. Each change is one `updateMembership` call.
 - **Delivery when not open** (managers, named channels): "Follow the
   server", "Only to people who have it open" or "To everyone,
   always". Sent as `lazy_delivery` (`docs/EVENTS.md` section 4.1).
+- **Modules** (named channels; `DESIGN-MODULES.md` section 6.5): the
+  built-in modules (`listConversationModules`), each with its commands
+  and a switch. The managers switch one off here, or on again
+  (`setConversationModule`); one the server has off is shown off and
+  cannot be switched on. Everyone else sees the switches and cannot
+  use them. A change forgets the composer's command list.
 - **For everyone:** pins and files posted here (both also from
   buttons in the conversation's header: the pins as a list that opens
   each message in place, the files as a search with "has a file" set), "Request a webhook" (in
@@ -2225,6 +2231,7 @@ where they are listed and how long they keep messages.
 | Webhooks | Requests waiting, with who asked and for which channel: approve or decline. Existing webhooks: revoke. Who approves requests |
 | Integrations | Create, tick what it may do, show the token once, last used, revoke |
 | Saved replies | The community's `/name` commands |
+| Modules | The built-in modules (`adminListModules`), each with its commands, the kinds it reads in messages, and a switch for the whole server (`setModule`). Off, its commands do nothing, what it claims stays text and what it made shows as its text; on again, its cards come back. A module that fails is switched off, which the audit log records |
 | Status presets | The community's presets |
 | Emoji | Upload, rename, remove |
 | Word filter | Words and patterns, each set to block or flag |

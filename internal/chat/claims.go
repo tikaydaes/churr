@@ -1,11 +1,13 @@
 package chat
 
 import (
+	"context"
 	"unicode/utf16"
 
 	"github.com/tikaydaes/churr/internal/markdown"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
+	"github.com/tikaydaes/churr/internal/store"
 )
 
 // Objects that built-in modules claim (docs/DESIGN-MODULES.md section 4.4):
@@ -42,17 +44,94 @@ func claimsMode(actor model.Account, via *model.Via) string {
 	return claimsSend
 }
 
-// Claims implements markdown.ClaimSource: the modules' claims, where the
-// text's objects are resolved or marked.
+// Claims implements markdown.ClaimSource: the claims of the modules that are
+// on in the conversation, where the text's objects are resolved or marked.
+// The claims of a module switched off there are not read at all: their text
+// stays text.
 func (r *resolver) Claims() []markdown.Claim {
-	if r.claims == claimsOff {
+	if r.claims == claimsOff || len(r.modules.Claims()) == 0 {
+		return nil
+	}
+	off, err := modulesOff(r.ctx, r.a, r.st.Conversation.ID)
+	if err != nil {
+		r.err = err
 		return nil
 	}
 	var out []markdown.Claim
 	for _, c := range r.modules.Claims() {
-		out = append(out, markdown.Claim{Kind: c.Kind, Open: c.Open, Close: c.Close, Inside: c.Inside})
+		if !off[c.Module] {
+			out = append(out, markdown.Claim{Kind: c.Kind, Open: c.Open, Close: c.Close, Inside: c.Inside})
+		}
 	}
 	return out
+}
+
+// modulesOff is the set of modules switched off in a conversation: by an
+// admin for the whole instance, or by the conversation's managers
+// (docs/DESIGN-MODULES.md section 6.5).
+func modulesOff(ctx context.Context, a store.Areas, conv model.ConversationID) (map[string]bool, error) {
+	instance, here, err := a.Modules().Off(ctx, conv)
+	out := map[string]bool{}
+	for _, m := range append(instance, here...) {
+		out[m] = true
+	}
+	return out, err
+}
+
+// madeBy reports whether a message holds anything a module made: its view,
+// or an object a module resolved.
+func madeBy(m model.Message) bool {
+	if m.View != nil && m.View.By != "" {
+		return true
+	}
+	for _, e := range m.Entities {
+		if isResolved(e) {
+			return true
+		}
+	}
+	return false
+}
+
+// servedAsText serves what switched-off modules made as its text, for
+// messages of one conversation: the view of a module's message is not
+// served, so its text, the module's words, is the message; an object a
+// module resolved is not served, so its characters stay as typed. Nothing
+// stored changes, so switching the module on again brings them back
+// (docs/DESIGN-MODULES.md section 6.5; question 18).
+func servedAsText(ctx context.Context, a store.Areas, conv model.ConversationID, msgs []model.Message) error {
+	any := false
+	for i := range msgs {
+		if madeBy(msgs[i]) {
+			any = true
+			break
+		}
+	}
+	if !any {
+		return nil
+	}
+	off, err := modulesOff(ctx, a, conv)
+	if err != nil || len(off) == 0 {
+		return err
+	}
+	for i := range msgs {
+		m := &msgs[i]
+		if m.View != nil && off[m.View.By] {
+			m.View = nil
+		}
+		var kept []model.Entity
+		dropped := false
+		for _, e := range m.Entities {
+			if isResolved(e) && off[e.Object.By] {
+				dropped = true
+				continue
+			}
+			kept = append(kept, e)
+		}
+		if dropped {
+			m.Entities = kept
+		}
+	}
+	return nil
 }
 
 // Claimed implements markdown.ClaimSource. On an edit the module still reads

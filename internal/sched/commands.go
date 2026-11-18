@@ -78,12 +78,17 @@ func (c *Commands) List(ctx context.Context, actor model.Account, conv model.Con
 	}
 	sealed := own.sealed
 	hidden := model.HiddenBuiltins(own.cmds, actor.Role.IsAdmin())
+	off, err := c.modules.Off(ctx, conv)
+	if err != nil {
+		return nil, err
+	}
 	var out []model.Command
 	for _, b := range model.BuiltinCommands {
 		// A sealed chat carries no forms and nothing the server writes,
 		// so only the built-ins marked for it are offered there (/remind's
-		// reminder arrives somewhere else).
-		if (sealed && !b.Sealed) || hidden[b.Name] {
+		// reminder arrives somewhere else). A switched-off module's
+		// commands are not offered.
+		if (sealed && !b.Sealed) || hidden[b.Name] || off[c.modules.CommandModule(b.Name)] {
 			continue
 		}
 		out = append(out, b)

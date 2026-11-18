@@ -29,6 +29,7 @@ import 'checkins_screen.dart';
 import 'common.dart';
 import 'new_channel_dialog.dart';
 import 'pins_list.dart';
+import 'modules_tab.dart';
 import 'reference_patterns_tab.dart';
 import 'subchannel_offer.dart';
 
@@ -158,7 +159,7 @@ class _ChannelSettingsScreenState extends State<ChannelSettingsScreen> {
   Widget build(BuildContext context) {
     final c = ChurrColors.of(context);
     return DefaultTabController(
-      length: 4,
+      length: 5,
       initialIndex: widget.initialTab,
       child: ListenableBuilder(
         listenable: Listenable.merge([controller, widget.server]),
@@ -182,6 +183,7 @@ class _ChannelSettingsScreenState extends State<ChannelSettingsScreen> {
                   Tab(text: L10n.of(context).tabMembers(conv.memberCount)),
                   Tab(text: L10n.of(context).tabPins),
                   Tab(text: L10n.of(context).patternsTab),
+                  Tab(text: L10n.of(context).modulesTab),
                 ],
               ),
               Expanded(
@@ -191,6 +193,11 @@ class _ChannelSettingsScreenState extends State<ChannelSettingsScreen> {
                     _Members(controller: controller, conv: conv),
                     _Pins(controller: controller),
                     ReferencePatternsTab(
+                      server: widget.server,
+                      conversationId: widget.conversationId,
+                      manager: controller.manager,
+                    ),
+                    ModulesTab(
                       server: widget.server,
                       conversationId: widget.conversationId,
                       manager: controller.manager,

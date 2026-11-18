@@ -112,6 +112,19 @@ abstract final class Ops {
     '/api/v1/reference-patterns/{id}',
   );
 
+  // The built-in modules a channel's managers switch off there
+  // (docs/DESIGN-MODULES.md section 6.5).
+  static const listConversationModules = Op(
+    'listConversationModules',
+    'GET',
+    '/api/v1/conversations/{id}/modules',
+  );
+  static const setConversationModule = Op(
+    'setConversationModule',
+    'PUT',
+    '/api/v1/conversations/{id}/modules/{name}',
+  );
+
   // Conversations.
   static const listConversations = Op(
     'listConversations',
@@ -212,6 +225,8 @@ abstract final class Ops {
     createReferencePattern,
     updateReferencePattern,
     deleteReferencePattern,
+    listConversationModules,
+    setConversationModule,
     listConversations,
     getConversation,
     setReadPosition,

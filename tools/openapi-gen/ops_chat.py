@@ -944,6 +944,23 @@ op('POST scheduled/{id}/send', 'sendScheduledNow',
 area('Commands',
      'What can be typed as `/name`: built-in commands, saved replies and bot commands.')
 
+op('GET conversations/{id}/modules', 'listConversationModules',
+   'List the built-in modules as they stand in a conversation',
+   who='Any account that can read the conversation.',
+   desc='Each with whether the server has it on and whether it is on here. A sealed chat runs none.',
+   res={'modules': '[#Module]'},
+   err='not_found')
+
+op('PUT conversations/{id}/modules/{name}', 'setConversationModule',
+   'Switch a built-in module off in a channel, or on again',
+   who='Managers of a named channel.',
+   desc=('Off, its commands are not offered or run in the channel, inline objects it claims stay text, and what it '
+         'made there is served as its text; on again, it is all served as before. Switching on what the server has '
+         'off is refused with `feature_off`. Written to the audit log.'),
+   body={'on': 'bool'},
+   res={'module': '#Module'},
+   err='forbidden not_found archived timed_out feature_off')
+
 op('GET commands', 'listCommands',
    'List the commands available in a conversation',
    who='Any account that can read the conversation: its members, and for a public channel every owner, admin and member.',
@@ -958,7 +975,8 @@ op('POST conversations/{id}/commands', 'runCommand',
    who='Any local member of the conversation, at any level. Not while timed out.',
    desc=("The server looks the name up in this order and stops at the first match: the caller's own saved replies, "
          'custom commands, commands of bots in this conversation, then the commands of the built-in modules (`/roll` '
-         'and `/dice`, DESIGN-MODULES.md section 9.1). No match is `not_found`. A module\'s command posts its answer '
+         'and `/dice`, DESIGN-MODULES.md section 9.1). No match is `not_found`. A module switched off in the conversation (`listConversationModules`) refuses with '
+         '`feature_off`; a module that fails or does not answer within 2 seconds gives `unavailable`. A module\'s command posts its answer '
          'as a message from the caller, its words as the text and its value as the `view`; a person only, never in a '
          'sealed chat, and what the module refuses (dice it cannot read) is `invalid_value` in its words. A saved reply or '
          'custom command is posted as a message from the caller, who must be allowed to post; text after its name is '
@@ -971,7 +989,7 @@ op('POST conversations/{id}/commands', 'runCommand',
          'text?': ('str', 'What was typed after the name. Up to 4,000 characters.'),
          'parent_id?': ('uuid', 'When typed in a thread.')},
    res={'interaction_id?': ('uuid', 'For a bot command.'), 'message?': ('#Message', 'For a saved reply.')},
-   err='forbidden timed_out archived not_found unavailable slow_mode blocked_by_filter')
+   err='forbidden timed_out archived not_found unavailable slow_mode blocked_by_filter feature_off')
 
 op('GET saved-replies', 'listSavedReplies',
    "List the community's saved replies and the caller's own",

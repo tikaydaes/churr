@@ -101,3 +101,46 @@ func (m modules) DeleteValue(ctx context.Context, k model.ModuleKey) error {
 	_, err = m.wr.ExecContext(ctx, `DELETE FROM module_values WHERE `+where, args...)
 	return m.mapErr(err)
 }
+
+func (m modules) Off(ctx context.Context, conv model.ConversationID) ([]string, []string, error) {
+	rows, err := m.rd.QueryContext(ctx, `
+		SELECT module, conversation_id FROM module_switches
+		WHERE conversation_id IS NULL OR conversation_id = ? ORDER BY module`, id(conv))
+	if err != nil {
+		return nil, nil, m.mapErr(err)
+	}
+	defer rows.Close()
+	var instance, here []string
+	for rows.Next() {
+		var name string
+		var in sql.NullString
+		if err := rows.Scan(&name, &in); err != nil {
+			return nil, nil, err
+		}
+		if in.Valid {
+			here = append(here, name)
+		} else {
+			instance = append(instance, name)
+		}
+	}
+	return instance, here, rows.Err()
+}
+
+func (m modules) SetOff(ctx context.Context, module string, conv model.ConversationID, off bool) error {
+	where, args := `module = ? AND conversation_id IS NULL`, []any{module}
+	if conv != "" {
+		where, args = `module = ? AND conversation_id = ?`, []any{module, string(conv)}
+	}
+	if !off {
+		_, err := m.wr.ExecContext(ctx, `DELETE FROM module_switches WHERE `+where, args...)
+		return m.mapErr(err)
+	}
+	return m.atomic(ctx, func(q *queries) error {
+		var n int
+		if err := q.wr.QueryRowContext(ctx, `SELECT COUNT(*) FROM module_switches WHERE `+where, args...).Scan(&n); err != nil || n > 0 {
+			return q.mapErr(err)
+		}
+		_, err := q.wr.ExecContext(ctx, `INSERT INTO module_switches (module, conversation_id) VALUES (?, ?)`, module, id(conv))
+		return q.mapErr(err)
+	})
+}

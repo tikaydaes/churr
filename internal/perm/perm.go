@@ -283,19 +283,22 @@ const (
 	SetMayPost          Action = "set_may_post"
 	// SetReferencePatterns: a channel's own reference patterns (R73).
 	SetReferencePatterns Action = "set_reference_patterns"
-	TimeOutMember        Action = "time_out_member"
-	HandleReports        Action = "handle_reports"
-	ShortenRetention     Action = "shorten_retention"
-	SetRetention         Action = "set_retention"
-	Archive              Action = "archive"
-	Unarchive            Action = "unarchive"
-	MakePrivate          Action = "make_private"
-	Lock                 Action = "lock"
-	MoveAnyThread        Action = "move_any_thread"
-	RequestWebhook       Action = "request_webhook"
-	ApproveWebhook       Action = "approve_webhook"
-	Share                Action = "share"
-	SetAnswererGroup     Action = "set_answerer_group"
+	// SetModules: switch off in a channel a built-in module the instance
+	// has on, or on again (docs/DESIGN-MODULES.md section 6.5).
+	SetModules       Action = "set_modules"
+	TimeOutMember    Action = "time_out_member"
+	HandleReports    Action = "handle_reports"
+	ShortenRetention Action = "shorten_retention"
+	SetRetention     Action = "set_retention"
+	Archive          Action = "archive"
+	Unarchive        Action = "unarchive"
+	MakePrivate      Action = "make_private"
+	Lock             Action = "lock"
+	MoveAnyThread    Action = "move_any_thread"
+	RequestWebhook   Action = "request_webhook"
+	ApproveWebhook   Action = "approve_webhook"
+	Share            Action = "share"
+	SetAnswererGroup Action = "set_answerer_group"
 )
 
 // The admin console (section 4.1 note 1): what an admin may do to a named
@@ -405,6 +408,7 @@ var rules = map[Action]rule{
 	SetAnnouncement:      {need: needSpecial, archived: true, timedOut: true, named: true},
 	SetMayPost:           {need: needManager, archived: true, timedOut: true, named: true},
 	SetReferencePatterns: {need: needManager, archived: true, timedOut: true, named: true},
+	SetModules:           {need: needManager, archived: true, timedOut: true, named: true},
 	TimeOutMember:        {need: needModerator, timedOut: true},
 	HandleReports:        {need: needSpecial, timedOut: true},
 	ShortenRetention:     {need: needManager, timedOut: true, named: true},

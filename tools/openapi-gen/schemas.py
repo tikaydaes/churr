@@ -1055,6 +1055,23 @@ S('Command', 'Something that can be typed as `/name` in a conversation.', {
    'saved_reply_id?': 'uuid'})
 
 
+S('Module', 'A built-in module (DESIGN-MODULES.md section 6.2): what it declares, and whether it is on.', {
+   'name': ('str', 'Its own name, `[a-z0-9-]{2,32}`; the `by` of every value it makes.'),
+   'title': 'str',
+   'on': ('bool', ('Whether it is on where asked: on the server in the admin\'s list, in the conversation in a '
+                   'conversation\'s. Where it is off its commands are not offered or run, the objects it claims stay '
+                   'text, and what it made is served as its text, with no `view` or object; switched on again, they '
+                   'are served as before.')),
+   'server_on': ('bool', 'Whether the server has it on. A channel cannot switch on what the server has off.'),
+   'commands': '[#ModuleCommand]',
+   'claims': ('[str]', 'The kinds it resolves when a message is sent (`dice_roll` for inline dice).')})
+
+S('ModuleCommand', 'A command a built-in module declares.', {
+   'name': 'str',
+   'hint?': ('str', 'The argument hint.'),
+   'summary': 'str'})
+
+
 # ----------------------------------------------------------------------------
 # Bots and webhooks
 

@@ -43,6 +43,9 @@ const (
 	CreateBlock             ServerAction = "create_block"
 	Knock                   ServerAction = "knock"
 	SendBroadcast           ServerAction = "send_broadcast"
+	// ManageModules: switch built-in modules on and off for the instance,
+	// and order and rename commands (docs/DESIGN-MODULES.md section 6.5).
+	ManageModules ServerAction = "manage_modules"
 )
 
 // CheckServer answers a server-wide question that depends only on the actor
@@ -72,7 +75,7 @@ func CheckServer(actor model.Account, a ServerAction, set Settings) error {
 		ok = r.IsAdmin() || (r == model.RoleMember && set.MembersMayAddEmoji)
 	case CreateGuestInvite, ListAllInvites, RevokeAnyInvite, ManageGroups, ManageBots, ManageIntegrations, ChangeSettings,
 		DefineSections, DefineReferencePatterns, RemoveAnyEmoji, ManageCommunityReplies, ManageFilters, DecidePurgeRequests, ReadAuditLog, UseAdminConsole,
-		SendBroadcast:
+		SendBroadcast, ManageModules:
 		ok = r.IsAdmin()
 	case ChangeRole:
 		// An Admin changes a guest's or a member's role between the two;

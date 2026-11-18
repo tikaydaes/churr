@@ -2,6 +2,7 @@ package storetest
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -70,6 +71,28 @@ func testModules(t *testing.T, s store.Store) {
 		must(t, s.Modules().PutValue(ctx, far, make([]byte, 5), 10, 15))
 	})
 
+	t.Run("switched off for the instance and in a conversation", func(t *testing.T) {
+		list := func(conv model.ConversationID) string {
+			t.Helper()
+			inst, here, err := s.Modules().Off(ctx, conv)
+			must(t, err)
+			return fmt.Sprint(inst, here)
+		}
+		eq(t, "all on", list(ch.ID), "[] []")
+		must(t, s.Modules().SetOff(ctx, "dice", "", true))
+		must(t, s.Modules().SetOff(ctx, "dice", "", true))
+		must(t, s.Modules().SetOff(ctx, "cards", ch.ID, true))
+		must(t, s.Modules().SetOff(ctx, "dice", ch.ID, true))
+		must(t, s.Modules().SetOff(ctx, "cards", other.ID, true))
+		eq(t, "here", list(ch.ID), "[dice] [cards dice]")
+		eq(t, "no conversation", list(""), "[dice] []")
+		must(t, s.Modules().SetOff(ctx, "dice", "", false))
+		must(t, s.Modules().SetOff(ctx, "dice", "", false))
+		eq(t, "the conversation's stays", list(ch.ID), "[] [cards dice]")
+		must(t, s.Modules().SetOff(ctx, "dice", ch.ID, false))
+		eq(t, "on again", list(ch.ID), "[] [cards]")
+	})
+
 	t.Run("values go with their conversation and their person", func(t *testing.T) {
 		_, err := s.Conversations().Delete(ctx, other.ID)
 		must(t, err)
@@ -78,5 +101,6 @@ func testModules(t *testing.T, s store.Store) {
 		must(t, err)
 		eq(t, "the person's", value(mine), "(none)")
 		eq(t, "the rest stay", value(here), "replaced")
+		eq(t, "its switches go too", fmt.Sprint(s.Modules().Off(ctx, other.ID)), "[] [] <nil>")
 	})
 }

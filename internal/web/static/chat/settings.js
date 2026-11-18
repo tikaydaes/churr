@@ -2,8 +2,9 @@
 // member list with levels and groups; for moderators and managers adding
 // and removing people, bans, time-outs, slow mode and the lock; for
 // managers alone the levels, the name, topic, section, default level,
-// welcome text, retention, archive, make private and recurring check-ins;
-// and for everyone "Request a webhook".
+// welcome text, retention, archive, make private, recurring check-ins and
+// the built-in modules switched off here; and for everyone "Request a
+// webhook".
 
 import { STRINGS } from '/shared/commands.js';
 import { get, post, patch, put, del, all } from '/shared/api.js';
@@ -17,6 +18,7 @@ import { look, visibleChannels, hubRole } from './env.js';
 import { LISTINGS, LISTING, listingName, accountName, canRemoveManager } from '/shared/hub.js';
 import { roleTag } from '/shared/message/message.js';
 import { drawCheckins } from './checkins.js';
+import { commandsChanged } from './composer.js';
 
 const SLOW = [['0', 'Off'], ['5', '5 seconds'], ['30', '30 seconds'], ['60', 'A minute'], ['300', '5 minutes'], ['3600', 'An hour']];
 const BROAD = [['server', 'Follow the server'], ['anyone', 'Anyone'], ['managers', 'Managers only']];
@@ -62,7 +64,7 @@ export function openSettings(id, tab = 'about') {
       const hub = hubOf(c);
       // An announcement channel shows who is in it to its moderators and
       // managers only.
-      const names = [['about', 'About'], c && c.announcement && !keepsPeace(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && c.name ? ['references', 'References'] : null, c && keepsPeace(c) ? ['manage', actsAsManager(c) ? 'Manage' : 'Moderate'] : null, c && keepsPeace(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null,
+      const names = [['about', 'About'], c && c.announcement && !keepsPeace(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && c.name ? ['references', 'References'] : null, c && c.name ? ['modules', 'Modules'] : null, c && keepsPeace(c) ? ['manage', actsAsManager(c) ? 'Manage' : 'Moderate'] : null, c && keepsPeace(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null,
         // Recurring check-ins (FEATURES.md 11): not in a channel shared with other servers.
         c && actsAsManager(c) && c.kind === 'channel' && !c.shared ? ['checkins', 'Check-ins'] : null].filter(Boolean);
       fill(tabs, names.map(([n, label]) => h('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(n === current), onclick: () => show(n) }, label)));
@@ -338,6 +340,31 @@ export function openSettings(id, tab = 'about') {
         const c = conversation(id);
         if (!c) return;
         fill(body, await patternEditor({ conversationId: id, canEdit: actsAsManager(c), redraw: () => panes.references() }));
+      },
+
+      // The built-in modules (DESIGN-MODULES.md 6.5): its managers switch
+      // off here what the server has on; everyone sees what is on.
+      modules: async () => {
+        const c = conversation(id);
+        if (!c) return;
+        fill(body, h('p', { class: 'loading' }, 'Loading'));
+        let mods = [];
+        try { mods = (await get(`/conversations/${id}/modules`)).modules; } catch (err) { fill(body, h('p', { class: 'problem' }, err.message)); return; }
+        const manager = actsAsManager(c);
+        const row = (m) => {
+          const sw = h('input', { type: 'checkbox', class: 'switch', 'aria-label': m.title, checked: m.on, disabled: !manager || !m.server_on,
+            onchange: async (e) => {
+              const on = e.target.checked;
+              if (await run(() => put(`/conversations/${id}/modules/${m.name}`, { on }), on ? `${m.title} is on here.` : `${m.title} is off here.`)) commandsChanged();
+              panes.modules();
+            } });
+          const does = m.commands.map((x) => '/' + x.name).join(', ');
+          return h('div', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, m.title),
+            h('small', { class: 'dim' }, m.server_on ? (does ? does + '. ' : '') + 'Off, its commands do nothing here and what it made shows as text.' : 'Switched off on this server.')),
+          h('div', { class: 'control' }, sw));
+        };
+        fill(body, manager ? null : h('p', { class: 'dim' }, 'The channel’s managers switch these off and on.'),
+          mods.length ? mods.map(row) : h('p', { class: 'dim' }, 'This server has no built-in modules.'));
       },
 
       manage: () => {

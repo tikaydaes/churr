@@ -1138,6 +1138,15 @@ conversation and the person from the call. The host refuses a key over
 200 bytes and a value over 64 KB; the store refuses a value that would
 take a module past 1 MB in one conversation or 64 MB in all.
 
+### `module_switches`
+
+Added by migration 0024. The built-in modules switched off
+(DESIGN-MODULES.md section 6.5): a row with no `conversation_id` by an
+admin for the whole instance, a row with one by that channel's
+managers. A module with no row is on. A channel's row stays while the
+instance has the module off, so switching it on again leaves the
+channel as its managers set it. The rows go with the conversation.
+
 ## 10. Calls
 
 ### `calls`

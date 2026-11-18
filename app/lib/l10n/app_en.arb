@@ -3447,6 +3447,11 @@
       }
     }
   },
+  "modulesTab": "Modules",
+  "modulesAbout": "Built-in parts of Churr that answer commands and draw cards. Off here, a module’s commands do nothing in this channel and what it made shows as its text; on again, its cards come back.",
+  "modulesManagersOnly": "The channel’s managers switch these off and on.",
+  "modulesServerOff": "Switched off on this server.",
+  "modulesNone": "This server has no built-in modules.",
   "patternsTab": "References",
   "patternsAbout": "Text such as PROJ-123 or #4521 becomes a link to where the thing it names is kept. These apply in this channel, ahead of the server’s with the same prefix. A change applies to messages posted after it.",
   "patternsNone": "No reference patterns in this channel.",

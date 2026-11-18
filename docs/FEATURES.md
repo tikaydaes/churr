@@ -1913,8 +1913,22 @@ passes; the result names an error the client words itself.
   posts the roll as the person's message. Dice it cannot read are
   refused with `invalid_value` in its words; the grammar is read by the
   server alone (`internal/modules/dice`).
+- **Switching a module off** (`DESIGN-MODULES.md` section 6.5): an admin
+  switches a built-in module on or off for the whole server
+  (`adminListModules`, `setModule`); a named channel's managers switch
+  off there what the server has on, and on again
+  (`listConversationModules`, `setConversationModule`), but cannot
+  switch on what the server has off. Where a module is off its commands
+  are not listed and `runCommand` refuses them with `feature_off`, the
+  objects it claims stay text (`[[1d6]]` is not rolled), and what it
+  made is served as its text: a roll's message without its `view`,
+  inline dice without their object. Nothing stored changes, so
+  switching it on again serves them as before. Each switch is written to
+  the audit log. A module that panics is switched off for the whole
+  server; one that panics or does not answer within 2 seconds is
+  refused with `unavailable`, logged and audited.
 
-Stored: `saved_replies`, `commands`.
+Stored: `saved_replies`, `commands`, `module_switches`, `module_values`.
 
 Events: `command.invoked`. Saved replies and custom commands have no
 event; clients fetch the list when the `/` menu opens.
