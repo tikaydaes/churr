@@ -1106,6 +1106,16 @@ func (s *Service) onDeliver(ctx context.Context, pc *peerConn, f wire.Frame) {
 // envelope and asks to catch up, which brings both.
 func (s *Service) delivered(ctx context.Context, peer model.PeerID, env wire.Envelope) {
 	st, err := s.store.Streams().Get(ctx, model.StreamID(env.StreamID))
+	if s.holder && (err != nil || st.State == store.StreamOffered) {
+		// Delivered to a hub's holder before the record by which its hub
+		// became the channel's home: kept, and applied once the record is
+		// taken (takeEarly). If the record was taken a moment ago, the
+		// stream is read again.
+		if s.keepEarly(peer, env) {
+			return
+		}
+		st, err = s.store.Streams().Get(ctx, model.StreamID(env.StreamID))
+	}
 	if err != nil || st.State != store.StreamActive || st.PeerID != peer || st.Sequencer == store.SequencerSelf {
 		s.count(func(stats *Stats) { stats.Dropped["deliver_not_in_stream"]++ })
 		if err == nil && st.State == store.StreamActive {

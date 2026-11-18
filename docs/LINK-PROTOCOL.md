@@ -3550,7 +3550,15 @@ is given it by the hub with every other instance switched off.
   home of, with the key of the epoch it calls for ahead of it; every
   envelope of such a channel, from the hub's own servers and over the
   trunks; and the log, by `catch_up`, as a server is. A key it lacks
-  it asks the hub for, and is given it whatever the epoch.
+  it asks the hub for, and is given it whatever the epoch. It is
+  delivered every envelope of a channel from the moment its hub signs
+  the record that makes it the home; one that reaches it ahead of that
+  record (taken between the signing and the record's leaving) it keeps,
+  for a minute and at most 1,024 of them, and applies as soon as it takes
+  the record, before what follows it. So it holds every envelope above
+  the record's `have` once, and asks the log only if it had to let one
+  go, or for a channel handed to its hub by another hub of the cluster
+  (what the log took while its hub only carried the channel).
 - **What it does with an envelope.** It opens it and applies it as an
   instance in the channel would: the origin's signature is checked
   against the key the hub's roster gives the origin, the authority

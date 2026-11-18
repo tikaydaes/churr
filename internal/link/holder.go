@@ -635,3 +635,77 @@ func (s *Service) askHistoryAgain(ctx context.Context, id model.StreamID) {
 	delete(s.replies, msg)
 	s.mu.Unlock()
 }
+
+// ------------------------------------------- envelopes before the record
+
+// The hub delivers its holder every envelope of a channel from the moment it
+// signs the record that makes it the channel's home; the record itself leaves
+// once that is committed. An envelope taken in between reaches the holder
+// ahead of the record. The holder keeps it, and applies it as soon as it
+// takes the record (takeEarly), before what the connection brings after the
+// record: so it holds everything above where the hub's log stood when it
+// signed the record, each envelope once, without asking the log again. Only
+// if it had to let one go (more than earlyMax, or for longer than a minute)
+// does it catch up from the log.
+
+const earlyMax = 1024
+
+// earlyEnvelope is an envelope delivered to the holder ahead of its record.
+type earlyEnvelope struct {
+	peer  model.PeerID
+	env   wire.Envelope
+	until time.Time
+}
+
+// keepEarly keeps an envelope delivered ahead of the record of its channel,
+// and reports whether it did.
+func (s *Service) keepEarly(peer model.PeerID, env wire.Envelope) bool {
+	rt := s.rt(model.StreamID(env.StreamID))
+	now := time.Now()
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	if rt.earlyTaken {
+		return false // the record has been taken: the stream is there
+	}
+	kept := rt.early[:0]
+	for _, e := range rt.early {
+		if e.until.After(now) {
+			kept = append(kept, e)
+		} else {
+			rt.earlyLost = true
+		}
+	}
+	rt.early = append(kept, earlyEnvelope{peer: peer, env: env, until: now.Add(keyWait)})
+	if len(rt.early) > earlyMax {
+		rt.early = rt.early[len(rt.early)-earlyMax:]
+		rt.earlyLost = true
+	}
+	return true
+}
+
+// takeEarly applies, on the stream's own goroutine and ahead of anything the
+// connection delivers after the record, the envelopes kept for a channel
+// the holder has just taken the record of. It reports whether any was let
+// go, so that the log is asked for what was.
+func (s *Service) takeEarly(id model.StreamID) (lost bool) {
+	rt := s.rt(id)
+	rt.mu.Lock()
+	// A channel held once before (handed away and back): what came ahead of
+	// this record was not kept, and the log is asked for it.
+	early, lost := rt.early, rt.earlyLost || rt.earlyTaken
+	rt.early, rt.earlyLost, rt.earlyTaken = nil, false, true
+	rt.mu.Unlock()
+	now := time.Now()
+	for _, e := range early {
+		if !e.until.After(now) {
+			lost = true
+			continue
+		}
+		select {
+		case rt.jobs <- func() { s.delivered(s.ctx, e.peer, e.env) }:
+		case <-s.ctx.Done():
+			return lost
+		}
+	}
+	return lost
+}

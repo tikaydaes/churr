@@ -649,6 +649,13 @@ type streamRT struct {
 	// the asker, or the channel at all), kept for a minute and answered when
 	// a record of the stream is taken (content.go).
 	earlyAsks []earlyKey
+	// early are envelopes delivered to a hub's holder ahead of the record by
+	// which its hub became the channel's home, and earlyLost says one was
+	// let go (holder.go).
+	early     []earlyEnvelope
+	earlyLost bool
+	// earlyTaken: the record has been taken, and nothing more is kept.
+	earlyTaken bool
 	// progress is closed and replaced whenever this server's counter of
 	// some origin of the stream moves: what waits until it holds so much of
 	// each origin wakes then (awaitHave).

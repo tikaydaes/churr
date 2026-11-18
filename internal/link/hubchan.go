@@ -962,13 +962,19 @@ func (s *Service) joinedHub(ctx context.Context, st store.Stream, rec wire.Chann
 		s.holdForAnnouncements(st.ID, false)
 		return err
 	}
+	// A hub's holder whose hub signed the record that made it the home was
+	// delivered, and kept, everything the log took since: it applies that
+	// now, and asks the log only if it had to let some go (takeEarly). One
+	// whose hub was handed the channel by another hub asks the log for what
+	// it took while this hub only carried the channel.
+	ask := !s.holder || s.takeEarly(st.ID) || rec.Hub != s.id.Name
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
 		s.announceMembers(s.ctx, st.ID)
 		// What the log took between the hub's admitting this server and
 		// this server's hearing of it.
-		if cur, err := s.store.Streams().Get(s.ctx, st.ID); err == nil {
+		if cur, err := s.store.Streams().Get(s.ctx, st.ID); err == nil && ask {
 			s.catchUp(s.ctx, cur, true)
 		}
 		s.askFirstHistory(s.ctx, st.ID)
