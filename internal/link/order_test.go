@@ -257,6 +257,22 @@ func TestDuplicatesAndGaps(t *testing.T) {
 	if n := countText(b.Owner, s.conv[1], "delivered twice"); n != 1 {
 		t.Fatalf("an envelope delivered twice was applied %d times", n)
 	}
+	// An envelope b judged and refused, delivered again (a log served again
+	// after a cut), is known as one it has judged: refused once, and the
+	// second delivery is a duplicate, not a second refusal.
+	fields, _ = message(model.NewID[model.AccountID](), "by nobody")
+	refused := s.submit(0, "message.created", fields)
+	s.rejected(1, "unknown_account", 1)
+	dup := s.link(1).StatsNow().Rejected["duplicate"]
+	for _, e := range s.link(0).TestLog(s.stream) {
+		if e.OriginEventID == refused.OriginEventID {
+			s.link(1).TestDeliver(s.stream, e, e.Cursor+60, e.Prev)
+		}
+	}
+	s.rejected(1, "duplicate", dup+1)
+	if n := s.link(1).StatsNow().Rejected["unknown_account"]; n != 1 {
+		t.Fatalf("an envelope refused and delivered again was refused %d times", n)
+	}
 
 	// 35, 37: b is cut off; a writes two messages; b is handed the second
 	// without the first.

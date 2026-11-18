@@ -1277,6 +1277,15 @@ func (s *Service) settleDelivered(ctx context.Context, rt *streamRT, st store.St
 				return err
 			}
 		}
+		if rej != nil && o.rej == nil && rej.reason != "duplicate" && rej.reason != "internal" {
+			// Judged and refused for good: noted as seen, as an applied
+			// event is, so that the same envelope delivered again (a log
+			// served again after a cut, or to fill a gap) is known for what
+			// it is and not judged, counted and audited a second time.
+			if _, err := tx.Streams().MarkSeen(ctx, cur.ID, env.OriginEventID, 0, s.now()); err != nil {
+				return err
+			}
+		}
 		_, err := tx.Streams().Update(ctx, cur.ID, func(x *store.Stream) error {
 			// (Not if this very event moved the stream to another peer:
 			// the cursor is of the log it has just left.)
