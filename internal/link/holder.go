@@ -300,7 +300,11 @@ var owedMu sync.Mutex
 
 // HistoryOwed is who the holder still waits on for a channel's earlier
 // history, in the order it asks them; empty when it has all of it.
+// A hub whose holder has not started yet has none to ask: nil is nobody.
 func (s *Service) HistoryOwed(ctx context.Context, id model.StreamID) []string {
+	if s == nil {
+		return nil
+	}
 	raw, found, err := s.store.Settings().Get(ctx, owedKey(id))
 	var out []string
 	if err != nil || !found || json.Unmarshal(raw, &out) != nil {
