@@ -17,6 +17,7 @@ import 'media.dart';
 import 'message_slots.dart';
 import 'server_image.dart';
 import '../types/draw.dart';
+import '../../core/types/catalogue.dart';
 import '../types/fair_mark.dart';
 
 /// One message as docs/MESSAGE-FORMAT.md orders it: text, files, cards,
@@ -194,9 +195,10 @@ class MessageTile extends StatelessWidget {
                     ),
                   if (view.newer) const NewerNote(),
                   // The check of the message's draw, when anything in it
-                  // took chance from one: verified, or plainly not.
-                  if (!m.isDeleted && m.raw['fair'] is Map)
-                    FairMark(server: server, message: m),
+                  // took chance from one: the shield, from this device's own
+                  // check, shown by default for the built-in chance kinds.
+                  if (!m.isDeleted && m.raw['fair'] is Map && _chancy(m))
+                    FairShield(server: server, message: m),
                   if (m.files.isNotEmpty)
                     MessageFiles(server: server, files: m.files),
                   // A message that shares its author's name line still
@@ -222,8 +224,16 @@ class MessageTile extends StatelessWidget {
                         ),
                         author: server.accounts[card.theme!['author_id']]?.name,
                       )
-                    else
+                    else ...[
                       _CardView(server: server, card: card, markdown: markdown),
+                      // A card's shield names outcomes and no verdict.
+                      if (card.fairMark != null && !m.isDeleted)
+                        FairShield(
+                          server: server,
+                          message: m,
+                          objects: card.fairMark,
+                        ),
+                    ],
                   if (m.form != null)
                     MessageSlots.form(context, server, m, markdown),
                   if (m.reactions.isNotEmpty)
@@ -472,6 +482,19 @@ class _SystemLine extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Whether a message holds a value of a built-in chance kind that took
+/// chance from its draw, whose card shows the shield by default.
+bool _chancy(Message m) {
+  bool shows(Object? v) {
+    if (v is! Map || v['draw'] is! Map) return false;
+    final r = readValue(v);
+    return r.drawn && !r.removed && catalogueKinds[r.kind]!.chance;
+  }
+
+  return shows(m.raw['view']) ||
+      m.entities.any((e) => e.type == 'object' && shows(e.raw['object']));
 }
 
 /// A card: a bar of its colour down the edge, then author, title, text,

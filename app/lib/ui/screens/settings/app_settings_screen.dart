@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../fair/validate_screen.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/objects/measure.dart';
 import '../../../l10n/app_localizations.dart';
@@ -190,6 +191,18 @@ class AppSettingsScreen extends StatelessWidget {
                       icon: const Glyph(ChurrIcons.qr, size: 16),
                       label: Text(t.setUpAnotherDevice),
                       onPressed: () => openSetupCode(context),
+                    ),
+                    // Validate result, empty for pasting a draw
+                    // (docs/DESIGN-FAIR.md section 12).
+                    OutlinedButton.icon(
+                      key: const Key('open-validate'),
+                      icon: const Glyph(ChurrIcons.shieldCheck, size: 16),
+                      label: const Text('Validate result'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ValidateScreen(),
+                        ),
+                      ),
                     ),
                   ],
                 ),

@@ -77,6 +77,17 @@ abstract final class ChurrIcons {
     'M8 10V7l2-2h4l2 2v3 M5 10h14v10H5z M12 13v4',
   );
   static const shield = ChurrGlyph('M12 3l8 3v7l-3 4-5 4-5-4-3-4V6z');
+
+  /// The fair shield's states (lib/ui/types/fair_mark.dart), drawn only
+  /// from this device's own check of a draw: a shield with a tick, a shield
+  /// with a question mark, and a warning triangle.
+  static const shieldCheck = ChurrGlyph(
+    'M12 3l8 3v7l-3 4-5 4-5-4-3-4V6z M8.5 12l2.5 2.5 4.5-5',
+  );
+  static const shieldUnknown = ChurrGlyph(
+    'M12 3l8 3v7l-3 4-5 4-5-4-3-4V6z M10 9.5l1-1h2l1 1v1.5l-2 1.5v1 M12 16v1',
+  );
+  static const warn = ChurrGlyph('M12 3l10 18H2z M12 10v5 M12 17v2');
   static const newChat = ChurrGlyph('M4 5h13l3 3v9H9l-5 4z M12 8v6M9 11h6');
   static const chatUnread = ChurrGlyph(
     'M4 5h9 M20 12v5H9l-5 4V5',

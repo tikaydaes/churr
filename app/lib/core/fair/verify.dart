@@ -32,10 +32,20 @@ enum FairState { verified, failed, unknown, none }
 
 /// The outcome of [verifyMessage]: the state, why it failed, and the block.
 class FairCheck {
-  const FairCheck(this.state, {this.why = '', this.block = const {}});
+  const FairCheck(
+    this.state, {
+    this.why = '',
+    this.block = const {},
+    this.objects = const [],
+  });
   final FairState state;
   final String why;
   final Map<String, dynamic> block;
+
+  /// Each value that took chance from the draw: its object index, whether
+  /// it checks out, and whether its outcome was worked out here ([known])
+  /// or only proved, its kind being one this device cannot derive.
+  final List<({int i, bool ok, bool known})> objects;
 }
 
 /// Bytes from base64url (padding allowed), or null.
@@ -146,30 +156,46 @@ FairCheck verifyMessage(
   // A kind with a composition of derive 1 is re-derived in full, from its
   // checked data; a kind this device checks whose data does not hold
   // together fails; one it does not know is only proved, not re-derived.
+  final objects = <({int i, bool ok, bool known})>[];
   bool rollOk(Object? v) {
     if (v is! Map || v['draw'] is! Map) return true;
     final i = (v['draw'] as Map)['i'];
     if (i is! int || i < 0) return false;
     final r = readValue(v);
     final kind = v['kind'];
+    var ok = true, known = false;
     if (r.drawn && !r.removed && !r.alt) {
-      return rederive(r.kind!, r.data!, beta, i) ?? true;
+      final again = rederive(r.kind!, r.data!, beta, i);
+      if (again != null) {
+        ok = again;
+        known = true;
+      }
+    } else {
+      final def = kind is String ? catalogueKinds[kind] : null;
+      final level = v['level'];
+      if (def != null &&
+          v['removed'] != true &&
+          level is int &&
+          level <= catalogueLevel) {
+        ok = false;
+        known = true;
+      }
     }
-    final def = kind is String ? catalogueKinds[kind] : null;
-    final level = v['level'];
-    if (def != null &&
-        v['removed'] != true &&
-        level is int &&
-        level <= catalogueLevel) {
-      return false;
-    }
-    return true;
+    objects.add((i: i, ok: ok, known: known));
+    return ok;
   }
 
   var ok = rollOk(m['view']);
   for (final e in (m['entities'] as List? ?? const [])) {
-    if (e is Map && e['type'] == 'object') ok = ok && rollOk(e['object']);
+    if (e is Map && e['type'] == 'object') ok = rollOk(e['object']) && ok;
   }
-  if (!ok) return fail('An outcome shown is not the one the proof gives.');
-  return FairCheck(FairState.verified, block: block);
+  if (!ok) {
+    return FairCheck(
+      FairState.failed,
+      why: 'An outcome shown is not the one the proof gives.',
+      block: block,
+      objects: objects,
+    );
+  }
+  return FairCheck(FairState.verified, block: block, objects: objects);
 }

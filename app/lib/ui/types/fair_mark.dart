@@ -1,46 +1,47 @@
-// The mark under a message whose chance was drawn (docs/FAIR.md), as the web
-// chat's shared/fair/mark.js: "Verified", or plainly "Not verified" with why
-// (a check made that did not hold), or "Cannot be checked here" with why (a
-// draw by a server whose key history this device was never given).
-// Tapped, it shows the proof itself, so anyone can check it again elsewhere.
-// The roll stays shown whatever the check says. The check is made on the
-// device with nothing asked of the server (core/fair/verify.dart), once per
-// message and proof.
+// The shield (docs/DESIGN-FAIR.md section 13), as the web chat's
+// shared/fair/shield.js: the one mark of a draw's proof, drawn from this
+// device's OWN check of it (core/fair/verify.dart), never from what a card
+// or a value says. A card's `fair_mark` names the outcomes of its message's
+// draw it stands on and carries no verdict; a built-in chance kind shows one
+// by default for every value of the message that took chance.
+//
+//   verified   a shield with a tick, in the theme's success tone
+//   unknown    a shield with a question mark, neutral: "Cannot be checked
+//              here", the drawing server's key history was never given
+//   failed     a warning triangle, in the warning tone: "Not verified"
+//
+// Each has its own shape and spoken label, so colour is never the only
+// sign. Tapped, it opens Validate result with the draw filled in. No other
+// widget draws these glyphs.
 
 import 'package:flutter/material.dart';
 
+import '../../core/fair/validate.dart';
 import '../../core/fair/verify.dart';
 import '../../core/models/message.dart';
 import '../../state/server_state.dart';
+import '../fair/validate_screen.dart';
 import '../theme/churr_icons.dart';
 import '../theme/tokens.dart';
 
-const _verified = 'Verified';
-const _failed = 'Not verified';
-const _unknown = 'Cannot be checked here';
-const _saysVerified =
-    "Everything shown here is what the server's proof gives. The proof was "
-    'made with the key the server that drew it published, for this place in '
-    'the conversation, and nobody, that server included, could have made it '
-    'come out otherwise.';
-
-/// The mark's word for what a check found.
-String fairWord(FairState s) => switch (s) {
-  FairState.verified => _verified,
-  FairState.unknown => _unknown,
-  _ => _failed,
+/// What a shield says.
+const shieldWords = {
+  FairState.verified: 'Verified',
+  FairState.failed: 'Not verified',
+  FairState.unknown: 'Cannot be checked here',
 };
-
-// The block's fields, in the order the proof is read.
-const _fields = [
-  ('owner', 'Drawn by'),
-  ('t', 'Second (t)'),
-  ('derive', 'Rule'),
-  ('pk', 'Key'),
-  ('alpha', 'Proved over (alpha)'),
-  ('proof', 'Proof'),
-  ('beta', 'Output (beta)'),
-];
+const _says = {
+  FairState.verified:
+      "The server's proof of this result checks out on this device: the "
+      'proof, its output and every outcome shown. Nobody, that server '
+      'included, could have made it come out otherwise.',
+  FairState.failed:
+      'This result could not be checked, so it may not be what the server '
+      'drew. It is shown as it arrived.',
+  FairState.unknown:
+      'This result was drawn by a server whose key history this app has not '
+      'been given, so its proof cannot be checked here.',
+};
 
 final _checked = <String, FairCheck>{};
 
@@ -58,49 +59,104 @@ FairCheck fairCheckOf(ServerState server, Message m) {
   );
 }
 
-/// The mark for a message with a `fair` block.
-class FairMark extends StatelessWidget {
-  const FairMark({super.key, required this.server, required this.message});
+/// What a shield standing on [objects] of a draw says, from the message's
+/// own check [res]: none named is every value that took chance.
+({FairState state, String why}) judgeShield(FairCheck res, List<int>? objects) {
+  if (res.state == FairState.none) {
+    return (
+      state: FairState.failed,
+      why: 'It stands on a draw this message does not carry.',
+    );
+  }
+  if (res.state != FairState.verified) return (state: res.state, why: res.why);
+  if (objects != null && objects.isNotEmpty) {
+    for (final i in objects) {
+      final o = res.objects.where((x) => x.i == i).firstOrNull;
+      if (o == null) {
+        return (
+          state: FairState.failed,
+          why:
+              'It names outcome $i of the draw, which nothing in this message took.',
+        );
+      }
+      if (!o.ok) {
+        return (
+          state: FairState.failed,
+          why: 'An outcome it stands on is not the one the proof gives.',
+        );
+      }
+      if (!o.known) {
+        return (
+          state: FairState.unknown,
+          why: 'An outcome it stands on is of a kind this app cannot work out, so it is proved but not checked here.',
+        );
+      }
+    }
+  } else if (res.objects.isEmpty) {
+    return (
+      state: FairState.failed,
+      why: 'Nothing in this message took chance from its draw.',
+    );
+  } else if (res.objects.any((o) => !o.known)) {
+    return (
+      state: FairState.unknown,
+      why: 'An outcome here is of a kind this app cannot work out, so it is proved but not checked here.',
+    );
+  }
+  return (state: FairState.verified, why: _says[FairState.verified]!);
+}
+
+/// The shield of a message's draw: [objects] are what a card's fair_mark
+/// names, or null for a built-in kind's (every value that took chance).
+class FairShield extends StatelessWidget {
+  const FairShield({
+    super.key,
+    required this.server,
+    required this.message,
+    this.objects,
+  });
   final ServerState server;
   final Message message;
+  final List<int>? objects;
 
   @override
   Widget build(BuildContext context) {
     final c = ChurrColors.of(context);
-    final res = fairCheckOf(server, message);
-    final ok = res.state == FairState.verified;
-    final unknown = res.state == FairState.unknown;
-    final colour = ok ? c.cyan : (unknown ? c.dim : c.yellowInk);
+    final j = judgeShield(fairCheckOf(server, message), objects);
+    final (glyph, colour) = switch (j.state) {
+      FairState.verified => (ChurrIcons.shieldCheck, c.cyan),
+      FairState.unknown => (ChurrIcons.shieldUnknown, c.dim),
+      _ => (ChurrIcons.warn, c.yellowInk),
+    };
+    final word = shieldWords[j.state] ?? shieldWords[FairState.failed]!;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Semantics(
         button: true,
-        label: ok
-            ? 'Roll verified'
-            : unknown
-            ? 'Roll cannot be checked here: ${res.why}'
-            : 'Roll not verified: ${res.why}',
+        label: '$word. ${j.why}',
+        excludeSemantics: true,
         child: Tooltip(
-          message: ok ? _saysVerified : res.why,
+          message: j.why,
           child: InkWell(
-            key: Key('fair-mark-${message.id}'),
-            onTap: () => showFairProof(context, res),
+            key: Key('fair-shield-tap'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ValidateScreen(
+                  server: server,
+                  document: exportFairMessage(message.raw, objects),
+                ),
+              ),
+            ),
             child: Container(
+              key: Key('fair-shield-${j.state.name}'),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(border: Border.all(color: colour)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Glyph(
-                    ok ? ChurrIcons.check : ChurrIcons.info,
-                    size: 12,
-                    color: colour,
-                  ),
+                  Glyph(glyph, size: 13, color: colour),
                   const SizedBox(width: 4),
-                  Text(
-                    fairWord(res.state),
-                    style: TextStyle(fontSize: 12, color: colour),
-                  ),
+                  Text(word, style: TextStyle(fontSize: 12, color: colour)),
                 ],
               ),
             ),
@@ -109,54 +165,4 @@ class FairMark extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Shows the proof in full, with what the check found.
-Future<void> showFairProof(BuildContext context, FairCheck res) {
-  final ok = res.state == FairState.verified;
-  return showDialog<void>(
-    animationStyle: AnimationStyle.noAnimation,
-    context: context,
-    builder: (context) {
-      final c = ChurrColors.of(context);
-      return Dialog(
-        child: SizedBox(
-          width: 480,
-          child: SingleChildScrollView(
-            key: const Key('fair-proof'),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'The proof of this roll',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${fairWord(res.state)}: ${ok ? _saysVerified : res.why}',
-                  style: TextStyle(color: ok ? c.ink : c.yellowInk),
-                ),
-                const SizedBox(height: 10),
-                for (final (k, label) in _fields) ...[
-                  Text(label, style: TextStyle(color: c.dim, fontSize: 12)),
-                  SelectableText(
-                    '${res.block[k] ?? ''}',
-                    style: TextStyle(fontFamily: fontMono, fontSize: 12),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                const SizedBox(height: 6),
-                Text(
-                  'docs/FAIR.md says how to check it yourself.',
-                  style: TextStyle(color: c.dim, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
 }

@@ -219,6 +219,7 @@ class MessageCard {
     this.at,
     this.previewUrl,
     this.theme,
+    this.fairMark,
   });
 
   factory MessageCard.fromJson(Json j) => MessageCard(
@@ -234,6 +235,13 @@ class MessageCard {
     at: parseTime(j['at']),
     previewUrl: j['preview_url'] as String?,
     theme: object(j['theme']),
+    fairMark: object(j['fair_mark']) == null
+        ? null
+        : [
+            for (final i
+                in (object(j['fair_mark'])!['objects'] as List? ?? const []))
+              if (i is int) i,
+          ],
   );
 
   /// One of `lavender`, `cyan`, `pink`, `yellow`, `green`, `red`, `grey`.
@@ -260,6 +268,11 @@ class MessageCard {
   /// Set by the server on a theme card (`CardTheme`): a link to one of
   /// its own themes. Drawn with swatches, "Try" and "Add".
   final Json? theme;
+
+  /// The card's shield (`FairMark`): the object indices of the message's
+  /// draw it stands on, none being every value that took chance; null when
+  /// it has none. It carries no verdict (lib/ui/types/fair_mark.dart).
+  final List<int>? fairMark;
 }
 
 /// One emoji on a message, with the accounts behind it (`Reaction`).
