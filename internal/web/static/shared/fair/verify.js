@@ -1,19 +1,24 @@
 // Checking a message's draw in the browser (docs/FAIR.md section 9), with
 // nothing asked of any server: the message and the VRF key history pinned
 // for the server that drew it hold all it needs. A message's `fair` block
-// checks out when its layout and rule are known; alpha is the one its
-// conversation's chain gives for its n; pk is the key its owner had
-// when the message was made, by the history this browser pinned for that
-// server; the proof verifies under pk and gives beta; and every value that
-// took chance from the draw is what derive 1 gives for it (a roll: every
-// die, every dropped die, every total). A check that fails says why; a draw
-// by a server whose history this browser was never given says it cannot be
-// checked here, which is not a failure. It never hides the roll.
+// checks out when its layout and rule are known; alpha is exactly the input
+// spelt from its second `t` and the message's own client_id, so a proof
+// cannot be moved to another message; the second is near the message's
+// time; pk is the key its owner had when the message was made, by the
+// history this browser pinned for that server; the proof verifies under pk
+// and gives beta; and every value that took chance from the draw is what
+// derive 1 gives for it (a roll: every die, every dropped die, every total).
+// A check that fails says why; a draw by a server whose history this browser
+// was never given says it cannot be checked here, which is not a failure. It
+// never hides the roll.
 
 import { verify } from './ecvrf.js';
 import { DERIVE, Stream, sameRoll } from './derive.js';
 
-const LABEL = 'churr-fair-1';
+// How far a draw's second may be from its message's time: the server's
+// window, and the looser one for a message drawn by another server, whose
+// clock may be off from this one's (internal/fair, Window and LinkWindow).
+export const WINDOW = 10, LINK_WINDOW = 120;
 
 /** Bytes from base64url (padding allowed), or null. */
 export function fromB64(s) {
@@ -26,31 +31,11 @@ export function fromB64(s) {
 const same = (a, b) => !!a && !!b && a.length === b.length && a.every((x, i) => x === b[i]);
 const utf8 = (s) => new TextEncoder().encode(s);
 
-/** alpha for draw n of a chain (docs/FAIR.md section 6). */
-export function alphaOf(owner, chain, n) {
-  const o = utf8(owner), c = utf8(chain);
-  const out = new Uint8Array(LABEL.length + 2 + o.length + 2 + c.length + 8);
-  const v = new DataView(out.buffer);
-  let at = 0;
-  out.set(utf8(LABEL), at); at += LABEL.length;
-  v.setUint16(at, o.length); at += 2; out.set(o, at); at += o.length;
-  v.setUint16(at, c.length); at += 2; out.set(c, at); at += c.length;
-  v.setUint32(at, Math.floor(n / 4294967296)); v.setUint32(at + 4, n >>> 0);
-  return out;
-}
+/** Whether a nonce is a UUID in its one spelling: lowercase, hyphenated. */
+export const canonical = (s) => typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s);
 
-/** The chain an alpha names, or null. */
-export function chainOfAlpha(alpha) {
-  const label = utf8(LABEL);
-  if (!alpha || alpha.length < label.length + 4 || !same(alpha.subarray(0, label.length), label)) return null;
-  const v = new DataView(alpha.buffer, alpha.byteOffset, alpha.byteLength);
-  let at = label.length;
-  at += 2 + v.getUint16(at);
-  if (at + 2 > alpha.length) return null;
-  const m = v.getUint16(at); at += 2;
-  if (alpha.length !== at + m + 8) return null;
-  return new TextDecoder().decode(alpha.subarray(at, at + m));
-}
+/** The input of a draw (docs/FAIR.md section 6): "<t>|<nonce>". */
+export const alphaOf = (t, nonce) => `${t}|${nonce}`;
 
 /** The key of a history in force at a moment: the last to have begun by then. */
 export function keyAt(history, at) {
@@ -64,8 +49,8 @@ export function keyAt(history, at) {
  * Checks a message's draw. ctx: { keysOf(name) (the VRF key history pinned
  * for a server, { keys: [{ key, began }], changed }, or null when no source
  * has given one: getServer for this server, a shared conversation's
- * `shared.vrf_keys` for the others), chains (the names the conversation's
- * chain may have: its id, and its stream's when shared) }.
+ * `shared.vrf_keys` for the others), server (this server's name, whose
+ * draws are held to the narrower window) }.
  * Gives { state: 'verified' | 'failed' | 'unknown' | 'none', why, block,
  * objects }, where objects lists each value that took chance: { where, i,
  * ok }. 'unknown' is a draw this client holds no key history for, which it
@@ -77,12 +62,11 @@ export async function verifyMessage(m, ctx) {
   const fail = (why) => ({ state: 'failed', why, block });
   if (block.v !== 1) return fail('This proof is in a layout this app does not know.');
   if (block.derive !== DERIVE) return fail('This roll was worked out by a rule this app does not know.');
-  const pk = fromB64(block.pk), alpha = fromB64(block.alpha), beta = fromB64(block.beta);
-  const proof = fromB64(block.proof);
-  if (!pk || !alpha || !beta || !proof || !(Number.isSafeInteger(block.n) && block.n >= 1)) return fail('The proof is not whole.');
-  const chain = chainOfAlpha(alpha);
-  if (!chain || !(ctx.chains || []).includes(chain)) return fail('The proof is for another conversation.');
-  if (!same(alpha, alphaOf(block.owner, chain, block.n))) return fail('The proof is not for this place in the conversation.');
+  const pk = fromB64(block.pk), beta = fromB64(block.beta), proof = fromB64(block.proof);
+  if (!pk || !beta || !proof || typeof block.alpha !== 'string' || !Number.isSafeInteger(block.t) || block.t < 1) return fail('The proof is not whole.');
+  if (!canonical(m.client_id) || block.alpha !== alphaOf(block.t, m.client_id)) return fail('The proof is not this message\'s.');
+  const window = block.owner === ctx.server ? WINDOW : LINK_WINDOW;
+  if (!(Math.abs(block.t - Date.parse(m.created_at) / 1000) <= window)) return fail('The proof is for another time than the message\'s.');
   const history = ctx.keysOf ? ctx.keysOf(block.owner) : null;
   if (!history) {
     return { state: 'unknown', block, why: `It was drawn by ${block.owner}, and this conversation does not carry that server's key history, so it cannot be checked here.` };
@@ -90,7 +74,7 @@ export async function verifyMessage(m, ctx) {
   if (history.changed) return fail(`${block.owner} now shows a different key history than the one this app pinned for it, so its proofs are not trusted.`);
   const key = fromB64(keyAt(history.keys, m.created_at));
   if (!key || !same(key, pk)) return fail(`The roll was not proved with the key ${block.owner} had at the time.`);
-  const r = await verify(pk, proof, alpha);
+  const r = await verify(pk, proof, utf8(block.alpha));
   if (!r.valid || !same(r.beta, beta)) return fail('The proof does not check out.');
   const objects = [];
   const check = async (where, v) => {

@@ -23,7 +23,7 @@ const WORDS = {
 };
 
 // The block's fields, in the order the proof is read.
-const FIELDS = [['owner', 'Drawn by'], ['n', 'Draw number'], ['derive', 'Rule'], ['pk', 'Key'], ['alpha', 'Proved over (alpha)'],
+const FIELDS = [['owner', 'Drawn by'], ['t', 'Second (t)'], ['derive', 'Rule'], ['pk', 'Key'], ['alpha', 'Proved over (alpha)'],
   ['proof', 'Proof'], ['beta', 'Output (beta)']];
 
 /** The check of a message's draw, made once: a promise kept on the message. */
@@ -43,7 +43,7 @@ export function proofDialog(res) {
   return openDialog(WORDS.title, () => [
     h('p', { class: 'fair-says' + (ok ? '' : ' warn') }, icon(ok ? 'check' : res.state === 'unknown' ? 'info' : 'warn', null, 'small'), ' ',
       h('strong', {}, wordOf(res)), ' — ', ok ? WORDS.says.verified : res.why || saysOf(res)),
-    h('dl', { class: 'fair-block' }, FIELDS.flatMap(([k, label]) => [h('dt', {}, label), h('dd', { class: k === 'owner' || k === 'n' || k === 'derive' ? '' : 'mono' }, String(b[k] ?? ''))])),
+    h('dl', { class: 'fair-block' }, FIELDS.flatMap(([k, label]) => [h('dt', {}, label), h('dd', { class: k === 'owner' || k === 't' || k === 'derive' ? '' : 'mono' }, String(b[k] ?? ''))])),
     h('p', { class: 'dim small' }, 'docs/FAIR.md says how to check it yourself.'),
   ]);
 }

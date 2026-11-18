@@ -1,4 +1,5 @@
 import '../conversation/broad_mentions.dart';
+import '../fair/clock.dart';
 import '../models/json.dart';
 import '../ids.dart';
 import '../models/message.dart';
@@ -69,6 +70,7 @@ extension MessagesApi on ApiClient {
     String conversationId, {
     required String clientId,
     required String text,
+    int? drawT,
     String? parentId,
     List<String> fileIds = const [],
     Json? quote,
@@ -80,11 +82,14 @@ extension MessagesApi on ApiClient {
     void Function(List<String> cannotReadIds)? onCannotRead,
     void Function()? onBroadRefused,
   }) async {
-    final j = await call(
+    // With its client_id, drawT is the input of the message's draw if
+    // anything in it takes chance (docs/FAIR.md section 6).
+    Future<Json> send(int? t) => call(
       Ops.postMessage,
       path: {'id': conversationId},
       body: {
         'client_id': clientId,
+        'draw_t': ?t,
         // A chance request stands alone: the server draws the result.
         if (chance == null) 'text': text,
         'parent_id': ?parentId,
@@ -101,6 +106,9 @@ extension MessagesApi on ApiClient {
           'object_hints': objectHints,
       },
     );
+    final j = drawT == null
+        ? await send(null)
+        : await withDrawClock(drawT, send);
     onCannotRead?.call(strings(j['cannot_read_ids']));
     // The text held @channel, @here or @everyone that the author may not
     // use there: it was stored as plain text (ruling R64).

@@ -1,14 +1,15 @@
 // Checking a message's draw on the device (docs/FAIR.md section 9), as the
 // web chat does (shared/fair/verify.js), with nothing asked of any server:
 // the message and the VRF key history pinned on this device for the server
-// that drew it hold all it needs. The block's layout and rule are known; alpha is the one the
-// conversation's chain gives for its n; pk is the key its owner had
-// when the message was made, by the pinned history; the proof verifies under
-// pk and gives beta; and every roll that took chance from the draw is what
-// derive 1 gives for it. A check that fails says why; a draw by a server
-// whose history this device was never given says it cannot be checked here,
-// which is not a failure. It never hides the roll. Plain Dart, tested
-// without Flutter.
+// that drew it hold all it needs. The block's layout and rule are known;
+// alpha is exactly the input spelt from its second `t` and the message's own
+// client_id, so a proof cannot be moved to another message; the second is
+// near the message's time; pk is the key its owner had when the message was
+// made, by the pinned history; the proof verifies under pk and gives beta;
+// and every roll that took chance from the draw is what derive 1 gives for
+// it. A check that fails says why; a draw by a server whose history this
+// device was never given says it cannot be checked here, which is not a
+// failure. It never hides the roll. Plain Dart, tested without Flutter.
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -17,7 +18,10 @@ import 'derive.dart';
 import 'pin.dart';
 import 'ecvrf.dart' as ecvrf;
 
-const _label = 'churr-fair-1';
+/// How far a draw's second may be from its message's time: the server's
+/// window, and the looser one for a message drawn by another server, whose
+/// clock may be off from this one's (internal/fair, Window and LinkWindow).
+const fairWindow = 10, fairLinkWindow = 120;
 
 /// What a check found: [unknown] is a draw by a server this device holds
 /// no key history for, which cannot be checked here; [failed] a check made
@@ -50,42 +54,15 @@ bool _same(List<int>? a, List<int>? b) {
   return true;
 }
 
-/// alpha for draw [n] of a chain (docs/FAIR.md section 6).
-Uint8List alphaOf(String owner, String chain, int n) {
-  final o = utf8.encode(owner), c = utf8.encode(chain);
-  final b = BytesBuilder()..add(utf8.encode(_label));
-  final len = ByteData(2);
-  len.setUint16(0, o.length);
-  b
-    ..add(len.buffer.asUint8List())
-    ..add(o);
-  len.setUint16(0, c.length);
-  b
-    ..add(len.buffer.asUint8List())
-    ..add(c);
-  final nb = ByteData(8)
-    ..setUint32(0, n ~/ 4294967296)
-    ..setUint32(4, n % 4294967296);
-  b.add(nb.buffer.asUint8List());
-  return b.toBytes();
-}
+final _canonical = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+);
 
-/// The chain an alpha names, or null.
-String? chainOfAlpha(Uint8List alpha) {
-  final label = utf8.encode(_label);
-  if (alpha.length < label.length + 4 ||
-      !_same(alpha.sublist(0, label.length), label)) {
-    return null;
-  }
-  final v = ByteData.sublistView(alpha);
-  var at = label.length;
-  at += 2 + v.getUint16(at);
-  if (at + 2 > alpha.length) return null;
-  final m = v.getUint16(at);
-  at += 2;
-  if (alpha.length != at + m + 8) return null;
-  return utf8.decode(alpha.sublist(at, at + m));
-}
+/// Whether a nonce is a UUID in its one spelling: lowercase, hyphenated.
+bool canonicalNonce(Object? s) => s is String && _canonical.hasMatch(s);
+
+/// The input of a draw (docs/FAIR.md section 6): `<t>|<nonce>`.
+String alphaOf(int t, String nonce) => '$t|$nonce';
 
 /// The key of a history in force at [at]: the last to have begun by then.
 String? keyAt(List<Map<String, dynamic>> history, DateTime at) {
@@ -100,12 +77,12 @@ String? keyAt(List<Map<String, dynamic>> history, DateTime at) {
 /// Checks a message's draw. [keysOf] gives the VRF key history pinned for a
 /// server by name, or null when no source has given one (getServer for
 /// this server, a shared conversation's `shared.vrf_keys` for the others);
-/// [chains] the names the conversation's chain may have (its id, and its
-/// stream's when shared).
+/// [server] is this server's name, whose draws are held to the narrower
+/// window.
 FairCheck verifyMessage(
   Map<String, dynamic> m, {
   required FairHistory? Function(String name) keysOf,
-  required List<String> chains,
+  required String server,
 }) {
   final raw = m['fair'];
   if (raw is! Map) return const FairCheck(FairState.none);
@@ -118,24 +95,27 @@ FairCheck verifyMessage(
   if (block['derive'] != deriveVersion) {
     return fail('This roll was worked out by a rule this app does not know.');
   }
-  final pk = fromB64(block['pk']), alpha = fromB64(block['alpha']);
-  final beta = fromB64(block['beta']), proof = fromB64(block['proof']);
-  final n = block['n'];
+  final pk = fromB64(block['pk']), beta = fromB64(block['beta']);
+  final proof = fromB64(block['proof']);
+  final alpha = block['alpha'], t = block['t'];
   if (pk == null ||
-      alpha == null ||
       beta == null ||
       proof == null ||
-      n is! int ||
-      n < 1) {
+      alpha is! String ||
+      t is! int ||
+      t < 1) {
     return fail('The proof is not whole.');
   }
-  final chain = chainOfAlpha(alpha);
-  if (chain == null || !chains.contains(chain)) {
-    return fail('The proof is for another conversation.');
+  final clientId = m['client_id'];
+  if (!canonicalNonce(clientId) || alpha != alphaOf(t, clientId as String)) {
+    return fail("The proof is not this message's.");
   }
   final owner = block['owner'] as String? ?? '';
-  if (!_same(alpha, alphaOf(owner, chain, n))) {
-    return fail('The proof is not for this place in the conversation.');
+  final created = DateTime.tryParse(m['created_at'] as String? ?? '');
+  final window = owner == server ? fairWindow : fairLinkWindow;
+  if (created == null ||
+      (t * 1000 - created.millisecondsSinceEpoch).abs() > window * 1000) {
+    return fail("The proof is for another time than the message's.");
   }
   final history = keysOf(owner);
   if (history == null) {
@@ -153,12 +133,11 @@ FairCheck verifyMessage(
       'pinned for it, so its proofs are not trusted.',
     );
   }
-  final created = DateTime.tryParse(m['created_at'] as String? ?? '');
-  final key = created == null ? null : fromB64(keyAt(history.keys, created));
+  final key = fromB64(keyAt(history.keys, created));
   if (!_same(key, pk)) {
     return fail('The roll was not proved with the key $owner had at the time.');
   }
-  final r = ecvrf.verify(pk, proof, alpha);
+  final r = ecvrf.verify(pk, proof, utf8.encode(alpha));
   if (!r.valid || !_same(r.beta, beta)) {
     return fail('The proof does not check out.');
   }

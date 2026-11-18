@@ -4550,6 +4550,7 @@ class ErrorError extends $pb.GeneratedMessage {
     $core.String? message,
     $core.String? field_5,
     $fixnum.Int64? retryAfterSeconds,
+    $fixnum.Int64? serverTime,
   }) {
     final result = ErrorError._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -4557,6 +4558,7 @@ class ErrorError extends $pb.GeneratedMessage {
     if (message != null) result.message = message;
     if (field_5 != null) result.field_5 = field_5;
     if (retryAfterSeconds != null) result.retryAfterSeconds = retryAfterSeconds;
+    if (serverTime != null) result.serverTime = serverTime;
     return result;
   }
 
@@ -4579,6 +4581,7 @@ class ErrorError extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'message')
     ..aOS(5, _omitFieldNames ? '' : 'field')
     ..aInt64(6, _omitFieldNames ? '' : 'retryAfterSeconds')
+    ..aInt64(7, _omitFieldNames ? '' : 'serverTime')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4639,6 +4642,15 @@ class ErrorError extends $pb.GeneratedMessage {
   $core.bool hasRetryAfterSeconds() => $_has(4);
   @$pb.TagNumber(6)
   void clearRetryAfterSeconds() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get serverTime => $_getI64(5);
+  @$pb.TagNumber(7)
+  set serverTime($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasServerTime() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearServerTime() => $_clearField(7);
 }
 
 /// The document at `/.well-known/churr`, exactly as `docs/LINK-PROTOCOL.md` defines it. A hub serves the same document with `kind` `hub` and no box key.
@@ -15117,9 +15129,10 @@ class FairBlock extends $pb.GeneratedMessage {
     $core.String? owner,
     $fixnum.Int64? n,
     $core.List<$core.int>? pk,
-    $core.List<$core.int>? alpha,
+    $core.String? alpha,
     $core.List<$core.int>? beta,
     $core.List<$core.int>? proof,
+    $fixnum.Int64? t,
   }) {
     final result = FairBlock._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -15131,6 +15144,7 @@ class FairBlock extends $pb.GeneratedMessage {
     if (alpha != null) result.alpha = alpha;
     if (beta != null) result.beta = beta;
     if (proof != null) result.proof = proof;
+    if (t != null) result.t = t;
     return result;
   }
 
@@ -15154,12 +15168,12 @@ class FairBlock extends $pb.GeneratedMessage {
     ..aInt64(6, _omitFieldNames ? '' : 'n')
     ..a<$core.List<$core.int>>(
         7, _omitFieldNames ? '' : 'pk', $pb.PbFieldType.OY)
-    ..a<$core.List<$core.int>>(
-        8, _omitFieldNames ? '' : 'alpha', $pb.PbFieldType.OY)
+    ..aOS(8, _omitFieldNames ? '' : 'alpha')
     ..a<$core.List<$core.int>>(
         9, _omitFieldNames ? '' : 'beta', $pb.PbFieldType.OY)
     ..a<$core.List<$core.int>>(
         10, _omitFieldNames ? '' : 'proof', $pb.PbFieldType.OY)
+    ..aInt64(12, _omitFieldNames ? '' : 't')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -15231,9 +15245,9 @@ class FairBlock extends $pb.GeneratedMessage {
   void clearPk() => $_clearField(7);
 
   @$pb.TagNumber(8)
-  $core.List<$core.int> get alpha => $_getN(6);
+  $core.String get alpha => $_getSZ(6);
   @$pb.TagNumber(8)
-  set alpha($core.List<$core.int> value) => $_setBytes(6, value);
+  set alpha($core.String value) => $_setString(6, value);
   @$pb.TagNumber(8)
   $core.bool hasAlpha() => $_has(6);
   @$pb.TagNumber(8)
@@ -15256,6 +15270,15 @@ class FairBlock extends $pb.GeneratedMessage {
   $core.bool hasProof() => $_has(8);
   @$pb.TagNumber(10)
   void clearProof() => $_clearField(10);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get t => $_getI64(9);
+  @$pb.TagNumber(12)
+  set t($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(12)
+  $core.bool hasT() => $_has(9);
+  @$pb.TagNumber(12)
+  void clearT() => $_clearField(12);
 }
 
 /// One emoji on a message, with the accounts behind it.
@@ -22252,6 +22275,7 @@ class MessageInput extends $pb.GeneratedMessage {
     $core.String? timeZone,
     $core.Iterable<InstantHint>? instantHints,
     $core.Iterable<ObjectHint>? objectHints,
+    $fixnum.Int64? drawT,
   }) {
     final result = MessageInput._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -22270,6 +22294,7 @@ class MessageInput extends $pb.GeneratedMessage {
     if (timeZone != null) result.timeZone = timeZone;
     if (instantHints != null) result.instantHints.addAll(instantHints);
     if (objectHints != null) result.objectHints.addAll(objectHints);
+    if (drawT != null) result.drawT = drawT;
     return result;
   }
 
@@ -22312,6 +22337,7 @@ class MessageInput extends $pb.GeneratedMessage {
         subBuilder: InstantHint.$_createMessage)
     ..pPM<ObjectHint>(16, _omitFieldNames ? '' : 'objectHints',
         subBuilder: ObjectHint.$_createMessage)
+    ..aInt64(17, _omitFieldNames ? '' : 'drawT')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -22451,6 +22477,15 @@ class MessageInput extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(16)
   $pb.PbList<ObjectHint> get objectHints => $_getList(15);
+
+  @$pb.TagNumber(17)
+  $fixnum.Int64 get drawT => $_getI64(16);
+  @$pb.TagNumber(17)
+  set drawT($fixnum.Int64 value) => $_setInt64(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasDrawT() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearDrawT() => $_clearField(17);
 }
 
 /// A form as a client sends it when posting a message.
@@ -34742,12 +34777,16 @@ class RunCommandRequest extends $pb.GeneratedMessage {
     $core.String? name,
     $core.String? text,
     $core.List<$core.int>? parentId,
+    $core.List<$core.int>? clientId,
+    $fixnum.Int64? drawT,
   }) {
     final result = RunCommandRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (name != null) result.name = name;
     if (text != null) result.text = text;
     if (parentId != null) result.parentId = parentId;
+    if (clientId != null) result.clientId = clientId;
+    if (drawT != null) result.drawT = drawT;
     return result;
   }
 
@@ -34769,6 +34808,9 @@ class RunCommandRequest extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'text')
     ..a<$core.List<$core.int>>(
         5, _omitFieldNames ? '' : 'parentId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        6, _omitFieldNames ? '' : 'clientId', $pb.PbFieldType.OY)
+    ..aInt64(7, _omitFieldNames ? '' : 'drawT')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -34822,6 +34864,24 @@ class RunCommandRequest extends $pb.GeneratedMessage {
   $core.bool hasParentId() => $_has(3);
   @$pb.TagNumber(5)
   void clearParentId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.List<$core.int> get clientId => $_getN(4);
+  @$pb.TagNumber(6)
+  set clientId($core.List<$core.int> value) => $_setBytes(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasClientId() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearClientId() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get drawT => $_getI64(5);
+  @$pb.TagNumber(7)
+  set drawT($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasDrawT() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearDrawT() => $_clearField(7);
 }
 
 class RunCommandResponse extends $pb.GeneratedMessage {
@@ -38813,6 +38873,7 @@ class PostEpochRecordResponse409Error extends $pb.GeneratedMessage {
     $core.String? message,
     $core.String? field_5,
     $fixnum.Int64? retryAfterSeconds,
+    $fixnum.Int64? serverTime,
   }) {
     final result = PostEpochRecordResponse409Error._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -38820,6 +38881,7 @@ class PostEpochRecordResponse409Error extends $pb.GeneratedMessage {
     if (message != null) result.message = message;
     if (field_5 != null) result.field_5 = field_5;
     if (retryAfterSeconds != null) result.retryAfterSeconds = retryAfterSeconds;
+    if (serverTime != null) result.serverTime = serverTime;
     return result;
   }
 
@@ -38842,6 +38904,7 @@ class PostEpochRecordResponse409Error extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'message')
     ..aOS(5, _omitFieldNames ? '' : 'field')
     ..aInt64(6, _omitFieldNames ? '' : 'retryAfterSeconds')
+    ..aInt64(7, _omitFieldNames ? '' : 'serverTime')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -38910,6 +38973,15 @@ class PostEpochRecordResponse409Error extends $pb.GeneratedMessage {
   $core.bool hasRetryAfterSeconds() => $_has(4);
   @$pb.TagNumber(6)
   void clearRetryAfterSeconds() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get serverTime => $_getI64(5);
+  @$pb.TagNumber(7)
+  set serverTime($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasServerTime() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearServerTime() => $_clearField(7);
 }
 
 class ListEpochRecordsResponse extends $pb.GeneratedMessage {

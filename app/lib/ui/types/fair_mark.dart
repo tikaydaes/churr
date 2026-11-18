@@ -34,7 +34,7 @@ String fairWord(FairState s) => switch (s) {
 // The block's fields, in the order the proof is read.
 const _fields = [
   ('owner', 'Drawn by'),
-  ('n', 'Draw number'),
+  ('t', 'Second (t)'),
   ('derive', 'Rule'),
   ('pk', 'Key'),
   ('alpha', 'Proved over (alpha)'),
@@ -47,22 +47,15 @@ final _checked = <String, FairCheck>{};
 /// The check of [m]'s draw against what [server] holds, made once for each
 /// state of the pins.
 FairCheck fairCheckOf(ServerState server, Message m) {
-  final conv = server.conversation(m.conversationId);
-  final shared = conv?.raw['shared'];
+  final shared = server.conversation(m.conversationId)?.raw['shared'];
   final histories = server.vrfHistories..showShared(shared);
   final key =
       '${m.id}|${(m.raw['fair'] as Map?)?['proof']}|${histories.version}';
-  return _checked[key] ??= () {
-    return verifyMessage(
-      m.raw,
-      keysOf: histories.of,
-      chains: [
-        m.conversationId,
-        if (shared is Map && shared['stream_id'] is String)
-          shared['stream_id'] as String,
-      ],
-    );
-  }();
+  return _checked[key] ??= verifyMessage(
+    m.raw,
+    keysOf: histories.of,
+    server: server.info?.name ?? '',
+  );
 }
 
 /// The mark for a message with a `fair` block.

@@ -200,7 +200,7 @@ check('and makes no element of its own', made.filter((t) => t === 'IMG' || t ===
 {
   const { fairMark } = await import(S + 'fair/mark.js');
   const mv = JSON.parse(readFileSync(new URL('../testdata/fair/message.json', import.meta.url), 'utf8'));
-  const ctx = { keysOf: (name) => (name === mv.server ? { keys: mv.keys } : null), chains: mv.chains };
+  const ctx = { keysOf: (name) => (name === mv.server ? { keys: mv.keys } : null), server: mv.server };
   check('no mark for a message that drew nothing', fairMark({ text: 'x' }, ctx), null);
   const good = structuredClone(mv.message);
   const mark = fairMark(good, ctx);
@@ -208,10 +208,10 @@ check('and makes no element of its own', made.filter((t) => t === 'IMG' || t ===
   await good._fairCheck;
   check('then says the roll is verified', [mark.className, mark.textContent.trim()], ['fair-mark verified', 'Verified']);
   const bad = structuredClone(mv.message);
-  bad.fair.n += 1;
+  bad.fair.t += 1;
   const no = fairMark(bad, ctx);
   await bad._fairCheck;
-  check('or plainly that it is not', [no.className, no.textContent.trim(), no.title], ['fair-mark failed', 'Not verified', 'The proof is not for this place in the conversation.']);
+  check('or plainly that it is not', [no.className, no.textContent.trim(), no.title], ['fair-mark failed', 'Not verified', 'The proof is not this message\'s.']);
   check('and the roll is still drawn', drawView(bad, {}).card !== null, true);
   const far = structuredClone(mv.message);
   const unknown = fairMark(far, { ...ctx, keysOf: () => null });

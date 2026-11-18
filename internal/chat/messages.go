@@ -101,7 +101,11 @@ func (s *Service) shape(ctx context.Context, a store.Areas, st perm.State, msgs 
 	}
 	for i := range msgs {
 		if !st.Conversation.Sealed() {
-			msgs[i].ClientID = ""
+			// Kept on a message that drew: its draw was made by it, and
+			// anyone rebuilds the draw's alpha from it (docs/FAIR.md).
+			if msgs[i].Fair == nil {
+				msgs[i].ClientID = ""
+			}
 		} else {
 			sealedShape(&msgs[i])
 		}
@@ -158,9 +162,13 @@ type NewMessage struct {
 	// and View: Post runs it, so that its chance comes from the message's
 	// draw (fair.go). It is never taken from a request.
 	Command *ModuleCommand
-	// fairTries counts the times the post was made again because another
-	// message took its draw first.
-	fairTries int
+	// DrawT is the second the author's client gave the message's draw,
+	// with ClientID its input (docs/FAIR.md section 6).
+	DrawT int64
+	// Scheduled is set by the scheduler for a message it posts: it has no
+	// client_id of its client's making, so nothing in it draws (inline dice
+	// stay text) and it is not refused for that.
+	Scheduled bool
 	// Reminder is set by the scheduler for a reminder: it may quote the
 	// message it is about at top level, from any conversation, and may
 	// then have no text (docs/FEATURES.md section 9.1). The scheduler
@@ -173,6 +181,29 @@ type NewMessage struct {
 	// anything: a message scheduled for later is checked as if posted
 	// now. The answer is then an empty Posted.
 	DryRun bool
+}
+
+// sentBefore answers a post whose client_id its author has used in the
+// conversation already: the message it made, the same one with the same
+// draw, when it was within the day; a refusal after that. found is false for
+// a client_id not used here.
+func (s *Service) sentBefore(ctx context.Context, actor model.Account, st perm.State, in NewMessage) (Posted, bool, error) {
+	if in.ClientID == "" {
+		return Posted{}, false, nil
+	}
+	if !model.ValidID(in.ClientID) {
+		return Posted{}, true, model.Invalid("client_id", "client_id must be a UUID.")
+	}
+	old, found, err := s.store.Messages().ByClientID(ctx, st.Conversation.ID, actor.ID, in.ClientID)
+	if err != nil || !found {
+		return Posted{}, false, err
+	}
+	if s.now().Sub(old.CreatedAt) > clientIDWindow {
+		return Posted{}, true, model.ErrConflict.With("That client_id was used more than a day ago. Make a new one.")
+	}
+	msgs := []model.Message{old}
+	err = s.present(ctx, s.store, st, msgs)
+	return Posted{Message: msgs[0]}, true, err
 }
 
 // Posted is what Post returns.
@@ -220,10 +251,15 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		// section 17, case 147).
 		return Posted{}, model.BadRequest("A sealed chat takes only sealed messages.")
 	}
+	// A post sent again with its client_id gets the message it made, with
+	// the same draw: before anything is drawn (fair.go).
+	if posted, found, err := s.sentBefore(ctx, actor, st, in); found || err != nil {
+		return posted, err
+	}
 	// The message's one draw, made when something in it first asks for
 	// chance (fair.go).
 	orig := in
-	draws := s.newDrawer(ctx, conv.ID)
+	draws := s.newDrawer(actor, conv.ID, in)
 	if in.Command != nil {
 		made, err := s.modules.Command(ctx, actor, conv.ID, in.Command.Name, in.Command.Text, draws)
 		if err != nil {
@@ -270,24 +306,6 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && chance == nil && !(in.Reminder && in.Quote != nil) {
 		return Posted{}, model.BadRequest("A message needs text, a file or a card.")
 	}
-	if in.ClientID != "" {
-		if !model.ValidID(in.ClientID) {
-			return Posted{}, model.Invalid("client_id", "client_id must be a UUID.")
-		}
-		old, found, err := s.store.Messages().ByClientID(ctx, conv.ID, actor.ID, in.ClientID)
-		if err != nil {
-			return Posted{}, err
-		}
-		if found {
-			if s.now().Sub(old.CreatedAt) > clientIDWindow {
-				return Posted{}, model.ErrConflict.With("That client_id was used more than a day ago. Make a new one.")
-			}
-			msgs := []model.Message{old}
-			err := s.present(ctx, s.store, st, msgs)
-			return Posted{Message: msgs[0]}, err
-		}
-	}
-
 	// A reply names any message of the thread; its parent is the thread's
 	// top-level message either way (docs/FEATURES.md section 1.1).
 	var parent model.Message
@@ -347,6 +365,12 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	if err != nil {
 		return Posted{}, err
 	}
+	if draws.err != nil && !in.Scheduled {
+		// Inline dice whose draw was refused: no input to draw by, a second
+		// outside the clock's window, a pair taken. A scheduled message has
+		// no input of its client's making, and its dice stay text.
+		return Posted{}, draws.err
+	}
 	if in.DryRun {
 		return Posted{}, nil
 	}
@@ -391,9 +415,6 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		m.Seq, m.Order = seq, rec.Order(conv.ID, seq)
 		// The draw is this message's only if the chain is still where it
 		// was made from.
-		if err := draws.advance(ctx, tx); err != nil {
-			return err
-		}
 		if err := tx.Messages().Insert(ctx, &m, got.mentions); err != nil {
 			return err
 		}
@@ -470,15 +491,10 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		}
 		return rec.EmitAt(ctx, e)
 	})
-	if errors.Is(err, store.ErrFairMoved) && orig.fairTries < maxFairTries {
-		// Another message took the draw: this one takes the next.
-		orig.fairTries++
-		return s.Post(ctx, actor, orig)
-	}
 	if errors.Is(err, model.ErrAlreadyExists) && in.ClientID != "" {
-		// The same request arrived twice at once; the other one won.
-		in2 := in
-		return s.Post(ctx, actor, in2)
+		// The same request arrived twice at once; the other one won, and
+		// this is answered as it is: with its message, or a refusal.
+		return s.Post(ctx, actor, orig)
 	}
 	if err != nil {
 		return Posted{}, err
@@ -922,7 +938,9 @@ func (s *Service) PresentFor(ctx context.Context, actor model.Account, msgs []mo
 		}
 	}
 	for i := range msgs {
-		msgs[i].ClientID = ""
+		if msgs[i].Fair == nil {
+			msgs[i].ClientID = ""
+		}
 		if !msgs[i].HistoryHiddenAt.IsZero() && !actor.Role.IsAdmin() {
 			msgs[i].HasHistory = false
 		}

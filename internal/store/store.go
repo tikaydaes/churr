@@ -92,9 +92,6 @@ type Areas interface {
 
 	// What the built-in modules keep (modules.go).
 	Modules() Modules
-
-	// The heads of the chains of draws (fair.go).
-	Fair() Fair
 }
 
 // Store is a database. Calls made on it directly each run by themselves;

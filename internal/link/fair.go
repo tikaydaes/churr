@@ -12,7 +12,8 @@ import (
 // drew it is the author's: its name must be the block's owner. The block is
 // checked under the key that server had at the message's time, by the VRF key
 // history this server holds for it (its own; the direct link's pin; the hub
-// channel's record), against the chain the stream names. A block that fails
+// channel's record), and its input must be the message's own second and
+// client_id. A block that fails
 // is dropped, and with it every value that took chance from the draw, which
 // then shows as its text; the message still arrives, and the drop is
 // audited. Outcomes are not derived again here beyond each kind's own check
@@ -40,20 +41,16 @@ func (a *apply) fairOf(w wireMessage) (*model.FairBlock, bool) {
 			owner = a.s.self.Name
 		}
 	}
-	// The chain is the stream's. A message drawn before its conversation
-	// was shared was drawn on the owner's own chain of it, whose name this
-	// server cannot know: for a message older than this server's part in
-	// the stream, the chain is taken as the block names it.
-	chain := string(a.st.ID)
-	if named, ok := fair.ChainOfAlpha(w.Fair.Alpha); ok && named != chain && w.CreatedAt < a.st.CreatedAt {
-		chain = named
-	}
-	err := fair.CheckBlock(w.Fair, owner, chain, w.CreatedAt, a.vrfHistory(w.Fair.Owner))
+	// Nothing of the conversation is in the input: the message's own
+	// second and client_id are, and the author's server's key says whose
+	// draw it is. That server's clock may be off from this one's, so the
+	// second is held to the looser LinkWindow of the message's time.
+	err := fair.CheckBlock(w.Fair, owner, w.ClientID, w.CreatedAt, fair.LinkWindow, a.vrfHistory(w.Fair.Owner))
 	if err != nil {
 		// Written in the event's transaction: the message is stored
 		// with its chance values as text, and this says why.
 		a.s.audit(a.ctx, a.tx, "", "link.fair_block_dropped", "stream", string(a.st.ID), map[string]any{"message_id": w.ID,
-			"origin": a.origin.Name, "owner": w.Fair.Owner, "n": w.Fair.N, "why": err.Error()})
+			"origin": a.origin.Name, "owner": w.Fair.Owner, "why": err.Error()})
 		return nil, false
 	}
 	return w.Fair, true

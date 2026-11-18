@@ -688,7 +688,7 @@ func (ms messages) Purge(ctx context.Context, msg model.MessageID, at model.Time
 			}
 		}
 		return exec(`
-			UPDATE messages SET purged_at = ?, history_hidden_at = NULL, client_id = NULL, quote_message_id = NULL,
+			UPDATE messages SET purged_at = ?, history_hidden_at = NULL, client_id = CASE WHEN fair IS NULL THEN NULL ELSE client_id END, quote_message_id = NULL,
 				quote_start = NULL, quote_end = NULL WHERE id = ?`, int64(at), a)
 	})
 	return keys, err

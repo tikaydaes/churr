@@ -6,12 +6,13 @@ from lib import S, RAW
 # Basics
 
 S('Error', 'The error shape every failed request returns (CONVENTIONS.md, Errors).', {
-   'error': {'code': ('enum:invalid_request|invalid_value|unauthenticated|second_factor_required|forbidden|timed_out|archived|locked|feature_off|fresh_check_required|not_found|conflict|name_taken|already_exists|too_large|blocked_by_filter|rate_limited|slow_mode|internal|unavailable',
+   'error': {'code': ('enum:invalid_request|invalid_value|unauthenticated|second_factor_required|forbidden|timed_out|archived|locked|feature_off|fresh_check_required|not_found|conflict|name_taken|already_exists|clock|too_large|blocked_by_filter|rate_limited|slow_mode|internal|unavailable',
                       'What a client acts on.'),
              'message': ('str',
                          'A plain sentence a client may show. `name_taken` is for usernames, group handles, emoji and command names, and reserved names; never for a channel name, since those need not be unique.'),
              'field?': ('str', 'With `invalid_value`: the request field that was wrong.'),
-             'retry_after_seconds?': ('int', 'With `rate_limited` and `slow_mode`.')}})
+             'retry_after_seconds?': ('int', 'With `rate_limited` and `slow_mode`.'),
+             'server_time?': ('time', "With `clock`: the server's time when it answered, by which the client corrects its clock (FAIR.md section 6).")}})
 
 S('Server', 'What a server says about itself before and after sign-in.', {
    'name': ('str', "The host name of the server's public address."),
@@ -886,9 +887,10 @@ S('FairBlock', "A message's proof of its one draw (FAIR.md section 8): an ECVRF 
    'owner': ('str', 'The server that drew, by name.'),
    'n': ('int', "The draw's number in its chain, from 1."),
    'pk': ('b64', "The owner's VRF public key, 33 bytes compressed: its key in force when the message was made."),
-   'alpha': ('b64', 'What was proved: built from the owner, the chain and n (FAIR.md section 6).'),
+   'alpha': ('str', 'What was proved, as text: `t` in decimal, `|`, and the message\'s `client_id` in lowercase, hyphenated (`1763456789|0193a8ff-7c2e-7b1a-9f3e-2d4c5b6a7e80`); the VRF is given its UTF-8 bytes (FAIR.md section 6).'),
    'beta': ('b64', "The proof's output, 32 bytes."),
-   'proof': ('b64', 'The ECVRF proof, 81 bytes.')})
+   'proof': ('b64', 'The ECVRF proof, 81 bytes.'),
+   't': ('int', "The second, in Unix time, the author's client gave the draw (`draw_t`); with the message's `client_id` it is the input `alpha` is made from.")})
 
 S('Chance', 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message\'s text and `view`.', {
    'kind': 'enum:flip|pick|shuffle|draw|tarot',
@@ -915,7 +917,9 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
            'catch-up, read positions and unread counts. It does not say where the message is shown: `order` does.'),
    'author_id': 'uuid',
    'client_id?': ('uuid',
-                  'Sealed chats: the reference the sending device made. References inside sealed content use it.'),
+                  'Sealed chats: the reference the sending device made. References inside sealed content use it. A '
+                  'message with `fair`: the client_id its draw was made by, kept for good, which its `alpha` names '
+                  '(FAIR.md section 6).'),
    'parent_id?': ('uuid', 'The top-level message this replies to.'),
    'quote?': '#Quote',
    'text?': ('str', 'Churr Markdown, exactly as the author sent it.'),
@@ -964,7 +968,14 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
 S('MessageInput', 'A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.', {
    'client_id?': ('uuid',
                   'Made by the client. Sending the same one again in the same conversation within 24 hours returns '
-                  'the message already created. Required in a sealed chat.'),
+                  'the message already created. Required in a sealed chat, and in a message that takes chance (inline '
+                  'dice): it is the nonce of its draw, with `draw_t` (FAIR.md section 6). A client retries a post with '
+                  'the same client_id, never a new one: the same post sent again is given the message it made, with '
+                  'the same draw.'),
+   'draw_t?': ('int', 'With a message that takes chance (inline dice): the second, in Unix time by the client\'s clock corrected to '
+                     'the server\'s, that with `client_id` is its draw\'s input (FAIR.md section 6). It must be within 10 '
+                     'seconds of the server\'s clock, or the post is refused with `clock` and `server_time`; a pair of second '
+                     'and client_id draws once.'),
    'text?': ('str', 'Churr Markdown.', {'maxLength': 16000}),
    'file_ids?': ('[uuid]',
                  'Files already uploaded to this conversation, in display order. Up to ten. In a sealed chat: the '

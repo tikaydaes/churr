@@ -192,7 +192,7 @@ func checkContent(kind string, c model.MessageInput, about model.MessageID, repe
 func (s *Service) post(ctx context.Context, owner model.Account, item model.ScheduledItem, due, nextRun model.Time, dry bool) (chat.Posted, error) {
 	c := item.Content
 	in := chat.NewMessage{ConversationID: item.ConversationID, Text: c.Text, FileIDs: c.FileIDs, ParentID: c.ParentID,
-		Quote: c.Quote, Cards: c.Cards, Action: c.Action, Chance: c.Chance, DryRun: dry,
+		Quote: c.Quote, Cards: c.Cards, Action: c.Action, Chance: c.Chance, DryRun: dry, Scheduled: true,
 		Instants: chat.Instants{TimeZone: c.TimeZone, Hints: c.InstantHints, Objects: c.ObjectHints}}
 	switch item.Kind {
 	case model.ScheduledWatch:

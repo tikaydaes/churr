@@ -37,8 +37,13 @@ const (
 	CodeBlockedByFilter Code = "blocked_by_filter"
 	CodeRateLimited     Code = "rate_limited"
 	CodeSlowMode        Code = "slow_mode"
-	CodeInternal        Code = "internal"
-	CodeUnavailable     Code = "unavailable"
+	// CodeClock: a draw's second (MessageInput.draw_t) is not within the
+	// server's window of its own clock, or is one the server cannot vouch
+	// for just after it started; server_time says the server's time, by
+	// which the client corrects its clock and sends again (docs/FAIR.md).
+	CodeClock       Code = "clock"
+	CodeInternal    Code = "internal"
+	CodeUnavailable Code = "unavailable"
 )
 
 // statuses maps each code to its HTTP status.
@@ -64,6 +69,7 @@ var statuses = map[Code]int{
 	CodeBlockedByFilter:      http.StatusUnprocessableEntity,
 	CodeRateLimited:          http.StatusTooManyRequests,
 	CodeSlowMode:             http.StatusTooManyRequests,
+	CodeClock:                http.StatusConflict,
 	CodeInternal:             http.StatusInternalServerError,
 	CodeUnavailable:          http.StatusServiceUnavailable,
 }
@@ -74,7 +80,7 @@ func Codes() []Code {
 		CodeInvalidRequest, CodeInvalidValue, CodeUnauthenticated, CodeSecondFactorRequired, CodeSessionLocked,
 		CodeForbidden, CodeTimedOut, CodeArchived, CodeLocked, CodeFeatureOff, CodeFreshCheckRequired,
 		CodeApprovalRequired, CodeApprovalPending,
-		CodeNotFound, CodeConflict, CodeNameTaken, CodeAlreadyExists, CodeTooLarge, CodeBlockedByFilter,
+		CodeNotFound, CodeConflict, CodeNameTaken, CodeAlreadyExists, CodeClock, CodeTooLarge, CodeBlockedByFilter,
 		CodeRateLimited, CodeSlowMode, CodeInternal, CodeUnavailable,
 	}
 }
@@ -89,6 +95,8 @@ type Error struct {
 	Field string `json:"field,omitempty"`
 	// RetryAfterSeconds goes with rate_limited and slow_mode.
 	RetryAfterSeconds int `json:"retry_after_seconds,omitempty"`
+	// ServerTime goes with clock: the server's time when it answered.
+	ServerTime Time `json:"server_time,omitempty"`
 }
 
 // Error makes *Error an error. The text is for logs; clients get the JSON.
@@ -147,6 +155,7 @@ var (
 	ErrBlockedByFilter = &Error{Code: CodeBlockedByFilter, Message: "The message was stopped by this server's word filter."}
 	ErrRateLimited     = &Error{Code: CodeRateLimited, Message: "Too many requests. Try again shortly."}
 	ErrSlowMode        = &Error{Code: CodeSlowMode, Message: "Slow mode is on here. Wait before posting again."}
+	ErrClock           = &Error{Code: CodeClock, Message: "This device's clock is too far from the server's to draw. Correct it by server_time and send again."}
 	ErrInternal        = &Error{Code: CodeInternal, Message: "Something went wrong on the server."}
 	ErrUnavailable     = &Error{Code: CodeUnavailable, Message: "The server is not ready for this yet."}
 )

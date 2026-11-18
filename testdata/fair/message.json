@@ -1,5 +1,5 @@
 {
- "description": "A message whose roll and inline dice took chance from its draw, as a client is handed it, with the VRF key history the client pinned for its server and the names the conversation's chain may have. A client's check passes on it and fails on it changed (docs/FAIR.md section 9).",
+ "description": "A message whose roll and inline dice took chance from its draw, as a client is handed it, with the VRF key history the client pinned for its server. Its draw's input is its own second (fair.t) and client_id. A client's check passes on it and fails on it changed (docs/FAIR.md section 9).",
  "server": "a.example",
  "keys": [
   {
@@ -11,11 +11,8 @@
    "began": "2026-05-01T00:00:00.000Z"
   }
  ],
- "chains": [
-  "01a1ee00-0000-7000-8000-000000000001",
-  "01a1ee00-0000-7000-8000-0000000000ff"
- ],
  "message": {
+  "client_id": "01a1ee00-0000-7000-8000-0000000000c3",
   "conversation_id": "01a1ee00-0000-7000-8000-000000000001",
   "created_at": "2026-09-21T14:13:20.000Z",
   "entities": [
@@ -35,17 +32,17 @@
           "count": 2,
           "sides": 6,
           "rolls": [
-           4,
+           1,
            1
           ],
-          "value": 5
+          "value": 2
          },
          {
           "sign": 1,
           "value": 3
          }
         ],
-        "total": 8
+        "total": 5
        }
       ]
      },
@@ -62,11 +59,11 @@
    "v": 1,
    "derive": 1,
    "owner": "a.example",
-   "n": 3,
    "pk": "A4nTYJh2WzRPplosvw5VimudZgigpKy1HiHsN8l58xi1",
-   "alpha": "Y2h1cnItZmFpci0xAAlhLmV4YW1wbGUAJDAxYTFlZTAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMQAAAAAAAAAD",
-   "beta": "97cLxr3Ryg4kNQDt7dMCD7Hvb0yRigkbnJX7DeONT4o",
-   "proof": "AgApvz3KD98_SZFTWtjUC261BbvodFdvxRA3lxRa-IoPnVtMOEroHouF_CqEsRrTV56mMQwlbDXz84uxIR2YXO9bU1k-EutlaKzhXwmlcm0J"
+   "alpha": "1790000000|01a1ee00-0000-7000-8000-0000000000c3",
+   "beta": "fEVAWjTiKjObmrJxKxlIwlfQerMR2lQQNa7NIE7t0II",
+   "proof": "AxfYTLHQE4znghYjML2eDQlSnWf4rtO-FbxwdAZTs07dRTDirxgsDuEwmFVj88jnGTh4RXN2eKrMHzQWPCPefIXf0TubZps2pUL7jc2Z8y6J",
+   "t": 1790000000
   },
   "id": "01a1ee00-0000-7000-8000-000000000002",
   "text": "Rolled 4d6kh3: …",
@@ -85,18 +82,18 @@
         "keep": "kh",
         "keep_n": 3,
         "rolls": [
-         4,
-         6,
+         2,
+         2,
          1,
-         6
+         3
         ],
         "dropped": [
          2
         ],
-        "value": 16
+        "value": 7
        }
       ],
-      "total": 16
+      "total": 7
      }
     ]
    },

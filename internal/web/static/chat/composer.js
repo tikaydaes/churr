@@ -7,6 +7,7 @@
 // channel's current name and is sent as `<#conversation-id>` (section
 // 9.26). Everything else in it is plain characters.
 
+import { drawT } from '/shared/fair/clock.js';
 import { post, patch, get, del, upload } from '/shared/api.js';
 import { h, icon, iconButton, toast, fill, bytes, openMenu, place, fold, dateTime, avatar, confirmDialog } from '/shared/dom.js';
 import { broadHint, beforeSend, confirmLine, BROAD_WAS_PLAIN } from '/shared/md/broad.js';
@@ -945,9 +946,13 @@ export class Composer {
   }
 
   // post sends one message. It is drawn at once as pending, and the
-  // `client_id` makes a retry safe: the server posts it once.
+  // `client_id` makes a retry safe: the server posts it once. With its
+  // second, draw_t, it is the input of the message's draw, if anything in it
+  // takes chance (inline dice): a retry sends both unchanged, so it gets the
+  // same draw (docs/FAIR.md section 6).
   async post(content) {
     const client_id = crypto.randomUUID();
+    content = { ...content, draw_t: drawT() };
     const r = room(this.o.conversationId);
     const pending = { id: 'pending-' + client_id, client_id, conversation_id: this.o.conversationId, author_id: store.me.id, parent_id: content.parent_id, quote: content.quote,
       text: content.text || '', action: content.action || undefined, entities: [], created_at: new Date().toISOString(), _pending: true, _v: 0, _content: content };
@@ -1094,7 +1099,10 @@ export class Composer {
     // (/roll, /dice) is read and answered by the server, and its card
     // spins once as it arrives.
     this.clear();
-    const out = await post(`/conversations/${this.o.conversationId}/commands`, { name, text: text || undefined, parent_id: this.o.parentId || undefined });
+    // A module's command may take chance: its client_id and second are
+    // its draw's input.
+    const out = await post(`/conversations/${this.o.conversationId}/commands`, { name, text: text || undefined, parent_id: this.o.parentId || undefined,
+      client_id: crypto.randomUUID(), draw_t: drawT() });
     if (out.message) putMessage(c.kind === 'module' ? { ...out.message, _live: true } : out.message);
     if (out.interaction_id) store.emit('waiting', { interactionId: out.interaction_id, botId: c.bot_id, conversationId: this.o.conversationId, parentId: this.o.parentId || null });
     return true;

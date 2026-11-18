@@ -6,6 +6,7 @@
 // docs/openapi.yaml, named in the comments by its operationId.
 
 import { forgetDrafts, browserStorage } from './drafts.js';
+import { drawT, learnServerTime } from './fair/clock.js';
 
 export class ApiError extends Error {
   constructor(status, body) {
@@ -16,6 +17,7 @@ export class ApiError extends Error {
     this.code = e.code || (status ? 'internal' : 'network');
     this.field = e.field;
     this.retryAfter = e.retry_after_seconds;
+    this.serverTime = e.server_time;
   }
 }
 
@@ -98,6 +100,17 @@ export async function api(method, path, body, opts = {}) {
   if (err.code === 'rate_limited' && (opts.tries || 0) < 3 && (err.retryAfter || 1) <= 20) {
     await new Promise((r) => setTimeout(r, (err.retryAfter || 1) * 1000));
     return api(method, path, body, { ...opts, tries: (opts.tries || 0) + 1 });
+  }
+  // A draw's second too far from the server's clock, or one the server
+  // cannot vouch for just after it started (docs/FAIR.md section 6): the
+  // clock is corrected by the server's time and the post sent once more,
+  // with the same client_id and the corrected second, a second later if
+  // that is the same one.
+  if (err.code === 'clock' && body && body.draw_t && !opts.clockTried) {
+    learnServerTime(err.serverTime);
+    let t = drawT();
+    if (t <= body.draw_t) { await new Promise((r) => setTimeout(r, 1100)); t = drawT(); }
+    return api(method, path, { ...body, draw_t: t }, { ...opts, clockTried: true });
   }
   if (err.code === 'fresh_check_required' && freshHandler && !opts.noFresh) {
     if (await freshHandler()) return api(method, path, body, { ...opts, noFresh: true });

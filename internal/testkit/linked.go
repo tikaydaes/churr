@@ -242,6 +242,7 @@ func (c *Client) AccountID() model.AccountID { return c.ID }
 // the server restarts does: a failure to get any answer comes back as an
 // error and does not fail the test. It may be called from any goroutine.
 func (c *Client) Try(method, path string, body any) (int, map[string]any, error) {
+	body = withClientID(method, path, body)
 	var rd io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)

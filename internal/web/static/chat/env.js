@@ -289,14 +289,12 @@ export function makeEnv(host) {
     me: store.me, account, nameOf, conversation, custom: customEmoji, quoted, perms, md: mdContext,
     // What checking a message's draw needs, all of it held here: the VRF
     // key history this browser pinned for each server, this one's and those
-    // the shared conversation carries, and the names the conversation's
-    // chain may have (docs/FAIR.md).
+    // the shared conversation carries, and this server's name
+    // (docs/FAIR.md).
     fair: (m) => {
-      const c = conversation(m.conversation_id);
       const histories = store.vrfHistories;
-      if (histories) histories.showShared(c);
-      return { keysOf: (name) => (histories ? histories.of(name) : null),
-        chains: [m.conversation_id, c && c.shared && c.shared.stream_id].filter(Boolean) };
+      if (histories) histories.showShared(conversation(m.conversation_id));
+      return { keysOf: (name) => (histories ? histories.of(name) : null), server: store.server && store.server.name };
     },
     hubRole: (m) => hubRole(m.author_id, m.conversation_id),
     blocked: (id) => store.blocked.has(id),

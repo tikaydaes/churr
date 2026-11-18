@@ -1,3 +1,5 @@
+import '../fair/clock.dart';
+import '../ids.dart';
 import '../models/conversation.dart';
 import '../models/json.dart';
 import '../models/message.dart';
@@ -237,14 +239,22 @@ extension ConversationOpsApi on ApiClient {
     String? text,
     String? parentId,
   }) async {
-    final j = await call(
-      Ops.runCommand,
-      path: {'id': conversationId},
-      body: {
-        'name': name,
-        if (text != null && text.isNotEmpty) 'text': text,
-        'parent_id': ?parentId,
-      },
+    // A module's command may take chance: its client_id and second are its
+    // draw's input (docs/FAIR.md section 6).
+    final clientId = newUuid();
+    final j = await withDrawClock(
+      drawT(),
+      (t) => call(
+        Ops.runCommand,
+        path: {'id': conversationId},
+        body: {
+          'name': name,
+          if (text != null && text.isNotEmpty) 'text': text,
+          'parent_id': ?parentId,
+          'client_id': clientId,
+          'draw_t': t,
+        },
+      ),
     );
     final m = object(j['message']);
     return (

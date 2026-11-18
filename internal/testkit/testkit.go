@@ -196,6 +196,7 @@ func (c *Client) Do(method, path string, body any) (int, map[string]any) {
 // DoFull is Do that also returns the response headers.
 func (c *Client) DoFull(method, path string, body any) (int, http.Header, map[string]any) {
 	c.t.Helper()
+	body = withClientID(method, path, body)
 	var rd io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -429,6 +430,36 @@ func (c *Client) Post(conversation, text string) map[string]any {
 	c.t.Helper()
 	out := c.Must(201, "POST", "/api/v1/conversations/"+conversation+"/messages", map[string]any{"text": text})
 	return out["message"].(map[string]any)
+}
+
+// withClientID gives a post that takes chance the client_id and the second
+// every client gives one (docs/FAIR.md section 6), as the web chat and the
+// app do: a module's command, and a message whose text holds inline dice.
+// The second is the next one, as a client whose clock runs a little ahead
+// gives, so that a test's first draw is not refused as made in the second
+// its server started. A body that names client_id, even as "", is sent as it
+// is, so a test can leave it out.
+func withClientID(method, path string, body any) any {
+	m, ok := body.(map[string]any)
+	if !ok || method != "POST" {
+		return body
+	}
+	if _, has := m["client_id"]; has {
+		return body
+	}
+	text, _ := m["text"].(string)
+	if !strings.HasSuffix(path, "/commands") && !(strings.HasSuffix(path, "/messages") && strings.Contains(text, "[[")) {
+		return body
+	}
+	out := make(map[string]any, len(m)+1)
+	for k, v := range m {
+		out[k] = v
+	}
+	out["client_id"] = model.NewID[string]()
+	if _, has := m["draw_t"]; !has {
+		out["draw_t"] = time.Now().Unix() + 1
+	}
+	return out
 }
 
 // Stream is one live connection.

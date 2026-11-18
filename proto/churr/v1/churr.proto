@@ -309,6 +309,7 @@ message ErrorError {
   optional string message = 4;
   optional string field = 5;
   optional int64 retry_after_seconds = 6;
+  optional int64 server_time = 7; // time
 }
 
 // The document at `/.well-known/churr`, exactly as `docs/LINK-PROTOCOL.md` defines it. A hub serves the same document with `kind` `hub` and no box key.
@@ -1214,9 +1215,10 @@ message FairBlock {
   optional string owner = 5;
   optional int64 n = 6;
   optional bytes pk = 7;
-  optional bytes alpha = 8;
+  optional string alpha = 8;
   optional bytes beta = 9;
   optional bytes proof = 10;
+  optional int64 t = 12;
 }
 
 // One emoji on a message, with the accounts behind it.
@@ -1818,6 +1820,7 @@ message MessageInput {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   optional bytes client_id = 3; // identifier
+  optional int64 draw_t = 17;
   optional string text = 4;
   repeated bytes file_ids = 5; // identifier
   optional bytes parent_id = 6; // identifier
@@ -2861,6 +2864,8 @@ message RunCommandRequest {
   optional string name = 3;
   optional string text = 4;
   optional bytes parent_id = 5; // identifier
+  optional bytes client_id = 6; // identifier
+  optional int64 draw_t = 7;
 }
 
 message RunCommandResponse {
@@ -3190,6 +3195,7 @@ message PostEpochRecordResponse409Error {
   optional string message = 4;
   optional string field = 5;
   optional int64 retry_after_seconds = 6;
+  optional int64 server_time = 7; // time
 }
 
 message ListEpochRecordsResponse {
@@ -5790,6 +5796,7 @@ enum ErrorErrorCode {
   ERROR_ERROR_CODE_CONFLICT = 12; // "conflict"
   ERROR_ERROR_CODE_NAME_TAKEN = 13; // "name_taken"
   ERROR_ERROR_CODE_ALREADY_EXISTS = 14; // "already_exists"
+  ERROR_ERROR_CODE_CLOCK = 21; // "clock"
   ERROR_ERROR_CODE_TOO_LARGE = 15; // "too_large"
   ERROR_ERROR_CODE_BLOCKED_BY_FILTER = 16; // "blocked_by_filter"
   ERROR_ERROR_CODE_RATE_LIMITED = 17; // "rate_limited"
@@ -6664,6 +6671,7 @@ enum PostEpochRecordResponse409ErrorCode {
   POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_CONFLICT = 12; // "conflict"
   POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_NAME_TAKEN = 13; // "name_taken"
   POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_ALREADY_EXISTS = 14; // "already_exists"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_CLOCK = 21; // "clock"
   POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_TOO_LARGE = 15; // "too_large"
   POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_BLOCKED_BY_FILTER = 16; // "blocked_by_filter"
   POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_RATE_LIMITED = 17; // "rate_limited"
@@ -7121,6 +7129,7 @@ enum ErrorDetailCode {
   ERROR_DETAIL_CODE_CONFLICT = 12; // "conflict"
   ERROR_DETAIL_CODE_NAME_TAKEN = 13; // "name_taken"
   ERROR_DETAIL_CODE_ALREADY_EXISTS = 14; // "already_exists"
+  ERROR_DETAIL_CODE_CLOCK = 21; // "clock"
   ERROR_DETAIL_CODE_TOO_LARGE = 15; // "too_large"
   ERROR_DETAIL_CODE_BLOCKED_BY_FILTER = 16; // "blocked_by_filter"
   ERROR_DETAIL_CODE_RATE_LIMITED = 17; // "rate_limited"

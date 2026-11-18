@@ -199,6 +199,8 @@ func (a *API) runCommand(r *Request) error {
 		Name     *string `json:"name"`
 		Text     string  `json:"text"`
 		ParentID string  `json:"parent_id"`
+		ClientID string  `json:"client_id"`
+		DrawT    int64   `json:"draw_t"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
@@ -212,7 +214,7 @@ func (a *API) runCommand(r *Request) error {
 			return err
 		}
 	}
-	ran, err := a.Commands.Run(r.Ctx(), r.Actor(), conv, parent, *body.Name, body.Text)
+	ran, err := a.Commands.Run(r.Ctx(), r.Actor(), conv, parent, body.ClientID, body.DrawT, *body.Name, body.Text)
 	if err != nil {
 		return err
 	}

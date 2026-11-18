@@ -201,11 +201,14 @@ verify with their own copies, held to the same vectors.
 `Dropped`, `Score`), with no floating point and no randomness of its own,
 held to `testdata/fair/derive.json` beside its JavaScript
 (`shared/fair/derive.js`) and Dart (`app/lib/core/fair/derive.dart`)
-copies; the chain's `Alpha`; `Make`, which proves a draw with a
-`Prover` (the server's `secret.Keys`), and `CheckBlock`, which a receiver
-checks one with against an owner's key history. `chat` makes a message's
-draw and moves the chain's head (`chat/fair.go`, `store.Fair`); `link`
-checks a block on arrival (`link/fair.go`).
+copies; `Alpha`, the one shape of every input (`<t>|<nonce>`);
+`Drawer`, whose `Draw` is the one place the server's VRF key is applied
+(through a `Prover`, the server's `secret.Keys`), after its in-memory
+tracker of used pairs and its clock window, which a source test holds
+(`TestOnlyTheDrawerProves`); and `CheckBlock`, which a receiver checks a
+block with against an owner's key history. `chat` makes a message's draw
+from the input its client gave (`chat/fair.go`); `link` checks a block on
+arrival (`link/fair.go`).
 
 **`secret`** — the key files in `keys/` and everything done with them.
 

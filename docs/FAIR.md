@@ -6,7 +6,8 @@ implements from; `DESIGN-FAIR.md` is the design and the reasons.
 
 A server draws once per message. A draw is an ECVRF proof
 (ECVRF-SECP256K1-SHA256-TAI, RFC 9381, the owner's library
-github.com/atikayda/ecvrf) over an `alpha` the chain fixes (section 6). Its
+github.com/atikayda/ecvrf) over an `alpha` the author's client fixes
+(section 6). Its
 output `beta`, 32 bytes, is turned into outcomes by a frozen rule, the
 derivation `derive: 1` (sections 3 to 5), which uses no floating point and
 no other randomness: anyone holding `beta` re-derives every outcome.
@@ -172,61 +173,76 @@ keep 1 to `count`, `dh`/`dl` drop 1 to `count`−1; `success` 0 to
 The dice module's grammar is narrower (8 rows, 10 terms, 100 dice, 1,000
 sides).
 
-## 6. The chain
+## 6. The input
 
-Each conversation has one chain of draws, numbered from 1, kept by the
-server that draws them. What is built: an instance draws for the messages
-its own people post, in its own conversations and in shared ones alike,
-and is the `owner` of those draws. A hub channel's messages are drawn by
-their author's instance the same way, `owner` naming that instance; a hub
-drawing for its channels, and two servers mixing their outputs, are not
-built (`DESIGN-FAIR.md` section 6).
+**One shape for every draw.** Every draw a server's VRF key ever makes, of
+any kind (a message's now; tables, crash rounds, public chains and bots'
+draws when they come), is proved over an input of exactly one shape, a
+text:
 
-**The chain's name.** The conversation's id, or, for a conversation
-shared over the link, the stream's id, which every server of the stream
-knows it by. A conversation drawn in before it was shared keeps those
-draws on the chain of its own id and draws on the stream's from then on.
+    alpha = "<t>|<nonce>"
 
-**alpha** for draw n:
+- `t` is a second in Unix time, in decimal, with no sign, no leading zeros
+  and no spaces.
+- `nonce` is a UUID in its canonical spelling: lowercase hexadecimal,
+  hyphenated 8-4-4-4-12, nothing around it.
+- The VRF is given the text's UTF-8 bytes: 47 bytes for a ten-digit `t`.
+  For example `1763456789|0193a8ff-7c2e-7b1a-9f3e-2d4c5b6a7e80`.
 
-    alpha(n) = "churr-fair-1"
-             ‖ u16be(len(owner)) ‖ owner
-             ‖ u16be(len(chain)) ‖ chain
-             ‖ u64be(n)
+There is one spelling for a pair, so a pair has one input. The proof is
+`ECVRF_prove(sk, alpha)` and `beta = ECVRF_proof_to_hash(proof)`. The key
+is used for nothing else, and one function of the server applies it
+(`fair.Drawer.Draw`, `internal/fair`): every draw passes through its
+tracker of used pairs before the key is touched, and a source test holds
+the server to that one call site.
 
-- `"churr-fair-1"` is those 12 ASCII bytes, with no length before them.
-- `owner` is the drawing server's name and `chain` the chain's name,
-  each UTF-8 with its length in bytes before it.
+**A message's draw.** The author's client gives both halves of the input:
+`t`, the second it sends the post at by its clock corrected to the
+server's, as `draw_t`; and the message's `client_id` as the nonce, made
+before it is sent. A post that takes chance (a module's command through
+`runCommand`, a message with inline dice) needs both, or it is refused
+with `invalid_value`.
 
-Nothing in alpha comes from the person or the request. The proof is
-`ECVRF_prove(sk, alpha)` and `beta = ECVRF_proof_to_hash(proof)`.
+**The window and the tracker.** The server draws only if `t` is within
+10 seconds of its own clock, either way, and the pair `(t, nonce)` has not
+been taken; otherwise it draws nothing. Outside the window the post is
+refused with `clock` and `server_time`, the server's time, and the client
+corrects its clock by it and sends again with a new second and the same
+`client_id`. A pair taken for another post is refused with `conflict`.
+The server keeps the pairs it has taken in memory, per second, and lets a
+second's set go once that second has left the window: nothing else is
+kept. After a start nothing is held, so for the 10 seconds after it a draw
+for a second no later than the start's is refused with `clock`: a pair
+taken just before a restart cannot be taken again.
 
-**Each draw stands alone.** Draw n's alpha, and so its output, depends
-on the owner, the chain and n, and on nothing of the draw before it. The
-draws are not chained to each other's proofs because an ECVRF proof is
-not unique: whoever holds the key can make many valid proofs of one
-alpha, by choosing the nonce (RFC 6979's is only what an honest prover
-uses). Only the output, `beta`, is unique for a key and an alpha. A hash
-of the previous proof in alpha would let the key holder choose among
-next draws by choosing among proofs of the last one. n, used exactly
-once per chain, is all the order a chain needs: a gap in n is what shows
-a draw skipped or never sent.
+**A retry gets the same draw.** A client retries a post with the same
+`client_id` and the same `draw_t`. The same person sending the same
+`client_id` in the same conversation is given the message it made, with
+its block, by the ordinary `client_id` rule, whatever the clock says: that
+is not a second draw. A post that failed before it was stored, sent again
+with the same pair, is drawn again, to the same result. So a server cannot
+re-roll by failing a request.
 
-**The head.** The server keeps each chain's head, the number of its last
-draw (`fair_chains`, `SCHEMA.md`). A message's
-draw is made, from the head, the first time something in it asks for
-chance; the head is moved to it in the same transaction that stores the
-message, and only from where the draw was made. If another message moved
-it first, the message is made again from the start with the next draw
-(the same alpha, so the same result, as anyone would get). A draw is used
-by exactly one message and none is skipped. A message that asks for no
-chance takes no draw.
+**Who is protected from whom.** The person cannot predict or choose the
+result: it needs the server's key. The server cannot predict it before
+the request arrives (the nonce is the client's, made fresh), cannot choose
+among seconds (they are the client's, and one outside the window draws
+nothing), and cannot change it after, since a VRF has one output for a key
+and an input. A server and a person acting together can still choose a
+nonce they like: the server can work out results ahead for nonces the
+person will send.
 
-**Deleting.** A deleted message keeps its `fair` block: its marker
-carries it, a deletion soon after posting included, and so does a
-channel's history sent to a server that joins. A message whose history
-has been removed for good (retention, an admin's purge) leaves a gap in
-the n of the draws that remain, which says that something came between.
+**Each draw stands alone.** Nothing of another draw goes into an input.
+An ECVRF proof is not unique: whoever holds the key can make many valid
+proofs of one input, by choosing the nonce (RFC 6979's is only what an
+honest prover uses); only the output, `beta`, is unique for a key and an
+input. A proof fed into an input would let the key holder choose. The key
+says whose draw it is; nothing of the conversation is in the input.
+
+**Deleting.** A deleted message keeps its `fair` block and its
+`client_id`: its marker carries both, a deletion soon after posting and a
+purge included, and so does a channel's history sent to a server that
+joins.
 
 ## 7. The vectors
 
@@ -249,8 +265,8 @@ the file only when told to (`CHURR_WRITE_FAIR_VECTORS=1`), which was done
 once; after that a change to its output is a new derive number.
 
 The clients' check (section 9) is held to `testdata/fair/message.json`, a
-message with a roll and inline dice, the history its server published and
-its chain's names, written with the derive vectors; Go, the web chat and
+message with a roll and inline dice, its `client_id`, and the history its
+server published, written with the derive vectors; Go, the web chat and
 the app all pass it as it is and fail it changed.
 
 ## 8. The `fair` block
@@ -262,9 +278,9 @@ In the message's JSON, beside `view` (`MESSAGE-FORMAT.md`):
 | `v` | 1: this layout |
 | `derive` | 1: the rule outcomes are derived by |
 | `owner` | the server that drew, by name |
-| `n` | the draw's number in its chain |
+| `t` | the second the author's client gave the draw (section 6) |
 | `pk` | the owner's VRF public key, 33 bytes, compressed |
-| `alpha` | section 6 |
+| `alpha` | the input, as the text it is (section 6) |
 | `beta` | the proof's output, 32 bytes |
 | `proof` | the ECVRF proof, 81 bytes |
 
@@ -274,43 +290,42 @@ that asked the host for declared outcomes (`Host.Draw`), `primitives`, what
 it asked for, in order. A value whose kind has its own derivation, such as
 `dice_roll`, lists none: its data is what was derived.
 
-The block is stored with the message, never edited, carried unchanged by
-the link and by a channel's history, and kept on its marker when it is
-deleted. An edit that rolls nothing (inline dice changed are marked
+The message's `client_id` is served with it whenever it carries a block:
+it is the nonce of its input. The block is stored with the message, never
+edited, carried unchanged by the link and by a channel's history, and kept
+on its marker when it is deleted. An edit that rolls nothing (inline dice changed are marked
 `removed`) keeps it.
 
 ## 9. Checking a draw
 
-With no server reachable, from the message, the conversation, and the VRF
-key history of the owner (`/.well-known/churr`, a pin, a hub channel's
-record):
+With no server reachable, from the message and the VRF key history of the
+owner (`/.well-known/churr`, a pin, a hub channel's record):
 
 1. `v` and `derive` are known.
-2. alpha's layout holds and names this conversation's chain (its id, or
-   its stream's); alpha is rebuilt from `owner`, that chain and `n`.
-3. `pk` is the key the owner's history had in force at the message's
+2. `alpha` is exactly `"<t>|<client_id>"` spelt from the block's `t` and
+   the message's own `client_id`, which is canonical: so a proof cannot
+   be moved to another message.
+3. `t` is within 10 seconds of the message's `created_at`; 120 for a
+   message drawn by another server, whose clock may be off from the
+   checker's.
+4. `pk` is the key the owner's history had in force at the message's
    `created_at`: the last entry to have begun by then.
-4. `ECVRF_verify(pk, proof, alpha)` holds and gives `beta`.
-5. Every value with `draw` is re-derived from `stream(i, ·)` of `beta`: a
+5. `ECVRF_verify(pk, proof, UTF-8(alpha))` holds and gives `beta`.
+6. Every value with `draw` is re-derived from `stream(i, ·)` of `beta`: a
    roll's every die, every dropped die, every value and total
    (section 5).
-6. Where the conversation's other draws are at hand, no two messages
-   carry the same n of one chain and owner; a gap in n is a draw that was
-   skipped, never sent, or removed with its history.
 
-**A server receiving a message** over the link checks 1 to 4: the owner
-must be the author's server, and the history is its own for its own
-people, the pin of a direct link, or the hub channel's record. A
-message older than its stream on the receiving server, drawn before the
-conversation was shared, is checked against the chain its alpha names,
-which the receiver cannot know otherwise. A block that fails is dropped,
-and with it every value that took chance from it: the roll shows as its
-text. The message still arrives, and `link.fair_block_dropped` is
-audited. Outcomes are not re-derived on the server beyond each kind's own
-check; the clients re-derive them.
+**A server receiving a message** over the link checks 1 to 5, with the
+looser bound of 3: the owner must be the author's server, and the history
+is its own for its own people, the pin of a direct link, or the hub
+channel's record. A block that fails is dropped, and with it every value
+that took chance from it: the roll shows as its text. The message still
+arrives, and `link.fair_block_dropped` is audited. Outcomes are not
+re-derived on the server beyond each kind's own check; the clients
+re-derive them.
 
 **The clients** (the web chat, `shared/fair/verify.js`; the app,
-`lib/core/fair/verify.dart`) check 1 to 5 against the history they pinned
+`lib/core/fair/verify.dart`) check 1 to 6 against the history they pinned
 for the block's owner, by name, and mark the roll "Verified", or, plainly,
 "Not verified" with why (a check that was made and did not hold), or
 "Cannot be checked here" with why (a draw by a server whose history the

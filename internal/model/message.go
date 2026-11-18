@@ -105,20 +105,22 @@ type FairPrimitive struct {
 }
 
 // FairBlock is a message's proof of its draw (docs/FAIR.md section 8): the
-// ECVRF proof by the owner's VRF key pk over alpha, which the chain fixes
-// from the owner, the chain's name and n, and its output beta, from
-// which every chance outcome of the message is derived by rule Derive. It is
-// stored with the message, kept when the message is deleted, and never
-// edited.
+// ECVRF proof by the owner's VRF key pk over alpha, which the second the
+// author's client gave (T) and the message's client_id fix, and its output
+// beta, from which every chance outcome of the message is derived by rule
+// Derive. It is stored with the message, kept when the message is deleted,
+// and never edited.
 type FairBlock struct {
 	V      int    `json:"v"`
 	Derive int    `json:"derive"`
 	Owner  string `json:"owner"`
-	N      int64  `json:"n"`
 	PK     Bytes  `json:"pk"`
-	Alpha  Bytes  `json:"alpha"`
+	Alpha  string `json:"alpha"`
 	Beta   Bytes  `json:"beta"`
 	Proof  Bytes  `json:"proof"`
+	// T is the second, in Unix time, that the author's client gave the
+	// draw; with the message's client_id it is the draw's input.
+	T int64 `json:"t"`
 }
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -321,9 +323,10 @@ type Message struct {
 	ConversationID ConversationID `json:"conversation_id"`
 	Seq            int64          `json:"seq,omitempty"`
 	AuthorID       AccountID      `json:"author_id"`
-	// ClientID is sent only in a sealed chat. For any other conversation
-	// the service empties it before the message leaves the server; it is
-	// the author's own business, returned to them beside the message.
+	// ClientID is sent in a sealed chat, and on a message that drew, whose
+	// draw it fixes (docs/FAIR.md section 6). For any other message the
+	// service empties it before the message leaves the server; it is the
+	// author's own business, returned to them beside the message.
 	ClientID       string         `json:"client_id,omitempty"`
 	ParentID       MessageID      `json:"parent_id,omitempty"`
 	Quote          *Quote         `json:"quote,omitempty"`

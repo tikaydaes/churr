@@ -990,7 +990,13 @@ op('POST conversations/{id}/commands', 'runCommand',
          'has it.'),
    body={'name': 'str',
          'text?': ('str', 'What was typed after the name. Up to 4,000 characters.'),
-         'parent_id?': ('uuid', 'When typed in a thread.')},
+         'parent_id?': ('uuid', 'When typed in a thread.'),
+         'client_id?': ('uuid', "Made by the client for the message a module's command posts, as `MessageInput.client_id`. "
+                                'Needed by a command that takes chance (`/roll`, `/dice`): it is the nonce of its draw '
+                                '(FAIR.md section 6); left out, `invalid_value`. Sent again, the same message comes back.'),
+         'draw_t?': ('int', 'With a command that takes chance: the second its draw is made for, as `MessageInput.draw_t`. '
+                            'Outside 10 seconds of the server\'s clock it is refused with `clock` and `server_time`; a '
+                            'pair of second and client_id used already, with `conflict`.')},
    res={'interaction_id?': ('uuid', 'For a bot command.'), 'message?': ('#Message', 'For a saved reply.')},
    err='forbidden timed_out archived not_found unavailable slow_mode blocked_by_filter feature_off')
 

@@ -244,10 +244,15 @@ func (s *Service) sendHistoryRangeShort(ctx context.Context, st store.Stream, to
 				}
 				if m.Deleted() {
 					// A deleted message that used a draw goes too, with its
-					// proof, so that the chain stays whole (docs/FAIR.md).
+					// proof and the client_id it was drawn by, so that
+					// every draw stays to be seen (docs/FAIR.md).
 					if m.ParentID == "" && (m.ReplyCount > 0 || m.Fair != nil) {
 						authors[m.AuthorID] = true
-						held = append(held, historyMessage{Order: m.Order, Message: wireMessage{ID: m.ID, AuthorID: m.AuthorID, CreatedAt: m.CreatedAt, Fair: m.Fair},
+						w := wireMessage{ID: m.ID, AuthorID: m.AuthorID, CreatedAt: m.CreatedAt, Fair: m.Fair}
+						if m.Fair != nil {
+							w.ClientID = m.ClientID
+						}
+						held = append(held, historyMessage{Order: m.Order, Message: w,
 							Deleted: &historyDeleted{At: m.DeletedAt, ByID: m.DeletedByID}})
 					}
 					continue
@@ -630,6 +635,9 @@ func (s *Service) importCounts(a *apply, m model.Message, hf historyForm) error 
 // has a parent.
 func (s *Service) importDeleted(ctx context.Context, tx store.Tx, rec *chat.Recorder, conv model.Conversation, st store.Stream, hm historyMessage, kept *model.FairBlock) error {
 	m := model.Message{ID: hm.Message.ID, AuthorID: hm.Message.AuthorID, CreatedAt: hm.Message.CreatedAt, Order: hm.Order, Fair: kept}
+	if kept != nil {
+		m.ClientID = hm.Message.ClientID
+	}
 	if err := s.chat.ImportMessage(ctx, tx, rec, conv, chat.RemoteMessage{Message: m}); err != nil {
 		return err
 	}

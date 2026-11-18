@@ -65,6 +65,9 @@ type messageInput struct {
 	Quiet    bool                 `json:"quiet"`
 	Action   bool                 `json:"action"`
 	Chance   *model.ChanceInput   `json:"chance"`
+	// DrawT is the second the client gave a message that draws (inline
+	// dice): with client_id its draw's input (docs/FAIR.md).
+	DrawT int64 `json:"draw_t"`
 	// The author's zone and the instants the author accepted (ruling R69).
 	TimeZone     string              `json:"time_zone"`
 	InstantHints []model.InstantHint `json:"instant_hints"`
@@ -99,7 +102,7 @@ func (a *API) postMessage(r *Request) error {
 		return err
 	}
 	in := chat.NewMessage{ConversationID: id, ClientID: body.ClientID, Text: body.Text, Quote: body.Quote, Cards: body.Cards, Form: body.Form,
-		Action: body.Action, Chance: body.Chance, Instants: body.instants()}
+		Action: body.Action, Chance: body.Chance, DrawT: body.DrawT, Instants: body.instants()}
 	if body.Chance != nil && (body.Sealed != nil || body.Quiet) {
 		return model.Invalid("chance", "The server cannot write into a sealed chat, so it cannot draw a result there.")
 	}

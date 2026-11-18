@@ -90,6 +90,7 @@ var messages = []message{
 		{"message", 4, kindString, cardOne, 0, ""},
 		{"field", 5, kindString, cardOne, 0, ""},
 		{"retry_after_seconds", 6, kindInt, cardOne, 0, ""},
+		{"server_time", 7, kindTime, cardOne, 0, ""},
 	}},
 	{name: "WellKnown", shape: shapeObject, extra: 0, fields: []field{
 		{"churr", 3, kindInt, cardOne, 0, ""},
@@ -729,9 +730,10 @@ var messages = []message{
 		{"owner", 5, kindString, cardOne, 0, ""},
 		{"n", 6, kindInt, cardOne, 0, ""},
 		{"pk", 7, kindBytes, cardOne, 0, ""},
-		{"alpha", 8, kindBytes, cardOne, 0, ""},
+		{"alpha", 8, kindString, cardOne, 0, ""},
 		{"beta", 9, kindBytes, cardOne, 0, ""},
 		{"proof", 10, kindBytes, cardOne, 0, ""},
+		{"t", 12, kindInt, cardOne, 0, ""},
 	}},
 	{name: "Reaction", shape: shapeObject, extra: 0, fields: []field{
 		{"emoji", 3, kindString, cardOne, 0, ""},
@@ -1143,6 +1145,7 @@ var messages = []message{
 	}},
 	{name: "MessageInput", shape: shapeObject, extra: 0, fields: []field{
 		{"client_id", 3, kindUuid, cardOne, 0, ""},
+		{"draw_t", 17, kindInt, cardOne, 0, ""},
 		{"text", 4, kindString, cardOne, 0, ""},
 		{"file_ids", 5, kindUuid, cardList, 0, ""},
 		{"parent_id", 6, kindUuid, cardOne, 0, ""},
@@ -1820,6 +1823,8 @@ var messages = []message{
 		{"name", 3, kindString, cardOne, 0, ""},
 		{"text", 4, kindString, cardOne, 0, ""},
 		{"parent_id", 5, kindUuid, cardOne, 0, ""},
+		{"client_id", 6, kindUuid, cardOne, 0, ""},
+		{"draw_t", 7, kindInt, cardOne, 0, ""},
 	}},
 	{name: "RunCommandResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"interaction_id", 3, kindUuid, cardOne, 0, ""},
@@ -2040,6 +2045,7 @@ var messages = []message{
 		{"message", 4, kindString, cardOne, 0, ""},
 		{"field", 5, kindString, cardOne, 0, ""},
 		{"retry_after_seconds", 6, kindInt, cardOne, 0, ""},
+		{"server_time", 7, kindTime, cardOne, 0, ""},
 	}},
 	{name: "ListEpochRecordsResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"epochs", 3, kindMsg, cardList, 363, ""},
@@ -3765,7 +3771,7 @@ var enums = [][]string{
 	{"", "oidc", "saml"},                       // SsoProviderSummaryKind
 	{"", "apns", "fcm", "unifiedpush", "none"}, // ServerPushKinds
 	{"", "dark", "light"},                      // CardThemeKind
-	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable"}, // ErrorErrorCode
+	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable", "clock"}, // ErrorErrorCode
 	{"", "server", "hub"},                 // WellKnownKind
 	{"", "web", "app", "personal", "bot"}, // SessionKind
 	{"", "passkey", "oidc", "saml", "recovery_code", "recovery_link", "pairing", "access_key"}, // SessionSignedInBy
@@ -3873,7 +3879,7 @@ var enums = [][]string{
 	{"", "waiting", "approved", "declined", "revoked"},                 // WebhookState
 	{"", "message", "private", "dialog", "none"},                       // InteractionResponseType
 	{"", "lavender", "cyan", "pink", "yellow", "green", "red", "grey"}, // WebhookCardColor
-	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable"}, // PostEpochRecordResponse409ErrorCode
+	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable", "clock"}, // PostEpochRecordResponse409ErrorCode
 	{"", "passkey", "phrase", "device", "access_key"},                          // LockedCopyKind
 	{"", "passkey", "phrase", "device", "access_key"},                          // LockedCopyInputKind
 	{"", "open", "invite", "closed"},                                           // SettingsRegistrationMode
@@ -3934,7 +3940,7 @@ var enums = [][]string{
 	{"", "online", "away", "offline"},                     // PresenceChangedFramePresence
 	{"", "online", "away", "offline"},                     // PresenceChangePresence
 	{"", "too_far_behind", "no_longer_member", "unknown"}, // ReloadFrameReason
-	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable"}, // ErrorDetailCode
+	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable", "clock"}, // ErrorDetailCode
 	{"", "closed", "full", "invalid"},                                    // FormAnswerWithdrawnFrameRefused
 	{"", "left", "removed", "group", "account_removed", "banned"},        // MemberLeftFrameReason
 	{"", "empty", "alone", "too_long", "closed", "server"},               // CallEndedFrameReason

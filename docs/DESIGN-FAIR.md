@@ -2,7 +2,7 @@
 
 A design, partly built. Parts marked [proposed] are not confirmed by the
 owner. Built: the library in three languages (section 9), the key
-(section 1), the chain and the derivation (sections 2 and 3), the `fair`
+(section 1), the input and the derivation (sections 2 and 3), the `fair`
 block (section 4), and dice on them, checked by the clients.
 `FAIR.md` is the specification of what is built: every encoding, the
 order outcomes are derived in, and the vectors.
@@ -54,35 +54,39 @@ on the operating system's randomness.
   server at that time. A server cannot use a second key. [built: a
   receiving server and the clients check it, `FAIR.md` section 9]
 
-## 2. The chain: what alpha is [built]
+## 2. The input: what alpha is [built]
 
-One chain per conversation, kept by the conversation's owner (the
-instance; for a hub channel, the hub). Built: an instance draws for its
-own people's messages; a hub channel's messages are drawn by their
-author's instance, the chain named by the channel's stream, until the hub
-draws for its channels. The exact encodings are `FAIR.md` section 6.
+Owner's ruling: the input is supplied by the client and only has to be
+unique. The exact spelling is `FAIR.md` section 6.
 
-    alpha(n) = "churr-fair-1" ‖ owner name ‖ conversation id ‖ n
+    alpha = "<unix seconds>|<nonce>"      e.g. 1763456789|0193a8ff-7c2e-7b1a-9f3e-2d4c5b6a7e80
 
-- Nothing in alpha comes from the person rolling or from the request.
-  So nobody can grind: not the player with nonces, not the server by
-  dropping a request and waiting for another (the next draw gets the same
-  alpha and so the same result).
-- A VRF has exactly one valid output per key and alpha. The server cannot
-  choose, and cannot show two people different results.
+- For a message the client gives both: the second, by its clock
+  corrected to the server's (`draw_t`), and the message's `client_id` as
+  the nonce. One canonical spelling, so one pair has one input.
+- Every draw the key ever makes, of any kind, has an input of this shape
+  and passes through the one tracker of used pairs before the key is
+  applied; the key is used for nothing else, and one function in the
+  server applies it.
+- The server takes a second only within 10 seconds of its clock and a pair
+  only once. It keeps the pairs in memory per second and drops a second's
+  set once it has left the window: nothing is kept for good. Just after a
+  start it refuses seconds no later than the start's for the window's
+  length, so a pair used before a restart cannot draw twice.
+- A retry is the same post with the same `client_id`, and gets the same
+  message and draw back. The server cannot re-roll by failing a request.
+- Who is protected from whom: the person cannot predict or choose the
+  result (it needs the key); the server cannot predict it before the
+  request arrives, cannot choose among seconds (the client's), and cannot
+  change it after (a VRF has one output per key and input). A server and
+  a person acting together can still pick a nonce they like.
 - One draw per message. A message with several chance objects splits the
   one output: `stream(i, k) = SHA-256(beta ‖ i ‖ k)` for object i,
   block k.
-- Each draw stands alone: draw n's alpha and output depend on the owner,
-  the chain and n only. n is used exactly once per chain, and a gap in n
-  is what shows a skipped or unsent draw. A deleted roll keeps its
-  metadata as a marker, so no gap is made by deleting; history aged out
-  leaves a gap that says so.
-- Why the proof is not chained: an ECVRF proof is not unique (the key
-  holder can make other valid proofs of one alpha with other nonces);
-  only its output is. Chaining alpha to the previous proof would let the
-  server choose among next draws; chaining to the previous output would
-  add nothing n does not already give.
+- Why no proof is fed into an input: an ECVRF proof is not unique (the
+  key holder can make other valid proofs of one input with other
+  nonces); only its output is. A proof in an input would let the server
+  choose.
 
 ## 3. From randomness to outcome [built]
 
@@ -96,16 +100,15 @@ version number; old messages keep theirs.
 
 In the metadata field, clear and sealed alike:
 
-    fair { v, derive, owner, n, pk, alpha, beta, proof }
+    fair { v, derive, owner, t, pk, alpha, beta, proof }
 
-`beta` and `alpha` are recomputable; they are stored because the owner
-asked, and they make a quick check possible. About 190 bytes.
+with the message's `client_id` served beside it. `alpha` is stored as the
+readable text it is; `beta` is recomputable. About 220 bytes.
 
-A verifier, with no server reachable, checks: the proof under pk; alpha
-rebuilt from the owner, the conversation and n; beta from the proof; the
-outcome re-derived from beta and the request; pk against the record or
-pin; and, where the conversation's other draws are at hand, that each n
-is used once and what gaps there are.
+A verifier, with no server reachable, checks: alpha spelt from the
+message's own `t` and `client_id`; `t` near the message's time; the proof
+under pk; beta from the proof; the outcome re-derived from beta and the
+request; pk against the record or pin.
 
 ## 5. Sealed chats [proposed]
 
@@ -135,10 +138,10 @@ learns only that a draw happened.
 
 ## 7. The crash game
 
-- A game has its own chain; its start is announced with the key.
-- Everyone can compute alpha for round n before it starts: it is the
-  game's chain and n. That is the commitment: the result is already fixed,
-  and nobody without the key can know it.
+- A round's input has the one shape, `<t>|<nonce>`, its nonce announced
+  before the round: everyone can compute alpha before it starts. That is
+  the commitment: the result is already fixed, and nobody without the key
+  can know it.
 - The server computes the proof at round start, keeps it, and reveals it
   at the crash. Everyone verifies and derives the crash point.
 - Needs timers and live cards (stage 7 of the modules work).
@@ -150,12 +153,12 @@ learns only that a draw happened.
   player in on it, they can choose when to roll or let someone else take
   a draw. Mixing two servers' outputs (section 6) removes this wherever
   a second server exists; on a single instance it remains.
-- **Order is the server's.** Who gets draw n, and whether a cash-out
+- **Order is the server's.** Whose message comes first, and whether a cash-out
   arrived before the crash, is decided by the server's ordering of
   messages. The VRF does not prove ordering.
-- **The start of a chain.** A conversation or game identifier is chosen
-  by the server, so it could try several. Mixing in a second server, or
-  the participants' own values at the start of a game, closes it.
+- **A chosen nonce.** A server and a person acting together can pick a
+  nonce whose result they like, the server working results out ahead.
+  Mixing in a second server's output closes it where one exists.
 
 ## 9. In the code
 
@@ -247,7 +250,7 @@ A closed list, stated in the proof block so readers know who knew what:
 1. Keys: made at first start, in the identity statement, the hub record
    and the pins. [built]
 2. The derivation and its vectors in three languages. [built]
-3. The chain, the `fair` block, `Host.Random()`, dice on it; clients
+3. The input, the `fair` block, `Host.Random()`, dice on it; clients
    verify and show "verified". [built]
 4. Sealed draws; two-server mixing on direct links.
 5. The rest of chance as it becomes modules; the crash game after live

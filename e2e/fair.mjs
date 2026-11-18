@@ -11,6 +11,7 @@ import { isPublicKey, proofToHash, verify } from '../internal/web/static/shared/
 import { Histories, comparePin, pinHistory } from '../internal/web/static/shared/fair/pin.js';
 import { DERIVE, Stream, block, draw, isPrimitive, sameRoll } from '../internal/web/static/shared/fair/derive.js';
 import { verifyMessage } from '../internal/web/static/shared/fair/verify.js';
+import { clockOffset, drawT, learnServerTime } from '../internal/web/static/shared/fair/clock.js';
 
 const file = new URL('../testdata/ecvrf/vectors.json', import.meta.url);
 const vf = JSON.parse(readFileSync(file, 'utf8'));
@@ -156,7 +157,7 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
 {
   const mv = JSON.parse(readFileSync(new URL('../testdata/fair/message.json', import.meta.url), 'utf8'));
   const keysOf = (keys) => (name) => (name === mv.server ? { keys, changed: false } : null);
-  const ctx = { keysOf: keysOf(mv.keys), chains: mv.chains };
+  const ctx = { keysOf: keysOf(mv.keys), server: mv.server };
   const ok = await verifyMessage(mv.message, ctx);
   check(ok.state === 'verified' && ok.objects.length === 2 && ok.objects.every((o) => o.ok), 'verify: the message checks out');
   check((await verifyMessage({ text: 'plain' }, ctx)).state === 'none', 'verify: a message with no draw has nothing to check');
@@ -169,13 +170,19 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
   await changed('a die of the card', (m) => { const t = m.view.data.rows[0].terms[0]; t.rolls[0] = t.rolls[0] === 1 ? 2 : 1; });
   await changed('an inline total', (m) => { m.entities[0].object.data.rows[0].total += 1; });
   await changed('another object index', (m) => { m.view.draw.i = 5; });
-  await changed('another beta', (m) => { m.fair.beta = m.fair.alpha.slice(0, 43); });
-  await changed('another n', (m) => { m.fair.n += 1; });
+  await changed('another beta', (m) => { m.fair.beta = m.fair.proof.slice(0, 43); });
+  await changed('another second', (m) => { m.fair.t += 1; });
+  await changed('a second far from the message\'s time', (m) => { m.created_at = new Date((m.fair.t + 11) * 1000).toISOString(); });
+  await changed('a proof moved to another message', (m) => { m.client_id = '01a1ee00-0000-7000-8000-0000000000aa'; });
+  await changed('a client_id in another spelling', (m) => { m.client_id = m.client_id.toUpperCase(); m.fair.alpha = `${m.fair.t}|${m.client_id}`; });
+  await changed('an alpha in another spelling', (m) => { m.fair.alpha = `0${m.fair.alpha}`; });
+  await changed('no client_id', (m) => { delete m.client_id; });
   await changed('a message older than its key', (m) => { m.created_at = '2026-02-01T00:00:00.000Z'; });
   await changed('a key not pinned', (m) => { m.fair.pk = mv.keys[0].key; });
-  await changed('another owner', (m) => { m.fair.owner = 'b.example'; });
+  // The key says whose draw it is: named another server's, it is checked
+  // under that server's history, which does not hold its key.
+  await changed('another owner', (m) => { m.fair.owner = 'b.example'; }, { ...ctx, keysOf: (n) => (n === 'b.example' ? { keys: [mv.keys[0]] } : null) });
   await changed('a rule not known', (m) => { m.fair.derive = 2; });
-  await changed('another conversation', () => {}, { ...ctx, chains: ['01a1ee00-0000-7000-8000-0000000000aa'] });
   await changed('another pin', () => {}, { ...ctx, keysOf: keysOf([mv.keys[0]]) });
   await changed('a history that changed', () => {}, { ...ctx, keysOf: () => ({ keys: mv.keys, changed: true }) });
   // A draw by a server whose history this client was never given cannot be
@@ -184,8 +191,19 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
   check(unknown.state === 'unknown' && unknown.why.includes(mv.server), 'verify: a draw by a server with no history given cannot be checked here');
   // The same draw by another server, checked under that server's history
   // as a shared conversation gives it.
-  const remote = await verifyMessage(mv.message, { chains: mv.chains, keysOf: (n) => (n === mv.server ? { keys: mv.keys } : null) });
+  const remote = await verifyMessage(mv.message, { server: 'b.example', keysOf: (n) => (n === mv.server ? { keys: mv.keys } : null) });
   check(remote.state === 'verified', 'verify: a draw checks under the history given for its owner');
+}
+
+// The second a draw is asked for: this clock, corrected by the server's
+// time a `clock` refusal gives.
+{
+  const now = 1790000000000;
+  check(drawT(now) === 1790000000, 'clock: the second of the clock as it is');
+  learnServerTime(new Date(now + 30000).toISOString(), now);
+  check(clockOffset() === 30000 && drawT(now) === 1790000030, 'clock: corrected by the server\'s time');
+  learnServerTime('not a time', now);
+  check(clockOffset() === 30000, 'clock: a time that cannot be read changes nothing');
 }
 
 if (failed) {

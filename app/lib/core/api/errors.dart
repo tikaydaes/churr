@@ -11,6 +11,7 @@ class ApiException implements Exception {
     required this.message,
     this.field,
     this.retryAfterSeconds,
+    this.serverTime,
   });
 
   /// Reads the error body of a response; a body in any other shape (a
@@ -26,6 +27,7 @@ class ApiException implements Exception {
         retryAfterSeconds: e['retry_after_seconds'] == null
             ? null
             : asInt(e['retry_after_seconds']),
+        serverTime: e['server_time'] as String?,
       );
     }
     return ApiException(
@@ -57,6 +59,9 @@ class ApiException implements Exception {
 
   /// With `rate_limited` and `slow_mode`.
   final int? retryAfterSeconds;
+
+  /// With `clock`: the server's time when it answered (docs/FAIR.md).
+  final String? serverTime;
 
   bool get isNetwork => code == 'network';
   bool get isUnauthenticated => status == 401;

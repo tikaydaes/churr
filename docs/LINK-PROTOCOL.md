@@ -1528,7 +1528,9 @@ schema's messages, and each entity is the client schema's with
   The receiver checks it (`FAIR.md` section 9): drawn by the author's
   server, under the key that server's history had at the message's
   time (its own; the direct link's pin; the hub channel's record),
-  over the alpha of the stream's chain. A block that fails is dropped
+  over the input spelt from the block's `t` and the message's own
+  `client_id`, which travels with a message that drew, `t` within 120
+  seconds of the message's time. A block that fails is dropped
   with every value that took chance from it, which then read as text;
   the message still arrives, and `link.fair_block_dropped` is audited.
   This is a check of the proof; each kind's own check of the outcome

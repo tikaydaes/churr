@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
@@ -12,10 +13,12 @@ import (
 )
 
 // Provably fair dice (docs/FAIR.md): a roll's message carries the proof of
-// its draw, which checks out under the server's published key with no
-// server asked; the conversation's chain advances by one per message that
-// draws and each draw names the proof before it; messages posted at once
-// get consecutive draws; a deleted roll and an edited one keep their proof.
+// its draw, over the input its client gave, its second and its own
+// client_id, which checks out under the server's published key with no
+// server asked; a pair draws once, the same post sent again gets the same
+// roll and anyone else's use of the pair is refused; a post that draws needs
+// the input; a proof moved to another message fails; a deleted roll and an
+// edited one keep their proof.
 
 // blockOf reads a message's fair block.
 func blockOf(t *testing.T, m map[string]any) model.FairBlock {
@@ -44,7 +47,8 @@ func verified(t *testing.T, ts *testkit.TestServer, conv string, m map[string]an
 	b := blockOf(t, m)
 	var created model.Time
 	remarshal(t, m["created_at"], &created)
-	if err := fair.CheckBlock(&b, ts.Server.Config.Hostname, conv, created, keysOf(ts)); err != nil {
+	clientID, _ := m["client_id"].(string)
+	if err := fair.CheckBlock(&b, ts.Server.Config.Hostname, clientID, created, fair.Window, keysOf(ts)); err != nil {
 		t.Fatalf("the block does not check out: %v", err)
 	}
 	var view model.ValueEnvelope
@@ -70,23 +74,23 @@ func TestARollCarriesAProofThatChecksOut(t *testing.T) {
 	owner, sam := ts.Owner, ts.Member("sam")
 	room := owner.Channel("fair", false, sam)
 
-	first := verified(t, ts, room, rolled(sam, room, "roll", "4d6kh3, d20"))
-	if first.N != 1 || first.Owner != ts.Server.Config.Hostname || first.Derive != 1 {
+	firstMsg := rolled(sam, room, "roll", "4d6kh3, d20")
+	first := verified(t, ts, room, firstMsg)
+	if first.Owner != ts.Server.Config.Hostname || first.Derive != 1 || first.Alpha != fair.Alpha(first.T, firstMsg["client_id"].(string)) {
 		t.Fatalf("the first draw: %+v", first)
 	}
 	// A plain post draws nothing and moves nothing.
 	if plain := owner.Post(room, "no dice here"); plain["fair"] != nil {
 		t.Fatalf("a plain post carries a block: %v", plain)
 	}
-	second := verified(t, ts, room, rolled(owner, room, "dice", "3"))
-	if second.N != 2 || !bytes.Equal(second.Alpha, fair.Alpha(ts.Server.Config.Hostname, room, 2)) {
-		t.Fatalf("the second draw does not follow the first: %+v", second)
+	if second := verified(t, ts, room, rolled(owner, room, "dice", "3")); second.Alpha == first.Alpha {
+		t.Fatalf("two messages share an alpha: %+v", second)
 	}
 	// Inline dice: one draw for the message, each roll its own object.
 	m := owner.Post(room, "I hit for [[2d6+3]] and [[d20]]")
 	b := blockOf(t, m)
-	if b.N != 3 || !bytes.Equal(b.Alpha, fair.Alpha(ts.Server.Config.Hostname, room, 3)) {
-		t.Fatalf("the third draw: %+v", b)
+	if b.Alpha != fair.Alpha(b.T, m["client_id"].(string)) {
+		t.Fatalf("the inline draw: %+v", b)
 	}
 	for i, e := range diceIn(m) {
 		var v model.ValueEnvelope
@@ -94,11 +98,6 @@ func TestARollCarriesAProofThatChecksOut(t *testing.T) {
 		if v.Draw == nil || v.Draw.I != i {
 			t.Fatalf("inline roll %d took %+v", i, v.Draw)
 		}
-	}
-	// Another conversation has a chain of its own.
-	other := owner.Channel("other", false)
-	if b := blockOf(t, rolled(owner, other, "roll", "")); b.N != 1 {
-		t.Fatalf("another conversation's first draw is %d", b.N)
 	}
 
 	// An edit that marks the roll removed keeps the message's proof.
@@ -124,43 +123,74 @@ func TestARollCarriesAProofThatChecksOut(t *testing.T) {
 	sameOverProtobuf(t, ts, owner.Token().Bearer, "listMessages", convPath(room)+"/messages")
 }
 
-// Rolls posted at once take consecutive draws, none twice and none skipped.
-func TestRacingRollsTakeConsecutiveDraws(t *testing.T) {
+// A draw's input is the second and the client_id the client gives it. The
+// same command sent again with them is given the message it made, the same
+// roll, however many times and at once; the pair used by anyone else, here
+// or in another conversation, is refused; a second outside the window of the
+// server's clock is refused with the server's time, and so is one no later
+// than the server's start just after it started; a post that draws with no
+// client_id or second is refused.
+func TestADrawsInputIsTakenOnce(t *testing.T) {
 	ts := testkit.NewServer(t)
-	owner := ts.Owner
-	room := owner.Channel("race", false)
-	const n = 6
-	got := make([]map[string]any, n)
+	owner, sam := ts.Owner, ts.Member("sam")
+	room := owner.Channel("once", false, sam)
+	other := owner.Channel("elsewhere", false, sam)
+	cmds := convPath(room) + "/commands"
+	// Just after the start: a second no later than the start's.
+	owner.Refused(409, model.CodeClock, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": model.NewID[string](), "draw_t": time.Now().Unix() - 1})
+	now := time.Now().Unix() + 1
+	id := model.NewID[string]()
+	body := map[string]any{"name": "roll", "text": "3d20", "client_id": id, "draw_t": now}
+	first := owner.Must(200, "POST", cmds, body)["message"].(map[string]any)
 	var wg sync.WaitGroup
-	for i := 0; i < n; i++ {
+	again := make([]map[string]any, 4)
+	for i := range again {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			_, out, err := owner.Try("POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "d6"})
-			if err == nil {
-				got[i], _ = out["message"].(map[string]any)
+			if _, out, err := owner.Try("POST", cmds, body); err == nil {
+				again[i], _ = out["message"].(map[string]any)
 			}
 		}(i)
 	}
 	wg.Wait()
-	byN := map[int64]model.FairBlock{}
-	for _, m := range got {
-		if m == nil {
-			t.Fatal("a roll was not made")
+	for _, m := range again {
+		if m == nil || m["id"] != first["id"] || m["text"] != first["text"] || !bytes.Equal(blockOf(t, m).Proof, blockOf(t, first).Proof) {
+			t.Fatalf("the same roll sent again: %v, first %v", m, first)
 		}
-		b := verified(t, ts, room, m)
-		if _, twice := byN[b.N]; twice {
-			t.Fatalf("draw %d was used twice", b.N)
-		}
-		byN[b.N] = b
 	}
-	for k := int64(1); k <= n; k++ {
-		b, ok := byN[k]
-		if !ok {
-			t.Fatalf("draw %d was skipped: %v", k, byN)
+	verified(t, ts, room, first)
+	if n := len(owner.Messages(room)); n != 1 {
+		t.Fatalf("%d messages for one roll sent five times", n)
+	}
+	sam.Refused(409, model.CodeConflict, "POST", cmds, body)
+	owner.Refused(409, model.CodeConflict, "POST", convPath(other)+"/commands", body)
+	owner.Refused(409, model.CodeConflict, "POST", convPath(other)+"/messages", map[string]any{"text": "[[3d20]]", "client_id": id, "draw_t": now})
+	// The clock.
+	for _, off := range []int64{-11 - 2, 11 + 2} {
+		e := owner.Refused(409, model.CodeClock, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": model.NewID[string](), "draw_t": time.Now().Unix() + off})
+		if at, _ := e["server_time"].(string); at == "" {
+			t.Fatalf("a clock refusal without the server's time: %v", e)
 		}
-		if !bytes.Equal(b.Alpha, fair.Alpha(ts.Server.Config.Hostname, room, k)) {
-			t.Fatalf("draw %d is not proved over its place in the chain", k)
-		}
+	}
+	// No input.
+	owner.Refused(400, model.CodeInvalidValue, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": ""})
+	owner.Refused(400, model.CodeInvalidValue, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": model.NewID[string](), "draw_t": 0})
+	owner.Refused(400, model.CodeInvalidValue, "POST", convPath(room)+"/messages", map[string]any{"text": "I hit for [[2d6]]", "client_id": ""})
+}
+
+// A proof is bound to its message: moved to another message, with another
+// client_id, it fails, here and in the clients alike.
+func TestAProofMovedToAnotherMessageFails(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	room := owner.Channel("moved", false)
+	one, two := rolled(owner, room, "roll", "d20"), rolled(owner, room, "roll", "d20")
+	verified(t, ts, room, one)
+	b := blockOf(t, one)
+	var created model.Time
+	remarshal(t, two["created_at"], &created)
+	if err := fair.CheckBlock(&b, ts.Server.Config.Hostname, two["client_id"].(string), created, fair.Window, keysOf(ts)); err == nil {
+		t.Fatal("a proof moved to another message checked out")
 	}
 }

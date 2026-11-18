@@ -10,6 +10,7 @@ import 'account_sync.dart';
 import 'commands/chance_live.dart';
 import 'conversation/broad_mentions.dart';
 import 'db/cache_db.dart';
+import 'fair/clock.dart';
 import 'ids.dart';
 import 'live.dart';
 import 'models/account.dart';
@@ -855,7 +856,9 @@ class SyncEngine implements LiveDelegate {
         text: text,
         createdAt: _now(),
         state: 'pending',
-        extra: extra,
+        // The second of its draw, if anything in it takes chance: kept,
+        // so a retry sends the same input (docs/FAIR.md section 6).
+        extra: {...?extra, 'draw_t': drawT()},
       ),
     );
     unawaited(flushOutbox());
@@ -892,6 +895,9 @@ class SyncEngine implements LiveDelegate {
               item.conversationId,
               clientId: item.clientId,
               text: item.text,
+              drawT: item.extra?['draw_t'] == null
+                  ? null
+                  : asInt(item.extra?['draw_t']),
               parentId: item.parentId,
               quote: object(item.extra?['quote']),
               fileIds: strings(item.extra?['file_ids']),

@@ -99,7 +99,7 @@ func (j janitor) ExpireMessage(ctx context.Context, msg model.MessageID, now mod
 			}
 			return exec(`
 				UPDATE messages SET text = '', entities = '[]', cards = '[]', fallback = '', search_text = '', chance = NULL, view = NULL, ciphertext = NULL,
-					deleted_at = ?, deleted_by = NULL, purged_at = ?, history_hidden_at = NULL, client_id = NULL,
+					deleted_at = ?, deleted_by = NULL, purged_at = ?, history_hidden_at = NULL, client_id = CASE WHEN fair IS NULL THEN NULL ELSE client_id END,
 					quote_message_id = NULL, quote_start = NULL, quote_end = NULL WHERE id = ?`, int64(deletedAt), int64(now), a)
 		}
 		if err := exec(`DELETE FROM messages WHERE id = ?`, a); err != nil {
@@ -154,7 +154,7 @@ func (j janitor) Tidy(ctx context.Context, now model.Time) (map[string]int64, er
 		// is kept as the record of it (docs/FEATURES.md section 31).
 		{"approvals", `UPDATE approvals SET state = 'lapsed' WHERE state = 'waiting' AND expires_at < ?`, []any{int64(now)}},
 		// Not a deletion: a client id only matters for a day.
-		{"messages.client_id", `UPDATE messages SET client_id = NULL WHERE client_id IS NOT NULL AND created_at < ?`, []any{ago(day)}},
+		{"messages.client_id", `UPDATE messages SET client_id = NULL WHERE client_id IS NOT NULL AND fair IS NULL AND created_at < ?`, []any{ago(day)}},
 	}
 	for _, s := range steps {
 		// Each by itself: one table's rows are never held up by another's.

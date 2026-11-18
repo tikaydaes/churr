@@ -376,6 +376,7 @@
    "already_exists": 14,
    "archived": 7,
    "blocked_by_filter": 16,
+   "clock": 21,
    "conflict": 12,
    "feature_off": 9,
    "forbidden": 5,
@@ -398,6 +399,7 @@
    "already_exists": 14,
    "archived": 7,
    "blocked_by_filter": 16,
+   "clock": 21,
    "conflict": 12,
    "feature_off": 9,
    "forbidden": 5,
@@ -752,6 +754,7 @@
    "already_exists": 14,
    "archived": 7,
    "blocked_by_filter": 16,
+   "clock": 21,
    "conflict": 12,
    "feature_off": 9,
    "forbidden": 5,
@@ -2534,7 +2537,8 @@
    "code": 3,
    "field": 5,
    "message": 4,
-   "retry_after_seconds": 6
+   "retry_after_seconds": 6,
+   "server_time": 7
   },
   "ErrorFrame": {
    "error": 4,
@@ -2558,6 +2562,7 @@
    "pk": 7,
    "prev": 11,
    "proof": 10,
+   "t": 12,
    "v": 3
   },
   "FairPrimitive": {
@@ -3433,6 +3438,7 @@
    "cards": 8,
    "chance": 13,
    "client_id": 3,
+   "draw_t": 17,
    "file_ids": 5,
    "form": 9,
    "instant_hints": 15,
@@ -3676,7 +3682,8 @@
    "code": 3,
    "field": 5,
    "message": 4,
-   "retry_after_seconds": 6
+   "retry_after_seconds": 6,
+   "server_time": 7
   },
   "PostGithubWebhookResponse": {
    "message": 3
@@ -4008,6 +4015,8 @@
    "positions": 4
   },
   "RunCommandRequest": {
+   "client_id": 6,
+   "draw_t": 7,
    "name": 3,
    "parent_id": 5,
    "text": 4

@@ -207,8 +207,10 @@ type Ran struct {
 // is posted as the actor's message; one switched off here is refused with
 // feature_off when nothing else has its name. The built-ins are the
 // client's to carry out, and a protected one is never looked up: a command
-// of its name made before it was protected is ignored.
-func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.ConversationID, parent model.MessageID, name, text string) (Ran, error) {
+// of its name made before it was protected is ignored. clientID and drawT
+// are the client's for the message a module's command posts: its draw's
+// input (docs/FAIR.md).
+func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.ConversationID, parent model.MessageID, clientID string, drawT int64, name, text string) (Ran, error) {
 	st, err := c.perm.Can(ctx, actor, perm.SendCommand, conv)
 	if err != nil {
 		return Ran{}, err
@@ -271,7 +273,7 @@ func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.Conv
 			if !ok {
 				continue
 			}
-			ran, err := c.runModule(ctx, actor, st, parent, mc, text)
+			ran, err := c.runModule(ctx, actor, st, parent, clientID, drawT, mc, text)
 			if errors.Is(err, model.ErrFeatureOff) {
 				// Off here, it is not in the table: a later source
 				// may have the name.
@@ -297,13 +299,13 @@ func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.Conv
 // into a sealed chat, which the server cannot write into. A refusal is the
 // module's own sentence, for the person who typed the command; whether a
 // bot may run it is the module's to say.
-func (c *Commands) runModule(ctx context.Context, actor model.Account, st perm.State, parent model.MessageID, mc moduleCommand, text string) (Ran, error) {
+func (c *Commands) runModule(ctx context.Context, actor model.Account, st perm.State, parent model.MessageID, clientID string, drawT int64, mc moduleCommand, text string) (Ran, error) {
 	if st.Conversation.Sealed() {
 		return Ran{}, model.Invalid("name", "The server cannot write into a sealed chat, so /"+mc.name+" cannot run there.")
 	}
 	// Post runs the command, so that its chance comes from the message's
 	// draw (docs/FAIR.md).
-	posted, err := c.chat.Post(ctx, actor, chat.NewMessage{ConversationID: st.Conversation.ID, ParentID: parent,
+	posted, err := c.chat.Post(ctx, actor, chat.NewMessage{ConversationID: st.Conversation.ID, ParentID: parent, ClientID: clientID, DrawT: drawT,
 		Command: &chat.ModuleCommand{Name: mc.cmd.Name, Text: strings.TrimSpace(text)}})
 	if err != nil {
 		return Ran{}, err

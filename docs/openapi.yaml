@@ -11707,6 +11707,18 @@ paths:
                   type: string
                   format: uuid
                   description: When typed in a thread.
+                client_id:
+                  type: string
+                  format: uuid
+                  description: 'Made by the client for the message a module''s command posts, as `MessageInput.client_id`.
+                    Needed by a command that takes chance (`/roll`, `/dice`): it is the nonce of its draw (FAIR.md
+                    section 6); left out, `invalid_value`. Sent again, the same message comes back.'
+                draw_t:
+                  type: integer
+                  format: int64
+                  description: 'With a command that takes chance: the second its draw is made for, as `MessageInput.draw_t`.
+                    Outside 10 seconds of the server''s clock it is refused with `clock` and `server_time`; a pair
+                    of second and client_id used already, with `conflict`.'
           application/x-protobuf:
             schema:
               type: string
@@ -22492,6 +22504,7 @@ components:
               - conflict
               - name_taken
               - already_exists
+              - clock
               - too_large
               - blocked_by_filter
               - rate_limited
@@ -22510,6 +22523,11 @@ components:
               type: integer
               format: int64
               description: With `rate_limited` and `slow_mode`.
+            server_time:
+              type: string
+              format: date-time
+              description: 'With `clock`: the server''s time when it answered, by which the client corrects its
+                clock (FAIR.md section 6).'
     Server:
       type: object
       description: What a server says about itself before and after sign-in.
@@ -25156,7 +25174,7 @@ components:
         by the VRF key `pk` of the server `owner` over `alpha`, which the conversation''s chain fixes, and its output
         `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no
         server reachable. Kept when the message is deleted; never edited.'
-      required: [v, derive, owner, n, pk, alpha, beta, proof]
+      required: [v, derive, owner, n, pk, alpha, beta, proof, t]
       properties:
         v:
           type: integer
@@ -25180,8 +25198,9 @@ components:
             made.'
         alpha:
           type: string
-          contentEncoding: base64url
-          description: 'What was proved: built from the owner, the chain and n (FAIR.md section 6).'
+          description: 'What was proved, as text: `t` in decimal, `|`, and the message''s `client_id` in lowercase,
+            hyphenated (`1763456789|0193a8ff-7c2e-7b1a-9f3e-2d4c5b6a7e80`); the VRF is given its UTF-8 bytes (FAIR.md
+            section 6).'
         beta:
           type: string
           contentEncoding: base64url
@@ -25190,6 +25209,11 @@ components:
           type: string
           contentEncoding: base64url
           description: The ECVRF proof, 81 bytes.
+        t:
+          type: integer
+          format: int64
+          description: The second, in Unix time, the author's client gave the draw (`draw_t`); with the message's
+            `client_id` it is the input `alpha` is made from.
     Chance:
       type: object
       description: 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot`
@@ -25288,7 +25312,8 @@ components:
           type: string
           format: uuid
           description: 'Sealed chats: the reference the sending device made. References inside sealed content use
-            it.'
+            it. A message with `fair`: the client_id its draw was made by, kept for good, which its `alpha` names
+            (FAIR.md section 6).'
         parent_id:
           type: string
           format: uuid
@@ -25394,8 +25419,18 @@ components:
         client_id:
           type: string
           format: uuid
-          description: Made by the client. Sending the same one again in the same conversation within 24 hours returns
-            the message already created. Required in a sealed chat.
+          description: 'Made by the client. Sending the same one again in the same conversation within 24 hours
+            returns the message already created. Required in a sealed chat, and in a message that takes chance (inline
+            dice): it is the nonce of its draw, with `draw_t` (FAIR.md section 6). A client retries a post with
+            the same client_id, never a new one: the same post sent again is given the message it made, with the
+            same draw.'
+        draw_t:
+          type: integer
+          format: int64
+          description: 'With a message that takes chance (inline dice): the second, in Unix time by the client''s
+            clock corrected to the server''s, that with `client_id` is its draw''s input (FAIR.md section 6). It
+            must be within 10 seconds of the server''s clock, or the post is refused with `clock` and `server_time`;
+            a pair of second and client_id draws once.'
         text:
           type: string
           description: Churr Markdown.

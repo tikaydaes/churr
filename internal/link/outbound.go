@@ -922,6 +922,10 @@ func (s *Service) wireMessageOf(ctx context.Context, a store.Areas, st store.Str
 	if conv.Sealed() {
 		w.ClientID, w.Sealed, w.Quiet = m.ClientID, m.Sealed, m.Quiet
 	}
+	if m.Fair != nil {
+		// A draw's client_id goes with it: its alpha is made from it.
+		w.ClientID = m.ClientID
+	}
 	var blobs []wireBlob
 	// Text is never rewritten. The entities say what each name resolved
 	// to, in terms every server understands.

@@ -55,7 +55,7 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 	before := roll("2d6")
 	gone := roll("d4")
 	a.Owner.Must(200, "DELETE", "/api/v1/messages/"+gone["id"].(string), nil)
-	stream, local := l.Share(0, ch, "tavern-here", map[string]any{"history_days": 30}, 1)
+	_, local := l.Share(0, ch, "tavern-here", map[string]any{"history_days": 30}, 1)
 
 	honest := roll("4d6kh3")
 	for _, sent := range []map[string]any{before, honest} {
@@ -83,8 +83,8 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 	var hb model.FairBlock
 	raw, _ := json.Marshal(honest["fair"])
 	json.Unmarshal(raw, &hb)
-	if chain, _ := fair.ChainOfAlpha(hb.Alpha); chain != stream {
-		t.Fatalf("a roll in a shared channel is drawn on the stream's chain, not %q", chain)
+	if hb.Alpha != fair.Alpha(hb.T, honest["client_id"].(string)) {
+		t.Fatalf("a roll in a shared channel is drawn for its own second and client_id, not %q", hb.Alpha)
 	}
 
 	a.Server.Chat.SetFair("a.localhost", newForger(t))
@@ -167,7 +167,7 @@ func checksUnder(t *testing.T, m map[string]any, chain string, keys map[string][
 	if err := json.Unmarshal(raw, &msg); err != nil || msg.Fair == nil {
 		t.Fatalf("a message with no draw: %v %s", err, raw)
 	}
-	return fair.CheckBlock(msg.Fair, msg.Fair.Owner, chain, msg.CreatedAt, keys[msg.Fair.Owner])
+	return fair.CheckBlock(msg.Fair, msg.Fair.Owner, msg.ClientID, msg.CreatedAt, fair.LinkWindow, keys[msg.Fair.Owner])
 }
 
 // A hub channel's conversation gives its clients the key history of every

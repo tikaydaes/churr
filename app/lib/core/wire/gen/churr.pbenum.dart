@@ -214,6 +214,8 @@ class ErrorErrorCode extends $pb.ProtobufEnum {
   static const ErrorErrorCode ERROR_ERROR_CODE_ALREADY_EXISTS =
       ErrorErrorCode._(
           14, _omitEnumNames ? '' : 'ERROR_ERROR_CODE_ALREADY_EXISTS');
+  static const ErrorErrorCode ERROR_ERROR_CODE_CLOCK =
+      ErrorErrorCode._(21, _omitEnumNames ? '' : 'ERROR_ERROR_CODE_CLOCK');
   static const ErrorErrorCode ERROR_ERROR_CODE_TOO_LARGE =
       ErrorErrorCode._(15, _omitEnumNames ? '' : 'ERROR_ERROR_CODE_TOO_LARGE');
   static const ErrorErrorCode ERROR_ERROR_CODE_BLOCKED_BY_FILTER =
@@ -244,6 +246,7 @@ class ErrorErrorCode extends $pb.ProtobufEnum {
     ERROR_ERROR_CODE_CONFLICT,
     ERROR_ERROR_CODE_NAME_TAKEN,
     ERROR_ERROR_CODE_ALREADY_EXISTS,
+    ERROR_ERROR_CODE_CLOCK,
     ERROR_ERROR_CODE_TOO_LARGE,
     ERROR_ERROR_CODE_BLOCKED_BY_FILTER,
     ERROR_ERROR_CODE_RATE_LIMITED,
@@ -253,7 +256,7 @@ class ErrorErrorCode extends $pb.ProtobufEnum {
   ];
 
   static final $core.List<ErrorErrorCode?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 20);
+      $pb.ProtobufEnum.$_initByValueList(values, 21);
   static ErrorErrorCode? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -3652,6 +3655,13 @@ class PostEpochRecordResponse409ErrorCode extends $pb.ProtobufEnum {
               ? ''
               : 'POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_ALREADY_EXISTS');
   static const PostEpochRecordResponse409ErrorCode
+      POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_CLOCK =
+      PostEpochRecordResponse409ErrorCode._(
+          21,
+          _omitEnumNames
+              ? ''
+              : 'POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_CLOCK');
+  static const PostEpochRecordResponse409ErrorCode
       POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_TOO_LARGE =
       PostEpochRecordResponse409ErrorCode._(
           15,
@@ -3711,6 +3721,7 @@ class PostEpochRecordResponse409ErrorCode extends $pb.ProtobufEnum {
     POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_CONFLICT,
     POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_NAME_TAKEN,
     POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_ALREADY_EXISTS,
+    POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_CLOCK,
     POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_TOO_LARGE,
     POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_BLOCKED_BY_FILTER,
     POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_RATE_LIMITED,
@@ -3720,7 +3731,7 @@ class PostEpochRecordResponse409ErrorCode extends $pb.ProtobufEnum {
   ];
 
   static final $core.List<PostEpochRecordResponse409ErrorCode?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 20);
+      $pb.ProtobufEnum.$_initByValueList(values, 21);
   static PostEpochRecordResponse409ErrorCode? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -5625,6 +5636,8 @@ class ErrorDetailCode extends $pb.ProtobufEnum {
   static const ErrorDetailCode ERROR_DETAIL_CODE_ALREADY_EXISTS =
       ErrorDetailCode._(
           14, _omitEnumNames ? '' : 'ERROR_DETAIL_CODE_ALREADY_EXISTS');
+  static const ErrorDetailCode ERROR_DETAIL_CODE_CLOCK =
+      ErrorDetailCode._(21, _omitEnumNames ? '' : 'ERROR_DETAIL_CODE_CLOCK');
   static const ErrorDetailCode ERROR_DETAIL_CODE_TOO_LARGE = ErrorDetailCode._(
       15, _omitEnumNames ? '' : 'ERROR_DETAIL_CODE_TOO_LARGE');
   static const ErrorDetailCode ERROR_DETAIL_CODE_BLOCKED_BY_FILTER =
@@ -5657,6 +5670,7 @@ class ErrorDetailCode extends $pb.ProtobufEnum {
     ERROR_DETAIL_CODE_CONFLICT,
     ERROR_DETAIL_CODE_NAME_TAKEN,
     ERROR_DETAIL_CODE_ALREADY_EXISTS,
+    ERROR_DETAIL_CODE_CLOCK,
     ERROR_DETAIL_CODE_TOO_LARGE,
     ERROR_DETAIL_CODE_BLOCKED_BY_FILTER,
     ERROR_DETAIL_CODE_RATE_LIMITED,
@@ -5666,7 +5680,7 @@ class ErrorDetailCode extends $pb.ProtobufEnum {
   ];
 
   static final $core.List<ErrorDetailCode?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 20);
+      $pb.ProtobufEnum.$_initByValueList(values, 21);
   static ErrorDetailCode? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

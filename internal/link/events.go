@@ -657,6 +657,11 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 		if m.Fair, ok = a.fairOf(w); !ok {
 			dropDrawn(&m)
 		}
+		if m.Fair != nil {
+			// The client_id the draw was made by, kept with it so that
+			// anyone rebuilds its alpha from the message.
+			m.ClientID = w.ClientID
+		}
 	}
 	files, rej, err := a.fileRows(w.AuthorID, w.Files, w.Cards, blobs)
 	if rej != nil || err != nil {

@@ -18,26 +18,24 @@ void main() {
     File('../testdata/fair/message.json').readAsStringSync(),
   ) as Map<String, dynamic>;
   final keys = (v['keys'] as List).cast<Map<String, dynamic>>();
-  final chains = (v['chains'] as List).cast<String>();
   Map<String, dynamic> message() =>
       jsonDecode(jsonEncode(v['message'])) as Map<String, dynamic>;
   FairCheck check(
     Map<String, dynamic> m, {
     List<Map<String, dynamic>>? pinned,
-    List<String>? names,
     bool changed = false,
   }) => verifyMessage(
     m,
     keysOf: (name) => name == v['server']
         ? FairHistory(pinned ?? keys, changed: changed)
         : null,
-    chains: names ?? chains,
+    server: v['server'] as String,
   );
 
   test('the message checks out', () {
     final r = check(message());
     expect(r.state, FairState.verified, reason: r.why);
-    expect(r.block['n'], 3);
+    expect(r.block['t'], 1790000000);
   });
 
   test('a message with no draw has nothing to check', () {
@@ -67,14 +65,35 @@ void main() {
       },
       'another beta': () {
         final m = message();
-        m['fair']['beta'] = (m['fair']['alpha'] as String).substring(0, 43);
+        m['fair']['beta'] = (m['fair']['proof'] as String).substring(0, 43);
         return check(m);
       },
-      'another n': () {
+      'another second': () {
         final m = message();
-        m['fair']['n'] = 4;
+        m['fair']['t'] = (m['fair']['t'] as int) + 1;
         return check(m);
       },
+      'a second far from the message\'s time': () {
+        final m = message();
+        m['created_at'] = DateTime.fromMillisecondsSinceEpoch(
+          ((m['fair']['t'] as int) + 11) * 1000,
+          isUtc: true,
+        ).toIso8601String();
+        return check(m);
+      },
+      'a proof moved to another message': () {
+        final m = message();
+        m['client_id'] = '01a1ee00-0000-7000-8000-0000000000aa';
+        return check(m);
+      },
+      'a client_id in another spelling': () {
+        final m = message();
+        final id = (m['client_id'] as String).toUpperCase();
+        m['client_id'] = id;
+        m['fair']['alpha'] = '${m['fair']['t']}|$id';
+        return check(m);
+      },
+      'no client_id': () => check(message()..remove('client_id')),
       'a message older than its key': () {
         final m = message();
         m['created_at'] = '2026-02-01T00:00:00.000Z';
@@ -85,18 +104,22 @@ void main() {
         m['fair']['pk'] = keys[0]['key'];
         return check(m);
       },
+      // The key says whose draw it is: named another server's, it is
+      // checked under that server's history, which does not hold its key.
       'another owner': () {
         final m = message();
         m['fair']['owner'] = 'b.example';
-        return check(m);
+        return verifyMessage(
+          m,
+          keysOf: (n) => n == 'b.example' ? FairHistory([keys[0]]) : null,
+          server: v['server'] as String,
+        );
       },
       'a rule not known': () {
         final m = message();
         m['fair']['derive'] = 2;
         return check(m);
       },
-      'another conversation': () =>
-          check(message(), names: ['01a1ee00-0000-7000-8000-0000000000aa']),
       'another pin': () => check(message(), pinned: [keys[0]]),
       'a history that changed': () => check(message(), changed: true),
     };
@@ -108,7 +131,11 @@ void main() {
   });
 
   test('a draw by a server with no history given cannot be checked here', () {
-    final r = verifyMessage(message(), keysOf: (_) => null, chains: chains);
+    final r = verifyMessage(
+      message(),
+      keysOf: (_) => null,
+      server: v['server'] as String,
+    );
     expect(r.state, FairState.unknown);
     expect(r.why, contains(v['server']));
   });
@@ -124,12 +151,20 @@ void main() {
           {'server': v['server'], 'keys': keys},
         ],
       });
-      final r = verifyMessage(message(), keysOf: pins.of, chains: chains);
+      final r = verifyMessage(
+        message(),
+        keysOf: pins.of,
+        server: v['server'] as String,
+      );
       expect(r.state, FairState.verified, reason: r.why);
       expect(written, hasLength(1));
       // Shown another history later, the pin stands and the draw fails.
       pins.show(v['server'] as String, [keys[1]]);
-      final again = verifyMessage(message(), keysOf: pins.of, chains: chains);
+      final again = verifyMessage(
+        message(),
+        keysOf: pins.of,
+        server: v['server'] as String,
+      );
       expect(again.state, FairState.failed);
       // A pin kept on the device is read back by name.
       final kept = FairHistories((_) async {})..load(written.last);
