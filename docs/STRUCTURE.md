@@ -223,6 +223,13 @@ catalogue.
   reply with no text, holds every value to its kind's schema and check,
   and stamps its level and the module's name.
 
+**`modules/dice`** — the dice module (`DESIGN-MODULES.md` section
+9.1): `/roll`, `/dice` and inline dice, `[[2d6+3]]`, which it claims.
+The grammar of dice lives here and nowhere else: `Parse`, `ParseRows`,
+`D6`, `RollTerms`, `Text`. Passes `testdata/commands/dice.json`. The
+shape of a roll and the check of one from elsewhere are the
+catalogue's kind `dice_roll`, in `model`.
+
 ### Storage
 
 **`store`** — the storage interface. The rest of the server depends on

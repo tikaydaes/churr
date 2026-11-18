@@ -11,42 +11,11 @@ import (
 // The shared cases of testdata/commands (ruling R67). The clients read the
 // same files.
 
-type diceVectors struct {
-	Parse []struct {
-		Input string     `json:"input"`
-		Dice  string     `json:"dice"`
-		Terms []DiceTerm `json:"terms"`
-	} `json:"parse"`
-	Errors []struct {
-		Input string `json:"input"`
-		Error string `json:"error"`
-	} `json:"errors"`
-	Rolls []struct {
-		Dice  string `json:"dice"`
-		Rolls []int  `json:"rolls"`
-		Terms []struct {
-			Rolls   []int `json:"rolls"`
-			Dropped []int `json:"dropped"`
-			Value   int   `json:"value"`
-		} `json:"terms"`
-		Total int `json:"total"`
-	} `json:"rolls"`
-	Rows []struct {
-		Input string   `json:"input"`
-		Dice  string   `json:"dice"`
-		Rows  []string `json:"rows"`
-	} `json:"rows"`
-	RowErrors []struct {
-		Input string `json:"input"`
-		Error string `json:"error"`
-	} `json:"row_errors"`
-	D6 []struct {
-		Input string `json:"input"`
-		Dice  string `json:"dice"`
-	} `json:"d6"`
-	// A roll's case is a DiceRoll and its text (with "kind": "roll"
-	// beside it, which the clients read); every other case a Chance and
-	// its fallback.
+// chanceVectors are the cases of testdata/commands/dice.json that are the
+// model's: the text of a stored result other than a roll (a roll's is the
+// dice module's), and requests refused.
+type chanceVectors struct {
+	// Every case but a roll's is a Chance and its fallback.
 	Fallback []struct {
 		Chance json.RawMessage `json:"chance"`
 		Text   string          `json:"text"`
@@ -68,71 +37,9 @@ func readJSON(t *testing.T, path string, v any) {
 	}
 }
 
-func TestDiceVectors(t *testing.T) {
-	var v diceVectors
+func TestChanceVectors(t *testing.T) {
+	var v chanceVectors
 	readJSON(t, "../../testdata/commands/dice.json", &v)
-	for _, c := range v.Parse {
-		terms, text, err := ParseDice(c.Input)
-		if err != nil {
-			t.Errorf("%q: %v", c.Input, err)
-			continue
-		}
-		if text != c.Dice || !reflect.DeepEqual(terms, c.Terms) {
-			t.Errorf("%q: got %q %+v, want %q %+v", c.Input, text, terms, c.Dice, c.Terms)
-		}
-	}
-	for _, c := range v.Errors {
-		_, _, err := ParseDice(c.Input)
-		if err == nil || !strings.Contains(err.Error(), c.Error) {
-			t.Errorf("%q: got %v, want an error with %q", c.Input, err, c.Error)
-		}
-	}
-	for _, c := range v.Rolls {
-		terms, _, err := ParseDice(c.Dice)
-		if err != nil {
-			t.Fatal(err)
-		}
-		next := 0
-		rolled, total := RollDice(terms, func(sides int) int { r := c.Rolls[next]; next++; return r })
-		if total != c.Total || next != len(c.Rolls) {
-			t.Errorf("%s %v: total %d, want %d", c.Dice, c.Rolls, total, c.Total)
-		}
-		for i, w := range c.Terms {
-			g := rolled[i]
-			if len(g.Rolls) != len(w.Rolls) || (len(w.Rolls) > 0 && !reflect.DeepEqual(g.Rolls, w.Rolls)) ||
-				len(g.Dropped) != len(w.Dropped) || (len(w.Dropped) > 0 && !reflect.DeepEqual(g.Dropped, w.Dropped)) || g.Value != w.Value {
-				t.Errorf("%s %v term %d: got %+v, want %+v", c.Dice, c.Rolls, i, g, w)
-			}
-		}
-		if !(DiceRoll{Dice: c.Dice, Rows: []DiceRow{{Dice: c.Dice, Terms: rolled, Total: total}}}).Valid() {
-			t.Errorf("%s: a rolled result is not valid", c.Dice)
-		}
-	}
-	for _, c := range v.Rows {
-		rows, text, err := ParseDiceRows(c.Input)
-		if err != nil {
-			t.Errorf("rows %q: %v", c.Input, err)
-			continue
-		}
-		var got []string
-		for _, r := range rows {
-			got = append(got, r.Dice)
-		}
-		if text != c.Dice || !reflect.DeepEqual(got, c.Rows) {
-			t.Errorf("rows %q: got %q %v, want %q %v", c.Input, text, got, c.Dice, c.Rows)
-		}
-	}
-	for _, c := range v.RowErrors {
-		_, _, err := ParseDiceRows(c.Input)
-		if err == nil || !strings.Contains(err.Error(), c.Error) {
-			t.Errorf("rows %q: got %v, want an error with %q", c.Input, err, c.Error)
-		}
-	}
-	for _, c := range v.D6 {
-		if got := DiceD6(c.Input); got != c.Dice {
-			t.Errorf("/dice %q: got %q, want %q", c.Input, got, c.Dice)
-		}
-	}
 	for _, c := range v.Fallback {
 		var kind struct {
 			Kind string `json:"kind"`
@@ -140,18 +47,8 @@ func TestDiceVectors(t *testing.T) {
 		if err := json.Unmarshal(c.Chance, &kind); err != nil {
 			t.Fatal(err)
 		}
-		if kind.Kind == ChanceRoll {
-			var r DiceRoll
-			if err := json.Unmarshal(c.Chance, &r); err != nil {
-				t.Fatal(err)
-			}
-			if got := r.Text(); got != c.Text {
-				t.Errorf("roll text: got %q, want %q", got, c.Text)
-			}
-			if !r.Valid() {
-				t.Errorf("%+v is not valid", r)
-			}
-			continue
+		if kind.Kind == "roll" {
+			continue // the dice module's (internal/modules/dice)
 		}
 		var ch Chance
 		if err := json.Unmarshal(c.Chance, &ch); err != nil {
@@ -234,18 +131,7 @@ func TestDrawChance(t *testing.T) {
 	if (Chance{Kind: ChanceDraw, Deck: "tarot", Cards: []string{"major-0"}}).Valid() {
 		t.Error("a tarot card needs its orientation")
 	}
-	for _, pick := range []func(n int) int{func(int) int { return 0 }, func(n int) int { return n - 1 }} {
-		for _, in := range []ChanceInput{{Kind: ChanceRoll, Dice: "100d1000"}, {Kind: ChanceRoll}, {Kind: ChanceRoll, Dice: "4d4+d6, 3d10k2"}} {
-			r, err := Roll(in, pick)
-			if err != nil {
-				t.Fatalf("%+v: %v", in, err)
-			}
-			if !r.Valid() || r.Text() == "" {
-				t.Errorf("%+v gave %+v", in, r)
-			}
-		}
-	}
-	if _, err := DrawChance(ChanceInput{Kind: ChanceRoll}, func(int) int { return 0 }); err == nil {
+	if _, err := DrawChance(ChanceInput{Kind: "roll"}, func(int) int { return 0 }); err == nil {
 		t.Error("a roll was drawn as a chance result")
 	}
 	if (DiceRoll{Dice: "1d6", Rows: []DiceRow{{Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: 7}}}).Valid() {
