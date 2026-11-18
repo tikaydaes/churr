@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -165,6 +166,11 @@ class ServerState extends ChangeNotifier {
   /// Whether the server shows a VRF key history other than the pinned one.
   bool get vrfPinChanged => vrfPin?.state == PinState.changed;
 
+  /// The VRF key history pinned on this device, which rolls are checked
+  /// against (core/fair/verify.dart): the pin, never a history that
+  /// changed it.
+  List<Map<String, dynamic>> vrfPinned = const [];
+
   static const _vrfPinKey = 'fair.vrf_pin';
 
   Future<void> _checkVrfPin(ServerInfo i) async {
@@ -173,6 +179,12 @@ class ServerState extends ChangeNotifier {
       (v) => db.putSetting(_vrfPinKey, v),
       i.vrfKeys,
     );
+    try {
+      final raw = await db.setting(_vrfPinKey);
+      vrfPinned = raw == null ? const [] : vrfKeysOf(jsonDecode(raw));
+    } on FormatException {
+      vrfPinned = const [];
+    }
   }
 
   /// Fetches the server's description again.

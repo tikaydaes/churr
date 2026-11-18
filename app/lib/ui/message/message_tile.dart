@@ -18,6 +18,7 @@ import 'media.dart';
 import 'message_slots.dart';
 import 'server_image.dart';
 import '../types/draw.dart';
+import '../types/fair_mark.dart';
 
 /// One message as docs/MESSAGE-FORMAT.md orders it: text, files, cards,
 /// the form, and beside the content its reactions and thread summary.
@@ -193,6 +194,10 @@ class MessageTile extends StatelessWidget {
                       ),
                     ),
                   if (view.newer) const NewerNote(),
+                  // The check of the message's draw, when anything in it
+                  // took chance from one: verified, or plainly not.
+                  if (!m.isDeleted && m.raw['fair'] is Map)
+                    FairMark(server: server, message: m),
                   if (m.files.isNotEmpty)
                     MessageFiles(server: server, files: m.files),
                   if (m.chance != null && !m.isDeleted)
