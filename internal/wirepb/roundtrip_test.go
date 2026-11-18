@@ -386,3 +386,45 @@ func BenchmarkEncodeMessageCreated(b *testing.B) {
 		EncodeFrameJSON(fixtures[0])
 	}
 }
+
+// TestKinds: every kind of the catalogue has a message in churr.proto, and
+// its data goes to bytes protobuf itself reads as that message, and back to
+// the same JSON.
+func TestKinds(t *testing.T) {
+	fd := loadDescriptor(t)
+	for _, k := range kinds {
+		if fd.Messages().ByName(protoreflect.Name(messages[k.msg].name)) == nil || k.level < 1 {
+			t.Errorf("kind %s: message %s, level %d", k.name, messages[k.msg].name, k.level)
+		}
+	}
+	roll := `{"dice":"2d6+3, 4d6kh3","rows":[` +
+		`{"dice":"2d6+3","terms":[{"sign":1,"count":2,"sides":6,"rolls":[4,1],"value":5},{"sign":1,"value":3}],"total":8},` +
+		`{"dice":"4d6kh3","terms":[{"sign":1,"count":4,"sides":6,"keep":"kh","keep_n":3,"rolls":[6,1,5,2],"dropped":[1],"value":13}],"total":13}]}`
+	var v any
+	dec := json.NewDecoder(strings.NewReader(roll))
+	dec.UseNumber()
+	if err := dec.Decode(&v); err != nil {
+		t.Fatal(err)
+	}
+	b, err := EncodeKind("dice_roll", v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := dynamicpb.NewMessage(fd.Messages().ByName("DiceRoll"))
+	if err := proto.Unmarshal(b, m); err != nil || hasUnknown(m) {
+		t.Fatalf("protobuf does not read the data as DiceRoll: %v", err)
+	}
+	back, err := DecodeKind("dice_roll", b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := json.Marshal(back); canonical(t, got) != canonical(t, []byte(roll)) {
+		t.Errorf("the data came back as %s", got)
+	}
+	if lv, ok := KindLevel("dice_roll"); !ok || lv != 1 {
+		t.Errorf("dice_roll is level %d (%v)", lv, ok)
+	}
+	if _, err := EncodeKind("no_such_kind", v); err == nil {
+		t.Error("a kind the catalogue does not have was encoded")
+	}
+}

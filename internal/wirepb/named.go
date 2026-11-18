@@ -64,3 +64,47 @@ func AppendValue(b []byte, v any) ([]byte, error) { return appendValue(b, v) }
 
 // ReadValue reads the content of a Value message.
 func ReadValue(b []byte) (any, error) { return readValue(b) }
+
+// A value of the catalogue (docs/DESIGN-MODULES.md section 4.1) carries its
+// data as the encoded message of its kind, opaque bytes in JSON and in
+// protobuf alike, so that a reader that does not know the kind keeps it byte
+// for byte. These give a kind's data from its JSON and back.
+
+func kindOf(kind string) (kindDef, bool) {
+	for _, k := range kinds {
+		if k.name == kind {
+			return k, true
+		}
+	}
+	return kindDef{}, false
+}
+
+// KindLevel is the lowest catalogue level that reads a kind's data in full;
+// false for a kind the schema does not have.
+func KindLevel(kind string) (int, bool) {
+	k, ok := kindOf(kind)
+	return k.level, ok
+}
+
+// EncodeKind writes a kind's data from its JSON value (as AppendNamed takes
+// it). It is exact or it refuses.
+func EncodeKind(kind string, v any) ([]byte, error) {
+	k, ok := kindOf(kind)
+	if !ok {
+		return nil, fmt.Errorf("wirepb: the catalogue has no kind %s", kind)
+	}
+	out, err := appendMessage(nil, k.msg, v)
+	if err != nil {
+		return nil, at(kind, err)
+	}
+	return out, nil
+}
+
+// DecodeKind reads a kind's data back into its JSON value.
+func DecodeKind(kind string, b []byte) (any, error) {
+	k, ok := kindOf(kind)
+	if !ok {
+		return nil, fmt.Errorf("wirepb: the catalogue has no kind %s", kind)
+	}
+	return reader{}.readMessage(k.msg, b)
+}

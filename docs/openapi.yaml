@@ -23824,6 +23824,7 @@ components:
           - dice
           - number
           - codepoint
+          - object
         at:
           type: integer
           format: int64
@@ -23913,6 +23914,9 @@ components:
           description: 'For `message_link`: the message the link names; its conversation is `conversation_id` and
             the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`,
             which answers only a reader who may see it.'
+        object:
+          $ref: '#/components/schemas/ValueEnvelope'
+          description: 'For `object`: the value the span''s characters stand for. The characters are its text.'
     CodePointName:
       type: object
       description: A Unicode code point's name and general category (`lookupCodePoints`).
@@ -24558,6 +24562,113 @@ components:
           type: string
           contentEncoding: base64url
           description: At most 128 KB.
+    DiceRollTerm:
+      type: object
+      description: 'One term of a roll: some dice, or a plain number added or taken away.'
+      required: [sign, value]
+      properties:
+        sign:
+          type: integer
+          format: int64
+          description: 1 to add the term, -1 to take it away.
+        count:
+          type: integer
+          format: int64
+          description: 'Dice only: how many.'
+        sides:
+          type: integer
+          format: int64
+          description: 'Dice only: the sides of each die.'
+        keep:
+          type: string
+          enum: [kh, kl, dh, dl]
+          description: Keep highest, keep lowest, drop highest, drop lowest.
+        keep_n:
+          type: integer
+          format: int64
+          description: How many are kept or dropped.
+        rolls:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Each die as it fell, in order.
+        dropped:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Positions in `rolls` that do not count.
+        value:
+          type: integer
+          format: int64
+          description: A plain number's value, or the sum of the dice that count. The sign is not applied to it.
+    DiceRollRow:
+      type: object
+      description: 'One row of a roll: an expression rolled with its own dice, and its total.'
+      required: [dice, terms, total]
+      properties:
+        dice:
+          type: string
+          description: The row written out in full (`d20` is `1d20`).
+        terms:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiceRollTerm'
+          description: Each term with its dice.
+        total:
+          type: integer
+          format: int64
+          description: The row's total.
+    DiceRoll:
+      type: object
+      description: 'The data of kind `dice_roll`: dice the server rolled (FEATURES.md section 12.4).'
+      required: [dice, rows]
+      properties:
+        dice:
+          type: string
+          description: The roll as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`),
+            its rows separated by `, `.
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiceRollRow'
+          description: Its rows, in order (1 to 8), each with its dice and total.
+    ValueEnvelope:
+      type: object
+      description: 'A value of the catalogue (DESIGN-MODULES.md section 4.1): on a span of the text as an `object`
+        entity, or on a whole message as its `view`. The text is the message; the value is a view of it. A client
+        draws `data` when it knows `kind` and `level` is not above its own, otherwise `alt`, otherwise the text.
+        A client keeps an envelope it does not understand byte for byte.'
+      required: [kind, level]
+      properties:
+        kind:
+          type: string
+          description: The catalogue kind, such as `dice_roll`.
+        level:
+          type: integer
+          format: int64
+          description: The lowest catalogue level that reads `data` in full.
+        data:
+          type: string
+          contentEncoding: base64url
+          description: That kind's own protobuf message, encoded; `x-kinds` names each kind's schema.
+          x-kinds:
+            dice_roll:
+              $ref: '#/components/schemas/DiceRoll'
+              x-level: 1
+        alt:
+          $ref: '#/components/schemas/ValueEnvelope'
+          description: The generic rendition, for a kind newer than the baseline.
+        by:
+          type: string
+          description: The module, manifest or bot that made it. Absent when the composer marked a kind by itself.
+        source:
+          type: string
+          description: The derived type it was read as, when there is one (`parcels/parcel`).
+        removed:
+          type: boolean
+          description: An edit changed the span; nothing was resolved for it.
     DiceTerm:
       type: object
       description: 'One term of a roll: some dice, or a plain number added or taken away.'
@@ -24757,6 +24868,10 @@ components:
           description: The text says what the author is doing (typed with `/me`); drawn after the author's name.
         chance:
           $ref: '#/components/schemas/Chance'
+        view:
+          $ref: '#/components/schemas/ValueEnvelope'
+          description: The message as a value of the catalogue, such as a roll of dice. `text` is the message; this
+            is a view of it, drawn by a client that knows its kind.
         fallback:
           type: string
           description: Plain text the server wrote to stand in for the cards, form and chance result.

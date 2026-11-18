@@ -317,6 +317,12 @@
    "none": 4,
    "unifiedpush": 3
   },
+  "DiceRollTermKeep": {
+   "dh": 3,
+   "dl": 4,
+   "kh": 1,
+   "kl": 2
+  },
   "DiceTermKeep": {
    "dh": 3,
    "dl": 4,
@@ -354,6 +360,7 @@
    "measure": 11,
    "message_link": 10,
    "number": 18,
+   "object": 20,
    "phone": 14,
    "reference": 9,
    "task": 7
@@ -2354,6 +2361,25 @@
    "id": 3,
    "title": 6
   },
+  "DiceRoll": {
+   "dice": 3,
+   "rows": 4
+  },
+  "DiceRollRow": {
+   "dice": 3,
+   "terms": 4,
+   "total": 5
+  },
+  "DiceRollTerm": {
+   "count": 4,
+   "dropped": 9,
+   "keep": 6,
+   "keep_n": 7,
+   "rolls": 8,
+   "sides": 5,
+   "sign": 3,
+   "value": 10
+  },
   "DiceRow": {
    "dice": 3,
    "terms": 4,
@@ -2417,6 +2443,7 @@
    "len": 5,
    "lon": 22,
    "message_id": 18,
+   "object": 27,
    "pattern_id": 16,
    "precision": 14,
    "removed": 25,
@@ -3287,7 +3314,8 @@
    "text": 10,
    "thread": 18,
    "unsent": 26,
-   "via": 19
+   "via": 19,
+   "view": 35
   },
   "MessageCreatedFrame": {
    "client_id": 5,
@@ -4747,6 +4775,15 @@
   },
   "UploadFileResponse": {
    "file": 3
+  },
+  "ValueEnvelope": {
+   "alt": 6,
+   "by": 7,
+   "data": 5,
+   "kind": 3,
+   "level": 4,
+   "removed": 9,
+   "source": 8
   },
   "Via": {
    "account_id": 5,

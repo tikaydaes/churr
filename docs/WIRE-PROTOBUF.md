@@ -91,6 +91,16 @@ between `3` and `3.0`, and is larger. An object that has known fields
 and may have others (`SystemNotice`) is a message with its known
 fields typed and an `extra_fields` map of `Value` for the rest.
 
+**Values of the catalogue.** A `ValueEnvelope` (a message's `view`, an
+`object` entity; DESIGN-MODULES.md section 4.1) carries its `data` as
+the encoded protobuf message of its kind, in JSON as base64url like any
+other bytes. Each kind's message is in `churr.proto` (`dice_roll` is
+`DiceRoll`), and `x-kinds` beside `data` in `docs/openapi.yaml` names it
+with the kind's catalogue level. The data is the same bytes in both
+forms, so a reader that does not know a kind keeps it byte for byte.
+`wirepb.EncodeKind` and `DecodeKind` turn a kind's data from JSON into
+bytes and back.
+
 **The envelope.** Every frame of the live connection is one
 `Envelope`: `at`, `conversation_id` and `seq` where the frame has
 them, and one body out of a `oneof`, which says what the frame is.

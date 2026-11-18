@@ -536,7 +536,7 @@ S('Report', 'A report of a message, or of a person.', {
 S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int', 'text?': ('str', 'What the quote shows, from the quoted message as it is now: the range, or the first 200 characters. Absent when the quoted message is deleted or the range no longer exists. Filled in by the server; ignored in a request.')})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
-   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice|number|codepoint',
+   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice|number|codepoint|object',
    'at': 'int',
    'len': 'int',
    'account_id?': 'uuid',
@@ -559,7 +559,8 @@ S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF
    'total?': ('int', 'For `dice`: the result.'),
    'removed?': ('bool', 'For `dice`: an edit wrote or changed these dice, and nothing was rolled for them.'),
    'unit?': ('str', 'For `measure`: the unit\'s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`, `mi`, `°C`, `lb`, `l`, `mph`, …).'),
-   'message_id?': ('uuid', 'For `message_link`: the message the link names; its conversation is `conversation_id` and the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`, which answers only a reader who may see it.')})
+   'message_id?': ('uuid', 'For `message_link`: the message the link names; its conversation is `conversation_id` and the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`, which answers only a reader who may see it.'),
+   'object?': ('#ValueEnvelope', "For `object`: the value the span's characters stand for. The characters are its text.")})
 
 S('CodePointName', 'A Unicode code point\'s name and general category (`lookupCodePoints`).', {
    'code_point': ('str', '`U+` and at least four upper-case hex digits.'),
@@ -784,6 +785,47 @@ RAW('SystemNotice', {'type': 'object',
 
 S('SealedPayload', "The content of a sealed-chat message. Only the two people's devices can open it.", {'key_epoch': ('int', 'The key epoch it was encrypted in.'), 'ciphertext': ('b64', 'At most 128 KB.')})
 
+# ----------------------------------------------------------------------------
+# The catalogue's values (docs/DESIGN-MODULES.md section 4.1). A value is an envelope: the catalogue kind,
+# the lowest catalogue level that reads its data in full, and the data as that kind's own protobuf message.
+# Each kind's message is a schema of its own, named in `x-kinds` beside `data`; proto.py gives every one a
+# message in churr.proto and the codec tables, and the Go table maps each kind to its message and level.
+
+S('DiceRollTerm', 'One term of a roll: some dice, or a plain number added or taken away.', {
+   'sign': ('int', '1 to add the term, -1 to take it away.'),
+   'count?': ('int', 'Dice only: how many.'),
+   'sides?': ('int', 'Dice only: the sides of each die.'),
+   'keep?': ('enum:kh|kl|dh|dl', 'Keep highest, keep lowest, drop highest, drop lowest.'),
+   'keep_n?': ('int', 'How many are kept or dropped.'),
+   'rolls?': ('[int]', 'Each die as it fell, in order.'),
+   'dropped?': ('[int]', 'Positions in `rolls` that do not count.'),
+   'value': ('int', "A plain number's value, or the sum of the dice that count. The sign is not applied to it.")})
+
+S('DiceRollRow', 'One row of a roll: an expression rolled with its own dice, and its total.', {
+   'dice': ('str', 'The row written out in full (`d20` is `1d20`).'),
+   'terms': ('[#DiceRollTerm]', 'Each term with its dice.'),
+   'total': ('int', "The row's total.")})
+
+S('DiceRoll', 'The data of kind `dice_roll`: dice the server rolled (FEATURES.md section 12.4).', {
+   'dice': ('str', 'The roll as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`), its rows separated by `, `.'),
+   'rows': ('[#DiceRollRow]', 'Its rows, in order (1 to 8), each with its dice and total.')})
+
+# kind: (the schema of its data, the lowest catalogue level that reads it in full)
+KINDS = {'dice_roll': ('DiceRoll', 1)}
+
+S('ValueEnvelope', 'A value of the catalogue (DESIGN-MODULES.md section 4.1): on a span of the text as an `object` entity, '
+  'or on a whole message as its `view`. The text is the message; the value is a view of it. A client draws `data` when '
+  'it knows `kind` and `level` is not above its own, otherwise `alt`, otherwise the text. A client keeps an envelope '
+  'it does not understand byte for byte.', {
+   'kind': ('str', 'The catalogue kind, such as `dice_roll`.'),
+   'level': ('int', 'The lowest catalogue level that reads `data` in full.'),
+   'data?': ('b64', "That kind's own protobuf message, encoded; `x-kinds` names each kind's schema.",
+             {'x-kinds': {k: {'$ref': '#/components/schemas/' + m, 'x-level': lv} for k, (m, lv) in KINDS.items()}}),
+   'alt?': ('#ValueEnvelope', 'The generic rendition, for a kind newer than the baseline.'),
+   'by?': ('str', 'The module, manifest or bot that made it. Absent when the composer marked a kind by itself.'),
+   'source?': ('str', 'The derived type it was read as, when there is one (`parcels/parcel`).'),
+   'removed?': ('bool', 'An edit changed the span; nothing was resolved for it.')})
+
 S('DiceTerm', 'One term of a roll: some dice, or a plain number added or taken away.', {
    'sign': ('int', '1 to add the term, -1 to take it away.'),
    'count?': ('int', 'Dice only: how many.'),
@@ -838,6 +880,7 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
    'form?': '#Form',
    'action?': ('bool', 'The text says what the author is doing (typed with `/me`); drawn after the author\'s name.'),
    'chance?': '#Chance',
+   'view?': ('#ValueEnvelope', 'The message as a value of the catalogue, such as a roll of dice. `text` is the message; this is a view of it, drawn by a client that knows its kind.'),
    'fallback?': ('str', 'Plain text the server wrote to stand in for the cards, form and chance result.'),
    'reactions?': '[#Reaction]',
    'thread?': '#ThreadSummary',

@@ -105,6 +105,14 @@ type frame struct {
 	msg int
 }
 
+// kindDef is one kind of the catalogue (docs/DESIGN-MODULES.md section 4.1):
+// a value's data is that kind's message, encoded, carried as bytes.
+type kindDef struct {
+	name  string
+	level int
+	msg   int
+}
+
 type operation struct {
 	req int
 	res map[int]int
