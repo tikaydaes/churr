@@ -168,11 +168,11 @@ func (s *Service) mayHold(ctx context.Context, a store.Areas, st store.Stream, r
 // awaitsRecord reports whether a rejection in a hub-owned channel is one the
 // channel's next record may undo: an origin the record that lets it in has
 // not reached this server yet (each server is sent the record in turn, and
-// over a trunk by another way than the envelope), or a moderator the record
-// that names them has not. Such an event waits as one about a missing
-// message does, and is tried again whenever a record is taken.
+// over a trunk by another way than the envelope). Such an event waits as one
+// about a missing message does, and is tried again whenever a record is
+// taken.
 func awaitsRecord(rej *rejection) bool {
-	return rej.reason == "origin_not_in_stream" || rej.reason == "not_moderator"
+	return rej.reason == "origin_not_in_stream"
 }
 
 // awaitsHistory reports whether a rejection is one the channel's earlier

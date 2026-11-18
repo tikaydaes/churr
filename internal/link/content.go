@@ -44,6 +44,17 @@ type historyPart struct {
 	// waiting for the rest, which the hub tells it to ask for again
 	// (history_more) once it has it.
 	Short bool `json:"short,omitempty"`
+	// Requests are, in the first part, the requests to be admitted to a
+	// private channel a hub owns that wait for a moderator: shared state of
+	// the channel, which every instance's moderators see (section 23a). Their
+	// accounts are among Accounts.
+	Requests []historyJoinRequest `json:"requests,omitempty"`
+}
+
+// historyJoinRequest is one waiting request to be admitted.
+type historyJoinRequest struct {
+	AccountID model.AccountID `json:"account_id"`
+	At        model.Time      `json:"at"`
 }
 
 type historyMessage struct {
@@ -283,6 +294,16 @@ func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to stor
 		for _, id := range members {
 			authors[id] = true
 		}
+		if hubOwned(st) && s.hubPrivate(ctx, s.store, st) {
+			knocks, err := s.store.Members().Knocks(ctx, conv.ID)
+			if err != nil {
+				return
+			}
+			for _, k := range knocks {
+				part.Requests = append(part.Requests, historyJoinRequest{AccountID: k.AccountID, At: k.CreatedAt})
+				authors[k.AccountID] = true
+			}
+		}
 	}
 	ids := make([]model.AccountID, 0, len(authors))
 	for id := range authors {
@@ -398,6 +419,28 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 					return err
 				} else if !found {
 					if _, err := tx.Members().AddDirect(ctx, conv.ID, id, model.LevelMember, s.now()); err != nil {
+						return err
+					}
+				}
+			}
+			if len(h.Requests) > 0 && hubOwned(st) && s.hubPrivate(ctx, tx, st) {
+				// Requests waiting for a moderator, made before this server
+				// held the channel: kept as a request made here would be.
+				for _, r := range h.Requests {
+					acc, err := tx.Accounts().Get(ctx, r.AccountID)
+					if err != nil || acc.Local() || acc.Role == model.RoleBot {
+						continue
+					}
+					if _, found, err := tx.Members().Get(ctx, conv.ID, r.AccountID); err != nil {
+						return err
+					} else if found {
+						continue
+					}
+					at := r.At
+					if at.IsZero() {
+						at = s.now()
+					}
+					if _, err := tx.Members().Knock(ctx, &model.Knock{ConversationID: conv.ID, AccountID: r.AccountID, CreatedAt: at}); err != nil {
 						return err
 					}
 				}

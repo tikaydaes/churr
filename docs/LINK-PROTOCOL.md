@@ -1923,14 +1923,11 @@ before the history that names its author.
 
 **Waiting for a record.** In a channel a hub owns, an event from an
 origin that is not on the server list this server holds
-(`origin_not_in_stream`), or a deletion or removal by an account the
-record it holds does not name a moderator or manager
-(`not_moderator`), is held as one about a missing message is, for at
-most 60 seconds, and tried again whenever this server takes a record of
-the channel: the hub sends a record to each server in turn, and over a
-trunk by another way than the envelopes, so a server let in, or a
-moderator named, may speak before the record that says so reaches
-everyone. The home hub sends each record to its own holder first. On a direct link there are two
+(`origin_not_in_stream`) is held as one about a missing message is, for
+at most 60 seconds, and tried again whenever this server takes a record
+of the channel: the hub sends a record to each server in turn, and over
+a trunk by another way than the envelopes, so a server let in may speak
+before the record that says so reaches everyone. The home hub sends each record to its own holder first. On a direct link there are two
 servers and one log, and nothing is held. A hub's log holds nothing
 either; the home hub's holder, which applies a channel's envelopes as
 an instance does (section 23a), holds events as an instance holds
@@ -2070,8 +2067,13 @@ History is a snapshot, not a replay. The owner sends one or more
 }
 ```
 
-- `conversation`, `accounts` and `member_ids` are in the first part
-  only. `accounts` holds every current member and every author of a
+- `conversation`, `accounts`, `member_ids` and `requests` are in the
+  first part only. `requests` are, in a private channel a hub owns, the
+  requests to be admitted that wait for a moderator
+  (`{"account_id", "at"}`, section 23a): the receiver keeps each, for
+  an account not of its own and not a member, as if `member.requested`
+  had reached it, so its moderators see requests made before it held
+  the channel. The requesters are among `accounts`. `accounts` holds every current member and every author of a
   message in the snapshot. Whenever the sender holds their bytes, a
   profile's picture, and a message's custom emoji of its author's own
   server, are among the part's `blobs`, whichever server the account
@@ -3586,7 +3588,7 @@ The events, inside the channel's envelopes (section 11):
 
 | Event | Sent by | Every instance |
 |-------|---------|----------------|
-| `member.requested` (`account`, `blobs`) | The person's home instance | Keeps the request as a knock on its copy, so moderators and managers everywhere see it |
+| `member.requested` (`account`, `blobs`) | The person's home instance | Keeps the request as a knock on its copy, so moderators and managers everywhere see it; the home hub's holder keeps it too, and gives the requests still waiting to an instance that joins later in its snapshot (section 13) |
 | `member.admitted` (`account_id`, `server`, `by_account_id`, `by_account`, `blobs`) | The acting moderator's or manager's home instance | Checks the acting account (`not_moderator` otherwise) and answers the request if one waits. The admitted person's home instance adds them to its copy |
 | `member.request_declined` (the same fields) | The same | Checks the acting account and answers the request |
 

@@ -771,6 +771,12 @@ message HistoryConversation {
   optional string topic = 2;
 }
 
+// A request to be admitted to a private channel a hub owns that waits for a moderator, sent in history (section 23a).
+message HistoryJoinRequest {
+  optional bytes account_id = 1; // identifier
+  optional int64 at = 2; // time
+}
+
 message HistoryReaction {
   optional string emoji = 1;
   repeated bytes account_ids = 2; // identifier
@@ -871,6 +877,7 @@ message HistoryDirect {
   repeated HistoryMessage messages = 27;
   repeated Blob blobs = 28;
   optional bool short = 54;
+  repeated HistoryJoinRequest requests = 55;
 }
 
 message HistoryRequestDirect {

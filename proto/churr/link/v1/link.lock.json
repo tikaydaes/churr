@@ -46,6 +46,7 @@
    "plain": 33,
    "private": 53,
    "reason": 2,
+   "requests": 55,
    "servers": 13,
    "short": 54,
    "signal": 42,
@@ -395,6 +396,10 @@
    "closed_by_id": 5,
    "tally": 2,
    "voters": 3
+  },
+  "HistoryJoinRequest": {
+   "account_id": 1,
+   "at": 2
   },
   "HistoryMessage": {
    "deleted": 6,

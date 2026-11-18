@@ -269,6 +269,8 @@ M('Profile', [('id', 'uuid'), ('server', 'str'), ('username', 'str'), ('display_
 M('Presence', [('account_id', 'uuid'), ('presence', 'str'), ('in_call', 'bool'), ('dnd', 'bool'), ('status', 'value'),
                ('availability', 'value')])
 M('HistoryConversation', [('name', 'str'), ('topic', 'str')])
+M('HistoryJoinRequest', [('account_id', 'uuid'), ('at', 'time')],
+  'A request to be admitted to a private channel a hub owns that waits for a moderator, sent in history (section 23a).')
 M('HistoryReaction', [('emoji', 'str'), ('account_ids', '[uuid]')])
 M('HistoryForm', [('answer_count', 'int'), ('tally', '{client:FormTallyValue}'), ('voters', '{client:FormVotersValueOuter}'),
                   ('closed_at', 'time'), ('closed_by_id', 'uuid')],
@@ -298,7 +300,7 @@ BAGS['direct'] = OD([
     # history, history_request
     ('part', 'int'), ('last', 'bool'), ('conversation', '#HistoryConversation'), ('accounts', '[#Profile]'),
     ('member_ids', '[uuid]'), ('messages', '[#HistoryMessage]'), ('blobs', '[#Blob]'), ('after_at', 'ms'),
-    ('through_at', 'ms'), ('first', 'bool'), ('short', 'bool'),
+    ('through_at', 'ms'), ('first', 'bool'), ('short', 'bool'), ('requests', '[#HistoryJoinRequest]'),
     # open_request, opened
     ('envelope', '#Envelope'), ('plain', 'bytes'),
     # blob_request, blob_chunk
@@ -327,7 +329,7 @@ D('blob_chunk', 'stream_id blob_id index last data')
 D('blob_request', 'stream_id blob_id from_index')
 D('key', 'stream_id epoch key version')
 D('key_request', 'stream_id epoch')
-D('history', 'stream_id part last conversation accounts member_ids messages blobs short')
+D('history', 'stream_id part last conversation accounts member_ids messages blobs short requests')
 D('history_request', 'stream_id after_at through_at first')
 D('history_more', 'stream_id')
 D('open_request', 'stream_id envelope')

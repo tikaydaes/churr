@@ -338,3 +338,37 @@ func TestPrivateChannelMovesOntoAHub(t *testing.T) {
 	a.Owner.Refused(403, model.CodeForbidden, "POST", "/api/v1/streams/"+f.stream+"/channel/actions", map[string]any{"action": "set_listing", "listing": "open"})
 	f.bea.Refused(403, model.CodeForbidden, "POST", "/api/v1/conversations/"+f.conv[1]+"/members", map[string]any{"account_ids": []string{string(b.Owner.ID)}})
 }
+
+// A request to be admitted to a private channel is the channel's, which
+// moderators on every instance see: an instance that joins after it was made
+// is given it in its snapshot by the hub, with every other instance off.
+func TestAJoinerIsGivenTheWaitingRequests(t *testing.T) {
+	l := testkit.NewLinked(t, 3, true)
+	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
+	ch := a.Owner.Channel("vault", true)
+	stream, _ := l.Share(0, ch, "vault-here", map[string]any{"history_days": 30}, 1)
+	bea := b.Member("bea")
+	bea.Must(200, "POST", "/api/v1/streams/"+stream+"/channel/requests", nil)
+	testkit.Eventually(t, "a's manager sees bea's request", func() bool { return requestsOf(a.Owner, stream) == "bea@b.localhost" })
+	testkit.Eventually(t, "the hub holds bea's request", func() bool {
+		row, err := l.Hub.Hub.HolderStore().Streams().Get(ctx, model.StreamID(stream))
+		if err != nil {
+			return false
+		}
+		ks, err := l.Hub.Hub.HolderStore().Members().Knocks(ctx, row.ConversationID)
+		return err == nil && len(ks) == 1 && ks[0].AccountID == bea.ID
+	})
+	moderate(a.Owner, stream, map[string]any{"action": "invite", "server": "c.localhost"})
+	a.Stop()
+	b.Stop()
+	convC := l.Accept(2, stream, "vault-c")
+	l.Joined(2, stream)
+	testkit.Eventually(t, "c holds bea's request, from the hub", func() bool {
+		ks, err := c.Server.Store.Members().Knocks(ctx, model.ConversationID(convC))
+		return err == nil && len(ks) == 1 && ks[0].AccountID == bea.ID
+	})
+	acc, err := c.Server.Store.Accounts().Get(ctx, bea.ID)
+	if err != nil || acc.Username != "bea" || acc.ServerName != "b.localhost" {
+		t.Fatalf("c holds bea as %+v (%v)", acc, err)
+	}
+}
