@@ -3,6 +3,8 @@ package api_test
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -262,5 +264,36 @@ func TestACardsShieldCarriesNoVerdict(t *testing.T) {
 	}
 	for _, objects := range [][]int{{100}, {-1}, make([]int, 21)} {
 		bot.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"text": "", "cards": []any{map[string]any{"title": "x", "fair_mark": map[string]any{"objects": objects}}}})
+	}
+}
+
+// The Validate result page (docs/DESIGN-FAIR.md section 12) is served to
+// anyone, with no account: the page, its script and the verifier and
+// derivation it runs, under a policy that lets it fetch another server's
+// published keys and nothing else of anyone's; and the published keys
+// themselves may be fetched by such a page from another origin.
+func TestValidateIsServedWithNoAccount(t *testing.T) {
+	ts := testkit.NewServer(t)
+	get := func(p string) *http.Response {
+		t.Helper()
+		r, err := http.Get(ts.URL + p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.Body.Close()
+		return r
+	}
+	page := get("/validate")
+	if page.StatusCode != 200 || !strings.HasPrefix(page.Header.Get("Content-Type"), "text/html") ||
+		!strings.Contains(page.Header.Get("Content-Security-Policy"), "connect-src https: 'self'") {
+		t.Fatalf("the page: %d %v", page.StatusCode, page.Header)
+	}
+	for _, p := range []string{"/validate/validate.js", "/shared/fair/validate.js", "/shared/fair/ecvrf.js", "/shared/fair/derive.js"} {
+		if r := get(p); r.StatusCode != 200 || !strings.HasPrefix(r.Header.Get("Content-Type"), "text/javascript") {
+			t.Fatalf("%s: %d", p, r.StatusCode)
+		}
+	}
+	if r := get("/.well-known/churr"); r.StatusCode != 200 || r.Header.Get("Access-Control-Allow-Origin") != "*" {
+		t.Fatalf("the published keys: %d %v", r.StatusCode, r.Header)
 	}
 }

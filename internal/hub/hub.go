@@ -38,6 +38,7 @@ import (
 	"github.com/tikaydaes/churr/internal/ratelimit"
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/version"
+	"github.com/tikaydaes/churr/internal/web"
 )
 
 // The defaults of section 23, each settable per server with `limits`.
@@ -520,16 +521,26 @@ func bumpRoster(tx *sql.Tx) error {
 	return err
 }
 
-// Handler serves what the hub serves at its public address: /link/v1 and
-// /.well-known/churr. The status page is StatusHandler, on its own address.
+// Handler serves what the hub serves at its public address: /link/v1,
+// /.well-known/churr, and the Validate result page anyone may check a draw
+// with (docs/DESIGN-FAIR.md section 12). The status page is StatusHandler,
+// on its own address.
 func (h *Hub) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /link/v1", h.serveLink)
 	mux.HandleFunc("GET /.well-known/churr", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "max-age=3600")
+		// Public, and fetched by the Validate result pages of other
+		// servers from the browser.
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(mustJSON(h.id.WellKnown()))
 	})
+	page := web.ValidateHandler(web.Options{TLS: h.opts.Listener == nil})
+	mux.Handle("GET /validate", page)
+	mux.Handle("GET /validate/", page)
+	mux.Handle("GET /shared/", page)
+	mux.Handle("GET /icons/", page)
 	return mux
 }
 

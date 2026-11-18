@@ -93,6 +93,10 @@ func (a *API) serverObject(ctx context.Context, signedIn bool) (map[string]any, 
 
 // getWellKnown gives the server's name and public keys to other servers.
 func (a *API) getWellKnown(r *Request) error {
+	// A public document: the Validate result page of any other server
+	// fetches it from the browser to see whose key a draw's is
+	// (docs/DESIGN-FAIR.md section 12).
+	r.W.Header().Set("Access-Control-Allow-Origin", "*")
 	if a.Link != nil {
 		// The link protocol fixes this document's fields
 		// (docs/LINK-PROTOCOL.md section 3): other servers and hubs

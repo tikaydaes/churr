@@ -133,7 +133,7 @@ if [ "$1" = "sealed-lib" ]; then
   node sealed-vectors.mjs && node sealed-transcript.mjs && exec node sealed-refusals.mjs
 fi
 if [ "$1" = "fair" ]; then
-  exec node fair.mjs
+  node fair.mjs && exec node validate.mjs
 fi
 if [ "$1" = "calls-logic" ]; then
   exec node calls.mjs
@@ -197,6 +197,7 @@ node sealed-transcript.mjs | tee -a "$tmp/out.log"
 node sealed-refusals.mjs | tee -a "$tmp/out.log"
 node calls.mjs | tee -a "$tmp/out.log"
 node fair.mjs | tee -a "$tmp/out.log"
+node validate.mjs | tee -a "$tmp/out.log"
 node call-frames.mjs | tee -a "$tmp/out.log"
 node run.mjs "$url" "$@" | tee -a "$tmp/out.log"
 if grep -q '^FAIL' "$tmp/out.log"; then

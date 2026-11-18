@@ -208,3 +208,32 @@ func TestDatabaseOfAnEarlierFormIsRefused(t *testing.T) {
 	}
 	again.Close()
 }
+
+// A hub serves the Validate result page to anyone, as an instance does
+// (docs/DESIGN-FAIR.md section 12): the page and the files it is made of,
+// no other page, and its published keys to a page of another origin.
+func TestHubServesValidate(t *testing.T) {
+	h := newHub(t)
+	get := func(p string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		h.Handler().ServeHTTP(rec, httptest.NewRequest("GET", p, nil))
+		return rec
+	}
+	page := get("/validate")
+	if page.Code != 200 || !strings.Contains(page.Body.String(), "Validate result") || !strings.Contains(page.Header().Get("Content-Security-Policy"), "connect-src https:") {
+		t.Fatalf("the page: %d %v", page.Code, page.Header())
+	}
+	for _, p := range []string{"/validate/validate.js", "/validate/validate.css", "/shared/fair/validate.js", "/shared/fair/ecvrf.js", "/shared/fair/derive.js", "/shared/tokens.css", "/shared/base.css"} {
+		if r := get(p); r.Code != 200 {
+			t.Fatalf("%s: %d", p, r.Code)
+		}
+	}
+	for _, p := range []string{"/chat/", "/login", "/shared/api.js", "/admin"} {
+		if r := get(p); r.Code != 404 {
+			t.Fatalf("a hub serves %s: %d", p, r.Code)
+		}
+	}
+	if r := get("/.well-known/churr"); r.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Fatalf("the published keys: %v", r.Header())
+	}
+}

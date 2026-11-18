@@ -47,11 +47,12 @@ var mayAlso = map[string][]string{
 	"fair": {"ecvrf"},
 }
 
-// onlyThese lists packages whose imports of ours are spelled out in full.
+// onlyThese lists packages whose imports of ours are spelled out in full. A
+// hub imports web for the Validate result page, which it serves too.
 var onlyThese = map[string][]string{
 	"perm":  {"model", "store"},
 	"web":   {"version"},
-	"hub":   {"link", "secret", "config", "ratelimit", "acme", "version", "model", "store", "chat", "perm", "blob", "forms"},
+	"hub":   {"link", "secret", "config", "ratelimit", "acme", "version", "model", "store", "chat", "perm", "blob", "forms", "web"},
 	"relay": {"config", "ratelimit", "acme", "version"},
 	// The host must run in churr and in churr-hub: storage, posting and
 	// the clock reach it through small interfaces.

@@ -83,6 +83,8 @@ var areas = []area{
 	{"/chat", "chat/index.html"},
 	// A theme's link, {origin}/themes/{id} (internal/themes.PagePath).
 	{"/themes", "themes/index.html"},
+	// Validate result, for anyone (docs/DESIGN-FAIR.md section 12).
+	{"/validate", "validate/index.html"},
 }
 
 // contentTypes are spelled out so that what a file is served as never
@@ -154,8 +156,9 @@ func files() map[string]file {
 type handler struct {
 	opts  Options
 	pages *Pages
-	// csp and chatCSP are the two policies, built once.
-	csp, chatCSP string
+	// csp and chatCSP are the two policies, built once; validateCSP is
+	// the plain one that may also fetch another server's published keys.
+	csp, chatCSP, validateCSP string
 }
 
 // Handler serves the embedded pages with the headers of docs/CLIENTS.md
@@ -163,7 +166,46 @@ type handler struct {
 func Handler(o Options) http.Handler {
 	h := &handler{opts: o, pages: NewPages()}
 	h.csp, h.chatCSP = policies(o.Origin)
+	h.validateCSP = strings.Replace(h.csp, "connect-src ", "connect-src https: ", 1)
 	return h
+}
+
+// ValidateHandler serves the Validate result page and the files it is made
+// of, and nothing else (docs/DESIGN-FAIR.md section 12): a hub, which has no
+// other pages, serves it at /validate as an instance does. It needs no
+// account and keeps nothing.
+func ValidateHandler(o Options) http.Handler {
+	h := Handler(o).(*handler)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
+		switch {
+		case name == "validate":
+			h.securityHeaders(w, false)
+			w.Header().Set("Content-Security-Policy", h.validateCSP)
+			h.serveFile(w, r, "validate/index.html")
+		case validateFiles(name):
+			h.securityHeaders(w, false)
+			h.serveFile(w, r, name)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// validateFiles are the files the Validate result page loads: its own, the
+// verifier and the derivation, the tokens and base styles, their fonts and
+// the icon.
+func validateFiles(name string) bool {
+	switch name {
+	case "shared/tokens.css", "shared/base.css", "icons/favicon.png":
+		return true
+	}
+	for _, p := range []string{"validate/", "shared/fair/", "shared/fonts/"} {
+		if strings.HasPrefix(name, p) && !strings.HasSuffix(name, ".html") {
+			return true
+		}
+	}
+	return false
 }
 
 // policies builds the content security policy of the web chat, which needs
@@ -226,6 +268,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	chat := p == "/chat" || strings.HasPrefix(p, "/chat/")
 	h.securityHeaders(w, chat)
+	if p == "/validate" || strings.HasPrefix(p, "/validate/") {
+		w.Header().Set("Content-Security-Policy", h.validateCSP)
+	}
 
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", "GET, HEAD")

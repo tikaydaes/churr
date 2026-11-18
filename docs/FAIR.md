@@ -363,11 +363,13 @@ re-derive them.
 
 **The clients** (the web chat, `shared/fair/verify.js`; the app,
 `lib/core/fair/verify.dart`) check 1 to 6 against the history they pinned
-for the block's owner, by name, and mark the roll "Verified", or, plainly,
-"Not verified" with why (a check that was made and did not hold), or
-"Cannot be checked here" with why (a draw by a server whose history the
-client was never given); the roll is shown every way, and the block is
-shown in full on request. Their own server's history comes from getServer;
+for the block's owner, by name, and draw the shield (`DESIGN-FAIR.md`
+section 13) from that check alone: "Verified", a shield with a tick, or,
+plainly, "Not verified" with why, a warning mark (a check that was made and
+did not hold), or "Cannot be checked here" with why, a shield with a
+question mark (a draw by a server whose history the client was never
+given). The result is shown every way, and the shield opens Validate result
+with the draw filled in (section 11). Their own server's history comes from getServer;
 every other server's from the conversation: a shared conversation's
 `shared.vrf_keys` (`Conversation`, `docs/openapi.yaml`) gives the history of
 every server whose draws it may hold, from sources that outlive those
@@ -384,3 +386,49 @@ flip, pick, shuffle, draw, tarot and mahjongg are built-in modules, and a
 module may import no other randomness. The operating system's randomness
 serves only what is not a chance outcome: keys, tokens, identifiers,
 nonces and the jitter of retries.
+
+## 11. Validate result, and its document
+
+Every instance and hub serves `/validate` to anyone, with no account: a
+page that checks a draw with the code the chat checks with
+(`shared/fair/validate.js`), in the browser, asking nothing of any server
+once loaded unless the viewer names a server, whose `/.well-known/churr`
+it then fetches (served to any origin) or whose pin it reads from the
+browser. The app has the same view. A shield opens it with the draw filled
+in (`DESIGN-FAIR.md` sections 12 and 13). Its verdicts are separate, each
+pass or fail with its reason:
+
+1. **proof**: `ECVRF_verify(pk, proof, UTF-8(alpha))` holds;
+2. **beta**: `beta` is `ECVRF_proof_to_hash(proof)`;
+3. **outcome**, one line per primitive: each object's primitives, asked in
+   order of `stream(i, ·)` of `beta` (sections 3 and 4), give the claimed
+   results; a primitive derive 1 does not have fails, and those after it on
+   that object are not checked; a dice result is compared by its rows'
+   rolls, dropped dice, values and totals;
+4. **alpha**: it is `"<t>|<nonce>"` in the one spelling of section 6, its
+   second shown as a time;
+5. **key**: when a server is named and its published history is to hand,
+   `pk` is in it and is the key in force at the second `t`; otherwise "key
+   not attributed", which is neither pass nor fail.
+
+**The document.** "Copy the data" and "Download" give one JSON object, and
+a link to the page carries it, UTF-8 and then base64url, after the `#`,
+which a browser never sends to the server:
+
+| field | |
+|---|---|
+| `churr_fair` | 1: this layout |
+| `suite` | `ECVRF-SECP256K1-SHA256-TAI` |
+| `derive` | 1: the rule the outcomes are derived by |
+| `owner` | the server whose key it claims to be, by name; optional |
+| `pk`, `beta`, `proof` | as in the `fair` block (section 8): base64url; a reader also takes hex |
+| `alpha` | the input, as the text it is |
+| `objects` | a list, each `{i, kind, primitives, results}`: the object index, the catalogue kind it was (optional, for the reader), the primitives asked of its stream in order (section 4), and the result claimed for each |
+| `spec`, `library` | where to read this specification and the ecvrf library, so anyone checks it without Churr |
+
+A message's value gives the primitives it recorded (`draw.primitives`), or
+its kind's composition (section 5a), with the outcome its data shows as
+their results. A card is claimed by what it is: where a deck holds a card
+more than once, the positions the draw gives are written when they hold the
+cards shown, and otherwise the first free position of each, which then does
+not re-derive.

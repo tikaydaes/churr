@@ -269,7 +269,7 @@ What that needs from Churr [proposed]:
   `docs/FAIR.md`.
 - A bot never holds the key, and the server never picks a bot's alpha.
 
-## 12. The "Validate result" view (owner, 2026-11-18)
+## 12. The "Validate result" view (owner, 2026-11-18) [built: `FAIR.md` section 11]
 
 Owner: "I'd like a 'Validate result' view that can take a game's alpha,
 beta, proof, pk, requested primitives and certify accuracy (separately)
@@ -298,7 +298,7 @@ beta, proof, pk, requested primitives and certify accuracy (separately)
 - A link to the view carries the data in the URL fragment, so the server
   serving the page never sees what is being checked.
 
-## 13. The shield (owner, 2026-11-18)
+## 13. The shield (owner, 2026-11-18) [built]
 
 Owner: "make it a little green shield that can be included on any card
 (a 'type'?)"
@@ -306,7 +306,10 @@ Owner: "make it a little green shield that can be included on any card
 [proposed shape]
 - A catalogue block, `fair_mark`, that any card may include: a built-in
   module's, a manifest's or a bot's. Its data only names which draw and
-  which outcomes on the card it stands for. It carries no verdict.
+  which outcomes on the card it stands for. It carries no verdict. Built:
+  a card's `fair_mark` (`Card.fair_mark`, `{objects}`), the outcomes by
+  their object index; the server refuses any other field in it. Cards of
+  blocks come later; the built-in kinds draw it themselves.
 - The client draws it from its OWN check, never from what the card
   says: green shield when the proof, the output and every named outcome
   check out; grey shield "cannot be checked here" when the key is not

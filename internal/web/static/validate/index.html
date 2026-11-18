@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Validate result · Churr</title>
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/base.css">
+<link rel="stylesheet" href="/validate/validate.css">
+</head>
+<body class="validate">
+<main id="validate">
+<h1>Validate result</h1>
+<p class="lede">Checks a draw by a Churr server: the proof, its output, every outcome claimed, the input and whose key made it, each on its own. Everything runs in this page; once it has loaded, nothing is sent anywhere unless you name a server to fetch its published keys. A link to this page carries the draw after the <code>#</code>, which browsers never send to the server.</p>
+
+<section class="fields" aria-label="The draw">
+<label class="field"><span>Alpha (the input)</span><input id="alpha" autocomplete="off" spellcheck="false" placeholder="1763456789|0193a8ff-7c2e-7b1a-9f3e-2d4c5b6a7e80"></label>
+<label class="field"><span>Public key (pk), base64url or hex</span><input id="pk" autocomplete="off" spellcheck="false"></label>
+<label class="field"><span>Proof, base64url or hex</span><textarea id="proof" rows="2" spellcheck="false"></textarea></label>
+<label class="field"><span>Beta (the output), base64url or hex</span><input id="beta" autocomplete="off" spellcheck="false"></label>
+<label class="field"><span>Primitives asked, with the claimed results (JSON: a list of objects, each {"i", "primitives", "results"})</span><textarea id="objects" rows="6" spellcheck="false" placeholder='[{"i": 0, "primitives": [{"op": "yesno", "num": 1, "den": 2}], "results": [{"yes": true}]}]'></textarea></label>
+<label class="field"><span>Whose key: a server's name (optional)</span><input id="server" autocomplete="off" spellcheck="false" placeholder="chat.example.org"></label>
+</section>
+
+<details class="whole">
+<summary>All of it as one JSON document</summary>
+<label class="field"><span>The document (paste one here, or copy this one)</span><textarea id="doc" rows="10" spellcheck="false"></textarea></label>
+<p><button type="button" class="btn small" id="read-doc">Read the document into the fields</button></p>
+</details>
+
+<p class="actions">
+<button type="button" class="btn primary" id="check">Check</button>
+<button type="button" class="btn" id="copy">Copy the data</button>
+<button type="button" class="btn" id="download">Download</button>
+<button type="button" class="btn quiet" id="link">Copy a link</button>
+</p>
+<p id="said" class="dim" role="status" aria-live="polite"></p>
+
+<section aria-label="Verdicts">
+<h2>Verdicts</h2>
+<ol id="verdicts" class="verdicts"><li class="dim">Nothing checked yet.</li></ol>
+</section>
+
+<p class="dim small">How the draw is made and checked: <a id="spec" rel="noopener noreferrer">the specification</a>. The proof checks with any ECVRF-SECP256K1-SHA256-TAI verifier, such as <a id="library" rel="noopener noreferrer">the ecvrf library</a> in thirteen languages; no Churr code is needed.</p>
+</main>
+<noscript><p class="problem">This page needs JavaScript.</p></noscript>
+<script type="module" src="/validate/validate.js"></script>
+</body>
+</html>

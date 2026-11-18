@@ -127,7 +127,7 @@ bool? rederive(String kind, Json d, List<int> beta, int i) {
 }
 
 /// The outcome a value's data claims, as the results of its primitives (the
-/// Validate result view's export, docs/FAIR.md section 10), as the web
+/// Validate result view's export, docs/FAIR.md section 11), as the web
 /// chat's kindClaims: a card is claimed by what it is, so the positions the
 /// draw gives are taken when they hold the cards shown, and otherwise the
 /// first free position of each card.

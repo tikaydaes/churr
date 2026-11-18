@@ -1,0 +1,19 @@
+/* Validate result (docs/DESIGN-FAIR.md section 12). */
+body.validate { background: var(--bg); }
+#validate { max-width: 760px; margin: 0 auto; padding: var(--s5) var(--s4) var(--s7); display: grid; gap: var(--s4); }
+#validate .lede { color: var(--dim); }
+#validate .fields { display: grid; gap: var(--s3); }
+#validate input, #validate textarea { width: 100%; box-sizing: border-box; font: 13px/1.4 var(--mono); color: var(--ink); background: var(--panel); border: 1px solid var(--edge); padding: var(--s2); overflow-wrap: anywhere; }
+#validate .actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+#validate .verdicts { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s2); }
+/* A verdict's word and mark say pass or fail; the tone only repeats it. */
+#validate .verdict { display: grid; grid-template-columns: max-content 1fr; gap: 2px var(--s2); padding: var(--s2); border: 1px solid var(--edge); }
+#validate .verdict .mark { font-weight: 700; }
+#validate .verdict.pass { border-color: var(--cyan); }
+#validate .verdict.pass .mark { color: var(--cyan); }
+#validate .verdict.fail { border-color: var(--yel); }
+#validate .verdict.fail .mark { color: var(--yel-ink); }
+#validate .verdict.none { border-style: dashed; }
+#validate .verdict .why { grid-column: 2; overflow-wrap: anywhere; }
+#validate .dim { color: var(--dim); }
+#validate .small { font-size: 13px; }

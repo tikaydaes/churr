@@ -34,7 +34,7 @@ export function kindAsks(kind, d) {
 
 /**
  * The outcome a value's data claims, as the results of its primitives (for
- * the Validate result view and its export, docs/FAIR.md section 10). A card
+ * the Validate result view and its export, docs/FAIR.md section 11). A card
  * is claimed by what it is, so where a deck holds a card more than once any
  * of its positions is the same claim: the positions the draw gives are taken
  * when they hold the cards shown, and otherwise the first free position of
