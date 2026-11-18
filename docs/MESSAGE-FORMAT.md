@@ -817,6 +817,7 @@ cannot.
 | `footer`, `at`  | A small last line.                                         |
 | `preview_url`   | Set by the server on a link preview: the address it previews. A card without it was posted by a bot or webhook. |
 | `theme`         | Set by the server on a theme card, the preview of a link to one of its own themes (which also has `preview_url`): `{"id", "name", "kind", "colours", "author_id"}`. Clients draw it with its swatches and buttons to try and add the theme (`FEATURES.md` section 23.6). |
+| `fair_mark`     | The card's shield (`DESIGN-FAIR.md` section 13): `{"objects": [i, ...]}`, the object indices of the message's draw (`fair`) the card stands on, 0 to 99, at most 20; none is every value that took chance. Nothing else: the server refuses any other field in it, so a card carries no verdict. Each client draws the shield from its own check of the proof and of each outcome named, and no other part of a card can draw it. |
 
 `preview_url` and `theme` are the server's. A card a client, bot or
 webhook posts with either is refused with `invalid_value` on `cards`.
