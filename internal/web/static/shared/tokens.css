@@ -35,6 +35,8 @@
   --ink: #efeaff; --dim: #a09dc9; --faint: #8b88b8; --edge: #6368bd;
   --lav: #b9a0ff; --cyan: #5df0e4; --pink: #ff5ccf; --yel: #ffd95e;
   --on-lav: #0d1026; --on-cyan: #0d1026; --on-pink: #0d1026; --on-yel: #15173a; --yel-ink: #ffd95e;
+  /* green is the verified shield's alone (shared/fair/shield.js) */
+  --green: #4ade80;
   --on: #0d1026; --paper: #f5f2ff;
   /* the scrim behind a dialog, and the dark edge a yellow focus ring
      needs on a light page (none on dark) */
@@ -68,6 +70,7 @@
   --ink: #15173a; --dim: #55527f; --faint: #6b6894; --edge: #7e73c2;
   --lav: #5b3fd6; --cyan: #006e66; --pink: #b3127f; --yel: #ffd95e;
   --on-lav: #ffffff; --on-cyan: #ffffff; --on-pink: #ffffff; --on-yel: #15173a; --yel-ink: #7a5600;
+  --green: #12733a;
   --on: #ffffff; --paper: #15173a;
   --scrim: rgba(21, 23, 58, .6); --halo: #15173a; --chev: url(/shared/chevron-light.svg);
 } }
@@ -77,6 +80,7 @@
   --ink: #15173a; --dim: #55527f; --faint: #6b6894; --edge: #7e73c2;
   --lav: #5b3fd6; --cyan: #006e66; --pink: #b3127f; --yel: #ffd95e;
   --on-lav: #ffffff; --on-cyan: #ffffff; --on-pink: #ffffff; --on-yel: #15173a; --yel-ink: #7a5600;
+  --green: #12733a;
   --on: #ffffff; --paper: #15173a;
   --scrim: rgba(21, 23, 58, .6); --halo: #15173a; --chev: url(/shared/chevron-light.svg);
 }

@@ -34,7 +34,35 @@
     }
     return t;
   }
+  // green is the verified shield's colour (tokens.css --green), fitted to a
+  // theme's surfaces: the built-in green of its kind, taken lighter (dark)
+  // or darker (light) until it reaches 4.5:1 on ground, panel and raised,
+  // as the app's ChurrColors.green.
+  function lum(hex) {
+    var out = 0, w = [0.2126, 0.7152, 0.0722];
+    for (var i = 0; i < 3; i++) {
+      var v = parseInt(hex.substr(1 + 2 * i, 2), 16) / 255;
+      out += w[i] * (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    }
+    return out;
+  }
+  function green(kind, paint) {
+    var rgb = kind === 'light' ? [0x12, 0x73, 0x3a] : [0x4a, 0xde, 0x80];
+    var to = kind === 'light' ? 0 : 255;
+    var hex = function () { return '#' + rgb.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); };
+    for (var step = 0; step < 20; step++) {
+      var g = lum(hex()), least = Infinity;
+      ['bg', 'panel', 'raise'].forEach(function (n) {
+        var b = lum(paint[n]);
+        least = Math.min(least, (Math.max(g, b) + 0.05) / (Math.min(g, b) + 0.05));
+      });
+      if (least >= 4.6) break;
+      rgb = rgb.map(function (v) { return v + (to - v) * 0.1; });
+    }
+    return hex();
+  }
   function clear() {
+    root.style.removeProperty('--green');
     for (var i = 0; i < NAMES.length; i++) root.style.removeProperty('--' + NAMES[i]);
     root.removeAttribute('data-custom-theme');
   }
@@ -56,6 +84,7 @@
         if (n === 'sep') value = more ? paint.edge : 'transparent';
         root.style.setProperty('--' + n, value);
       }
+      root.style.setProperty('--green', green(kind, paint));
     } else {
       clear();
       if (v.theme === 'dark' || v.theme === 'light') root.setAttribute('data-theme', v.theme); else root.removeAttribute('data-theme');

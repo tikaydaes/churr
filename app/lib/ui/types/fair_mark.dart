@@ -5,7 +5,8 @@
 // draw it stands on and carries no verdict; a built-in chance kind shows one
 // by default for every value of the message that took chance.
 //
-//   verified   a shield with a tick, in the theme's success tone
+//   verified   a shield with a tick, in green (ChurrColors.green, a colour
+//              only the verified shield uses)
 //   unknown    a shield with a question mark, neutral: "Cannot be checked
 //              here", the drawing server's key history was never given
 //   failed     a warning triangle, in the warning tone: "Not verified"
@@ -124,7 +125,7 @@ class FairShield extends StatelessWidget {
     final c = ChurrColors.of(context);
     final j = judgeShield(fairCheckOf(server, message), objects);
     final (glyph, colour) = switch (j.state) {
-      FairState.verified => (ChurrIcons.shieldCheck, c.cyan),
+      FairState.verified => (ChurrIcons.shieldCheck, c.green),
       FairState.unknown => (ChurrIcons.shieldUnknown, c.dim),
       _ => (ChurrIcons.warn, c.yellowInk),
     };

@@ -35,6 +35,7 @@ List<Pair> textPairs(ChurrColors c) {
       ('cyan text (links) on ${g.key}', c.cyan, g.value),
       ('pink text on ${g.key}', c.pink, g.value),
       ('yellow-ink text on ${g.key}', c.yellowInk, g.value),
+      ('green (the verified shield) on ${g.key}', c.green, g.value),
     ],
     // Faint is used on ground and panel only: labels, times, quiet rows.
     // A selected (raised) row draws its text in ink.

@@ -74,6 +74,7 @@ Use the pair together.
 | `--yel` | yellow, as a fill only | `#ffd95e` | `#ffd95e` |
 | `--on-yel` | text on yellow | `#15173a` | `#15173a` |
 | `--yel-ink` | yellow where it must be text or a thin line | `#ffd95e` | `#7a5600` |
+| `--green` | the verified shield of a draw, and nothing else | `#4ade80` | `#12733a` |
 | `--on` | text on any neon, in general | `#0d1026` | `#ffffff` |
 | `--paper` | the opposite of the ground | `#f5f2ff` | `#15173a` |
 
@@ -214,6 +215,7 @@ fused multiply-add, no reordering, no wider intermediate.
 | `--faint` | `mix(bg, dim, k)` for the smallest k that reaches 4.5 against `bg` and `panel` |
 | `--edge` | `mix(bg, dim, k)` for the smallest k that reaches 3 against `bg`, `panel` and `raise` |
 | `--yel-ink` | `mix(yel, ink, k)` for the smallest k that reaches 4.5 against `bg`, `panel` and `raise` (so `yel` itself when it already does) |
+| `--green` | the built-in green of the theme's kind, taken a tenth of the way to white (dark) or black (light) at a time until it reaches 4.6 against `bg`, `panel` and `raise`, at most 20 times; drawn where the theme is applied, not stored with it |
 
 Increase contrast then applies to a theme as to the built-in ones.
 

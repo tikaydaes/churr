@@ -85,6 +85,7 @@ const PAIRS = [
   ...on('--cyan', surfaces, T, 'links, thread line, channel chips'),
   ...on('--pink', surfaces, T, 'problems, failed, danger in a menu, code keywords'),
   ...on('--yel-ink', surfaces, T, 'yellow as text: marker count, code strings, link warning'),
+  ...on('--green', surfaces, T, 'the verified shield: its word, tick and edge'),
   ...on('--lav', ['--raise'], T, 'code function names'),
   ['text on cyan (primary button, toast, tag)', '--on-cyan', '--cyan', T],
   ['text on lavender (button, tag, mention of you, avatar)', '--on-lav', '--lav', T],

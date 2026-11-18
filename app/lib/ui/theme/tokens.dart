@@ -248,6 +248,33 @@ class ChurrColors extends ThemeExtension<ChurrColors> {
 
   /// Yellow as text, line or icon.
   Color get yellowInk => t.yelInk;
+
+  /// Green, for the verified shield alone (`fair_mark.dart`): a real green,
+  /// not the cyan of "live and go", as the web chat's `--green`. The
+  /// guide's green for the theme's brightness, taken lighter (on dark) or
+  /// darker (on light) where a theme's surfaces would leave it under 4.5:1.
+  Color get green {
+    var g = dark ? _greenDark : _greenLight;
+    final toward = dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+    for (var i = 0; i < 20 && _leastContrast(g) < 4.6; i++) {
+      g = Color.lerp(g, toward, 0.1)!;
+    }
+    return g;
+  }
+
+  static const _greenDark = Color(0xFF4ADE80);
+  static const _greenLight = Color(0xFF12733A);
+
+  double _leastContrast(Color fg) {
+    final l = fg.computeLuminance();
+    var least = double.infinity;
+    for (final b in [t.bg, t.panel, t.raise]) {
+      final m = b.computeLuminance();
+      final r = (l > m ? l + 0.05 : m + 0.05) / (l > m ? m + 0.05 : l + 0.05);
+      if (r < least) least = r;
+    }
+    return least;
+  }
   Color get onLavender => t.onLav;
   Color get onCyan => t.onCyan;
   Color get onPink => t.onPink;

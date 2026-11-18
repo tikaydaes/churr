@@ -5,8 +5,9 @@
 // (a roll, a coin, a pick, a shuffle, cards) shows one by default for every
 // value of the message that took chance.
 //
-//   verified   a shield with a tick, in the theme's success tone: the proof,
-//              its output and every outcome named check out
+//   verified   a shield with a tick, in green (--green, a colour only the
+//              verified shield uses): the proof, its output and every
+//              outcome named check out
 //   unknown    a shield with a question mark, in the neutral tone: "Cannot
 //              be checked here", the drawing server's key history was never
 //              given to this browser

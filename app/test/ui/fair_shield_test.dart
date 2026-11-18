@@ -13,6 +13,7 @@ import 'package:churr/core/models/message.dart';
 import 'package:churr/state/server_state.dart';
 import 'package:churr/ui/fair/validate_screen.dart';
 import 'package:churr/ui/theme/theme.dart';
+import 'package:churr/ui/theme/tokens.dart';
 import 'package:churr/ui/types/fair_mark.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +66,11 @@ void main() {
     expect(find.byKey(const Key('fair-shield-verified')), findsOneWidget);
     expect(find.text('Verified'), findsOneWidget);
     expect(label(tester), startsWith('Verified. '));
+    // A real green, the verified shield's alone, not the cyan of links.
+    final c = ChurrColors.resolve(dark: false);
+    final word = tester.widget<Text>(find.text('Verified'));
+    expect(word.style?.color, c.green);
+    expect(c.green, isNot(c.cyan));
 
     await pump(
       tester,

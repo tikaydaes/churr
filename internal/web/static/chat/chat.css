@@ -655,6 +655,6 @@ input[type="color"] { width: 44px; height: 36px; padding: 2px; background: var(-
 /* The shield of a draw's proof (shared/fair/shield.js): its shape and word
    say its state; the tone only repeats it. */
 .fair-shield { display: inline-flex; align-items: center; gap: 0.3em; margin-top: 0.25rem; padding: 0 0.45em; min-height: 1.6rem; border: 1px solid var(--edge); background: none; color: var(--dim); font: inherit; font-size: 0.8rem; cursor: pointer; }
-.fair-shield.verified { color: var(--cyan); border-color: var(--cyan); }
+.fair-shield.verified { color: var(--green); border-color: var(--green); }
 .fair-shield.unknown { color: var(--dim); border-style: dashed; }
 .fair-shield.failed { color: var(--yel-ink); border-color: var(--yel); }
