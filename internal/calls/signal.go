@@ -623,6 +623,12 @@ func (s *Server) sigOffer(ctx context.Context, lc *liveCall, p *participant, q r
 	}
 
 	p.pcMu.Lock()
+	if p.ended {
+		// The participant left while the offer was being looked at.
+		p.pcMu.Unlock()
+		q.fail(errNotInCall, "You are not in this call.")
+		return
+	}
 	if p.sendPC == nil {
 		pc, err := s.media.newSend()
 		if err != nil {

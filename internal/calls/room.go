@@ -127,10 +127,15 @@ type participant struct {
 
 	// The two media connections and what is forwarded on recv. Guarded
 	// by pcMu. Lock order: pcMu before room.mu, never the reverse.
-	pcMu      sync.Mutex
-	sendPC    *webrtc.PeerConnection
-	recvPC    *webrtc.PeerConnection
-	downs     map[string]*downTrack
+	pcMu   sync.Mutex
+	sendPC *webrtc.PeerConnection
+	recvPC *webrtc.PeerConnection
+	downs  map[string]*downTrack
+	// ended is set when the participant's media is closed. A worker or a
+	// request that checked the participant was in before then and gets
+	// pcMu after must make nothing: a connection made then would never be
+	// closed, nor would the goroutines it and its tracks hold.
+	ended     bool
 	offerID   int
 	offeredAt time.Time
 	awaiting  bool
@@ -221,6 +226,7 @@ func (p *participant) shut() {
 	p.once.Do(func() {
 		close(p.stop)
 		p.pcMu.Lock()
+		p.ended = true
 		send, recv, downs := p.sendPC, p.recvPC, p.downs
 		p.sendPC, p.recvPC, p.downs = nil, nil, map[string]*downTrack{}
 		p.sendRef.Store(nil)
@@ -702,6 +708,11 @@ func (p *participant) sync() {
 
 	var touched []*pubTrack
 	p.pcMu.Lock()
+	if p.ended {
+		// The participant left after the look at the room above.
+		p.pcMu.Unlock()
+		return
+	}
 	for id, d := range p.downs {
 		if _, keep := want[id]; keep && !d.pub.closed.Load() {
 			continue
