@@ -1035,6 +1035,13 @@ func (s *Service) detachStream(ctx context.Context, st store.Stream, state strin
 			if cur.ConversationID == "" {
 				return nil
 			}
+			if s.holder {
+				// A hub's holder keeps its copy as it stands, members and
+				// all: a channel handed to another hub is fetched from it
+				// whole by the new home, and a closed one is kept until the
+				// hub sweeps it. Nobody posts in it.
+				return nil
+			}
 			// Whatever is posted in the local copy from now on is ordered
 			// after everything the conversation held while it was shared.
 			if err := tx.Streams().SetOrderFloor(ctx, cur.ConversationID, cur.MaxAt+1); err != nil {

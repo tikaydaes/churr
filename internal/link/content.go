@@ -39,6 +39,11 @@ type historyPart struct {
 	MemberIDs []model.AccountID `json:"member_ids,omitempty"`
 	Messages  []historyMessage  `json:"messages"`
 	Blobs     []wireBlob        `json:"blobs,omitempty"`
+	// Short says the home hub that sent the snapshot does not yet hold all
+	// of what was said before it held the channel. The receiver goes on
+	// waiting for the rest, which the hub tells it to ask for again
+	// (history_more) once it has it.
+	Short bool `json:"short,omitempty"`
 }
 
 type historyMessage struct {
@@ -157,11 +162,21 @@ func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to stor
 	if err != nil {
 		return
 	}
+	// A hub's holder that does not yet hold all that was said before it held
+	// the channel says so to an instance it gives the snapshot to, and notes
+	// that instance, to tell it to ask again once it has the rest.
+	short := false
+	if first && s.holder && hubOwned(st) {
+		short = s.historyPending(ctx, s.store, st.ID)
+		if !s.isHomeHub(st, to) {
+			s.noteShort(ctx, st.ID, to.Name, short)
+		}
+	}
 	part := historyPart{StreamID: st.ID, Part: 1, Messages: []historyMessage{}}
 	authors := map[model.AccountID]bool{}
 	size := 0
 	send := func(last bool) {
-		part.Last = last
+		part.Last, part.Short = last, short
 		raw, _ := json.Marshal(part)
 		var fields map[string]any
 		json.Unmarshal(raw, &fields)
@@ -321,7 +336,14 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 			s.count(func(stats *Stats) { stats.Dropped["history_unasked"]++ })
 			return
 		}
-		if !s.holder && m.from.Name != st.HomeHub {
+		// The answer of the hub that was the home when this server asked is
+		// taken too: the home may have changed hands while it was on its way,
+		// and the old home vouched for it as the home.
+		rtA := s.rt(st.ID)
+		rtA.mu.Lock()
+		askedOf := rtA.firstAsked[m.Re]
+		rtA.mu.Unlock()
+		if !s.holder && m.from.Name != st.HomeHub && askedOf != m.from.Name {
 			s.count(func(stats *Stats) { stats.Dropped["history_not_from_home"]++ })
 			return
 		}
@@ -462,16 +484,23 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 	}
 	rt := s.rt(st.ID)
 	rt.mu.Lock()
-	asked := m.Re != "" && rt.firstAsked[m.Re]
+	asked := m.Re != "" && rt.firstAsked[m.Re] != ""
 	rt.mu.Unlock()
-	// A message that came as history may be one that held events wait for.
-	select {
-	case rt.jobs <- func() { s.retryHeld(s.ctx, rt) }:
-	default:
-	}
+	// A message or an account that came as history may be one that held
+	// events wait for.
+	s.onJobs(rt, func() { s.retryHeld(s.ctx, rt, true) })
 	if s.holder && h.Last && asked {
-		// Whoever answered has given the hub all it holds of the channel.
-		s.settleOwed(ctx, st.ID, m.from.Name, true)
+		// Whoever answered has given the hub all it holds of the channel;
+		// the hub it was handed over from, if that held it whole, all of it.
+		s.settleOwed(ctx, st.ID, m.from.Name, !h.Short)
+	}
+	if !s.holder && hubOwned(st) && h.Last && asked && !h.Short {
+		// The home hub has given this server the channel's history whole:
+		// what waited for it is settled now.
+		if _, found, err := s.store.Settings().Get(ctx, historyPendingKey(st.ID)); err == nil && found {
+			s.store.Settings().Delete(ctx, historyPendingKey(st.ID))
+			s.onJobs(rt, func() { s.historyHere(s.ctx, rt) })
+		}
 	}
 	if h.Last && (m.Re == "" || asked) {
 		rt.mu.Lock()

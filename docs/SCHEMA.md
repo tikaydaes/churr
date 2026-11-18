@@ -1256,7 +1256,7 @@ accounts of everyone who wrote in it or is in it, as any instance's
 copy holds them. A closed channel's rows are removed when the hub
 sweeps its stream, 30 days after it closed. Nothing else in it ages:
 no retention runs there, and `conversations.retention_seconds` is
-null. Three settings are written by the holder and nowhere else.
+null. Four settings are written by the holder and nowhere else.
 `link.history_owed.<stream_id>` is the list of server and hub names
 the holder still waits on for what was said in the channel before the
 hub became its home (`LINK-PROTOCOL.md` section 13, "History on
@@ -1267,7 +1267,17 @@ a cluster (section 23b): `link.held_from.<stream_id>`, on the new
 home, the hub the channel was handed over from, which is asked for its
 contents first; and `link.handed_over.<stream_id>`, on the old home,
 when it learned it had handed the channel over, in milliseconds: its
-copy is removed 7 days later.
+copy is removed 7 days later. `link.history_short.<stream_id>` is the
+list of instances the holder gave a short snapshot of the channel to,
+while it still waited on someone for its earlier history: once that
+history is complete each is told to ask again (`history_more`), and
+leaves the list when it is given a whole snapshot.
+
+On an instance, `link.history_pending.<stream_id>` is set when it joins
+a hub-owned channel and removed when the home hub has given it a
+snapshot that is not short; while it is set, what the instance is
+delivered and cannot apply for want of that history waits for it
+(`LINK-PROTOCOL.md` section 13, "Events that refer to others").
 
 ## 12. Sealed chats
 

@@ -313,14 +313,21 @@ func (s *Service) HistoryOwed(ctx context.Context, id model.StreamID) []string {
 // history is owed by: it has answered, all it holds, or it never can. The
 // hub the channel was handed over from holds the channel whole, so its
 // answer settles the whole list.
-func (s *Service) settleOwed(ctx context.Context, id model.StreamID, name string, answered bool) {
+func (s *Service) settleOwed(ctx context.Context, id model.StreamID, name string, whole bool) {
+	s.settleOwedAs(ctx, id, name, true, whole)
+}
+
+// settleOwedAs is settleOwed for a server that answered (whole: the hub
+// the channel was handed over from, holding all of it), or, with answered
+// false, that cannot.
+func (s *Service) settleOwedAs(ctx context.Context, id model.StreamID, name string, answered, whole bool) {
 	owedMu.Lock()
 	defer owedMu.Unlock()
 	owed := s.HistoryOwed(ctx, id)
 	if !slices.Contains(owed, name) {
 		return
 	}
-	if answered && name == s.heldFrom(ctx, id) {
+	if answered && whole && name == s.heldFrom(ctx, id) {
 		owed = nil
 	} else {
 		owed = slices.DeleteFunc(owed, func(n string) bool { return n == name })
@@ -332,6 +339,13 @@ func (s *Service) settleOwed(ctx context.Context, id model.StreamID, name string
 	if len(owed) == 0 {
 		s.store.Settings().Delete(ctx, owedKey(id))
 		s.audit(ctx, s.store, "", "link.history_complete", "stream", string(id), nil)
+		// What waited for the history is applied, and then every instance
+		// that was given a short snapshot is told to ask again.
+		rt := s.rt(id)
+		s.onJobs(rt, func() {
+			s.historyHere(s.ctx, rt)
+			s.tellShort(s.ctx, id, "")
+		})
 		return
 	}
 	s.store.Settings().Set(ctx, owedKey(id), owed, "")
@@ -363,6 +377,9 @@ func (s *Service) Nudge(server string) {
 	if !s.holder {
 		return
 	}
+	// An instance given a short snapshot of a channel whose history is now
+	// complete is told to ask again.
+	s.tellAllShort(s.ctx, server)
 	s.mu.Lock()
 	wake := make(map[model.StreamID]chan struct{}, len(s.owing))
 	for id, ch := range s.owing {
@@ -426,7 +443,7 @@ func (s *Service) askOwed(ctx context.Context, id model.StreamID) {
 			if !ok {
 				// Gone from the hub and the cluster: nobody can reach it
 				// again to ask.
-				s.settleOwed(ctx, id, name, false)
+				s.settleOwedAs(ctx, id, name, false, false)
 				continue
 			}
 			ch := make(chan directMessage, 4)
@@ -435,7 +452,7 @@ func (s *Service) askOwed(ctx context.Context, id model.StreamID) {
 				break // the hub is not connected: the next round
 			}
 			rt.mu.Lock()
-			rt.firstAsked[msg] = true
+			rt.firstAsked[msg] = name
 			rt.mu.Unlock()
 			// The parts are taken as they arrive (onHistory), which settles
 			// the server's debt with the last of them; this only waits to see
@@ -445,7 +462,7 @@ func (s *Service) askOwed(ctx context.Context, id model.StreamID) {
 			case <-time.After(3 * time.Second):
 			case m := <-ch:
 				if m.Kind == kError && m.Code == wire.EUnknownStream {
-					s.settleOwed(ctx, id, name, false) // it holds nothing of the channel
+					s.settleOwedAs(ctx, id, name, false, false) // it holds nothing of the channel
 				} else {
 					// History, or not_in_stream from one that has yet to
 					// learn this hub is the home: asked again next round.
@@ -473,4 +490,142 @@ func (s *Service) askOwed(ctx context.Context, id model.StreamID) {
 			}
 		}
 	}
+}
+
+// ------------------------------------------------- snapshots given short
+
+// An instance that joins while the holder still waits for some of what was
+// said before the hub held the channel is given the snapshot the holder has,
+// marked short. The holder notes the instance (shortKey), and once the
+// channel's earlier history is complete tells it, with history_more, to ask
+// for its snapshot again: at once, whenever the instance next connects to
+// the hub, and after the hub restarts, until the instance has asked and been
+// given one that is whole. The instance, for its part, keeps waiting for the
+// history until it has a snapshot that is not short (historyPendingKey), and
+// holds meanwhile what it cannot apply without it (hold.go).
+
+func shortKey(id model.StreamID) string { return "link.history_short." + string(id) }
+
+// ShortGiven is the instances the holder gave a short snapshot of a channel
+// to and has not yet given a whole one.
+func (s *Service) ShortGiven(ctx context.Context, id model.StreamID) []string {
+	raw, found, err := s.store.Settings().Get(ctx, shortKey(id))
+	var out []string
+	if err != nil || !found || json.Unmarshal(raw, &out) != nil {
+		return nil
+	}
+	return out
+}
+
+// noteShort notes whether the snapshot the holder is giving an instance is
+// short.
+func (s *Service) noteShort(ctx context.Context, id model.StreamID, name string, short bool) {
+	owedMu.Lock()
+	defer owedMu.Unlock()
+	list := s.ShortGiven(ctx, id)
+	had := slices.Contains(list, name)
+	switch {
+	case short && !had:
+		list = append(list, name)
+	case !short && had:
+		list = slices.DeleteFunc(list, func(n string) bool { return n == name })
+	default:
+		return
+	}
+	if len(list) == 0 {
+		s.store.Settings().Delete(ctx, shortKey(id))
+		return
+	}
+	s.store.Settings().Set(ctx, shortKey(id), list, "")
+}
+
+// tellShort tells each instance given a short snapshot of a channel whose
+// earlier history is now complete to ask for it again; with a name, that
+// instance only, which has just connected.
+func (s *Service) tellShort(ctx context.Context, id model.StreamID, only string) {
+	if s.historyPending(ctx, s.store, id) {
+		return
+	}
+	st, err := s.store.Streams().Get(ctx, id)
+	if err != nil || st.State != store.StreamActive {
+		return
+	}
+	for _, name := range s.ShortGiven(ctx, id) {
+		if only != "" && name != only {
+			continue
+		}
+		sv, err := s.store.Peers().ServerByName(ctx, name)
+		if err != nil {
+			continue
+		}
+		s.sendDirect(ctx, st.PeerID, sv, kHistoryMore, "", map[string]any{"stream_id": id})
+	}
+}
+
+// tellAllShort is tellShort for every channel the holder keeps.
+func (s *Service) tellAllShort(ctx context.Context, only string) {
+	ids, err := s.Held(ctx)
+	if err != nil {
+		return
+	}
+	for _, id := range ids {
+		if len(s.ShortGiven(ctx, id)) > 0 {
+			s.tellShort(ctx, id, only)
+		}
+	}
+}
+
+// onHistoryMore is an instance told by its channel's home hub that the hub
+// now holds the channel's earlier history whole: it asks for its snapshot
+// again, if it still waits for it.
+func (s *Service) onHistoryMore(ctx context.Context, m directMessage) {
+	var b struct {
+		StreamID model.StreamID `json:"stream_id"`
+	}
+	if s.holder || json.Unmarshal(m.raw, &b) != nil {
+		return
+	}
+	st, err := s.store.Streams().Get(ctx, b.StreamID)
+	if err != nil || st.State != store.StreamActive || st.PeerID != m.peer || !s.isHomeHub(st, m.from) {
+		return
+	}
+	if !s.historyPending(ctx, s.store, st.ID) {
+		return
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.askHistoryAgain(s.ctx, st.ID)
+	}()
+}
+
+// askHistoryAgain asks a hub-owned channel's home for the snapshot a joining
+// server is owed, once, as askFirstHistory does.
+func (s *Service) askHistoryAgain(ctx context.Context, id model.StreamID) {
+	st, err := s.store.Streams().Get(ctx, id)
+	if err != nil || st.State != store.StreamActive {
+		return
+	}
+	hub, ok := s.homeHub(ctx, st)
+	if !ok {
+		return
+	}
+	rt := s.rt(id)
+	ch := make(chan directMessage, 4)
+	msg, err := s.sendDirectAwait(ctx, st.PeerID, hub, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch)
+	if err != nil {
+		return
+	}
+	rt.mu.Lock()
+	rt.firstAsked[msg] = hub.Name
+	rt.mu.Unlock()
+	select {
+	case <-ctx.Done():
+	case <-time.After(30 * time.Second):
+	case <-ch:
+		time.Sleep(200 * time.Millisecond)
+	}
+	s.mu.Lock()
+	delete(s.replies, msg)
+	s.mu.Unlock()
 }

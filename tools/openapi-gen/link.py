@@ -298,7 +298,7 @@ BAGS['direct'] = OD([
     # history, history_request
     ('part', 'int'), ('last', 'bool'), ('conversation', '#HistoryConversation'), ('accounts', '[#Profile]'),
     ('member_ids', '[uuid]'), ('messages', '[#HistoryMessage]'), ('blobs', '[#Blob]'), ('after_at', 'ms'),
-    ('through_at', 'ms'), ('first', 'bool'),
+    ('through_at', 'ms'), ('first', 'bool'), ('short', 'bool'),
     # open_request, opened
     ('envelope', '#Envelope'), ('plain', 'bytes'),
     # blob_request, blob_chunk
@@ -327,8 +327,9 @@ D('blob_chunk', 'stream_id blob_id index last data')
 D('blob_request', 'stream_id blob_id from_index')
 D('key', 'stream_id epoch key version')
 D('key_request', 'stream_id epoch')
-D('history', 'stream_id part last conversation accounts member_ids messages blobs')
+D('history', 'stream_id part last conversation accounts member_ids messages blobs short')
 D('history_request', 'stream_id after_at through_at first')
+D('history_more', 'stream_id')
 D('open_request', 'stream_id envelope')
 D('opened', 'stream_id plain')
 D('error', 'code message')

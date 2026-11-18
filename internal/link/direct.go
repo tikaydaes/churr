@@ -24,6 +24,7 @@ const (
 	kKeyRequest        = "key_request"
 	kHistory           = "history"
 	kHistoryRequest    = "history_request"
+	kHistoryMore       = "history_more"
 	kBlobRequest       = "blob_request"
 	kBlobChunk         = "blob_chunk"
 	kCallPassRequest   = "call_pass_request"
@@ -234,7 +235,7 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 	}
 	m.raw, m.from, m.peer = plain, from, pc.peer.ID
 	if fromHub && m.Kind != kKey && m.Kind != kError && m.Kind != kHistory && m.Kind != kBlobChunk && m.Kind != kOpened &&
-		m.Kind != kHistoryRequest && m.Kind != kBlobRequest {
+		m.Kind != kHistoryRequest && m.Kind != kBlobRequest && m.Kind != kHistoryMore {
 		// A hub sends the keys of the channels it is the home of, and
 		// answers for them: their history, their files, an envelope opened.
 		// It asks for their history and their files, which it keeps.
@@ -291,6 +292,8 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 		s.onHistory(ctx, m)
 	case kHistoryRequest:
 		s.onHistoryRequest(ctx, m)
+	case kHistoryMore:
+		s.onHistoryMore(ctx, m)
 	case kOpenRequest:
 		s.onOpenRequest(ctx, m)
 	case kOpened:
@@ -459,7 +462,52 @@ func (s *Service) ownerOf(ctx context.Context, st store.Stream) (store.Server, e
 // (section 10): in a channel a hub owns, from its home hub, whose row stands
 // as the owner, and from no member server; from anyone else it changes
 // nothing.
-func (s *Service) onKey(ctx context.Context, m directMessage) {
+func (s *Service) onKey(ctx context.Context, m directMessage) { s.takeKey(ctx, m, false) }
+
+// earlyKey is a key kept until a record says who sent it is the home.
+type earlyKey struct {
+	m     directMessage
+	until time.Time
+}
+
+// keepEarlyKey keeps a key that is not, as far as this server knows yet,
+// from the channel's home, for a minute; at most eight per channel.
+func (s *Service) keepEarlyKey(id model.StreamID, m directMessage) {
+	rt := s.rt(id)
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	now := time.Now()
+	kept := rt.earlyKeys[:0]
+	for _, k := range rt.earlyKeys {
+		if k.until.After(now) {
+			kept = append(kept, k)
+		}
+	}
+	rt.earlyKeys = append(kept, earlyKey{m: m, until: now.Add(keyWait)})
+	if len(rt.earlyKeys) > 8 {
+		rt.earlyKeys = rt.earlyKeys[len(rt.earlyKeys)-8:]
+	}
+}
+
+// takeEarlyKeys takes the keys kept for a channel again, after a record of
+// it was taken: those from the home it names are taken now, the rest are
+// dropped.
+func (s *Service) takeEarlyKeys(ctx context.Context, id model.StreamID) {
+	rt := s.rt(id)
+	rt.mu.Lock()
+	keys := rt.earlyKeys
+	rt.earlyKeys = nil
+	rt.mu.Unlock()
+	now := time.Now()
+	for _, k := range keys {
+		if k.until.After(now) {
+			s.takeKey(ctx, k.m, true)
+		}
+	}
+}
+
+// takeKey is onKey; replay says the key was kept and is taken again.
+func (s *Service) takeKey(ctx context.Context, m directMessage, replay bool) {
 	var body struct {
 		StreamID model.StreamID `json:"stream_id"`
 		Epoch    int64          `json:"epoch"`
@@ -472,6 +520,16 @@ func (s *Service) onKey(ctx context.Context, m directMessage) {
 	from := err == nil && !st.Owned() && st.OwnerServerID == m.from.ID
 	if err == nil && hubOwned(st) && m.from.Name != st.HomeHub {
 		from = false
+	}
+	if (err == nil && hubOwned(st) && st.PeerID == m.peer && !from) || (errors.Is(err, model.ErrNotFound) && s.holder) {
+		// Perhaps from the channel's next home, ahead of the record by which
+		// the home hands the channel to it; or, to a hub's holder, ahead of
+		// the record that makes its hub the home. Kept a minute, and taken
+		// once a record says that hub is the home (keepEarlyKey).
+		if !replay {
+			s.keepEarlyKey(body.StreamID, m)
+			return
+		}
 	}
 	if err != nil || !from || st.PeerID != m.peer {
 		s.count(func(stats *Stats) { stats.Dropped["key_not_from_owner"]++ })

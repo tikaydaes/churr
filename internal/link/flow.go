@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"sync/atomic"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/chat"
@@ -462,7 +463,7 @@ func (s *Service) open(ctx context.Context, st store.Stream, env wire.Envelope, 
 			}
 			keys = s.awaitFirstKey(ctx, st)
 		}
-		if len(keys) > 0 && env.KeyEpoch < keys[0].epoch {
+		if len(keys) > 0 && env.KeyEpoch < keys[0].epoch && !s.holder {
 			// From before this server joined: encrypted under a key it
 			// was never given. What it is meant to have of it arrives
 			// as history.
@@ -1125,9 +1126,11 @@ func (s *Service) delivered(ctx context.Context, peer model.PeerID, env wire.Env
 	rt.mu.Unlock()
 	if wait != nil {
 		// Just joined: the snapshot that names the members comes first.
+		// After a while what came is applied, and what needs the snapshot
+		// waits for it in the hold (hold.go).
 		select {
 		case <-wait:
-		case <-time.After(10 * time.Second):
+		case <-time.After(time.Duration(historyWaitMax.Load())):
 			rt.mu.Lock()
 			rt.historyWait = nil
 			rt.mu.Unlock()
@@ -1195,7 +1198,7 @@ func (s *Service) delivered(ctx context.Context, peer model.PeerID, env wire.Env
 	if s.settleDelivered(ctx, rt, st, peer, env, o, false, time.Time{}) {
 		// A message that has just arrived may be the one held events are
 		// waiting for.
-		s.retryHeld(ctx, rt)
+		s.retryHeld(ctx, rt, false)
 	}
 }
 
@@ -1206,10 +1209,12 @@ func (s *Service) delivered(ctx context.Context, peer model.PeerID, env wire.Env
 // reports whether the event was applied.
 func (s *Service) settleDelivered(ctx context.Context, rt *streamRT, st store.Stream, peer model.PeerID, env wire.Envelope, o opened, released bool, until time.Time) bool {
 	var rej *rejection
-	parked := false
+	parked, history := false, false
 	rej, err := s.apply(ctx, st.ID, env, o, &rej, func(tx store.Tx, cur store.Stream) error {
 		parked = false
-		if s.mayHold(cur, rej) && (!released || time.Now().Before(until)) {
+		hold, forHistory := s.mayHold(ctx, tx, cur, rej)
+		history = forHistory
+		if hold && (forHistory || !released || time.Now().Before(until)) {
 			// Nothing is written and the counter does not move: after a
 			// restart the envelope is delivered again.
 			parked = true
@@ -1254,8 +1259,8 @@ func (s *Service) settleDelivered(ctx context.Context, rt *streamRT, st store.St
 		return false
 	}
 	if parked {
-		s.park(ctx, rt, st, peer, env, o, rej)
-		if released {
+		s.park(ctx, rt, st, peer, env, o, rej, history)
+		if released && !history {
 			rt.hold.events[len(rt.hold.events)-1].until = until
 		}
 		return false
@@ -1307,6 +1312,13 @@ func (s *Service) catchUp(ctx context.Context, st store.Stream, again bool) {
 	rt.mu.Unlock()
 	pc.conn.Send(wire.Frame{Frame: wire.FCatchUp, ID: id, StreamID: string(st.ID), Have: have})
 }
+
+// historyWaitMax is how long a server that has just joined a hub-owned
+// channel waits for its snapshot before it applies what it is delivered.
+// Tests shorten it.
+var historyWaitMax atomic.Int64
+
+func init() { historyWaitMax.Store(int64(10 * time.Second)) }
 
 // catchWait is how long a catch_up is waited for before another may be sent
 // on the same connection.

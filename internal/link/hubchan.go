@@ -479,6 +479,9 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 		rec.HomeHub = rec.Hub
 	}
 	id := model.StreamID(rec.StreamID)
+	// A key that came ahead of this record from the home it names is taken
+	// once the record is (after the lock below is let go).
+	defer s.takeEarlyKeys(ctx, id)
 	// One record at a time per channel: two that arrive together must not
 	// both find the older one held.
 	rt := s.rt(id)
@@ -554,6 +557,15 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 				return nil
 			})
 			st.HomeHub, st.OwnerServerID = rec.HomeHub, row.ID
+			if !s.holder && st.State == store.StreamActive && s.historyPending(ctx, s.store, id) {
+				// Still waiting for the history, which the old home will not
+				// send now: the new home is asked at once.
+				s.wg.Add(1)
+				go func() {
+					defer s.wg.Done()
+					s.askHistoryAgain(s.ctx, id)
+				}()
+			}
 		}
 	}
 	if err == nil && have.Private && !rec.Private && have.Version < rec.Version {
@@ -876,6 +888,14 @@ func (s *Service) joinedHub(ctx context.Context, st store.Stream, rec wire.Chann
 		if err := s.putList(ctx, tx, st.ID, rec.Servers, rec.Version); err != nil {
 			return err
 		}
+		if !s.holder {
+			// Until the home hub has given it the channel's history whole,
+			// what this server cannot apply without that history waits for
+			// it (hold.go). A hub's holder keeps its own list (holder.go).
+			if err := tx.Settings().Set(ctx, historyPendingKey(st.ID), true, ""); err != nil {
+				return err
+			}
+		}
 		if _, err := tx.Streams().Update(ctx, st.ID, func(x *store.Stream) error {
 			x.State, x.ServersVersion, x.HomeHub = store.StreamActive, rec.Version, rec.HomeHub
 			return nil
@@ -975,7 +995,7 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 				continue
 			}
 			rt.mu.Lock()
-			rt.firstAsked[msg] = true
+			rt.firstAsked[msg] = sv.Name
 			rt.mu.Unlock()
 			// The parts are handled as they arrive (onHistory); this only
 			// waits to see whether the server answered at all.

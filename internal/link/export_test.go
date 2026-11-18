@@ -498,6 +498,14 @@ func SetHistoryOwedWait(d time.Duration) func() {
 	return func() { owedWait.Store(old) }
 }
 
+// SetHistoryWaitMax sets how long a server that has just joined a hub-owned
+// channel waits for its snapshot before it applies what it is delivered, and
+// returns the function that puts it back.
+func SetHistoryWaitMax(d time.Duration) func() {
+	old := historyWaitMax.Swap(int64(d))
+	return func() { historyWaitMax.Store(old) }
+}
+
 // SetDeafToHome has the server of that name leave every request for a
 // channel's snapshot unanswered, and returns the function that ends it.
 func SetDeafToHome(name string) func() {

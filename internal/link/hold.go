@@ -79,6 +79,10 @@ type heldEvent struct {
 	until  time.Time
 	// rej is what it is rejected with if the message never comes.
 	rej *rejection
+	// history: it waits for the channel's earlier history, which this server
+	// has not been given whole yet (awaitsHistory), and has no time limit
+	// until it has.
+	history bool
 }
 
 // holdState is what one stream holds. It is touched only by the stream's
@@ -89,7 +93,12 @@ type holdState struct {
 	// seen is, per origin, the highest counter delivered here while
 	// something of that origin is held: the counter in the database stays
 	// below the held event, and this says nothing has been missed since.
-	seen  map[string]int64
+	seen map[string]int64
+	// shed is, per origin, the lowest counter of an event waiting for the
+	// channel's history that was let go from memory to make room. The
+	// counter in the database stays below it, and the log is asked for it
+	// again once the history is here (historyHere).
+	shed  map[string]int64
 	timer *time.Timer
 }
 
@@ -104,7 +113,7 @@ func (h *holdState) has(eventID string) bool {
 
 // lowest returns the lowest counter held of an origin, 0 if nothing is.
 func (h *holdState) lowest(origin string) int64 {
-	low := int64(0)
+	low := h.shed[origin]
 	for _, e := range h.events {
 		if e.env.Origin == origin && (low == 0 || e.env.N < low) {
 			low = e.env.N
@@ -143,17 +152,60 @@ func (h *holdState) released(origin string) int64 {
 	return top
 }
 
-// mayHold reports whether an envelope that was rejected for a message this
-// server does not hold is to wait for it.
-func (s *Service) mayHold(st store.Stream, rej *rejection) bool {
-	return rej != nil && rej.missing != "" && st.Sequencer == store.SequencerHub
+// mayHold reports whether a rejected envelope is to wait: for a message this
+// server does not hold, or, with history true, for the channel's earlier
+// history, which this server has not been given whole yet.
+func (s *Service) mayHold(ctx context.Context, a store.Areas, st store.Stream, rej *rejection) (hold, history bool) {
+	if rej == nil || st.Sequencer != store.SequencerHub {
+		return false, false
+	}
+	if awaitsHistory(rej) && hubOwned(st) && s.historyPending(ctx, a, st.ID) {
+		return true, true
+	}
+	return rej.missing != "", false
 }
+
+// awaitsHistory reports whether a rejection is one the channel's earlier
+// history may undo: an author or member this server has not met yet, or a
+// message it does not hold. Who said what before this server held the
+// channel, and to whom, it learns from that history (section 13, "History
+// on joining"), and a message of the channel must not be lost for arriving
+// before it.
+func awaitsHistory(rej *rejection) bool {
+	switch rej.reason {
+	case "unknown_account", "not_a_member":
+		return true
+	}
+	return rej.missing != ""
+}
+
+// historyPending reports whether this server still waits for the earlier
+// history of a hub-owned channel: a hub's holder until everyone who may hold
+// some of it has answered (holder.go); an instance until the channel's home
+// has given it a snapshot that is whole (historyShort).
+func (s *Service) historyPending(ctx context.Context, a store.Areas, id model.StreamID) bool {
+	key := historyPendingKey(id)
+	if s.holder {
+		key = owedKey(id)
+	}
+	_, found, err := a.Settings().Get(ctx, key)
+	return err == nil && found
+}
+
+// historyPendingKey is the setting an instance keeps while it waits for a
+// hub-owned channel's history whole: from the moment it joins until the home
+// hub has sent it a snapshot that is not short.
+func historyPendingKey(id model.StreamID) string { return "link.history_pending." + string(id) }
+
+// farOff is the time limit of an event that waits for the channel's history:
+// none, until the history is here.
+var farOff = time.Unix(1<<40, 0)
 
 // park puts an envelope in the stream's hold. The one held longest gives way
 // if the hold is full.
-func (s *Service) park(ctx context.Context, rt *streamRT, st store.Stream, peer model.PeerID, env wire.Envelope, o opened, rej *rejection) {
+func (s *Service) park(ctx context.Context, rt *streamRT, st store.Stream, peer model.PeerID, env wire.Envelope, o opened, rej *rejection, history bool) {
 	if rt.hold == nil {
-		rt.hold = &holdState{seen: map[string]int64{}}
+		rt.hold = &holdState{seen: map[string]int64{}, shed: map[string]int64{}}
 	}
 	h := rt.hold
 	if h.has(env.OriginEventID) {
@@ -162,13 +214,67 @@ func (s *Service) park(ctx context.Context, rt *streamRT, st store.Stream, peer 
 	if env.N > h.seen[env.Origin] {
 		h.seen[env.Origin] = env.N
 	}
-	h.events = append(h.events, &heldEvent{env: env, o: o, peer: peer, target: rej.missing, until: time.Now().Add(time.Duration(holdWait.Load())), rej: rej})
+	until := time.Now().Add(time.Duration(holdWait.Load()))
+	if history {
+		until = farOff
+	}
+	h.events = append(h.events, &heldEvent{env: env, o: o, peer: peer, target: rej.missing, until: until, rej: rej, history: history})
 	s.count(func(stats *Stats) { stats.Held++ })
-	s.log.Debug("link: an event is held for the message it refers to", "stream", st.ID, "origin", env.Origin, "n", env.N, "type", o.in.Type, "message", rej.missing)
+	s.log.Debug("link: an event is held", "stream", st.ID, "origin", env.Origin, "n", env.N, "type", o.in.Type, "message", rej.missing, "why", rej.reason, "history", history)
 	for len(h.events) > holdMax {
-		s.giveUp(ctx, rt, h.events[0])
+		if e := h.events[0]; e.history {
+			s.shedHeld(rt, e)
+		} else {
+			s.giveUp(ctx, rt, e)
+		}
 	}
 	s.armHold(rt)
+}
+
+// shedHeld lets go from memory an event that waits for the channel's
+// history, to make room, without losing it: the counter of its origin stays
+// below it, and once the history is here the log is asked for it again.
+func (s *Service) shedHeld(rt *streamRT, e *heldEvent) {
+	h := rt.hold
+	h.unpark(e)
+	if low, ok := h.shed[e.env.Origin]; !ok || e.env.N < low {
+		h.shed[e.env.Origin] = e.env.N
+	}
+	s.count(func(stats *Stats) { stats.HeldShed++ })
+}
+
+// historyHere is a stream's earlier history having arrived whole: what
+// waited for it is tried again, and what still fails is rejected, or waits
+// the ordinary time for a message, as it would have been at once. What was
+// let go from memory to make room is asked for again from the log.
+func (s *Service) historyHere(ctx context.Context, rt *streamRT) {
+	h := rt.hold
+	if h == nil {
+		return
+	}
+	until := time.Now().Add(time.Duration(holdWait.Load()))
+	shed := len(h.shed) > 0
+	for origin, low := range h.shed {
+		// Everything of the origin from there on comes again from the log.
+		for _, e := range append([]*heldEvent(nil), h.events...) {
+			if e.env.Origin == origin && e.env.N >= low {
+				h.unpark(e)
+			}
+		}
+		h.seen[origin] = low - 1
+		delete(h.shed, origin)
+	}
+	for _, e := range h.events {
+		if e.history {
+			e.history, e.until = false, until
+		}
+	}
+	s.retryHeld(ctx, rt, true)
+	if shed {
+		if st, err := s.store.Streams().Get(ctx, rt.id); err == nil && st.State == store.StreamActive {
+			s.catchUp(ctx, st, true)
+		}
+	}
 }
 
 // armHold sets the stream's timer for the event that has waited longest.
@@ -181,7 +287,16 @@ func (s *Service) armHold(rt *streamRT) {
 	if len(h.events) == 0 {
 		return
 	}
-	wait := time.Until(h.events[0].until)
+	first := h.events[0].until
+	for _, e := range h.events {
+		if e.until.Before(first) {
+			first = e.until
+		}
+	}
+	if !first.Before(farOff) {
+		return // everything waits for the history, with no time limit
+	}
+	wait := time.Until(first)
 	if wait < 0 {
 		wait = 0
 	}
@@ -200,8 +315,10 @@ func (s *Service) expireHeld(ctx context.Context, rt *streamRT) {
 		return
 	}
 	now := time.Now()
-	for len(h.events) > 0 && !h.events[0].until.After(now) {
-		s.giveUp(ctx, rt, h.events[0])
+	for _, e := range append([]*heldEvent(nil), h.events...) {
+		if !e.until.After(now) {
+			s.giveUp(ctx, rt, e)
+		}
 	}
 	s.armHold(rt)
 }
@@ -241,8 +358,10 @@ func (s *Service) giveUp(ctx context.Context, rt *streamRT, e *heldEvent) {
 
 // retryHeld applies the held events whose message has arrived, in the order
 // they came, and goes round again while that lets in others (a reply that
-// was held, and a reaction to that reply).
-func (s *Service) retryHeld(ctx context.Context, rt *streamRT) {
+// was held, and a reaction to that reply). With history, some of the
+// channel's earlier history has just arrived: every event that waits for it
+// is tried again, and an event that waited for an account is tried.
+func (s *Service) retryHeld(ctx context.Context, rt *streamRT, history bool) {
 	h := rt.hold
 	if h == nil || len(h.events) == 0 {
 		return
@@ -250,7 +369,11 @@ func (s *Service) retryHeld(ctx context.Context, rt *streamRT) {
 	for progress := true; progress; {
 		progress = false
 		for _, e := range append([]*heldEvent(nil), h.events...) {
-			if _, err := s.store.Messages().Get(ctx, e.target); err != nil {
+			if e.target == "" || (history && e.history) {
+				if !history {
+					continue // it waits for an account, which only history brings
+				}
+			} else if _, err := s.store.Messages().Get(ctx, e.target); err != nil {
 				continue
 			}
 			st, err := s.store.Streams().Get(ctx, model.StreamID(e.env.StreamID))
@@ -265,6 +388,19 @@ func (s *Service) retryHeld(ctx context.Context, rt *streamRT) {
 		}
 	}
 	s.armHold(rt)
+}
+
+// onJobs runs a function on a stream's own goroutine, waiting for room in
+// its queue rather than dropping it.
+func (s *Service) onJobs(rt *streamRT, f func()) {
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		select {
+		case rt.jobs <- f:
+		case <-s.ctx.Done():
+		}
+	}()
 }
 
 // dropHold forgets everything a stream holds: the stream is over for this

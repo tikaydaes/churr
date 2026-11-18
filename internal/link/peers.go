@@ -841,6 +841,15 @@ func (s *Service) afterReady(ctx context.Context, pc *peerConn) {
 			continue
 		}
 		s.catchUp(ctx, st, true)
+		if pc.hub && !s.holder && hubOwned(st) && s.historyPending(ctx, s.store, st.ID) {
+			// Still waiting for the channel's history whole: asked again on
+			// every new connection, as well as when the home says it has it.
+			s.wg.Add(1)
+			go func() {
+				defer s.wg.Done()
+				s.askHistoryAgain(s.ctx, st.ID)
+			}()
+		}
 	}
 	s.kickOutbox(ctx, pc.peer.ID)
 	s.resendOffersTo(ctx, pc.peer.ID)

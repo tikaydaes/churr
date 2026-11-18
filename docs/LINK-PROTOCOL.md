@@ -1029,6 +1029,7 @@ of section 6 plus `forbidden`, `not_found` and `feature_off`.
 | `key_request`          | Server → owner; in a hub-owned channel, server → home hub | `stream_id`, `epoch`       |
 | `history`              | Owner → server; in a hub-owned channel, home hub → an instance that asked, and an instance → its home hub that asked | Section 13 |
 | `history_request`      | Server → owner      | `stream_id`, `after_at`, `through_at` (times of the stream's reference clock, in milliseconds; `through_at` 0 for "to now"). In a hub-owned channel, an instance asks its home hub, and with `first: true` in place of the times asks for the snapshot a joining instance is owed (section 23a); the home hub asks the channel's instances, with `first: true`, for all they hold when it becomes the channel's home |
+| `history_more`         | Home hub → an instance it gave a short snapshot to | `stream_id`: the hub now holds the channel's earlier history whole; ask for the snapshot again (section 13) |
 | `open_request`         | Server → a server that holds the key; in a hub-owned channel, the home hub first | `stream_id`, `envelope`: an envelope of the stream, as delivered, under a key epoch from before the asker joined (section 13) |
 | `opened`               | That server → the asker | `stream_id`, `plain`: what the envelope says, as the bytes that were sealed in it (an `Event`), `re` the request |
 | `blob_request`         | Server → server; in a hub-owned channel, instance → home hub, and home hub → the file's origin | `stream_id`, `blob_id`, `from_index` |
@@ -1359,7 +1360,15 @@ over a trunk in `forward` to an instance on another hub of the cluster.
 A hub that a channel was handed to sends each instance the record by
 which the old home handed it over first, then the key, then its own
 record: the instance takes the key only once it knows that hub for the
-home.
+home. To an instance on another hub of the cluster the key and the
+records travel different ways (the key in `forward`, the records hop
+by hop, the old home's after it steps down), so a key may still arrive
+first. An instance therefore keeps, for 60 seconds, a key of a
+hub-owned channel from a hub it does not know for the channel's home
+yet, and takes it when a record it takes names that hub the home; a
+hub's holder likewise keeps a key of a channel it does not hold yet
+until the record that makes its hub the home arrives. A key whose
+sender no record names the home is dropped (`key_not_from_owner`).
 An instance takes such a channel's key from its home hub, under the key
 the cluster roster gives that hub, and from nobody else. Its current
 epoch is the one the newest record it holds calls for, once it holds
@@ -1890,7 +1899,27 @@ reply. The origin's other events are not kept waiting.
 
 While something of an origin is held, the server knows in memory how
 far that origin's deliveries have reached, and a later delivery whose
-`prev` is covered by that is not a gap. On a direct link there are two
+`prev` is covered by that is not a gap.
+
+**Waiting for the history.** In a channel a hub owns, a server that
+does not yet have the channel's earlier history whole holds, in the
+same way, an event it would reject because its author or the account
+it names is unknown (`unknown_account`), is not a member
+(`not_a_member`), or because the message it names is not there: what
+that history brings would let it in. That is an instance from the
+moment it joins until the home hub has sent it a snapshot that is not
+`short` ("History on joining", below), and the home hub's holder until
+nobody owes it the channel's earlier history. Such an event has no
+time limit: it waits until the history is whole, is then tried again,
+and is rejected only if it still fails, or waits the 60 seconds above
+if it names a message. When a stream holds 256 events, one that waits
+for the history is let go from memory instead of rejected: the
+counter of its origin stays below it, and once the history is whole
+the server sends `catch_up` and is delivered it again. After a restart
+the history still owed is known from the database (the instance's
+`link.history_pending`, the holder's list), so what the log delivers
+again waits again. A message of the channel is never lost for arriving
+before the history that names its author. On a direct link there are two
 servers and one log, and nothing is held. A hub's log holds nothing
 either; the home hub's holder, which applies a channel's envelopes as
 an instance does (section 23a), holds events as an instance holds
@@ -1949,7 +1978,11 @@ has been let in asks the home hub for its snapshot at once, with
 seconds while the hub has not answered. It asks no other instance, and
 takes a hub-owned channel's history from the home hub and from nobody
 else (`history_not_from_home` otherwise), under the key the cluster
-roster gives that hub, as it takes the channel's keys. The hub answers
+roster gives that hub, as it takes the channel's keys; an answer to its
+own request from the hub that was the home when it asked is taken too,
+though the home has changed hands since. An instance that still waits
+for its history when a record tells it the home has changed hands asks
+the new home at once. The hub answers
 an instance in the record's list. It cuts the snapshot once it holds
 every origin's events up to the `have` it sent beside the record that
 let the asker in (or after 10 seconds): from that moment it took
@@ -1960,6 +1993,24 @@ stamped above that reaches it by the log, and is taken from there.
 Nobody sends a hub-owned channel's history unasked, and an instance
 takes none that it did not ask for. So a joining instance is given its
 history with every other instance of the channel switched off.
+
+The holder may not yet hold all that was said before its hub became
+the home (below). It answers with what it has, and marks every part
+`short: true`; it notes the instance, and when nobody owes it the
+channel's earlier history any more it sends each instance it noted
+
+    {"kind": "history_more", "msg_id": "…", "at": "…", "stream_id": "…"}
+
+at once, again whenever that instance connects to the hub, and after
+the hub restarts, until the instance has asked again and been given a
+snapshot that is not short. An instance takes `history_more` only from
+its channel's home hub. Until it has a snapshot that is not short it
+still waits for its history: it asks the home again on every new
+connection to the hub, and holds what it cannot apply without it
+("Events that refer to others", above). A holder that answers the hub
+it handed a channel to also marks its answer short if it was itself
+still owed some of the channel's history; the new home then goes on
+asking the channel's instances.
 
 When a hub becomes the home of a channel (shared to it, moved onto it
 from a direct link, or handed to it by another hub of its cluster), it
@@ -3444,7 +3495,10 @@ is given it by the hub with every other instance switched off.
 - **When the hub becomes the home** of a channel shared to it or moved
   onto it from a direct link, the holder asks the channel's instances
   for all they hold of it (section 13, "History on joining") and takes
-  from the log what came after. Of a channel handed to it by another
+  from the log what came after. What the log delivers before that
+  history has arrived and cannot be applied without it waits for it
+  (section 13, "Events that refer to others"); nothing is lost for
+  arriving first. Of a channel handed to it by another
   hub of its cluster it asks that hub's holder first, which holds it
   whole (section 23b, "Failure of a home hub, and moving a home", step
   6). It keeps in its database whom it still waits on, and asks them
@@ -4091,13 +4145,15 @@ transaction on the new one.
    the channel whole, the moment it is sent the handover (with, beside
    it, what the new home's log held of each origin then): it asks the
    old home with `history_request` carrying `first: true`, and the
-   channel's instances after it if the old home does not answer, and
+   channel's instances after it if the old home does not answer or
+   answers `short`, and
    asks for each file from the old home and from the file's origin by
    turns. Those direct messages go between the two hubs' holders as the
    hubs' own, over the trunks in `forward`. The new home goes on asking
    the old home until it has answered (section 13, "History on
    joining"). The old home's holder takes nothing more of the channel,
-   answers only the new home for it, and forgets its copy 7 days after
+   answers only the new home for it, keeps the copy as it stood, its
+   members and their profiles with it, and forgets it 7 days after
    it learned of the handover (the time a file is asked for before it
    is given up). A holder that was not connected to its hub at the
    handover learns of it when it connects: its hub sends it, for every

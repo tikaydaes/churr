@@ -80,6 +80,7 @@ message Direct {
     KeyRequestDirect key_request = 8;
     HistoryDirect history = 9;
     HistoryRequestDirect history_request = 10;
+    HistoryMoreDirect history_more = 27;
     OpenRequestDirect open_request = 11;
     OpenedDirect opened = 12;
     ErrorDirect error = 13;
@@ -869,6 +870,7 @@ message HistoryDirect {
   repeated bytes member_ids = 26; // identifier
   repeated HistoryMessage messages = 27;
   repeated Blob blobs = 28;
+  optional bool short = 54;
 }
 
 message HistoryRequestDirect {
@@ -876,6 +878,10 @@ message HistoryRequestDirect {
   optional int64 after_at = 29; // time
   optional int64 through_at = 30; // time
   optional bool first = 31;
+}
+
+message HistoryMoreDirect {
+  optional bytes stream_id = 1; // identifier
 }
 
 message OpenRequestDirect {

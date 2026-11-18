@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tikaydaes/churr/internal/link"
 	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/secret"
@@ -459,6 +460,52 @@ func TestTrunkRehome(t *testing.T) {
 	}
 	if held := home.Hub.TestStreamKeys(stream); len(held) != 0 {
 		t.Fatalf("the old home still holds %d of the channel's keys", len(held))
+	}
+	// Nothing the rightful home sent was dropped for arriving ahead of the
+	// record that made it the home: the new home's key, sent to a server on
+	// another hub over a different path from the handover, and the first
+	// key of a channel, sent to the holder of its hub ahead of the record.
+	for i, ts := range l.Servers {
+		if d := ts.Server.Link.StatsNow().Dropped; d["key_not_from_owner"] != 0 || d["history_not_from_home"] != 0 {
+			t.Fatalf("server %d dropped %v", i, d)
+		}
+	}
+	for i, h := range l.Cluster.Hubs {
+		if d := h.Hub.Holder().StatsNow().Dropped; d["key_not_from_owner"] != 0 {
+			t.Fatalf("hub %d's holder dropped %v", i, d)
+		}
+	}
+}
+
+// A server that joined a channel just before its home was handed to another
+// hub, and is still waiting for its history, asks the new home for it as
+// soon as it learns of it. What the old home sent it as the answer to its
+// request is not dropped either, should it arrive after: the old home was
+// the home when it was asked.
+func TestTrunkRehomeWhileHistoryIsOnItsWay(t *testing.T) {
+	defer link.SetHistoryAnswerDelay(time.Second)()
+	l := testkit.NewClusterLinked(t, "star", 3, []int{0, 1, 2})
+	a := l.Servers[0].Owner
+	ch := a.Channel("launch", false)
+	a.Post(ch, "said before the channel was shared")
+	stream, local := l.Share(0, ch, "launch", map[string]any{"history_days": 30}, 1, 2)
+	home := l.Cluster.Hubs[0]
+	if err := home.Hub.Rehome(stream, testkit.HubName(2)); err != nil {
+		t.Fatal(err)
+	}
+	home.Hub.Reconcile()
+	testkit.Eventually(t, "the move is done", func() bool { return home.Hub.RehomeResult(stream) == "done" })
+	moved := time.Now()
+	l.Servers[2].Owner.HasMessage(local[2], "said before the channel was shared")
+	// Asked of the new home as soon as the server learned of it, and not
+	// after the wait for an answer that will not come.
+	if took := time.Since(moved); took > 4*time.Second {
+		t.Fatalf("the history reached the server %v after the move", took)
+	}
+	for i, ts := range l.Servers {
+		if d := ts.Server.Link.StatsNow().Dropped; d["history_not_from_home"] != 0 {
+			t.Fatalf("server %d dropped %v", i, d)
+		}
 	}
 }
 

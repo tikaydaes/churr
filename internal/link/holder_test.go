@@ -523,3 +523,104 @@ func TestAJoinerIsGivenPollsAndThreadsAsTheyStand(t *testing.T) {
 		t.Fatalf("c holds the deleted first message as %v", gone)
 	}
 }
+
+// The new home of a channel handed to it loses nothing said in the channel
+// before it has the channel's history: what it cannot apply yet, for want of
+// the authors that history names, waits for it, however long it is in
+// coming, and is applied when it arrives.
+func TestTheNewHomeLosesNothingSaidBeforeItHasTheHistory(t *testing.T) {
+	defer link.SetFirstHistoryWait(200 * time.Millisecond)()
+	defer link.SetHistoryOwedWait(500 * time.Millisecond)()
+	defer link.SetHistoryWaitMax(200 * time.Millisecond)()
+	l, stream, local := clustered(t, "star")
+	l.Servers[1].Owner.Post(local[1], "said before the handover")
+	old, next := l.Cluster.Hubs[0], l.Cluster.Hubs[2]
+	ctx, id := context.Background(), model.StreamID(stream)
+	texts := []string{"said before the handover"}
+	holds := func(h *testkit.TestHub) bool {
+		_, held := heldMessages(t, h, stream)
+		for _, text := range texts {
+			if _, ok := held[text]; !ok {
+				return false
+			}
+		}
+		return true
+	}
+	testkit.Eventually(t, "the home hub holds the message", func() bool { return holds(old) })
+	// Nobody who holds the channel's history gives it to the new home for a
+	// while: the old home's holder is off, and every instance is deaf to it.
+	if err := old.Hub.TestHolder(false); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"a.localhost", "b.localhost", "c.localhost"} {
+		defer link.SetDeafToHome(name)()
+	}
+	if err := old.Hub.Rehome(stream, testkit.HubName(2)); err != nil {
+		t.Fatal(err)
+	}
+	old.Hub.Reconcile()
+	testkit.Eventually(t, "the move is done", func() bool { return old.Hub.RehomeResult(stream) == "done" })
+	testkit.Eventually(t, "the new home waits for the history", func() bool { return len(next.Hub.Holder().HistoryOwed(ctx, id)) > 0 })
+	for i, ts := range l.Servers {
+		text := fmt.Sprintf("after the move, from %d", i)
+		ts.Owner.Post(local[i], text)
+		texts = append(texts, text)
+	}
+	sameOrder(t, l, local, len(texts))
+	time.Sleep(time.Second) // well past the wait before what is delivered is applied
+	if holds(next) {
+		t.Fatal("the new home holds what was said after the move though it has met none of its authors")
+	}
+
+	for _, name := range []string{"a.localhost", "b.localhost", "c.localhost"} {
+		link.SetDeafToHome(name)()
+	}
+	if err := old.Hub.TestHolder(true); err != nil {
+		t.Fatal(err)
+	}
+	testkit.Eventually(t, "the new home holds everything, from before the move and after it", func() bool { return holds(next) })
+	testkit.Eventually(t, "and waits on nobody", func() bool { return len(next.Hub.Holder().HistoryOwed(ctx, id)) == 0 })
+	if r := next.Hub.Holder().StatsNow().Rejected; r["unknown_account"] != 0 || r["not_a_member"] != 0 {
+		t.Fatalf("the new home rejected %v", r)
+	}
+}
+
+// An instance that joins while the hub's holder still waits for some of what
+// was said before the hub held the channel is given what the holder has, and
+// the rest once the holder has it: across a restart of the instance and of
+// the hub. What it is delivered meanwhile from people it has not met waits,
+// and is not lost.
+func TestAnEarlyJoinerIsGivenTheRestOfTheHistory(t *testing.T) {
+	defer link.SetFirstHistoryWait(200 * time.Millisecond)()
+	defer link.SetHistoryOwedWait(500 * time.Millisecond)()
+	defer link.SetHistoryWaitMax(200 * time.Millisecond)()
+	deaf := link.SetDeafToHome("a.localhost")
+	defer deaf()
+	l := testkit.NewLinked(t, 2, true)
+	a, b := l.Servers[0], l.Servers[1]
+	ch := a.Owner.Channel("annals", false)
+	a.Owner.Post(ch, "said before the hub held it")
+	stream, local := l.Share(0, ch, "annals", map[string]any{"listing": "open", "history_days": 30}, 1)
+	ctx, id := context.Background(), model.StreamID(stream)
+	if owed := l.Hub.Hub.Holder().HistoryOwed(ctx, id); len(owed) != 1 || owed[0] != "a.localhost" {
+		t.Fatalf("the holder waits on %v", owed)
+	}
+	a.Owner.Post(ch, "said after b joined")
+	time.Sleep(time.Second)
+	for _, m := range b.Owner.Messages(local[1]) {
+		if m["text"] == "said before the hub held it" {
+			t.Fatal("b holds what the hub does not hold yet")
+		}
+	}
+	b.Restart()
+	l.Hub.Restart()
+	deaf()
+	b.Owner.HasMessage(local[1], "said before the hub held it")
+	b.Owner.HasMessage(local[1], "said after b joined")
+	testkit.Eventually(t, "the holder has given nobody a short history it has not made whole", func() bool {
+		return len(l.Hub.Hub.Holder().ShortGiven(ctx, id)) == 0
+	})
+	if r := b.Server.Link.StatsNow().Rejected; r["unknown_account"] != 0 || r["not_a_member"] != 0 {
+		t.Fatalf("b rejected %v", r)
+	}
+}

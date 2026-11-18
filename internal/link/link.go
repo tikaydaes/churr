@@ -269,6 +269,9 @@ type Stats struct {
 	// server opened for it, and HistoryAsked the times a stretch of such
 	// envelopes was asked for as history instead.
 	Held, HeldExpired, Reopened, HistoryAsked int64
+	// HeldShed counts events waiting for a channel's history that were let
+	// go from memory to make room, and taken again from the log after.
+	HeldShed int64
 	// Snapshots counts presence snapshots sent.
 	Snapshots int64
 }
@@ -624,7 +627,13 @@ type streamRT struct {
 	historyWait chan struct{}
 	// firstAsked are this server's own requests for the snapshot a joining
 	// server is sent, by msg_id (hubchan.go).
-	firstAsked map[string]bool
+	firstAsked map[string]string
+	// earlyKeys are keys of a hub-owned channel that came from a hub this
+	// server did not yet know for the channel's home, or before it held the
+	// channel at all, kept for a minute (direct.go): a channel handed to
+	// another hub has its new home's key sent ahead of the record by which
+	// the old home handed it over whenever the two take different paths.
+	earlyKeys []earlyKey
 	// sent and acked are, for a stream this server keeps the log of, the
 	// highest log position sent to and acknowledged by the other server.
 	// cursor is, for any other stream, the last position of the
@@ -647,7 +656,7 @@ func (s *Service) rt(id model.StreamID) *streamRT {
 	defer s.mu.Unlock()
 	r := s.rts[id]
 	if r == nil {
-		r = &streamRT{id: id, watchers: map[string]chan struct{}{}, keyArrived: make(chan struct{}), keyAsked: map[int64]bool{}, hubAsked: map[int64]time.Time{}, firstAsked: map[string]bool{}, forged: map[string]int{},
+		r = &streamRT{id: id, watchers: map[string]chan struct{}{}, keyArrived: make(chan struct{}), keyAsked: map[int64]bool{}, hubAsked: map[int64]time.Time{}, firstAsked: map[string]string{}, forged: map[string]int{},
 			jobs: make(chan func(), 4096)}
 		s.rts[id] = r
 		s.wg.Add(1)
