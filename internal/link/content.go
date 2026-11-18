@@ -443,7 +443,7 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 		return
 	}
 	st, err := s.store.Streams().Get(ctx, b.StreamID)
-	if err != nil || st.State != store.StreamActive || st.PeerID != m.peer {
+	if err != nil || !s.answersFor(st, m.from) || st.PeerID != m.peer {
 		s.replyError(ctx, m, wire.EUnknownStream, "No such stream here.")
 		return
 	}
@@ -462,6 +462,16 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 		s.replyError(ctx, m, wire.ENotInStream, "That server is not in the stream.")
 		return
 	}
+	if home && st.State != store.StreamActive {
+		// A holder whose hub handed the channel over: nothing more is
+		// applied to its copy, which goes to the new home as it stands.
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			s.sendHistoryRange(s.ctx, st, m.from, 0, 0, 0, true, true, m.MsgID)
+		}()
+		return
+	}
 	if home {
 		s.wg.Add(1)
 		go func() {
@@ -470,7 +480,7 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 			select {
 			case <-s.ctx.Done():
 			case rt.jobs <- func() {
-				if cur, err := s.store.Streams().Get(s.ctx, st.ID); err == nil && cur.State == store.StreamActive {
+				if cur, err := s.store.Streams().Get(s.ctx, st.ID); err == nil && s.answersFor(cur, m.from) {
 					s.sendHistoryRange(s.ctx, cur, m.from, 0, 0, 0, true, true, m.MsgID)
 				}
 			}:
@@ -686,6 +696,12 @@ func (s *Service) fetchArriving(ctx context.Context) {
 		if hubOwned(st) && !s.holder {
 			target, ok = s.homeHub(ctx, st)
 			err = nil
+		} else if from := s.heldFrom(ctx, st.ID); s.holder && from != "" && attempts%2 == 0 {
+			// A channel handed to this holder's hub: the hub it came from
+			// holds every file of it, at every other try.
+			if hub, found := s.clusterHub(ctx, st, from); found {
+				target, err = hub, nil
+			}
 		}
 		if err != nil || !ok {
 			continue
@@ -746,7 +762,7 @@ func (s *Service) onBlobRequest(ctx context.Context, m directMessage) {
 		return
 	}
 	st, err := s.store.Streams().Get(ctx, b.StreamID)
-	if err != nil || st.State != store.StreamActive || st.PeerID != m.peer {
+	if err != nil || !s.answersFor(st, m.from) || st.PeerID != m.peer {
 		s.replyError(ctx, m, wire.EUnknownStream, "No such stream here.")
 		return
 	}

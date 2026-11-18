@@ -1956,8 +1956,9 @@ history with every other instance of the channel switched off.
 
 When a hub becomes the home of a channel (shared to it, moved onto it
 from a direct link, or handed to it by another hub of its cluster), it
-asks the channel's instances, longest-standing first, with
-`history_request` carrying `first: true`, until one answers. An
+asks, with `history_request` carrying `first: true`, the hub it was
+handed over from if there is one (section 23b), then the channel's
+instances, longest-standing first, until one answers. An
 instance answers its channel's home hub with everything it holds of
 the channel, whatever the channel's days of history, and in a private
 channel from its first message, not from its people's first joins.
@@ -3411,10 +3412,13 @@ is given it by the hub with every other instance switched off.
   leave as `member.joined`, `member.left` and the record say; the
   members of an instance that leaves or is removed leave the copy, and
   what they wrote stays, with their profiles.
-- **When the hub becomes the home** of a channel (shared to it, moved
-  onto it from a direct link, or handed to it within a cluster), the
-  holder asks the channel's instances for all they hold of it (section
-  13, "History on joining") and takes from the log what came after.
+- **When the hub becomes the home** of a channel shared to it or moved
+  onto it from a direct link, the holder asks the channel's instances
+  for all they hold of it (section 13, "History on joining") and takes
+  from the log what came after. Of a channel handed to it by another
+  hub of its cluster it asks that hub's holder first, which holds it
+  whole (section 23b, "Failure of a home hub, and moving a home", step
+  6).
 - **Files.** It fetches every file the channel's events name (an
   attachment, a card's image, a custom emoji, a member's picture) from
   its origin when the event passes, checks it by its hash and keeps it
@@ -4028,14 +4032,16 @@ transaction on the new one.
    own key file, and signs the next version itself, at a new key epoch
    it begins with its own key. From then on it answers `key_request`
    for every epoch of the channel, those of the old home's included.
-   From that transaction it is the home in every way. It answers `step`
-   `taken` with that record. An offer it will not take it refuses
+   From that transaction it is the home in every way. Its holder
+   (section 23a) takes the channel's contents from the old home's
+   holder (step 6). It answers `step` `taken` with that record. An offer it will not take it refuses
    (`step` `refused`) and remembers as dead.
 4. **Step down.** The old home, on a record of the channel later
    than its offer under the other hub's signature (in the answer, or
    arriving as any record does), stores it, deletes every key it held
-   of the channel (the new home holds them), and carries the channel from then as any hub
-   does. The new home sends the handover before
+   of the channel (the new home holds them), tells its holder by the
+   handover and that record, and carries the channel from then as any
+   hub does. The new home sends the handover before
    its own record to every hub and server the channel concerns, so
    each follows the chain: a server takes the handover because the
    old home signed it, and from then takes records only from the new
@@ -4048,6 +4054,20 @@ transaction on the new one.
    and `cancelled` carry a block signed by the hub that sends them
    (`rehome_answer`: the offer, the stream, `dead`), and only that
    lets the old home sign for the channel again.
+6. **The contents.** The keys travel with the offer; the contents do
+   not, since a channel's history and files can be any size. The new
+   home's holder fetches them from the old home's holder, which holds
+   the channel whole, the moment it is sent the handover (with, beside
+   it, what the new home's log held of each origin then): it asks the
+   old home with `history_request` carrying `first: true`, and the
+   channel's instances after it if the old home does not answer, and
+   asks for each file from the old home and from the file's origin by
+   turns. Those direct messages go between the two hubs' holders as the
+   hubs' own, over the trunks in `forward`. The old home's holder takes
+   nothing more of the channel, answers only the new home for it, and
+   forgets its copy 7 days after the handover (the time a file is asked
+   for before it is given up). From then a hub that only carries the
+   channel holds none of it.
 
 Until one of those answers is in the old home's hands it cannot know
 which hub is the home, and goes on signing nothing; the servers that
@@ -4124,9 +4144,11 @@ through, until it has been sent.
 
 A hub of a cluster sees, of a channel homed elsewhere, exactly what
 section 23 says a hub sees, and only for the channels it carries or
-lists. It holds no key of it and no plaintext: keys and history pass
-through it as direct messages it cannot open. The home hub alone
-holds the channel's keys.
+lists. It holds no key of it and no plaintext: keys, history and files
+pass through it as direct messages it cannot open. The home hub alone
+holds the channel's keys and its contents; an old home keeps its copy
+for 7 days after handing the channel over, for the new home to fetch
+(step 6 above).
 
 ## 24. Threats
 

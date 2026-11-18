@@ -350,8 +350,13 @@ cluster until others join through it.
   other hub had already taken it, which the two hubs settle when they
   next reach each other. A command that gets neither answer in time
   says the running hub has not answered and asks whether `churr-hub
-  serve` is running. A hub that is to be shut down for good is
-  emptied of its channels this way first.
+  serve` is running. The new home then fetches the channel's whole
+  contents and files from this hub's `holder/`, which keeps them for
+  7 days after the move and then lets them go. A hub that is to be
+  shut down for good is emptied of its channels this way first, and
+  kept running for those 7 days, or until the new home's channels show
+  their files, so the new home can fetch everything; a hub that only
+  carries a channel holds none of it.
 - A trunk that drops splits the cluster in two until it returns. Each
   part goes on exchanging messages among its own servers; when the
   trunk returns each part is sent what it missed, and people see the

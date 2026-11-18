@@ -251,27 +251,29 @@ func (h *Hub) recordFrame(c channel) (wire.Frame, error) {
 // own: for a server the hub admitted, what the log held when it did.
 func (h *Hub) sendRecord(c channel, f wire.Frame, to []string) {
 	for _, name := range to {
-		// A record by which the home changed hands goes first: a server
-		// takes the new home's signature only once it has seen the old
-		// home name it.
-		for _, ho := range c.handovers {
-			if ho.Version < c.rec.Version {
-				h.sendTo([]string{name}, wire.Frame{Frame: wire.FChannel, Signed: ho.Signed, Sig: ho.Sig, HomeHub: c.rec.HomeHub})
-			}
-		}
 		out := f
 		if at, ok := c.joinedHave[name]; ok {
 			out.Have = at
+		}
+		// A record by which the home changed hands goes first: a server
+		// takes the new home's signature only once it has seen the old
+		// home name it. Beside it goes the same `have`: the hub's holder,
+		// which takes the channel whole by it, starts from there.
+		for _, ho := range c.handovers {
+			if ho.Version < c.rec.Version {
+				h.sendTo([]string{name}, wire.Frame{Frame: wire.FChannel, Signed: ho.Signed, Sig: ho.Sig, HomeHub: c.rec.HomeHub, Have: out.Have})
+			}
 		}
 		h.sendTo([]string{name}, out)
 	}
 }
 
 // audienceOf is audience, and the hub's own holder of a channel the hub is
-// the home of, which is sent its every record (holder.go).
+// the home of, which is sent its every record (holder.go): every record this
+// hub signs, the one by which it hands the channel to another hub included.
 func (h *Hub) audienceOf(c channel) []string {
 	to := audience(c)
-	if h.owned(c) && !c.rec.Prepared {
+	if len(c.signed) == 0 && !c.rec.Prepared {
 		to = append(to, h.id.Name)
 	}
 	return to

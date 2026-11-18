@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
@@ -219,4 +220,50 @@ func TestTheHubKeepsAndServesFiles(t *testing.T) {
 	testkit.Eventually(t, "c holds the emoji and b's owner's picture, from the hub", func() bool {
 		return ready(c.Server.Store, emojiID) && ready(c.Server.Store, avatar)
 	})
+}
+
+// A channel handed to another hub of the cluster is taken whole by its new
+// home from the old one, with every instance switched off: what was said
+// before, and its files. The old home then lets its copy go, and a hub that
+// only carries the channel never holds any of it.
+func TestHandingAChannelOverMovesItsContents(t *testing.T) {
+	l, stream, local := clustered(t, "star")
+	b := l.Servers[1]
+	b.Owner.Post(local[1], "said before the handover")
+	content := bytes.Repeat([]byte("a file posted before the handover. "), 9000)
+	up := b.Owner.Upload(local[1], "old.bin", content)
+	b.Owner.Must(201, "POST", "/api/v1/conversations/"+local[1]+"/messages", map[string]any{"text": "with an old file", "file_ids": []any{up["id"]}})
+	old, edge, next := l.Cluster.Hubs[0], l.Cluster.Hubs[1], l.Cluster.Hubs[2]
+	holds := func(h *testkit.TestHub) bool {
+		_, held := heldMessages(t, h, stream)
+		_, said := held["said before the handover"]
+		return said && ready(h.Hub.HolderStore(), up["id"].(string))
+	}
+	testkit.Eventually(t, "the home hub holds the message and the file", func() bool { return holds(old) })
+	for _, ts := range l.Servers {
+		ts.Stop()
+	}
+	if err := old.Hub.Rehome(stream, testkit.HubName(2)); err != nil {
+		t.Fatal(err)
+	}
+	old.Hub.Reconcile()
+	testkit.Eventually(t, "the move is done", func() bool { return old.Hub.RehomeResult(stream) == "done" })
+	testkit.Eventually(t, "the new home holds the message and the file, from the old home", func() bool {
+		return holds(next)
+	})
+	f, _ := next.Hub.HolderStore().Files().Get(context.Background(), model.FileID(up["id"].(string)))
+	if f.Size != int64(len(content)) {
+		t.Fatalf("the new home holds %d bytes of a file of %d", f.Size, len(content))
+	}
+	ctx := context.Background()
+	if _, err := edge.Hub.HolderStore().Streams().Get(ctx, model.StreamID(stream)); err == nil {
+		t.Fatal("a hub that only carries the channel holds a copy of it")
+	}
+	old.Hub.Holder().ForgetHandedOver(ctx, model.Now().Add(time.Minute))
+	if _, err := old.Hub.HolderStore().Streams().Get(ctx, model.StreamID(stream)); err == nil {
+		t.Fatal("the old home still holds the channel it handed over")
+	}
+	if _, held := heldMessages(t, next, stream); len(held) < 2 {
+		t.Fatalf("the new home holds %d messages after the old home let go", len(held))
+	}
 }

@@ -732,8 +732,10 @@ func (h *Hub) stepDown(f wire.Frame) {
 	}
 	m := h.lock(rec.StreamID)
 	stepped := false
+	var gave rehomeOffer
 	err := h.tx(func(tx *sql.Tx) error {
 		o, pending := offerOf(tx, rec.StreamID)
+		gave = o
 		if !pending || rec.Version <= o.Version || rec.HomeHub != rec.Hub || rec.Hub == h.id.Name {
 			return nil
 		}
@@ -763,6 +765,13 @@ func (h *Hub) stepDown(f wire.Frame) {
 	if stepped {
 		h.forgetRoute(rec.StreamID)
 		h.log.Info("a channel's home has been handed over", "stream", rec.StreamID, "to", rec.HomeHub)
+		// The holder is told, by the record that handed the channel over and
+		// the new home's first: it keeps its copy for the new home to fetch,
+		// for a while, and takes nothing more of the channel (holder.go).
+		if hc := h.holderConn(); hc != nil {
+			hc.conn.Send(wire.Frame{Frame: wire.FChannel, Signed: gave.Signed, Sig: gave.Sig, HomeHub: rec.HomeHub})
+			hc.conn.Send(wire.Frame{Frame: wire.FChannel, Signed: f.Signed, Sig: f.Sig, HomeHub: rec.HomeHub})
+		}
 		go h.tellChannels()
 	}
 }

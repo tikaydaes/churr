@@ -2,6 +2,7 @@ package link_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -220,10 +221,11 @@ func TestTrunkSplit(t *testing.T) {
 }
 
 // The channel's home hub holds every key epoch's key, sealed at rest, and the
-// other hubs of the cluster hold none. No hub holds a key in the clear or a
-// word of content: not in its files, and not in any frame it was sent by a
+// other hubs of the cluster hold none. No hub's log holds a key in the clear
+// or a word of content, and neither does any frame a hub was sent by a
 // server or by another hub (the keys the home hub sends travel sealed to
-// each server).
+// each server). The home hub holds the channel whole in its holder; a hub
+// that only carries it holds none of it.
 func TestClusterHubsHoldNoContentAndOnlyTheHomeHoldsKeys(t *testing.T) {
 	l := testkit.NewClusterLinked(t, "line", 3, []int{0, 1, 2})
 	var mu sync.Mutex
@@ -302,6 +304,14 @@ func TestClusterHubsHoldNoContentAndOnlyTheHomeHoldsKeys(t *testing.T) {
 	}
 	if len(seen) < 10000 {
 		t.Fatalf("the hubs were shown only %d bytes of frames", len(seen))
+	}
+	testkit.Eventually(t, "the home hub's holder holds the channel", func() bool {
+		return bytes.Contains(readHeld(t, l.Cluster.Hubs[0].Dir), []byte("XYZZY-PLUGH"))
+	})
+	for i, h := range l.Cluster.Hubs[1:] {
+		if _, err := h.Hub.HolderStore().Streams().Get(context.Background(), model.StreamID(stream)); err == nil {
+			t.Errorf("hub %d, which only carries the channel, holds a copy of it", i+1)
+		}
 	}
 }
 

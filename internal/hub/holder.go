@@ -137,8 +137,8 @@ func (h *Hub) stopHolder() {
 }
 
 // sweepHeld removes the holder's copy of every channel the hub no longer
-// has: one closed and kept the thirty days after (Sweep), or one handed to
-// another hub of the cluster long enough ago for the hub to have let it go.
+// has, closed and kept the thirty days after (Sweep), and of every channel
+// it handed to another hub of the cluster more than link.HandOverKeep ago.
 func (h *Hub) sweepHeld() {
 	l := h.Holder()
 	if l == nil {
@@ -155,6 +155,9 @@ func (h *Hub) sweepHeld() {
 			l.ForgetHeld(ctx, id)
 		}
 	}
+	// A channel handed to another hub: kept for the new home to fetch from,
+	// then let go.
+	l.ForgetHandedOver(ctx, h.now().Add(-link.HandOverKeep))
 }
 
 // isHolder reports whether a dialler that has shown the hub's own name holds

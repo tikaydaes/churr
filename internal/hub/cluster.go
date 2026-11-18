@@ -50,6 +50,9 @@ func (h *Hub) hubOf(server string) string {
 	if server == h.id.Name {
 		return h.id.Name // the hub's own holder (holder.go)
 	}
+	if _, member := h.topology().cluster.Members[server]; member {
+		return server // another hub's holder, at that hub
+	}
 	if rs, ok := h.topology().servers[server]; ok {
 		return rs.hub
 	}

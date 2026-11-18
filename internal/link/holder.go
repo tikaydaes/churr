@@ -2,7 +2,9 @@ package link
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
@@ -105,6 +107,11 @@ func (s *Service) holdChannel(ctx context.Context, pc *peerConn, f wire.Frame, r
 	if err != nil {
 		return err
 	}
+	if rec.Hub != s.id.Name {
+		// The record by which another hub of the cluster handed the channel
+		// to this one: that hub holds it whole, and is asked for it first.
+		s.store.Settings().Set(ctx, heldFromKey(id), rec.Hub, "")
+	}
 	s.audit(ctx, s.store, "", "link.channel_held", "stream", string(id), map[string]any{"name": rec.Name})
 	if err := s.joinedHub(ctx, st, rec, f.Have); err != nil {
 		return err
@@ -156,5 +163,83 @@ func (s *Service) ForgetHeld(ctx context.Context, id model.StreamID) {
 		}
 	}
 	s.store.Streams().Delete(ctx, id)
+	s.store.Settings().Delete(ctx, heldFromKey(id))
+	s.store.Settings().Delete(ctx, handedOverKey(id))
 	s.audit(ctx, s.store, "", "link.channel_forgotten", "stream", string(id), nil)
+}
+
+// Handing a channel to another hub of a cluster (section 23b): the contents
+// do not travel with the keys. The new home's holder fetches them from the
+// old home's holder, which holds the channel whole, as soon as it takes the
+// channel over: the old home's history first, then the channel's instances
+// if the old home cannot be reached, and each file from the old home first
+// and its origin after. The old home keeps its copy for HandOverKeep after
+// the record that hands the channel over, answering only the new home, and
+// then forgets it: a hub that only carries a channel holds nothing of it.
+
+// HandOverKeep is how long the old home of a channel handed to another hub
+// keeps its copy for the new home to fetch from: the time a file is asked
+// for before it is given up as unavailable.
+const HandOverKeep = 7 * 24 * time.Hour
+
+func heldFromKey(id model.StreamID) string   { return "link.held_from." + string(id) }
+func handedOverKey(id model.StreamID) string { return "link.handed_over." + string(id) }
+
+// heldFrom is the hub a channel was handed over from, which keeps its copy
+// for a while; empty for a channel that was not.
+func (s *Service) heldFrom(ctx context.Context, id model.StreamID) string {
+	raw, found, err := s.store.Settings().Get(ctx, heldFromKey(id))
+	var hub string
+	if err != nil || !found || json.Unmarshal(raw, &hub) != nil {
+		return ""
+	}
+	return hub
+}
+
+// clusterHub returns the row that stands for a hub of the cluster a stream's
+// peer is in, with the box key the roster gives it.
+func (s *Service) clusterHub(ctx context.Context, st store.Stream, name string) (store.Server, bool) {
+	peer, err := s.store.Peers().Get(ctx, st.PeerID)
+	if err != nil || peer.Kind != wire.KindHub {
+		return store.Server{}, false
+	}
+	sv, err := s.hubRow(ctx, s.store, peer, name)
+	if err != nil {
+		return store.Server{}, false
+	}
+	if sv.BoxKey = s.clusterHubBox(peer, name); len(sv.BoxKey) != 32 {
+		return store.Server{}, false
+	}
+	return sv, true
+}
+
+// answersFor reports whether this server answers a request for a stream's
+// history or files: in it, or a holder whose hub handed the channel to the
+// asking hub, which is the channel's home now.
+func (s *Service) answersFor(st store.Stream, from store.Server) bool {
+	return st.State == store.StreamActive || (s.holder && st.State == store.StreamRemoved && s.isHomeHub(st, from))
+}
+
+// handedOver notes that the channel this holder kept has been handed to
+// another hub: the copy is kept for the new home for HandOverKeep.
+func (s *Service) handedOver(ctx context.Context, id model.StreamID) {
+	if _, found, err := s.store.Settings().Get(ctx, handedOverKey(id)); err == nil && !found {
+		s.store.Settings().Set(ctx, handedOverKey(id), int64(s.now()), "")
+	}
+}
+
+// ForgetHandedOver forgets every copy of a channel this holder's hub handed
+// to another hub before a time.
+func (s *Service) ForgetHandedOver(ctx context.Context, before model.Time) {
+	ids, err := s.Held(ctx)
+	if err != nil {
+		return
+	}
+	for _, id := range ids {
+		raw, found, err := s.store.Settings().Get(ctx, handedOverKey(id))
+		var at int64
+		if err == nil && found && json.Unmarshal(raw, &at) == nil && model.Time(at) < before {
+			s.ForgetHeld(ctx, id)
+		}
+	}
 }

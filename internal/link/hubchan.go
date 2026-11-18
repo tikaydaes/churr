@@ -611,6 +611,9 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 			return nil
 		}
 		if st.State == store.StreamActive || st.State == store.StreamOffered {
+			if s.holder && !rec.Closed {
+				s.handedOver(ctx, id) // to another hub of the cluster
+			}
 			s.detachStream(ctx, st, store.StreamRemoved)
 			s.audit(ctx, s.store, "", "link.removed_from_stream", "stream", string(id), map[string]any{"hub": rec.Hub, "closed": rec.Closed})
 		}
@@ -961,6 +964,11 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 		}
 		var ask []store.Server
 		if s.holds(rec) {
+			if from := s.heldFrom(ctx, id); from != "" {
+				if hub, ok := s.clusterHub(ctx, st, from); ok {
+					ask = append(ask, hub) // the hub it was handed over from
+				}
+			}
 			for _, name := range rec.Servers {
 				if sv, err := s.store.Peers().ServerByName(ctx, name); err == nil && name != s.id.Name {
 					ask = append(ask, sv)
