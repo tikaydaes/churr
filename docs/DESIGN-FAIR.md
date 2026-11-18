@@ -1,8 +1,11 @@
 # Provably fair chance: every outcome from an ECVRF
 
 A design, partly built. Parts marked [proposed] are not confirmed by the
-owner. Built: the library in three languages (section 9) and the key
-(section 1). Nothing is yet proved with it.
+owner. Built: the library in three languages (section 9), the key
+(section 1), the chain and the derivation (sections 2 and 3), the `fair`
+block (section 4), and dice on them, checked by the clients.
+`FAIR.md` is the specification of what is built: every encoding, the
+order outcomes are derived in, and the vectors.
 
 ## What the owner decided (R110)
 
@@ -44,13 +47,16 @@ on the operating system's randomness.
     first sight and warn when a later one is not the pinned one with
     keys added.
 - A message's `pk` must be the key the record or the pin held for that
-  server at that time. A server cannot use a second key. [proposed: the
-  check of a message's `pk` comes with the `fair` block]
+  server at that time. A server cannot use a second key. [built: a
+  receiving server and the clients check it, `FAIR.md` section 9]
 
-## 2. The chain: what alpha is [proposed]
+## 2. The chain: what alpha is [built]
 
 One chain per conversation, kept by the conversation's owner (the
-instance; for a hub channel, the hub).
+instance; for a hub channel, the hub). Built: an instance draws for its
+own people's messages; a hub channel's messages are drawn by their
+author's instance, the chain named by the channel's stream, until the hub
+draws for its channels. The exact encodings are `FAIR.md` section 6.
 
     alpha(n) = "churr-fair-1" ‖ owner name ‖ conversation id ‖ n ‖ SHA-256(proof(n-1))
 
@@ -68,7 +74,7 @@ instance; for a hub channel, the hub).
   carries the hash of the previous proof, and the check says "chain not
   followed further back".
 
-## 3. From randomness to outcome [proposed]
+## 3. From randomness to outcome [built]
 
 A frozen, versioned derivation (`derive: 1`), identical in Go,
 JavaScript and Dart, held to one vectors file: unbiased integers by
@@ -76,7 +82,7 @@ rejection sampling from the stream, dice (including exploding), coin,
 pick, Fisher–Yates shuffle, draws from a deck. A new rule is a new
 version number; old messages keep theirs.
 
-## 4. What a message carries
+## 4. What a message carries [built]
 
 In the metadata field, clear and sealed alike:
 
@@ -142,9 +148,10 @@ learns only that a draw happened.
 
 ## 9. In the code
 
-- `modhost`: `Host.Random()` becomes the draw's stream. Modules are
-  forbidden `crypto/rand` and `math/rand` by the layer rules, so every
-  outcome a module makes is provable by construction.
+- `modhost`: `Host.Random()` is the draw's stream, and `Host.Draw`
+  derives declared outcomes from it. Modules are forbidden `crypto/rand`
+  and `math/rand` by the layer rules, so every outcome a module makes is
+  provable by construction. [built]
 - The old chance code (flip, pick, shuffle, draw, tarot, mahjongg) moves
   to the stream as it moves into modules.
 - The ecvrf sources are vendored (the owner's own code) [built]: Go in
@@ -153,7 +160,8 @@ learns only that a draw happened.
   port to BigInt and the browser's SHA-256 (verify and proof-to-hash
   only, no third-party code); the app's in `app/lib/core/fair/`. All
   three run the library's vectors, `testdata/ecvrf/vectors.json`.
-- Each kind's value records nothing extra: the proof is the message's.
+- Each value records only its share of the draw (`draw: {i}`, and any
+  declared outcomes it asked for): the proof is the message's. [built]
 
 ## 10. A general service: modules, manifests, bots, integrations, games
 
@@ -227,9 +235,9 @@ A closed list, stated in the proof block so readers know who knew what:
 
 1. Keys: made at first start, in the identity statement, the hub record
    and the pins. [built]
-2. The derivation and its vectors in three languages.
+2. The derivation and its vectors in three languages. [built]
 3. The chain, the `fair` block, `Host.Random()`, dice on it; clients
-   verify and show "verified".
+   verify and show "verified". [built]
 4. Sealed draws; two-server mixing on direct links.
 5. The rest of chance as it becomes modules; the crash game after live
    cards.

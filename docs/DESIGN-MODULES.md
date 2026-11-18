@@ -593,8 +593,10 @@ a promise:
         Resolve(ctx context.Context, h Host, in Marked) (Value, error)
     }
 
-`Host` gives the verified actor and conversation, `crypto/rand`, the
-clock and timers, the key-value store, and nothing else. A reply is
+`Host` gives the verified actor and conversation, its share of the
+message's draw (`Random`, `Draw`; `FAIR.md`; a module may import no other
+source of randomness), the clock and timers, the key-value store, and
+nothing else. A reply is
 values and effects from section 3.7. The host refuses a card with no
 text, validates every value and stamps `by` itself.
 

@@ -723,6 +723,7 @@ account row.
 | `fallback`          | Plain text standing in for the cards and form.  |
 | `action`, `chance`  | Added by migration 0003. `action`: typed with `/me`. `chance`: a result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw` or `/tarot` (ruling R67), as JSON. |
 | `view`              | Added by migration 0022. The message as a value of the catalogue (a `ValueEnvelope`, DESIGN-MODULES.md section 4.1), such as a roll of dice, as JSON, stored as it came. `text` is the message in words; nothing drawn is stored. Cleared with the text on a delete or a purge. |
+| `fair`              | Added by migration 0026. The proof of the message's draw, its `fair` block (FAIR.md section 8), as JSON, when anything in it took chance from one. Never edited; kept on the marker when the message is deleted or purged. |
 | `system`            | Set on a notice the server posted; `text` is then empty. |
 | `via_kind`, `via_name` | How it was posted if not typed by its author. |
 | `via_account_id`    | Who caused it, when that is not the author: the person whose command a bot answered. |
@@ -1153,6 +1154,16 @@ managers. A module with no row is on. A channel's row stays while the
 instance has the module off, so switching it on again leaves the
 channel as its managers set it. The rows go with the conversation.
 
+### `fair_chains`
+
+Added by migration 0026. The head of each chain of draws (FAIR.md
+section 6): `chain` is the conversation's id, or the stream's for a
+conversation shared over the link; `n` the number of its last draw and
+`prev` SHA-256 of that draw's proof. The head moves in the transaction
+that stores the message using the draw, and only from the draw before
+it, so a draw is used once and none is skipped. Rows stay when a
+conversation goes: a chain's numbers are never reused.
+
 ## 10. Calls
 
 ### `calls`
@@ -1556,7 +1567,8 @@ file store, on both backends.
   `stream_channels.managers`, `moderators` and `private`;
   `0015_approvals` adds `approvals` and `approvers`;
   `0020_first_contact` adds `chat_requests.level` and `override` and
-  `channel_offers`; `0025_vrf_pins` adds `servers.vrf_keys`.
+  `channel_offers`; `0025_vrf_pins` adds `servers.vrf_keys`;
+  `0026_fair_chains` adds `fair_chains` and `messages.fair`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

@@ -67,8 +67,9 @@ This is the shape the API returns and events carry.
 | `cards`           | Section 6.                                                 |
 | `form`            | Section 7.                                                 |
 | `fallback`        | Plain text the server wrote to stand in for the cards, the form and a chance result. Shown by a client or bot that cannot draw them. Empty if there are none. |
-| `view`            | The message as a value of the catalogue (a `ValueEnvelope`, `DESIGN-MODULES.md` section 4.1): `kind`, `level`, `data` (that kind's own message as a JSON object; in protobuf the message's bytes; `WIRE-PROTOBUF.md`, "Values of the catalogue"), `by`, and `alt`, `source`, `removed` where they apply. Today only a roll has one (section 1.2). `text` is the message; the view is how a client that knows the kind and reads its level draws it, and a client that does not shows the text. Stored as it came; never edited; removed with the text on a delete. One from another server is held to its kind's check first, and falls back a step if it fails (`LINK-PROTOCOL.md` section 11). |
+| `view`            | The message as a value of the catalogue (a `ValueEnvelope`, `DESIGN-MODULES.md` section 4.1): `kind`, `level`, `data` (that kind's own message as a JSON object; in protobuf the message's bytes; `WIRE-PROTOBUF.md`, "Values of the catalogue"), `by`, and `alt`, `source`, `removed` and `draw` (the value took chance from the message's `fair` draw) where they apply. Today only a roll has one (section 1.2). `text` is the message; the view is how a client that knows the kind and reads its level draws it, and a client that does not shows the text. Stored as it came; never edited; removed with the text on a delete. One from another server is held to its kind's check first, and falls back a step if it fails (`LINK-PROTOCOL.md` section 11). |
 | `action`          | Present and true when the text says what the author is doing, typed with `/me` (section 1.1). |
+| `fair`            | The proof of the message's one draw (`FAIR.md` section 8): `{v, derive, owner, n, pk, alpha, beta, proof, prev}`, present when anything in the message took chance from it (a roll, inline dice). Every value that did carries `draw: {i}` in its envelope, its share of the draw. Stored with the message, never edited, kept on its marker when it is deleted. One from another server is checked on arrival and dropped, with the values that drew from it, if it fails (`FAIR.md` section 9). |
 | `chance`          | A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (section 1.2). A roll is a `view` instead. |
 | `reactions`       | Section 8. `account_ids` holds at most the first ten; the rest come from the reactions endpoint. |
 | `thread`          | Top-level messages with replies only. `last_reply_order` is the `order` of the reply at `last_reply_seq`: where the thread's marker is drawn. |
@@ -97,12 +98,16 @@ without text.
 
 The client asks (`postMessage` with `chance`, a `ChanceInput`; for a
 roll, `runCommand` with `/roll` or `/dice` and the dice as typed, which
-the dice module reads); the server draws the result with `crypto/rand`
-and stores it on the message.
+the dice module reads) and stores the result on the message. A roll's
+dice come from the message's draw, whose proof is its `fair` block
+(`FAIR.md`): anyone re-derives every die with no server reachable. The
+other results are drawn from the operating system's randomness and
+carry no proof yet.
 No edit can change it, so every reader sees a result nobody made up. The
 request comes with no text, files, cards or form. People only: a bot's
 request is refused. Never in a sealed chat, which the server cannot
-write into. Deleting the message removes the result.
+write into. Deleting the message removes the result; a roll's `fair`
+block stays on its marker.
 
 A **roll** is stored as the message's `text`, the roll in plain English
 ("Rolled 2d6+3: [4, 2] + 3 = 9", dropped dice in parentheses, rows

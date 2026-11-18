@@ -41,6 +41,7 @@ The module is `github.com/tikaydaes/churr`.
         config/                     flags and environment for all three programs
         version/                    version and commit, set at build time
         ecvrf/                      ECVRF-SECP256K1-SHA256-TAI, vendored from the owner's library
+        fair/                       derive 1 (a draw's output to outcomes), the chain's alpha, making and checking fair blocks
         secret/                     key files, sealing, tokens, hashes
         ratelimit/                  token buckets
         memguard/                   the memory guard: how much memory there is, and when it is short
@@ -119,6 +120,7 @@ The module is `github.com/tikaydaes/churr`.
         webhooks/                   Slack, Discord and GitHub payloads with expected cards
         sealed/                     test vectors written by internal/sealed/ref
         ecvrf/                      the ECVRF library's vectors, run by Go, the web and the app
+        fair/                       derive 1's vectors and a message with a draw, run by Go, the web and the app
         art/                        the chance artwork sheets and their faces, from tools/art-gen
 
       examples/                     small bots that show how (DESIGN.md 19)
@@ -194,6 +196,17 @@ library's vectors in `testdata/ecvrf`. The web chat
 (`internal/web/static/shared/fair/`) and the app (`app/lib/core/fair/`)
 verify with their own copies, held to the same vectors.
 
+**`fair`** — chance outcomes from a draw (`FAIR.md`). The derivation
+`derive: 1` (`Stream`, `Below`, `Draw` of a `Primitive`, `Roll` for dice,
+`Dropped`, `Score`), with no floating point and no randomness of its own,
+held to `testdata/fair/derive.json` beside its JavaScript
+(`shared/fair/derive.js`) and Dart (`app/lib/core/fair/derive.dart`)
+copies; the chain's `Alpha`; `Make`, which proves a draw with a
+`Prover` (the server's `secret.Keys`), and `CheckBlock`, which a receiver
+checks one with against an owner's key history. `chat` makes a message's
+draw and moves the chain's head (`chat/fair.go`, `store.Fair`); `link`
+checks a block on arrival (`link/fair.go`).
+
 **`secret`** — the key files in `keys/` and everything done with them.
 
 - `Open(dir string) (*Keys, error)`; makes the keys on first use.
@@ -228,7 +241,9 @@ catalogue.
   entry points are `Command` and `Resolve`; further entry points are
   interfaces of their own, so a module that needs none never changes.
 - `Host`, all a module may reach: the verified actor and conversation,
-  randomness from `crypto/rand`, and the module's own store (`Get`,
+  its share of the message's draw (`Random`, the object's stream;
+  `Draw`, declared outcomes derived from it and recorded in the value;
+  `FAIR.md`), and the module's own store (`Get`,
   `Put`, `Delete` by scope: the instance, this conversation, this
   person), which reaches `store.Modules` through the small `Store`
   interface, with its limits (64 KB a value, 1 MB a conversation, 64 MB
@@ -638,9 +653,9 @@ above, except where the last column says so.
 
 | Layer | Packages | May also import |
 |-------|----------|-----------------|
-| 0 | `model`, `version`, `ecvrf` | Nothing of ours |
-| 1 | `config`, `secret`, `ratelimit`, `markdown`, `memguard`, `wirepb`, `modhost` | `modhost` imports `model`, `markdown`, `instant` and `wirepb` only |
-| 2 | `store` and its backends; `modules/*` | `modules/*` import `modhost` and `model` only |
+| 0 | `model`, `version`, `ecvrf`, `fair` | Nothing of ours; `fair` imports `model` and `ecvrf` |
+| 1 | `config`, `secret`, `ratelimit`, `markdown`, `memguard`, `wirepb`, `modhost` | `modhost` imports `model`, `markdown`, `instant`, `wirepb` and `fair` only |
+| 2 | `store` and its backends; `modules/*` | `modules/*` import `modhost`, `model` and `fair` only |
 | 3 | `blob`, `perm` | `perm` imports `store` and `model` only |
 | 4 | `notify`, `search`, `mod`, `preview` | |
 | 5 | `live`, `push` | `push` may import `live` (to ask whether an account is active) |
@@ -666,6 +681,7 @@ Further rules:
 | `relay` imports `config`, `ratelimit`, `acme`, `version` | A relay has no store, no model and no link code |
 | `modhost` never imports `store` or `chat` | Both `churr` and `churr-hub` must host modules; storage, posting and the clock reach it through small interfaces |
 | `modules/*` import `modhost` and `model` and nothing else of ours, and no `net`, `os/exec`, `syscall`, `plugin` or `unsafe` | A module reaches no database, no socket and no other feature |
+| `modules/*`, `modhost` and `fair` import neither `crypto/rand` nor `math/rand` | Every chance outcome a module makes comes from the message's draw, so it is provable by construction (`FAIR.md`) |
 | Only `server` and `hub` import `modules/*` | No feature leans on a module being there; `server` registers them, as it connects every feature |
 | Only `preview`, `push`, `blob`, `auth`, `link`, `acme`, `importer` and `relay` make outbound connections | These are the rows of the outside-connections table. A test checks that nothing else dials |
 | Only `calls` imports Pion; only `auth` imports the WebAuthn, OIDC and SAML libraries; only `blob` imports the object-store client; only `ecvrf` imports the secp256k1 library | Each large dependency has one owner |

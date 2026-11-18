@@ -1520,6 +1520,16 @@ schema's messages, and each entity is the client schema's with
   came as. As with `chance`, the check is of the shape, not the
   fairness. A sealed message carries none: its values travel inside its
   payload.
+- `fair`, the proof of the message's draw (`FAIR.md` section 8), travels
+  unchanged in events and in history, a deleted roll's marker included.
+  The receiver checks it (`FAIR.md` section 9): drawn by the author's
+  server, under the key that server's history had at the message's
+  time (its own; the direct link's pin; the hub channel's record),
+  over the alpha of the stream's chain. A block that fails is dropped
+  with every value that took chance from it, which then read as text;
+  the message still arrives, and `link.fair_block_dropped` is audited.
+  This is a check of the proof; each kind's own check of the outcome
+  stands beside it, and the clients re-derive the outcome.
 
 **`blobs`** lists every file an event refers to: attachments, card
 images, the via icon, custom emoji, an avatar.
