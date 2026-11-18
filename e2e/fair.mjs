@@ -3,12 +3,12 @@
 // Go and Dart copies run): every positive vector verifies to its beta and
 // gives it by proofToHash, every negative vector is refused, and malformed
 // keys and proofs are refused without throwing. It also runs the client's
-// pin of a server's VRF key history (shared/fair/pin.js). It needs no
+// pins of servers' VRF key histories (shared/fair/pin.js). It needs no
 // server and no browser: `node e2e/fair.mjs`.
 
 import { readFileSync } from 'node:fs';
 import { isPublicKey, proofToHash, verify } from '../internal/web/static/shared/fair/ecvrf.js';
-import { checkServerPin, comparePin } from '../internal/web/static/shared/fair/pin.js';
+import { Histories, comparePin, pinHistory } from '../internal/web/static/shared/fair/pin.js';
 import { DERIVE, Stream, block, draw, isPrimitive, sameRoll } from '../internal/web/static/shared/fair/derive.js';
 import { verifyMessage } from '../internal/web/static/shared/fair/verify.js';
 
@@ -79,15 +79,30 @@ for (const v of vf.negative_vectors) {
   // Through storage, as the chat does on every load.
   const mem = new Map();
   const storage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, v) };
-  const server = (keys) => ({ name: 'a.example', vrf_keys: keys });
-  check(checkServerPin(server([a]), storage).state === 'new', 'stored pin: first sight');
-  check(checkServerPin(server([a]), storage).state === 'same', 'stored pin: the same on the next load');
-  check(checkServerPin(server([c]), storage).state === 'changed', 'stored pin: a swapped key is a change');
-  check(checkServerPin(server([a]), storage).state === 'same', 'stored pin: a change is not taken');
-  check(checkServerPin(server([a, b]), storage).state === 'grown', 'stored pin: an added key');
-  check(checkServerPin(server([a, b]), storage).state === 'same', 'stored pin: the added key is kept');
+  const pin = (keys, st = storage) => pinHistory('a.example', keys, st);
+  check(pin([a]).state === 'new', 'stored pin: first sight');
+  check(pin([a]).state === 'same', 'stored pin: the same on the next load');
+  const swapped = pin([c]);
+  check(swapped.state === 'changed' && swapped.pinned.length === 1 && swapped.pinned[0].key === 'AA', 'stored pin: a swapped key is a change, checked against the pin');
+  check(pin([a]).state === 'same', 'stored pin: a change is not taken');
+  check(pin([a, b]).state === 'grown', 'stored pin: an added key');
+  check(pin([a, b]).state === 'same', 'stored pin: the added key is kept');
   const broken = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); } };
-  check(checkServerPin(server([a]), broken).state === 'new', 'stored pin: storage that throws is a first sight');
+  check(pin([a], broken).state === 'new', 'stored pin: storage that throws is a first sight');
+
+  // One pin per server name, from whichever source shows it: getServer for
+  // this server, a shared conversation's vrf_keys for the rest.
+  const hs = new Histories(storage);
+  check(hs.of('b.example') === null, 'histories: a server nobody has shown is not known');
+  hs.showShared({ shared: { vrf_keys: [{ server: 'b.example', keys: [b] }, { server: 'a.example', keys: [a, b] }] } });
+  const hb = hs.of('b.example');
+  check(hb && !hb.changed && hb.keys.length === 1 && hb.keys[0].key === 'BB', 'histories: a conversation pins another server\'s history');
+  check(hs.of('a.example') && !hs.of('a.example').changed, 'histories: the same pin as getServer\'s for this server');
+  hs.showShared({ shared: { vrf_keys: [{ server: 'b.example', keys: [c] }] } });
+  check(hs.of('b.example').changed && hs.of('b.example').keys[0].key === 'BB', 'histories: another history shown for a server is a change, and the pin stands');
+  hs.showShared({ shared: { vrf_keys: [{ server: 'b.example', keys: [b] }] } });
+  check(hs.of('b.example').changed, 'histories: a change seen stays for the load');
+  check(new Histories(storage).show('b.example', [b]).state === 'same', 'histories: the pin is kept across loads');
 }
 
 // The derivation (docs/FAIR.md): every vector of testdata/fair/derive.json,
@@ -140,7 +155,8 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
 // it passes as it is, and fails, saying so, for each thing changed.
 {
   const mv = JSON.parse(readFileSync(new URL('../testdata/fair/message.json', import.meta.url), 'utf8'));
-  const ctx = { server: mv.server, keys: mv.keys, chains: mv.chains };
+  const keysOf = (keys) => (name) => (name === mv.server ? { keys, changed: false } : null);
+  const ctx = { keysOf: keysOf(mv.keys), chains: mv.chains };
   const ok = await verifyMessage(mv.message, ctx);
   check(ok.state === 'verified' && ok.objects.length === 2 && ok.objects.every((o) => o.ok), 'verify: the message checks out');
   check((await verifyMessage({ text: 'plain' }, ctx)).state === 'none', 'verify: a message with no draw has nothing to check');
@@ -160,7 +176,16 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
   await changed('another owner', (m) => { m.fair.owner = 'b.example'; });
   await changed('a rule not known', (m) => { m.fair.derive = 2; });
   await changed('another conversation', () => {}, { ...ctx, chains: ['01a1ee00-0000-7000-8000-0000000000aa'] });
-  await changed('another pin', () => {}, { ...ctx, keys: [mv.keys[0]] });
+  await changed('another pin', () => {}, { ...ctx, keysOf: keysOf([mv.keys[0]]) });
+  await changed('a history that changed', () => {}, { ...ctx, keysOf: () => ({ keys: mv.keys, changed: true }) });
+  // A draw by a server whose history this client was never given cannot be
+  // checked here: it says so, and is not a failure.
+  const unknown = await verifyMessage(mv.message, { ...ctx, keysOf: () => null });
+  check(unknown.state === 'unknown' && unknown.why.includes(mv.server), 'verify: a draw by a server with no history given cannot be checked here');
+  // The same draw by another server, checked under that server's history
+  // as a shared conversation gives it.
+  const remote = await verifyMessage(mv.message, { chains: mv.chains, keysOf: (n) => (n === mv.server ? { keys: mv.keys } : null) });
+  check(remote.state === 'verified', 'verify: a draw checks under the history given for its owner');
 }
 
 if (failed) {

@@ -193,12 +193,14 @@ check('markup in the data is shown as its characters', v.card.querySelector('.ch
 check('and makes no element of its own', made.filter((t) => t === 'IMG' || t === 'B'), []);
 
 // 6. The check of a roll's proof under the message (shared/fair/mark.js):
-// "Checking" at first, then "Verified", or plainly "Not verified", the roll
-// shown either way; none for a message that drew nothing.
+// "Checking" at first, then "Verified", or plainly "Not verified", or
+// "Cannot be checked here" for a draw by a server whose key history this
+// client was never given, the roll shown every way; none for a message that
+// drew nothing.
 {
   const { fairMark } = await import(S + 'fair/mark.js');
   const mv = JSON.parse(readFileSync(new URL('../testdata/fair/message.json', import.meta.url), 'utf8'));
-  const ctx = { server: mv.server, keys: mv.keys, chains: mv.chains };
+  const ctx = { keysOf: (name) => (name === mv.server ? { keys: mv.keys } : null), chains: mv.chains };
   check('no mark for a message that drew nothing', fairMark({ text: 'x' }, ctx), null);
   const good = structuredClone(mv.message);
   const mark = fairMark(good, ctx);
@@ -211,6 +213,11 @@ check('and makes no element of its own', made.filter((t) => t === 'IMG' || t ===
   await bad._fairCheck;
   check('or plainly that it is not', [no.className, no.textContent.trim(), no.title], ['fair-mark failed', 'Not verified', 'The proof is not for this place in the conversation.']);
   check('and the roll is still drawn', drawView(bad, {}).card !== null, true);
+  const far = structuredClone(mv.message);
+  const unknown = fairMark(far, { ...ctx, keysOf: () => null });
+  await far._fairCheck;
+  check('or that it cannot be checked here, with why', [unknown.className, unknown.textContent.trim(), unknown.title.includes(mv.server)],
+    ['fair-mark unknown', 'Cannot be checked here', true]);
 }
 
 if (checks < 40) { failures++; console.log('FAIL types: too few checks ran'); }

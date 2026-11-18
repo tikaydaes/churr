@@ -1,12 +1,14 @@
 // Checking a message's draw in the browser (docs/FAIR.md section 9), with
-// nothing asked of any server: the message and the pinned VRF key history
-// hold all it needs. A message's `fair` block checks out when its layout and
-// rule are known; alpha is the one its conversation's chain gives for its n
-// and prev; pk is the key its owner had when the message was made, by the
-// history this browser pinned for its server; the proof verifies under pk
-// and gives beta; and every value that took chance from the draw is what
-// derive 1 gives for it (a roll: every die, every dropped die, every total).
-// A check that fails says why; it never hides the roll.
+// nothing asked of any server: the message and the VRF key history pinned
+// for the server that drew it hold all it needs. A message's `fair` block
+// checks out when its layout and rule are known; alpha is the one its
+// conversation's chain gives for its n and prev; pk is the key its owner had
+// when the message was made, by the history this browser pinned for that
+// server; the proof verifies under pk and gives beta; and every value that
+// took chance from the draw is what derive 1 gives for it (a roll: every
+// die, every dropped die, every total). A check that fails says why; a draw
+// by a server whose history this browser was never given says it cannot be
+// checked here, which is not a failure. It never hides the roll.
 
 import { verify } from './ecvrf.js';
 import { DERIVE, Stream, sameRoll } from './derive.js';
@@ -60,11 +62,15 @@ export function keyAt(history, at) {
 }
 
 /**
- * Checks a message's draw. ctx: { server (this server's name), keys (the
- * pinned VRF key history: [{ key, began }]), chains (the names the
- * conversation's chain may have: its id, and its stream's when shared) }.
- * Gives { state: 'verified' | 'failed' | 'none', why, block, objects }, where
- * objects lists each value that took chance: { where, i, ok }.
+ * Checks a message's draw. ctx: { keysOf(name) (the VRF key history pinned
+ * for a server, { keys: [{ key, began }], changed }, or null when no source
+ * has given one: getServer for this server, a shared conversation's
+ * `shared.vrf_keys` for the others), chains (the names the conversation's
+ * chain may have: its id, and its stream's when shared) }.
+ * Gives { state: 'verified' | 'failed' | 'unknown' | 'none', why, block,
+ * objects }, where objects lists each value that took chance: { where, i,
+ * ok }. 'unknown' is a draw this client holds no key history for, which it
+ * cannot check here; 'failed' is a check that was made and did not hold.
  */
 export async function verifyMessage(m, ctx) {
   const block = m && m.fair;
@@ -78,9 +84,13 @@ export async function verifyMessage(m, ctx) {
   const chain = chainOfAlpha(alpha);
   if (!chain || !(ctx.chains || []).includes(chain)) return fail('The proof is for another conversation.');
   if (!same(alpha, alphaOf(block.owner, chain, block.n, prev))) return fail('The proof is not for this place in the conversation.');
-  if (block.owner !== ctx.server) return fail(`The key of ${block.owner}, which made this roll, is not known here.`);
-  const key = fromB64(keyAt(ctx.keys, m.created_at));
-  if (!key || !same(key, pk)) return fail('The roll was not proved with the key this server had at the time.');
+  const history = ctx.keysOf ? ctx.keysOf(block.owner) : null;
+  if (!history) {
+    return { state: 'unknown', block, why: `It was drawn by ${block.owner}, and this conversation does not carry that server's key history, so it cannot be checked here.` };
+  }
+  if (history.changed) return fail(`${block.owner} now shows a different key history than the one this app pinned for it, so its proofs are not trusted.`);
+  const key = fromB64(keyAt(history.keys, m.created_at));
+  if (!key || !same(key, pk)) return fail(`The roll was not proved with the key ${block.owner} had at the time.`);
   const r = await verify(pk, proof, alpha);
   if (!r.valid || !same(r.beta, beta)) return fail('The proof does not check out.');
   const objects = [];
