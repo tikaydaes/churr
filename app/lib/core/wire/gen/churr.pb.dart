@@ -3329,6 +3329,7 @@ class Server extends $pb.GeneratedMessage {
     $core.String? welcome,
     DefaultThemes? defaultThemes,
     $core.String? timeZone,
+    $core.Iterable<VrfKey>? vrfKeys,
   }) {
     final result = Server._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -3346,6 +3347,7 @@ class Server extends $pb.GeneratedMessage {
     if (welcome != null) result.welcome = welcome;
     if (defaultThemes != null) result.defaultThemes = defaultThemes;
     if (timeZone != null) result.timeZone = timeZone;
+    if (vrfKeys != null) result.vrfKeys.addAll(vrfKeys);
     return result;
   }
 
@@ -3385,6 +3387,8 @@ class Server extends $pb.GeneratedMessage {
     ..aOM<DefaultThemes>(14, _omitFieldNames ? '' : 'defaultThemes',
         subBuilder: DefaultThemes.$_createMessage)
     ..aOS(15, _omitFieldNames ? '' : 'timeZone')
+    ..pPM<VrfKey>(16, _omitFieldNames ? '' : 'vrfKeys',
+        subBuilder: VrfKey.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3531,6 +3535,9 @@ class Server extends $pb.GeneratedMessage {
   $core.bool hasTimeZone() => $_has(14);
   @$pb.TagNumber(15)
   void clearTimeZone() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $pb.PbList<VrfKey> get vrfKeys => $_getList(15);
 }
 
 class ServerSignIn extends $pb.GeneratedMessage {
@@ -4383,6 +4390,94 @@ class ThemeColours extends $pb.GeneratedMessage {
   void clearYel() => $_clearField(11);
 }
 
+/// One key of a server's VRF key history: what chance outcomes are proved under (DESIGN-FAIR.md, LINK-PROTOCOL.md section 3).
+class VrfKey extends $pb.GeneratedMessage {
+  factory VrfKey({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? key,
+    $fixnum.Int64? began,
+    $core.List<$core.int>? sig,
+  }) {
+    final result = VrfKey._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (key != null) result.key = key;
+    if (began != null) result.began = began;
+    if (sig != null) result.sig = sig;
+    return result;
+  }
+
+  VrfKey._();
+
+  factory VrfKey.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      VrfKey()..mergeFromBuffer(data, registry);
+  factory VrfKey.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      VrfKey()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'VrfKey',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: VrfKey.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'key', $pb.PbFieldType.OY)
+    ..aInt64(4, _omitFieldNames ? '' : 'began')
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'sig', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  VrfKey clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  VrfKey copyWith(void Function(VrfKey) updates) =>
+      super.copyWith((message) => updates(message as VrfKey)) as VrfKey;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use VrfKey() / VrfKey.new instead')
+  static VrfKey create() => VrfKey._();
+  static $pb.GeneratedMessage $_createMessage() => VrfKey._();
+  @$core.override
+  VrfKey createEmptyInstance() => VrfKey._();
+  @$core.pragma('dart2js:noInline')
+  static VrfKey getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<VrfKey>(VrfKey.$_createMessage);
+  static VrfKey? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get key => $_getN(1);
+  @$pb.TagNumber(3)
+  set key($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasKey() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearKey() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get began => $_getI64(2);
+  @$pb.TagNumber(4)
+  set began($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasBegan() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearBegan() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get sig => $_getN(3);
+  @$pb.TagNumber(5)
+  set sig($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSig() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearSig() => $_clearField(5);
+}
+
 /// The error shape every failed request returns (CONVENTIONS.md, Errors).
 class Error extends $pb.GeneratedMessage {
   factory Error({
@@ -4549,6 +4644,7 @@ class ErrorError extends $pb.GeneratedMessage {
 /// The document at `/.well-known/churr`, exactly as `docs/LINK-PROTOCOL.md` defines it. A hub serves the same document with `kind` `hub` and no box key.
 class WellKnown extends $pb.GeneratedMessage {
   factory WellKnown({
+    $core.Iterable<$core.int>? emptyFields,
     $core.Iterable<$core.int>? nullFields,
     $fixnum.Int64? churr,
     WellKnownKind? kind,
@@ -4557,8 +4653,10 @@ class WellKnown extends $pb.GeneratedMessage {
     $core.List<$core.int>? boxKey,
     $core.List<$core.int>? boxKeySig,
     WellKnownLink? link,
+    $core.Iterable<VrfKey>? vrfKeys,
   }) {
     final result = WellKnown._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (churr != null) result.churr = churr;
     if (kind != null) result.kind = kind;
@@ -4567,6 +4665,7 @@ class WellKnown extends $pb.GeneratedMessage {
     if (boxKey != null) result.boxKey = boxKey;
     if (boxKeySig != null) result.boxKeySig = boxKeySig;
     if (link != null) result.link = link;
+    if (vrfKeys != null) result.vrfKeys.addAll(vrfKeys);
     return result;
   }
 
@@ -4583,6 +4682,7 @@ class WellKnown extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'WellKnown',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
       createEmptyInstance: WellKnown.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aInt64(3, _omitFieldNames ? '' : 'churr')
     ..aE<WellKnownKind>(4, _omitFieldNames ? '' : 'kind',
@@ -4596,6 +4696,8 @@ class WellKnown extends $pb.GeneratedMessage {
         8, _omitFieldNames ? '' : 'boxKeySig', $pb.PbFieldType.OY)
     ..aOM<WellKnownLink>(9, _omitFieldNames ? '' : 'link',
         subBuilder: WellKnownLink.$_createMessage)
+    ..pPM<VrfKey>(10, _omitFieldNames ? '' : 'vrfKeys',
+        subBuilder: VrfKey.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4618,73 +4720,79 @@ class WellKnown extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<WellKnown>(WellKnown.$_createMessage);
   static WellKnown? _defaultInstance;
 
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
   @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
 
   @$pb.TagNumber(3)
-  $fixnum.Int64 get churr => $_getI64(1);
+  $fixnum.Int64 get churr => $_getI64(2);
   @$pb.TagNumber(3)
-  set churr($fixnum.Int64 value) => $_setInt64(1, value);
+  set churr($fixnum.Int64 value) => $_setInt64(2, value);
   @$pb.TagNumber(3)
-  $core.bool hasChurr() => $_has(1);
+  $core.bool hasChurr() => $_has(2);
   @$pb.TagNumber(3)
   void clearChurr() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  WellKnownKind get kind => $_getN(2);
+  WellKnownKind get kind => $_getN(3);
   @$pb.TagNumber(4)
   set kind(WellKnownKind value) => $_setField(4, value);
   @$pb.TagNumber(4)
-  $core.bool hasKind() => $_has(2);
+  $core.bool hasKind() => $_has(3);
   @$pb.TagNumber(4)
   void clearKind() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $core.String get name => $_getSZ(3);
+  $core.String get name => $_getSZ(4);
   @$pb.TagNumber(5)
-  set name($core.String value) => $_setString(3, value);
+  set name($core.String value) => $_setString(4, value);
   @$pb.TagNumber(5)
-  $core.bool hasName() => $_has(3);
+  $core.bool hasName() => $_has(4);
   @$pb.TagNumber(5)
   void clearName() => $_clearField(5);
 
   @$pb.TagNumber(6)
-  $core.List<$core.int> get signKey => $_getN(4);
+  $core.List<$core.int> get signKey => $_getN(5);
   @$pb.TagNumber(6)
-  set signKey($core.List<$core.int> value) => $_setBytes(4, value);
+  set signKey($core.List<$core.int> value) => $_setBytes(5, value);
   @$pb.TagNumber(6)
-  $core.bool hasSignKey() => $_has(4);
+  $core.bool hasSignKey() => $_has(5);
   @$pb.TagNumber(6)
   void clearSignKey() => $_clearField(6);
 
   @$pb.TagNumber(7)
-  $core.List<$core.int> get boxKey => $_getN(5);
+  $core.List<$core.int> get boxKey => $_getN(6);
   @$pb.TagNumber(7)
-  set boxKey($core.List<$core.int> value) => $_setBytes(5, value);
+  set boxKey($core.List<$core.int> value) => $_setBytes(6, value);
   @$pb.TagNumber(7)
-  $core.bool hasBoxKey() => $_has(5);
+  $core.bool hasBoxKey() => $_has(6);
   @$pb.TagNumber(7)
   void clearBoxKey() => $_clearField(7);
 
   @$pb.TagNumber(8)
-  $core.List<$core.int> get boxKeySig => $_getN(6);
+  $core.List<$core.int> get boxKeySig => $_getN(7);
   @$pb.TagNumber(8)
-  set boxKeySig($core.List<$core.int> value) => $_setBytes(6, value);
+  set boxKeySig($core.List<$core.int> value) => $_setBytes(7, value);
   @$pb.TagNumber(8)
-  $core.bool hasBoxKeySig() => $_has(6);
+  $core.bool hasBoxKeySig() => $_has(7);
   @$pb.TagNumber(8)
   void clearBoxKeySig() => $_clearField(8);
 
   @$pb.TagNumber(9)
-  WellKnownLink get link => $_getN(7);
+  WellKnownLink get link => $_getN(8);
   @$pb.TagNumber(9)
   set link(WellKnownLink value) => $_setField(9, value);
   @$pb.TagNumber(9)
-  $core.bool hasLink() => $_has(7);
+  $core.bool hasLink() => $_has(8);
   @$pb.TagNumber(9)
   void clearLink() => $_clearField(9);
   @$pb.TagNumber(9)
-  WellKnownLink ensureLink() => $_ensure(7);
+  WellKnownLink ensureLink() => $_ensure(8);
+
+  @$pb.TagNumber(10)
+  $pb.PbList<VrfKey> get vrfKeys => $_getList(9);
 }
 
 /// Where and how to link.

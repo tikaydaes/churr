@@ -117,11 +117,16 @@ M('Handoff', [('creator', 'str'), ('inviters', '{str}'), ('joined_have', '{#Coun
   'a HandoffKeys message sealed from the old home to the new one (section 7, Sealing).')
 M('HandoffKey', [('epoch', 'int'), ('key', 'bytes'), ('servers', '[str]')], 'One key epoch\'s stream key and the servers it began for.')
 M('HandoffKeys', [('keys', '[#HandoffKey]')], 'Every stream key a channel\'s home hub holds, handed to the hub that takes the home over.')
+M('VrfKey', [('key', 'bytes'), ('began', 'time'), ('sig', 'bytes')],
+  'One key of a server\'s VRF key history (docs/DESIGN-FAIR.md): a compressed secp256k1 public key (33 bytes), when '
+  'it began, and the server\'s signature over the two (section 3, The VRF key).')
+W('VrfKeys', '[#VrfKey]', 'A server\'s VRF key history, oldest first.')
 
 BAGS['frame'] = OD([
     # hello
     ('versions', '[int]'), ('version', 'int'), ('kind', 'str'), ('name', 'str'), ('sign_key', 'bytes'),
     ('box_key', 'bytes'), ('box_key_sig', 'bytes'), ('nonce', 'bytes'), ('software', 'str'), ('limits', '#Limits'),
+    ('vrf_keys', '[#VrfKey]'),
     # auth, signed blocks, direct
     ('sig', 'bytes'), ('invite_proof', 'bytes'), ('signed', 'bytes'), ('home_hub', 'str'),
     # submit, deliver, ephemeral
@@ -164,7 +169,7 @@ F('relay', 'items')
 F('relay_ack', 'refused')
 F('error', 'code message retry_after_seconds stream_id origin_event_id clock')
 # The handshake.
-F('hello', 'versions version kind name sign_key box_key box_key_sig nonce software limits')
+F('hello', 'versions version kind name sign_key box_key box_key_sig nonce software limits vrf_keys')
 F('auth', 'sig invite_proof')
 F('ready', '')
 F('bye', 'reason')
@@ -197,7 +202,8 @@ F('stream_ctl', 'inner joined_have also', 'inner is a stream control Frame, as t
 
 # ------------------------------------------------------------------------------- what is signed as a block
 
-M('RosterServer', [('name', 'str'), ('sign_key', 'bytes'), ('box_key', 'bytes'), ('box_key_sig', 'bytes'), ('joined_at', 'time')])
+M('RosterServer', [('name', 'str'), ('sign_key', 'bytes'), ('box_key', 'bytes'), ('box_key_sig', 'bytes'), ('joined_at', 'time'),
+                   ('vrf_keys', '[#VrfKey]')])
 M('Roster', [('hub', 'str'), ('version', 'int'), ('at', 'time'), ('servers', '[#RosterServer]')],
   'The servers on a hub and their keys, signed by the hub.')
 M('Control', [('stream_id', 'uuid'), ('owner', 'str'), ('server', 'str'), ('new_owner', 'str'), ('reason', 'str'),
@@ -210,8 +216,9 @@ M('ChannelRecord', [('stream_id', 'uuid'), ('hub', 'str'), ('hub_key', 'bytes'),
                     ('managers', '[#ChannelAccount]'), ('invited', '[str]'), ('requests', '[str]'), ('epoch', 'int'),
                     ('joined', '[str]'), ('left', '[str]'), ('closed', 'bool'),
                     ('prepared', 'bool'), ('at', 'time'), ('private', 'bool'), ('moderators', '[#ChannelAccount]'),
-                    ('history_days', 'int')],
-  'Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a).')
+                    ('history_days', 'int'), ('vrf_keys', '{#VrfKeys}')],
+  'Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a). vrf_keys is '
+  'the VRF key history of every server and hub the record has named, kept for good.')
 M('ChannelCreate', [('stream_id', 'uuid'), ('name', 'str'), ('description', 'str'), ('listing', 'str'),
                     ('creator', '#ChannelAccount'), ('move_id', 'uuid'), ('servers', '[str]'), ('managers', '[#ChannelAccount]'),
                     ('epoch', 'int'), ('accept', 'bytes'), ('accept_sig', 'bytes'), ('at', 'time'),

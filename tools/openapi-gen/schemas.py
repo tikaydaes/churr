@@ -58,7 +58,18 @@ S('Server', 'What a server says about itself before and after sign-in.', {
    'welcome?': ('str', 'The server welcome text, in Churr Markdown. Only sent to a signed-in caller.'),
    'default_themes': ('#DefaultThemes',
                       "The server's default dark and light themes, for members who have not chosen their own. Sent "
-                      'before sign-in too, so a client can apply them at once.')})
+                      'before sign-in too, so a client can apply them at once.'),
+   'vrf_keys': ('[#VrfKey]',
+                "The server's VRF key history, oldest first; the last is the key it proves chance outcomes with now "
+                '(DESIGN-FAIR.md). A client pins it on first sight and warns when a later history is not the pinned '
+                'one with keys added after it.')})
+
+S('VrfKey', "One key of a server's VRF key history: what chance outcomes are proved under (DESIGN-FAIR.md, "
+            'LINK-PROTOCOL.md section 3).', {
+   'key': ('b64', 'The secp256k1 public key, 33 bytes, compressed.'),
+   'began': ('time', 'When the server began to use it.'),
+   'sig': ('b64', "The server's Ed25519 signature over the key and its start, by the layout of LINK-PROTOCOL.md "
+                  'section 3.')})
 
 S('SsoProviderSummary', 'A company sign-in provider as shown on the sign-in page.', {'id': 'uuid', 'kind': 'enum:oidc|saml', 'name': ('str', 'Shown on the sign-in button.')})
 
@@ -70,7 +81,9 @@ S('WellKnown', 'The document at `/.well-known/churr`, exactly as `docs/LINK-PROT
    'box_key?': ('b64', 'X25519 public key. Servers only.'),
    'box_key_sig?': ('b64', 'The signing key\'s signature over the box key, which ties the two together. Servers only.'),
    'link': ({'versions': ('[int]', 'Link protocol versions spoken.'), 'url': ('str', 'The address other servers and hubs dial.')},
-            'Where and how to link.')})
+            'Where and how to link.'),
+   'vrf_keys': ('[#VrfKey]', "The VRF key history, oldest first, each entry signed by `sign_key`: anyone can check a "
+                             "proof of a chance outcome against it with no account (DESIGN-FAIR.md).")})
 
 
 # ----------------------------------------------------------------------------

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 
 	"github.com/tikaydaes/churr/internal/auth"
+	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/version"
@@ -80,6 +81,13 @@ func (a *API) serverObject(ctx context.Context, signedIn bool) (map[string]any, 
 		}
 	}
 	a.addDefaultThemes(ctx, server) // themes.go
+	// The VRF key history, signed as on the link, for a client to pin
+	// (docs/DESIGN-FAIR.md section 1).
+	id := wire.Identity{Name: a.Hostname, Keys: a.Keys}
+	if a.Link != nil {
+		id = a.Link.Identity()
+	}
+	server["vrf_keys"] = id.VRFKeys()
 	return server, nil
 }
 
@@ -97,5 +105,6 @@ func (a *API) getWellKnown(r *Request) error {
 		"name": a.Hostname, "version": version.Version,
 		"sign_key": enc(a.Keys.SignPublic()), "box_key": enc(a.Keys.BoxPublic()),
 		"api": "/api/v1", "link": "/link/v1",
+		"vrf_keys": wire.Identity{Name: a.Hostname, Keys: a.Keys}.VRFKeys(),
 	})
 }

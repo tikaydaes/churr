@@ -4075,6 +4075,7 @@
    "sign_in": 9,
    "time_zone": 15,
    "version": 6,
+   "vrf_keys": 16,
    "welcome": 13
   },
   "ServerBroadcastFrame": {
@@ -4874,6 +4875,11 @@
    "kind": 3,
    "name": 4
   },
+  "VrfKey": {
+   "began": 4,
+   "key": 3,
+   "sig": 5
+  },
   "WakeUp": {
    "badge": 9,
    "call": 8,
@@ -4976,7 +4982,8 @@
    "kind": 4,
    "link": 9,
    "name": 5,
-   "sign_key": 6
+   "sign_key": 6,
+   "vrf_keys": 10
   },
   "WellKnownLink": {
    "url": 4,

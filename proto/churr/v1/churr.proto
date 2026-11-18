@@ -213,6 +213,7 @@ message Server {
   ServerLimits limits = 12;
   optional string welcome = 13;
   DefaultThemes default_themes = 14;
+  repeated VrfKey vrf_keys = 16;
 }
 
 message ServerSignIn {
@@ -288,6 +289,14 @@ message ThemeColours {
   optional string yel = 11;
 }
 
+// One key of a server's VRF key history: what chance outcomes are proved under (DESIGN-FAIR.md, LINK-PROTOCOL.md section 3).
+message VrfKey {
+  repeated int32 null_fields = 2;
+  optional bytes key = 3;
+  optional int64 began = 4; // time
+  optional bytes sig = 5;
+}
+
 // The error shape every failed request returns (CONVENTIONS.md, Errors).
 message Error {
   repeated int32 null_fields = 2;
@@ -304,6 +313,7 @@ message ErrorError {
 
 // The document at `/.well-known/churr`, exactly as `docs/LINK-PROTOCOL.md` defines it. A hub serves the same document with `kind` `hub` and no box key.
 message WellKnown {
+  repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   optional int64 churr = 3;
   optional WellKnownKind kind = 4;
@@ -312,6 +322,7 @@ message WellKnown {
   optional bytes box_key = 7;
   optional bytes box_key_sig = 8;
   WellKnownLink link = 9;
+  repeated VrfKey vrf_keys = 10;
 }
 
 // Where and how to link.

@@ -300,17 +300,19 @@ func (id Identity) hello() Frame {
 		Software: id.Software, Limits: &lim}
 	f.BoxKey = id.Keys.BoxPublic()
 	f.BoxKeySig = id.BoxKeySig()
+	f.VRFKeys = id.VRFKeys()
 	return f
 }
 
 // helloSound checks what both sides check of the other's hello before
-// anything else: a name, a kind, a signing key, and a box key its signing
-// key vouches for.
+// anything else: a name, a kind, a signing key, and a box key and a VRF key
+// history its signing key vouches for.
 func helloSound(h Frame) bool {
 	if h.Frame != FHello || h.Name == "" || len(h.SignKey) != 32 || len(h.Nonce) != 32 {
 		return false
 	}
-	return (h.Kind == KindServer || h.Kind == KindHub) && VerifyBoxKey(h.Name, h.SignKey, h.BoxKey, h.BoxKeySig)
+	return (h.Kind == KindServer || h.Kind == KindHub) && VerifyBoxKey(h.Name, h.SignKey, h.BoxKey, h.BoxKeySig) &&
+		CheckVRFKeys(h.Name, h.SignKey, h.VRFKeys) == nil
 }
 
 // DialOptions is what the dialling side brings to a handshake.

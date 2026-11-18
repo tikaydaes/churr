@@ -18,6 +18,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+
+	"github.com/tikaydaes/churr/internal/secret"
 )
 
 // The numbers of sections 2, 6 and 23.
@@ -178,6 +180,9 @@ type Signer interface {
 	SignPublic() ed25519.PublicKey
 	BoxPublic() []byte
 	OpenBoxBetween(sealed []byte, from, to string) ([]byte, error)
+	// VRFHistory is every VRF key the party has had, oldest first
+	// (secret.Keys.VRFHistory).
+	VRFHistory() []secret.VRFKey
 }
 
 // verify checks an Ed25519 signature and never panics on a key of the wrong

@@ -53,7 +53,7 @@ func TestWellKnownAndFingerprint(t *testing.T) {
 	b, _ := json.Marshal(id.WellKnown())
 	var fields map[string]json.RawMessage
 	json.Unmarshal(b, &fields)
-	for _, f := range []string{"churr", "kind", "name", "sign_key", "box_key", "box_key_sig", "link"} {
+	for _, f := range []string{"churr", "kind", "name", "sign_key", "box_key", "box_key_sig", "link", "vrf_keys"} {
 		if _, ok := fields[f]; !ok {
 			t.Errorf("the document lacks %s", f)
 		}
@@ -70,6 +70,14 @@ func TestWellKnownAndFingerprint(t *testing.T) {
 	if err := w.Check("b.example"); err == nil {
 		t.Error("a document for another host was accepted")
 	}
+	if len(w.VRFKeys) != 1 || string(w.VRFKeys[0].Key) != string(id.Keys.VRFHistory()[0].Key) {
+		t.Errorf("the document's VRF keys are %+v, want the one key the server has", w.VRFKeys)
+	}
+	w.VRFKeys[0].Key[1] ^= 1
+	if err := w.Check("a.example"); err == nil {
+		t.Error("a changed VRF key was accepted")
+	}
+	w.VRFKeys[0].Key[1] ^= 1
 	w.BoxKey[0] ^= 1
 	if err := w.Check("a.example"); err == nil {
 		t.Error("a changed box key was accepted")

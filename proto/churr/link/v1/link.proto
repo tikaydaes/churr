@@ -261,6 +261,18 @@ message HandoffKeys {
   repeated HandoffKey keys = 1;
 }
 
+// One key of a server's VRF key history (docs/DESIGN-FAIR.md): a compressed secp256k1 public key (33 bytes), when it began, and the server's signature over the two (section 3, The VRF key).
+message VrfKey {
+  optional bytes key = 1;
+  optional int64 began = 2; // time
+  optional bytes sig = 3;
+}
+
+// A server's VRF key history, oldest first.
+message VrfKeys {
+  repeated VrfKey values = 1;
+}
+
 message SubmitFrame {
   Envelope envelope = 15;
   repeated Envelope envelopes = 16;
@@ -337,6 +349,7 @@ message HelloFrame {
   optional bytes nonce = 8;
   optional string software = 9;
   Limits limits = 10;
+  repeated VrfKey vrf_keys = 50;
 }
 
 message AuthFrame {
@@ -525,6 +538,7 @@ message RosterServer {
   optional bytes box_key = 3;
   optional bytes box_key_sig = 4;
   optional int64 joined_at = 5; // time
+  repeated VrfKey vrf_keys = 6;
 }
 
 // The servers on a hub and their keys, signed by the hub.
@@ -554,7 +568,7 @@ message ChannelAccount {
   optional string username = 3;
 }
 
-// Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a).
+// Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a). vrf_keys is the VRF key history of every server and hub the record has named, kept for good.
 message ChannelRecord {
   reserved 14, 17;
   optional bytes stream_id = 1; // identifier
@@ -578,6 +592,7 @@ message ChannelRecord {
   optional bool private = 21;
   repeated ChannelAccount managers = 22;
   optional int64 history_days = 24;
+  map<string, VrfKeys> vrf_keys = 25;
 }
 
 // A server shares a channel to a hub, signed by that server.

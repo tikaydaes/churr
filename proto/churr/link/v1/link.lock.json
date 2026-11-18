@@ -173,7 +173,8 @@
    "t2": 28,
    "to": 24,
    "version": 2,
-   "versions": 1
+   "versions": 1,
+   "vrf_keys": 50
   }
  },
  "messages": {
@@ -252,7 +253,8 @@
    "requests": 12,
    "servers": 9,
    "stream_id": 1,
-   "version": 5
+   "version": 5,
+   "vrf_keys": 25
   },
   "Clock": {
    "asymmetry_ms": 9,
@@ -545,11 +547,20 @@
    "box_key_sig": 4,
    "joined_at": 5,
    "name": 1,
-   "sign_key": 2
+   "sign_key": 2,
+   "vrf_keys": 6
   },
   "SyncStream": {
    "have": 2,
    "v": 1
+  },
+  "VrfKey": {
+   "began": 2,
+   "key": 1,
+   "sig": 3
+  },
+  "VrfKeys": {
+   "values": 1
   }
  },
  "unions": {

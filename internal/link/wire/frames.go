@@ -158,6 +158,9 @@ type Frame struct {
 	Nonce     Bytes   `json:"nonce,omitempty"`
 	Software  string  `json:"software,omitempty"`
 	Limits    *Limits `json:"limits,omitempty"`
+	// VRFKeys is the sender's VRF key history, each entry signed by its
+	// signing key (identity.go).
+	VRFKeys []VRFKey `json:"vrf_keys,omitempty"`
 
 	// auth, signed blocks and direct messages all carry a signature
 	Sig         Bytes `json:"sig,omitempty"`
@@ -337,6 +340,9 @@ type RosterServer struct {
 	BoxKey    Bytes      `json:"box_key"`
 	BoxKeySig Bytes      `json:"box_key_sig"`
 	JoinedAt  model.Time `json:"joined_at"`
+	// VRFKeys is the server's VRF key history as the hub holds it, each
+	// entry signed by the server (identity.go).
+	VRFKeys []VRFKey `json:"vrf_keys,omitempty"`
 }
 
 // Roster is the signed content of a roster frame.
@@ -422,6 +428,11 @@ type ChannelRecord struct {
 	// Its listing is unlisted and stays so; the hub refuses to list it, and
 	// its people are admitted by its moderators (section 23a).
 	Private bool `json:"private,omitempty"`
+	// VRFKeys is, for every server the record has ever named and for every
+	// hub that has signed it, its VRF key history as the hub holds it, each
+	// entry signed by that party (identity.go). A party stays here after it
+	// leaves, so a draw it made can still be checked (docs/DESIGN-FAIR.md).
+	VRFKeys map[string][]VRFKey `json:"vrf_keys,omitempty"`
 }
 
 // Has reports whether a server is in the record's server list.
