@@ -83,9 +83,12 @@ func mask(v any) any {
 	case map[string]any:
 		// An export's size is that of a zip of what differs between the
 		// two servers, identifiers and times, so it differs too.
+		// A database's size is read when asked, and PostgreSQL's grows
+		// between two requests.
 		_, export := x["started_by_id"]
+		database := x["kind"] == "postgres" || x["kind"] == "sqlite"
 		for k, e := range x {
-			if strings.HasSuffix(k, "_seconds") || strings.HasSuffix(k, "_bytes") || k == "newest" || (export && k == "size") {
+			if strings.HasSuffix(k, "_seconds") || strings.HasSuffix(k, "_bytes") || k == "newest" || ((export || database) && k == "size") {
 				x[k] = "<number>"
 			} else {
 				x[k] = mask(e)
