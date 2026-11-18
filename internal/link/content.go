@@ -10,6 +10,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/chat"
@@ -408,6 +409,10 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 	case rt.jobs <- func() { s.retryHeld(s.ctx, rt) }:
 	default:
 	}
+	if s.holder && h.Last && asked {
+		// Whoever answered has given the hub all it holds of the channel.
+		s.settleOwed(ctx, st.ID, m.from.Name, true)
+	}
 	if h.Last && (m.Re == "" || asked) {
 		rt.mu.Lock()
 		rt.historyHere = true
@@ -427,6 +432,10 @@ func (s *Service) isHomeHub(st store.Stream, sv store.Server) bool {
 	return hubOwned(st) && st.HomeHub != "" && sv.Name == st.HomeHub && !s.isSelf(sv.ID)
 }
 
+// deafToHome, when a test sets it for a server's name, has that server
+// leave unanswered every request for the snapshot of a channel.
+var deafToHome sync.Map
+
 // onHistoryRequest answers a server that fell behind further than the log
 // reaches with the messages created in the range it names.
 func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
@@ -441,6 +450,9 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 	}
 	if json.Unmarshal(m.raw, &b) != nil {
 		return
+	}
+	if _, deaf := deafToHome.Load(s.id.Name); deaf && b.First {
+		return // a test plays a server that does not answer its home hub
 	}
 	st, err := s.store.Streams().Get(ctx, b.StreamID)
 	if err != nil || !s.answersFor(st, m.from) || st.PeerID != m.peer {

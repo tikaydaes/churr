@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
@@ -171,4 +172,15 @@ func (h *Hub) TestQueued(server string) int {
 		return c.conn.Queued()
 	}
 	return -1
+}
+
+// TestHolder stops the hub's holder (on false) or starts it again (on true),
+// as a holder that crashed or was cut off from its hub: what it missed
+// meanwhile it learns when it connects again.
+func (h *Hub) TestHolder(on bool) error {
+	if !on {
+		h.stopHolder()
+		return nil
+	}
+	return h.startHolder(context.Background())
 }

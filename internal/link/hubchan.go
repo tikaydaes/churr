@@ -931,22 +931,24 @@ var historyAnswerDelay atomic.Int64
 // server would know none of the channel's members, and would take nothing
 // they say.
 //
-// A hub's holder that has just become the home of a channel is the one that
-// asks the channel's instances instead, one after another, longest-standing
-// first: they hold what was said before the hub held the channel, and give
-// the hub all of it (onHistoryRequest).
+// A hub's holder that has just become the home of a channel asks instead the
+// hub it was handed over from and the channel's instances, every one of them,
+// until each has answered: they hold what was said before the hub held the
+// channel, and give the hub all of it (onHistoryRequest, askOwed).
 func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
+	if s.holder {
+		// The hub's copy waits on nobody's leave: it asks until it has
+		// everything, and remembers whom it still waits on (holder.go).
+		s.askOwed(ctx, id)
+		return
+	}
 	rt := s.rt(id)
 	here := func() bool {
 		rt.mu.Lock()
 		defer rt.mu.Unlock()
 		return rt.historyHere
 	}
-	tries := 6
-	if s.holder {
-		tries = 60 // the hub's copy waits on nobody's leave; it keeps asking
-	}
-	for try := 0; try < tries; try++ {
+	for try := 0; try < 6; try++ {
 		if try > 0 {
 			select {
 			case <-ctx.Done():
@@ -963,18 +965,7 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 			return
 		}
 		var ask []store.Server
-		if s.holds(rec) {
-			if from := s.heldFrom(ctx, id); from != "" {
-				if hub, ok := s.clusterHub(ctx, st, from); ok {
-					ask = append(ask, hub) // the hub it was handed over from
-				}
-			}
-			for _, name := range rec.Servers {
-				if sv, err := s.store.Peers().ServerByName(ctx, name); err == nil && name != s.id.Name {
-					ask = append(ask, sv)
-				}
-			}
-		} else if hub, ok := s.homeHub(ctx, st); ok {
+		if hub, ok := s.homeHub(ctx, st); ok && !s.holds(rec) {
 			ask = []store.Server{hub}
 		}
 		for _, sv := range ask {

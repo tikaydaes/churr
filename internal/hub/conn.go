@@ -131,6 +131,7 @@ func (h *Hub) serveLink(w http.ResponseWriter, r *http.Request) {
 	h.sendHeld(sc)
 	h.resendChannels(sc)
 	h.resendStopped(sc)
+	h.nudgeHolder(sc.name)
 	h.Reconcile()
 	ctx := r.Context()
 	for {

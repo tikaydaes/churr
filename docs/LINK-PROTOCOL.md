@@ -1963,12 +1963,23 @@ history with every other instance of the channel switched off.
 
 When a hub becomes the home of a channel (shared to it, moved onto it
 from a direct link, or handed to it by another hub of its cluster), it
-asks, with `history_request` carrying `first: true`, the hub it was
-handed over from if there is one (section 23b), then the channel's
-instances, longest-standing first, until one answers. An
-instance answers its channel's home hub with everything it holds of
-the channel, whatever the channel's days of history, and in a private
-channel from its first message, not from its people's first joins.
+writes down who may hold what was said before: the hub it was handed
+over from if there is one (section 23b), then every instance in the
+record, each of which may hold a part. It asks each of them, with
+`history_request` carrying `first: true`, and keeps asking, in rounds
+from 5 seconds apart doubling to 2 minutes, at once when one of them
+connects to the hub or a trunk comes up, and again after the hub
+restarts, until each has answered. One is taken off the list when the
+last part of its answer is stored, when it answers `unknown_stream`
+(it holds nothing of the channel), or when it is on neither the hub
+nor its cluster any more; the answer of the hub it was handed over
+from, which holds the channel whole, settles the list. The channel's
+earlier history is complete when the list is empty. An instance
+answers its channel's home hub with everything it holds of the
+channel, whatever the channel's days of history, and in a private
+channel from its first message, not from its people's first joins; it
+does so also from the copy it kept after leaving the channel or being
+taken out of it.
 Wherever this section says "the owner" of history, read the home hub;
 for what the hub was given when it became the home, the instance that
 answered it.
@@ -3426,7 +3437,9 @@ is given it by the hub with every other instance switched off.
   from the log what came after. Of a channel handed to it by another
   hub of its cluster it asks that hub's holder first, which holds it
   whole (section 23b, "Failure of a home hub, and moving a home", step
-  6).
+  6). It keeps in its database whom it still waits on, and asks them
+  until each has answered: after a restart, and whenever one of them
+  may have come back.
 - **Files.** It fetches every file the channel's events name (an
   attachment, a card's image, a custom emoji, a member's picture) from
   its origin when the event passes, checks it by its hash and keeps it
@@ -4071,11 +4084,16 @@ transaction on the new one.
    channel's instances after it if the old home does not answer, and
    asks for each file from the old home and from the file's origin by
    turns. Those direct messages go between the two hubs' holders as the
-   hubs' own, over the trunks in `forward`. The old home's holder takes
-   nothing more of the channel, answers only the new home for it, and
-   forgets its copy 7 days after the handover (the time a file is asked
-   for before it is given up). From then a hub that only carries the
-   channel holds none of it.
+   hubs' own, over the trunks in `forward`. The new home goes on asking
+   the old home until it has answered (section 13, "History on
+   joining"). The old home's holder takes nothing more of the channel,
+   answers only the new home for it, and forgets its copy 7 days after
+   it learned of the handover (the time a file is asked for before it
+   is given up). A holder that was not connected to its hub at the
+   handover learns of it when it connects: its hub sends it, for every
+   channel it handed over, the record by which it did and the new
+   home's newest. From then a hub that only carries the channel holds
+   none of it.
 
 Until one of those answers is in the old home's hands it cannot know
 which hub is the home, and goes on signing nothing; the servers that

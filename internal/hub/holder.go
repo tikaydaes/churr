@@ -206,6 +206,8 @@ func (h *Hub) serveHolder(r *http.Request, conn *wire.Conn) {
 	h.sendRoster(sc)
 	conn.Send(h.clusterFrame())
 	h.resendChannels(sc)
+	h.resendHandedOver(sc)
+	h.nudgeHolder("")
 	ctx := r.Context()
 	for {
 		f, raw, err := conn.Read(ctx)
@@ -276,6 +278,56 @@ func (h *Hub) holderDirect(sc *serverConn, f wire.Frame, raw []byte) error {
 func (h *Hub) toHolder(f wire.Frame) {
 	if sc := h.holderConn(); sc != nil {
 		sc.conn.Send(wire.Frame{Frame: wire.FDirect, ID: sc.conn.NextID(), From: f.From, To: f.To, Body: f.Body, Sig: f.Sig})
+	}
+}
+
+// nudgeHolder tells the holder that a server has connected, or with "" that
+// hubs or servers behind a trunk can be reached again: it asks at once
+// whoever it still waits on for a channel's earlier history.
+func (h *Hub) nudgeHolder(server string) {
+	if l := h.Holder(); l != nil {
+		go l.Nudge(server)
+	}
+}
+
+// resendHandedOver tells the holder, as it connects, of every channel this
+// hub was the home of and has handed to another hub of the cluster: the
+// record by which it handed the channel over, and the new home's newest. A
+// holder that was not connected when the channel was handed over learns it
+// here, takes nothing more of the channel, answers the new home, and lets
+// its copy go HandOverKeep after (link/holder.go). A holder that holds
+// nothing of the channel does nothing with them.
+func (h *Hub) resendHandedOver(sc *serverConn) {
+	rows, err := h.db.Query(`SELECT stream_id FROM channels`)
+	if err != nil {
+		return
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if rows.Scan(&id) == nil {
+			ids = append(ids, id)
+		}
+	}
+	rows.Close()
+	for _, id := range ids {
+		m := h.lock(id)
+		c, err := loadChannel(h.db, id)
+		m.Unlock()
+		if err != nil || h.owned(c) || c.rec.HomeHub == h.id.Name || len(c.signed) == 0 {
+			continue
+		}
+		mine := false
+		for _, ho := range c.handovers {
+			var rec wire.ChannelRecord
+			if wire.VerifyBlock(wire.Frame{Frame: wire.FChannel, Signed: ho.Signed, Sig: ho.Sig}, h.keys.SignPublic(), &rec) == nil {
+				sc.conn.Send(wire.Frame{Frame: wire.FChannel, Signed: ho.Signed, Sig: ho.Sig, HomeHub: c.rec.HomeHub})
+				mine = true
+			}
+		}
+		if mine {
+			sc.conn.Send(wire.Frame{Frame: wire.FChannel, Signed: c.signed, Sig: c.sig, HomeHub: c.rec.HomeHub})
+		}
 	}
 }
 

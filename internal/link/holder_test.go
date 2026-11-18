@@ -3,9 +3,11 @@ package link_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/tikaydaes/churr/internal/link"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/testkit"
@@ -356,5 +358,106 @@ func TestTheHubAloneGivesAJoinerEverything(t *testing.T) {
 	})
 	if r := d.Server.Link.StatsNow().Rejected; len(r) != 0 {
 		t.Fatalf("d rejected %v", r)
+	}
+}
+
+// The hub's holder writes down whom it still waits on for what was said
+// before it held a channel, and asks until it has it: an instance that does
+// not answer is asked again, round after round; after the hub restarts the
+// asking resumes from what was written down; and the instance, away through
+// all of it, is asked as soon as it connects again.
+func TestTheHubAsksForEarlierHistoryUntilItHasIt(t *testing.T) {
+	defer link.SetFirstHistoryWait(200 * time.Millisecond)()
+	defer link.SetHistoryOwedWait(time.Hour)()
+	deaf := link.SetDeafToHome("a.localhost")
+	defer deaf()
+	l := testkit.NewLinked(t, 2, true)
+	a := l.Servers[0]
+	ch := a.Owner.Channel("archive", false)
+	a.Owner.Post(ch, "said before the hub held it")
+	stream, _ := l.Share(0, ch, "archive", map[string]any{"listing": "open", "history_days": 30}, 1)
+	ctx, id := context.Background(), model.StreamID(stream)
+	owed := func() string {
+		if h := l.Hub.Hub.Holder(); h != nil {
+			return fmt.Sprint(h.HistoryOwed(ctx, id))
+		}
+		return "no holder"
+	}
+	testkit.Eventually(t, "the holder writes down that a owes it the history", func() bool { return owed() == "[a.localhost]" })
+	time.Sleep(time.Second) // rounds of asking, unanswered
+	if _, held := heldMessages(t, l.Hub, stream); len(held) != 0 || owed() != "[a.localhost]" {
+		t.Fatalf("the hub holds %v while a has answered nothing; it waits on %s", held, owed())
+	}
+
+	// a goes away and the hub restarts. From here on only a's connecting
+	// again wakes the asking: the rounds would wait an hour.
+	a.Stop()
+	defer link.SetFirstHistoryWait(time.Hour)()
+	l.Hub.Restart()
+	deaf()
+	testkit.Eventually(t, "after the restart the holder still waits on a", func() bool { return owed() == "[a.localhost]" })
+	a.Restart()
+	testkit.Eventually(t, "the hub holds what a said before the hub held the channel", func() bool {
+		_, held := heldMessages(t, l.Hub, stream)
+		_, ok := held["said before the hub held it"]
+		return ok
+	})
+	testkit.Eventually(t, "nobody owes the hub anything more", func() bool { return owed() == "[]" })
+}
+
+// The old home of a channel handed to another hub of the cluster whose
+// holder was cut off at the moment of the handover learns of it when the
+// holder connects again: it takes nothing more of the channel, gives the new
+// home what it holds, and lets its copy go after the same seven days. Until
+// then the new home goes on waiting for it, with every instance away.
+func TestAHandoverTheOldHomeMissedIsLearnedWhenItReturns(t *testing.T) {
+	defer link.SetFirstHistoryWait(200 * time.Millisecond)()
+	defer link.SetHistoryOwedWait(500 * time.Millisecond)()
+	l, stream, local := clustered(t, "star")
+	l.Servers[1].Owner.Post(local[1], "said before the handover")
+	old, next := l.Cluster.Hubs[0], l.Cluster.Hubs[2]
+	ctx, id := context.Background(), model.StreamID(stream)
+	holds := func(h *testkit.TestHub) bool {
+		_, held := heldMessages(t, h, stream)
+		_, said := held["said before the handover"]
+		return said
+	}
+	testkit.Eventually(t, "the home hub holds the message", func() bool { return holds(old) })
+	if err := old.Hub.TestHolder(false); err != nil {
+		t.Fatal(err)
+	}
+	for _, ts := range l.Servers {
+		ts.Stop()
+	}
+	if err := old.Hub.Rehome(stream, testkit.HubName(2)); err != nil {
+		t.Fatal(err)
+	}
+	old.Hub.Reconcile()
+	testkit.Eventually(t, "the move is done", func() bool { return old.Hub.RehomeResult(stream) == "done" })
+	testkit.Eventually(t, "the new home waits on the old one", func() bool {
+		owed := next.Hub.Holder().HistoryOwed(ctx, id)
+		return len(owed) > 0 && owed[0] == testkit.HubName(0)
+	})
+	time.Sleep(time.Second)
+	if holds(next) {
+		t.Fatal("the new home holds the message though nobody that holds it could answer")
+	}
+
+	if err := old.Hub.TestHolder(true); err != nil {
+		t.Fatal(err)
+	}
+	testkit.Eventually(t, "the old home's holder learns it is no longer the home", func() bool {
+		st, err := old.Hub.HolderStore().Streams().Get(ctx, id)
+		return err == nil && st.State == store.StreamRemoved && st.HomeHub == testkit.HubName(2)
+	})
+	testkit.Eventually(t, "the new home holds the message, from the old home", func() bool { return holds(next) })
+	testkit.Eventually(t, "and waits on nobody", func() bool { return len(next.Hub.Holder().HistoryOwed(ctx, id)) == 0 })
+	old.Hub.Holder().ForgetHandedOver(ctx, model.Now().Add(-time.Minute))
+	if _, err := old.Hub.HolderStore().Streams().Get(ctx, id); err != nil {
+		t.Fatal("the old home let its copy go before its seven days")
+	}
+	old.Hub.Holder().ForgetHandedOver(ctx, model.Now().Add(time.Minute))
+	if _, err := old.Hub.HolderStore().Streams().Get(ctx, id); err == nil {
+		t.Fatal("the old home still holds the channel it handed over")
 	}
 }

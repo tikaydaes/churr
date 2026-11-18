@@ -173,6 +173,10 @@ type Service struct {
 	// tallyFold replaces the second within which changes to one poll are
 	// folded into one form.tallied. Tests set it.
 	tallyFold time.Duration
+	// owing are, on a hub's holder, the channels whose earlier history it is
+	// still asking for, each with the channel that wakes its asking
+	// (holder.go).
+	owing map[model.StreamID]chan struct{}
 	// lastNames is the name and topic last sent for each owned stream.
 	lastNames map[model.StreamID][2]string
 	// profileVersions is the version last given each of this server's own

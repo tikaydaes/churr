@@ -352,7 +352,9 @@ cluster until others join through it.
   says the running hub has not answered and asks whether `churr-hub
   serve` is running. The new home then fetches the channel's whole
   contents and files from this hub's `holder/`, which keeps them for
-  7 days after the move and then lets them go. A hub that is to be
+  7 days after the move and then lets them go. The new home keeps
+  asking until this hub has answered, also across restarts of either
+  hub. A hub that is to be
   shut down for good is emptied of its channels this way first, and
   kept running for those 7 days, or until the new home's channels show
   their files, so the new home can fetch everything; a hub that only

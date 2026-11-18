@@ -585,6 +585,9 @@ func (h *Hub) trunkUp(tc *trunkConn) {
 	if tc.started.CompareAndSwap(false, true) {
 		go h.ship(tc)
 	}
+	// Hubs and servers behind it can be reached again: the holder asks them
+	// for any channel history it still lacks (holder.go).
+	h.nudgeHolder("")
 }
 
 func (h *Hub) dispatchTrunk(tc *trunkConn, f wire.Frame, raw []byte) error {

@@ -2800,7 +2800,10 @@ emoji, its members and the profiles and pictures of everyone who
 wrote in it), so its operator can read the channel. Nothing of the channel depends on any instance staying: an
 instance that leaves takes none of its history away, and an instance
 that joins is given its history by the hub even with every other
-instance switched off. A private channel is still not encrypted against
+instance switched off. What was said before the hub held the channel
+the hub asks the instances for, and the hub it was handed over from,
+until it has it: across restarts, and as soon as one that holds it
+comes back. A private channel is still not encrypted against
 the hub or its instances: for that, use a sealed chat. Being private
 keeps out, as well as it can, the people nobody invited.
 

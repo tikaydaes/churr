@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/link/wire"
@@ -52,7 +55,8 @@ func (s *Service) IsHolder() bool { return s.holder }
 
 // Hold makes, once, the peer a holder dials: its own hub, at the address of
 // the internal connection, under the hub's own key. Start dials it from then
-// on, as it dials any peer.
+// on, as it dials any peer. Each time, it asks again for the earlier history
+// of every channel it still lacks some of.
 func (s *Service) Hold(ctx context.Context, url string) error {
 	if !s.holder {
 		return errors.New("link: only a hub's holder holds for a hub")
@@ -61,6 +65,7 @@ func (s *Service) Hold(ctx context.Context, url string) error {
 	if err != nil {
 		return err
 	}
+	s.resumeOwed(ctx)
 	for _, p := range peers {
 		if p.Kind == wire.KindHub && p.HubName == s.id.Name {
 			return nil
@@ -107,10 +112,27 @@ func (s *Service) holdChannel(ctx context.Context, pc *peerConn, f wire.Frame, r
 	if err != nil {
 		return err
 	}
+	// Who may hold what was said before the hub held the channel: the hub
+	// it was handed over from, which holds it whole, then every instance in
+	// the record. Each is asked until it has answered (askOwed), and the
+	// list is kept, so a restart or an instance away for a week costs none
+	// of it.
+	var owed []string
 	if rec.Hub != s.id.Name {
 		// The record by which another hub of the cluster handed the channel
 		// to this one: that hub holds it whole, and is asked for it first.
 		s.store.Settings().Set(ctx, heldFromKey(id), rec.Hub, "")
+		owed = append(owed, rec.Hub)
+	}
+	for _, name := range rec.Servers {
+		if name != s.id.Name && !slices.Contains(owed, name) {
+			owed = append(owed, name)
+		}
+	}
+	if len(owed) > 0 {
+		if err := s.store.Settings().Set(ctx, owedKey(id), owed, ""); err != nil {
+			return err
+		}
 	}
 	s.audit(ctx, s.store, "", "link.channel_held", "stream", string(id), map[string]any{"name": rec.Name})
 	if err := s.joinedHub(ctx, st, rec, f.Have); err != nil {
@@ -165,6 +187,7 @@ func (s *Service) ForgetHeld(ctx context.Context, id model.StreamID) {
 	s.store.Streams().Delete(ctx, id)
 	s.store.Settings().Delete(ctx, heldFromKey(id))
 	s.store.Settings().Delete(ctx, handedOverKey(id))
+	s.store.Settings().Delete(ctx, owedKey(id))
 	s.audit(ctx, s.store, "", "link.channel_forgotten", "stream", string(id), nil)
 }
 
@@ -217,7 +240,11 @@ func (s *Service) clusterHub(ctx context.Context, st store.Stream, name string) 
 // history or files: in it, or a holder whose hub handed the channel to the
 // asking hub, which is the channel's home now.
 func (s *Service) answersFor(st store.Stream, from store.Server) bool {
-	return st.State == store.StreamActive || (s.holder && st.State == store.StreamRemoved && s.isHomeHub(st, from))
+	// An instance that has left or been taken out of the channel still
+	// answers its home hub with the copy it kept: the hub may not yet hold
+	// what it said before the hub became the home.
+	return st.State == store.StreamActive || (st.ConversationID != "" && s.isHomeHub(st, from)) ||
+		(s.holder && st.State == store.StreamRemoved && s.isHomeHub(st, from))
 }
 
 // handedOver notes that the channel this holder kept has been handed to
@@ -240,6 +267,210 @@ func (s *Service) ForgetHandedOver(ctx context.Context, before model.Time) {
 		var at int64
 		if err == nil && found && json.Unmarshal(raw, &at) == nil && model.Time(at) < before {
 			s.ForgetHeld(ctx, id)
+		}
+	}
+}
+
+// ------------------------------------------------------- history still owed
+
+// What was said in a channel before its hub became the home is held by
+// others: the hub it was handed over from, and the channel's instances, each
+// of which may hold a part (one that joined late, one whose retention took
+// some). The holder keeps, in its database, the list of those it has not yet
+// had an answer from (owedKey), and asks each of them with history_request
+// carrying `first: true` until it has: after a restart, and whenever one of
+// them may have come back. The channel's earlier history is complete when
+// the list is empty: when the hub it was handed over from has answered (it
+// holds the channel whole), or when every one of them has answered or can
+// never answer (it holds nothing of the channel, or is gone from the hub and
+// the cluster).
+
+func owedKey(id model.StreamID) string { return "link.history_owed." + string(id) }
+
+// owedWait is the longest the holder waits between two rounds of asking
+// for history still owed; the first wait is firstHistoryWait, doubling. A
+// server that connects to the hub wakes it at once (Nudge). Tests shorten
+// it.
+var owedWait atomic.Int64
+
+func init() { owedWait.Store(int64(2 * time.Minute)) }
+
+// owedMu serialises changes to the lists of history still owed.
+var owedMu sync.Mutex
+
+// HistoryOwed is who the holder still waits on for a channel's earlier
+// history, in the order it asks them; empty when it has all of it.
+func (s *Service) HistoryOwed(ctx context.Context, id model.StreamID) []string {
+	raw, found, err := s.store.Settings().Get(ctx, owedKey(id))
+	var out []string
+	if err != nil || !found || json.Unmarshal(raw, &out) != nil {
+		return nil
+	}
+	return out
+}
+
+// settleOwed takes a server off the list of those a channel's earlier
+// history is owed by: it has answered, all it holds, or it never can. The
+// hub the channel was handed over from holds the channel whole, so its
+// answer settles the whole list.
+func (s *Service) settleOwed(ctx context.Context, id model.StreamID, name string, answered bool) {
+	owedMu.Lock()
+	defer owedMu.Unlock()
+	owed := s.HistoryOwed(ctx, id)
+	if !slices.Contains(owed, name) {
+		return
+	}
+	if answered && name == s.heldFrom(ctx, id) {
+		owed = nil
+	} else {
+		owed = slices.DeleteFunc(owed, func(n string) bool { return n == name })
+	}
+	if !answered {
+		s.log.Warn("link: a server that may hold some of a channel's earlier history cannot give it", "stream", id, "server", name)
+		s.audit(ctx, s.store, "", "link.history_unavailable", "stream", string(id), map[string]any{"server": name})
+	}
+	if len(owed) == 0 {
+		s.store.Settings().Delete(ctx, owedKey(id))
+		s.audit(ctx, s.store, "", "link.history_complete", "stream", string(id), nil)
+		return
+	}
+	s.store.Settings().Set(ctx, owedKey(id), owed, "")
+}
+
+// resumeOwed starts asking again, after the holder has started, for every
+// channel whose earlier history is still owed.
+func (s *Service) resumeOwed(ctx context.Context) {
+	ids, err := s.Held(ctx)
+	if err != nil {
+		return
+	}
+	for _, id := range ids {
+		if len(s.HistoryOwed(ctx, id)) > 0 {
+			s.wg.Add(1)
+			go func() {
+				defer s.wg.Done()
+				s.askOwed(s.ctx, id)
+			}()
+		}
+	}
+}
+
+// Nudge tells the holder that a server has connected to its hub, or, with
+// "", that a trunk to another hub of the cluster has come up: whoever it
+// still waits on for a channel's earlier history may answer now, and is
+// asked at once.
+func (s *Service) Nudge(server string) {
+	if !s.holder {
+		return
+	}
+	s.mu.Lock()
+	wake := make(map[model.StreamID]chan struct{}, len(s.owing))
+	for id, ch := range s.owing {
+		wake[id] = ch
+	}
+	s.mu.Unlock()
+	for id, ch := range wake {
+		if server != "" && !slices.Contains(s.HistoryOwed(s.ctx, id), server) {
+			continue
+		}
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
+}
+
+// askOwed asks, round after round, everyone a channel's earlier history is
+// still owed by, until nobody is left or the channel is no longer this
+// holder's to keep. One runs per channel.
+func (s *Service) askOwed(ctx context.Context, id model.StreamID) {
+	wake := make(chan struct{}, 1)
+	s.mu.Lock()
+	if s.owing == nil {
+		s.owing = map[model.StreamID]chan struct{}{}
+	}
+	if _, running := s.owing[id]; running {
+		s.mu.Unlock()
+		return
+	}
+	s.owing[id] = wake
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		delete(s.owing, id)
+		s.mu.Unlock()
+	}()
+	rt := s.rt(id)
+	wait := time.Duration(firstHistoryWait.Load())
+	for {
+		st, err := s.store.Streams().Get(ctx, id)
+		if err != nil || st.State != store.StreamActive {
+			return
+		}
+		owed := s.HistoryOwed(ctx, id)
+		if len(owed) == 0 {
+			return
+		}
+		from := s.heldFrom(ctx, id)
+		for _, name := range owed {
+			if !slices.Contains(s.HistoryOwed(ctx, id), name) {
+				continue
+			}
+			var sv store.Server
+			ok := false
+			if name == from {
+				sv, ok = s.clusterHub(ctx, st, name)
+			} else if row, err := s.store.Peers().ServerByName(ctx, name); err == nil {
+				sv, ok = row, s.reaches(ctx, store.Peer{ID: st.PeerID, Kind: wire.KindHub}, row.ID)
+			}
+			if !ok {
+				// Gone from the hub and the cluster: nobody can reach it
+				// again to ask.
+				s.settleOwed(ctx, id, name, false)
+				continue
+			}
+			ch := make(chan directMessage, 4)
+			msg, err := s.sendDirectAwait(ctx, st.PeerID, sv, kHistoryRequest, map[string]any{"stream_id": id, "first": true}, ch)
+			if err != nil {
+				break // the hub is not connected: the next round
+			}
+			rt.mu.Lock()
+			rt.firstAsked[msg] = true
+			rt.mu.Unlock()
+			// The parts are taken as they arrive (onHistory), which settles
+			// the server's debt with the last of them; this only waits to see
+			// whether it answered at all.
+			select {
+			case <-ctx.Done():
+			case <-time.After(3 * time.Second):
+			case m := <-ch:
+				if m.Kind == kError && m.Code == wire.EUnknownStream {
+					s.settleOwed(ctx, id, name, false) // it holds nothing of the channel
+				} else {
+					// History, or not_in_stream from one that has yet to
+					// learn this hub is the home: asked again next round.
+					time.Sleep(200 * time.Millisecond)
+				}
+			}
+			s.mu.Lock()
+			delete(s.replies, msg)
+			s.mu.Unlock()
+			if ctx.Err() != nil {
+				return
+			}
+		}
+		if len(s.HistoryOwed(ctx, id)) == 0 {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-wake:
+			wait = time.Duration(firstHistoryWait.Load())
+		case <-time.After(wait):
+			if wait *= 2; wait > time.Duration(owedWait.Load()) {
+				wait = time.Duration(owedWait.Load())
+			}
 		}
 	}
 }
