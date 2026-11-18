@@ -129,8 +129,7 @@ func TestARollCarriesAProofThatChecksOut(t *testing.T) {
 // same command sent again with them is given the message it made, the same
 // roll, however many times and at once; the pair used by anyone else, here
 // or in another conversation, is refused; a second outside the window of the
-// server's clock is refused with the server's time, and so is one no later
-// than the server's start just after it started; a post that draws with no
+// server's clock is refused with the server's time; a post that draws with no
 // client_id or second is refused.
 func TestADrawsInputIsTakenOnce(t *testing.T) {
 	ts := testkit.NewServer(t)
@@ -138,8 +137,9 @@ func TestADrawsInputIsTakenOnce(t *testing.T) {
 	room := owner.Channel("once", false, sam)
 	other := owner.Channel("elsewhere", false, sam)
 	cmds := convPath(room) + "/commands"
-	// Just after the start: a second no later than the start's.
-	owner.Refused(409, model.CodeClock, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": model.NewID[string](), "draw_t": time.Now().Unix() - 1})
+	// A server just started draws at once: an honest client is never
+	// refused (docs/FAIR.md section 6).
+	owner.Must(200, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": model.NewID[string](), "draw_t": time.Now().Unix() - 1})
 	now := time.Now().Unix() + 1
 	id := model.NewID[string]()
 	body := map[string]any{"name": "roll", "text": "3d20", "client_id": id, "draw_t": now}
@@ -162,8 +162,8 @@ func TestADrawsInputIsTakenOnce(t *testing.T) {
 		}
 	}
 	verified(t, ts, room, first)
-	if n := len(owner.Messages(room)); n != 1 {
-		t.Fatalf("%d messages for one roll sent five times", n)
+	if n := len(owner.Messages(room)); n != 2 {
+		t.Fatalf("%d messages for one roll sent five times and another", n)
 	}
 	sam.Refused(409, model.CodeConflict, "POST", cmds, body)
 	owner.Refused(409, model.CodeConflict, "POST", convPath(other)+"/commands", body)
@@ -177,6 +177,21 @@ func TestADrawsInputIsTakenOnce(t *testing.T) {
 			t.Fatalf("a clock refusal without the server's time: %v", e)
 		}
 	}
+	// Each refusal is a suspected attempt to reuse or steer a draw, and is
+	// audited, at most once a minute for each account.
+	refused := audited(t, ts, "fair.draw_refused")
+	if len(refused) != 2 {
+		t.Fatalf("refused draws audited %d times, not once for each of the two accounts: %v", len(refused), refused)
+	}
+	for _, e := range refused {
+		if e.Detail["reason"] != "nonce_reused" || e.Detail["conversation_id"] == nil {
+			t.Fatalf("a refused draw audited as %v", e)
+		}
+	}
+	// A restart forgets nothing: the pair is still taken, by its ledger.
+	ts.Restart()
+	sam.Refused(409, model.CodeConflict, "POST", cmds, body)
+	owner.Refused(409, model.CodeConflict, "POST", convPath(other)+"/commands", map[string]any{"name": "roll", "text": "3d20", "client_id": id, "draw_t": now + 1})
 	// No input.
 	owner.Refused(400, model.CodeInvalidValue, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": ""})
 	owner.Refused(400, model.CodeInvalidValue, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": model.NewID[string](), "draw_t": 0})

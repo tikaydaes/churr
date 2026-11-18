@@ -2,6 +2,7 @@ package fair
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -61,9 +63,8 @@ func fixed(secs int64) func() time.Time { return func() time.Time { return time.
 // draw makes a draw with a drawer that started a minute before.
 func draw(t *testing.T, p Prover, owner string, secs int64, id string) model.FairBlock {
 	t.Helper()
-	d := NewDrawer(p, owner, fixed(secs-60))
-	d.now = fixed(secs)
-	b, err := d.Draw(secs, cidBytes(t, id), "test")
+	d := NewDrawer(p, owner, fixed(secs), &MemoryLedger{})
+	b, err := d.Draw(context.Background(), secs, cidBytes(t, id), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,53 +109,142 @@ func TestADrawDependsOnlyOnItsInput(t *testing.T) {
 // The drawer takes a pair of second and nonce once: the same request made
 // again is drawn again, to the same result, and anyone else's use of the pair
 // is refused; a second outside the window is refused with the server's time;
-// a second's pairs are let go once it has left the window; and for the
-// window after a start, a second no later than the start's is refused.
+// a second's pairs are let go once it has left the window, in memory and in
+// the ledger; and a drawer just started draws at once.
 func TestTheDrawerTakesAPairOnce(t *testing.T) {
 	p := prover(t, "one")
 	clock := int64(atSecs)
-	d := NewDrawer(p, "a.example", func() time.Time { return time.Unix(clock, 0) })
+	ledger := &MemoryLedger{}
+	d := NewDrawer(p, "a.example", func() time.Time { return time.Unix(clock, 0) }, ledger)
 	id := cidBytes(t, cid)
-	// Just after the start.
-	if _, err := d.Draw(atSecs, id, "ann"); !errors.Is(err, model.ErrClock) {
+	ctx := context.Background()
+	var e *model.Error
+	at := clock
+	first, err := d.Draw(ctx, at, id, "ann")
+	if err != nil {
 		t.Fatalf("a draw in the second the drawer started: %v", err)
 	}
-	var e *model.Error
-	if _, err := d.Draw(atSecs-1, id, "ann"); !errors.As(err, &e) || e.Code != model.CodeClock || e.ServerTime.IsZero() {
-		t.Fatalf("a draw before the start: %v", err)
-	}
-	first, err := d.Draw(atSecs+1, id, "ann")
-	if err != nil {
-		t.Fatal(err)
-	}
-	again, err := d.Draw(atSecs+1, id, "ann")
+	again, err := d.Draw(ctx, at, id, "ann")
 	if err != nil || !bytes.Equal(again.Beta, first.Beta) {
 		t.Fatalf("the same request again: %v", err)
 	}
-	if _, err := d.Draw(atSecs+1, id, "bob"); !errors.Is(err, model.ErrConflict) {
+	if _, err := d.Draw(ctx, at, id, "bob"); !errors.Is(err, model.ErrConflict) {
 		t.Fatalf("someone else's use of the pair: %v", err)
 	}
 	// The nonce is taken for the whole window, under any second.
-	if _, err := d.Draw(atSecs+2, id, "ann"); !errors.Is(err, model.ErrConflict) {
+	if _, err := d.Draw(ctx, at+1, id, "ann"); !errors.Is(err, model.ErrConflict) {
 		t.Fatalf("the nonce again with another second: %v", err)
 	}
-	if _, err := d.Draw(atSecs+2, id, "bob"); !errors.Is(err, model.ErrConflict) {
+	if _, err := d.Draw(ctx, at+1, id, "bob"); !errors.Is(err, model.ErrConflict) {
 		t.Fatalf("the nonce for another second by someone else: %v", err)
 	}
 	// Outside the window, either way.
-	clock = atSecs + 30
+	clock = at + 30
 	for _, secs := range []int64{clock - Window - 1, clock + Window + 1} {
-		if _, err := d.Draw(secs, id, "ann"); !errors.As(err, &e) || e.Code != model.CodeClock || e.ServerTime != model.FromTime(time.Unix(clock, 0)) {
+		if _, err := d.Draw(ctx, secs, id, "ann"); !errors.As(err, &e) || e.Code != model.CodeClock || e.ServerTime != model.FromTime(time.Unix(clock, 0)) {
 			t.Fatalf("a second %d from the clock: %v", secs-clock, err)
 		}
 	}
-	// The window has moved on: the early seconds' pairs are gone, and the
-	// nonce draws again, under another second, for anyone.
-	if _, err := d.Draw(clock, id, "bob"); err != nil {
+	// The window has moved on: the early seconds' pairs are gone, from the
+	// memory and the ledger, and the nonce draws again, under another
+	// second, for anyone.
+	if _, err := d.Draw(ctx, clock, id, "bob"); err != nil {
 		t.Fatal(err)
 	}
 	if n := d.pairs(); n != 1 {
 		t.Fatalf("the drawer keeps %d seconds of pairs, not the one in its window", n)
+	}
+	if n := ledger.Len(); n != 1 {
+		t.Fatalf("the ledger keeps %d pairs, not the one in the window", n)
+	}
+}
+
+// A restart cannot let a pair draw twice: a pair taken by one drawer, for its
+// second or one ahead of its clock, cannot be taken by a new drawer opened on
+// the same ledger, at any moment of the window; the same request made again
+// is drawn again, to the same result.
+func TestARestartCannotDrawAPairTwice(t *testing.T) {
+	p := prover(t, "one")
+	ctx := context.Background()
+	const started = int64(atSecs)
+	ledger := &MemoryLedger{}
+	old := NewDrawer(p, "a.example", fixed(started-1), ledger)
+	now, ahead := cidBytes(t, cid), cidBytes(t, "01a1ee00-0000-7000-8000-0000000000c2")
+	first, err := old.Draw(ctx, started-1, now, "ann")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := old.Draw(ctx, started+Window-1, ahead, "ann"); err != nil {
+		t.Fatal(err)
+	}
+	clock := started
+	d := NewDrawer(p, "a.example", func() time.Time { return time.Unix(clock, 0) }, ledger)
+	for ; clock < started+Window; clock++ {
+		if _, err := d.Draw(ctx, started+Window-1, ahead, "bob"); !errors.Is(err, model.ErrConflict) {
+			t.Fatalf("the future-dated pair drew again for another at %d seconds after the start: %v", clock-started, err)
+		}
+		if _, err := d.Draw(ctx, clock, ahead, "bob"); !errors.Is(err, model.ErrConflict) {
+			t.Fatalf("the future-dated nonce drew again with another second at %d seconds after the start: %v", clock-started, err)
+		}
+	}
+	clock = started
+	again, err := NewDrawer(p, "a.example", fixed(started), ledger).Draw(ctx, started-1, now, "ann")
+	if err != nil || !bytes.Equal(again.Beta, first.Beta) {
+		t.Fatalf("the same request after a restart: %v", err)
+	}
+}
+
+// A crash between the ledger's write and the proof is safe: the pair is
+// taken, so the same request made again draws, to the result it would have
+// had, and anyone else's use of it is refused.
+func TestACrashBeforeTheProofIsSafe(t *testing.T) {
+	ctx := context.Background()
+	ledger := &MemoryLedger{}
+	id := cidBytes(t, cid)
+	crashed := NewDrawer(failingProver{}, "a.example", fixed(atSecs), ledger)
+	if _, err := crashed.Draw(ctx, atSecs, id, "ann"); err == nil {
+		t.Fatal("the prover failed and the draw did not")
+	}
+	if ledger.Len() != 1 {
+		t.Fatal("the pair was not written before the key was applied")
+	}
+	p := prover(t, "one")
+	d := NewDrawer(p, "a.example", fixed(atSecs+1), ledger)
+	if _, err := d.Draw(ctx, atSecs, id, "bob"); !errors.Is(err, model.ErrConflict) {
+		t.Fatalf("someone else's use of the pair after the crash: %v", err)
+	}
+	b, err := d.Draw(ctx, atSecs, id, "ann")
+	if err != nil || !bytes.Equal(b.Beta, draw(t, p, "a.example", atSecs, cid).Beta) {
+		t.Fatalf("the same request after the crash: %v", err)
+	}
+}
+
+type failingProver struct{}
+
+func (failingProver) VRFProve([]byte) ([]byte, []byte, error) { return nil, nil, errors.New("crashed") }
+func (failingProver) VRFPublic() []byte                       { return nil }
+
+// The clock stepping backwards does not reopen a second whose pairs the
+// drawer has let go: the highest second it has seen is its "now" for the
+// window's lower bound.
+func TestABackwardStepDoesNotReopenASecond(t *testing.T) {
+	p := prover(t, "one")
+	ctx := context.Background()
+	clock := int64(atSecs)
+	d := NewDrawer(p, "a.example", func() time.Time { return time.Unix(clock, 0) }, &MemoryLedger{})
+	id := cidBytes(t, cid)
+	if _, err := d.Draw(ctx, clock, id, "ann"); err != nil {
+		t.Fatal(err)
+	}
+	// The window moves on and the second is let go.
+	clock += 2 * Window
+	if _, err := d.Draw(ctx, clock, cidBytes(t, "01a1ee00-0000-7000-8000-0000000000c2"), "bob"); err != nil {
+		t.Fatal(err)
+	}
+	// The clock steps back to just after the first draw.
+	clock -= 2*Window - 1
+	if _, err := d.Draw(ctx, atSecs, id, "ann"); !errors.Is(err, model.ErrClock) {
+		t.Fatalf("a second let go drew again after the clock stepped back: %v", err)
 	}
 }
 
@@ -312,4 +402,54 @@ func TestMessageVector(t *testing.T) {
 	if err := CheckBlock(&v.Message.Fair, v.Server, v.Message.ClientID, v.Message.CreatedAt, Window, keys); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// MemoryLedger is a ledger kept in memory, for tests.
+type MemoryLedger struct {
+	mu   sync.Mutex
+	rows map[[2]any]string
+}
+
+// Take implements Ledger.
+func (m *MemoryLedger) Take(_ context.Context, u Used) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.rows == nil {
+		m.rows = map[[2]any]string{}
+	}
+	k := [2]any{u.Second, u.Nonce}
+	if _, ok := m.rows[k]; !ok {
+		m.rows[k] = u.Who
+	}
+	return nil
+}
+
+// All implements Ledger.
+func (m *MemoryLedger) All(context.Context) ([]Used, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []Used
+	for k, who := range m.rows {
+		out = append(out, Used{Second: k[0].(int64), Nonce: k[1].(string), Who: who})
+	}
+	return out, nil
+}
+
+// Forget implements Ledger.
+func (m *MemoryLedger) Forget(_ context.Context, before int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for k := range m.rows {
+		if k[0].(int64) < before {
+			delete(m.rows, k)
+		}
+	}
+	return nil
+}
+
+// Len is how many pairs the ledger holds.
+func (m *MemoryLedger) Len() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.rows)
 }

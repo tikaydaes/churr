@@ -234,20 +234,36 @@ before it is sent. A post that takes chance (a module's command through
 `runCommand`, a message with inline dice) needs both, or it is refused
 with `invalid_value`.
 
+**An honest client is never refused.** Nothing an honest client does
+gets a draw refused: its clock is kept to the server's, a restart or a
+crash of the server forgets no pair, and nothing else refuses a draw. So a
+refusal is not routine. To the server it means the client tried to reuse or
+steer a draw; to the client, that the server did. The server audits each
+refusal of a draw for its second or its nonce as `fair.draw_refused`
+(account, conversation, reason `second_outside_window` or
+`nonce_reused`; at most once a minute for each account). The client shows
+it to the person and never sends the draw again by itself.
+
 **The window and the tracker.** The server draws only if `t` is within
 10 seconds of its own clock, either way, and the nonce has not drawn under
-any second the server still keeps; otherwise it draws nothing. Outside the window the post is
-refused with `clock` and `server_time`, the server's time, and the client
-corrects its clock by it and sends again with a new second and the same
-`client_id` (a refused post drew nothing, so its nonce is still free). A
-nonce is unique across the whole window: one that has drawn under any
-second still kept is refused with `conflict`, whatever `t` it now comes
+any second the server still keeps; otherwise it draws nothing. Outside the
+window the post is refused with `clock` and `server_time`, the server's
+time. A nonce is unique across the whole window: one that has drawn under
+any second still kept is refused with `conflict`, whatever `t` it now comes
 with, unless it is the same post again with the same pair. The server keeps
 the pairs it has taken in memory, per second, and lets a second's set go
-once that second has left the window, and its nonces with it: nothing else
-is kept. After a start nothing is held, so for the 10 seconds after it a draw
-for a second no later than the start's is refused with `clock`: a pair
-taken just before a restart cannot be taken again.
+once that second has left the window, and its nonces with it. Each pair is
+also written to the table `draws_used` (second, nonce, and who asked),
+durably, before the key is applied, and the table is read back before the
+first draw after a start; its rows are deleted, in batches, once their
+second has left the window. So a restart or a crash forgets no pair and
+refuses nothing it would not have refused before: a crash between the write
+and the proof leaves the pair taken, and the same request made again draws,
+to the same result. A post that draws costs one statement more than one
+that does not (the write), and one more once a window (the deletion). The
+clock may step backwards: the server keeps the highest second its clock has
+shown and holds the window's lower bound, and the letting go of seconds, to
+it, so a step back never reopens a second it has let go.
 
 **A retry gets the same draw.** A client retries a post with the same
 `client_id` and the same `draw_t`. The same person sending the same

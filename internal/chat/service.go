@@ -111,6 +111,8 @@ type Service struct {
 
 	// fair makes this server's draws, set with SetFair (fair.go).
 	fair *fair.Drawer
+	// drawRefusals limits how often refused draws are audited (fair.go).
+	drawRefusals refusals
 
 	// notifier is the notify package, set with SetNotifier (notifier.go).
 	notifier Notifier

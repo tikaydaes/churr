@@ -71,10 +71,12 @@ unique. The exact spelling is `FAIR.md` section 6.
   applied; the key is used for nothing else, and one function in the
   server applies it.
 - The server takes a second only within 10 seconds of its clock and a pair
-  only once. It keeps the pairs in memory per second and drops a second's
-  set once it has left the window: nothing is kept for good. Just after a
-  start it refuses seconds no later than the start's for the window's
-  length, so a pair used before a restart cannot draw twice.
+  only once. It keeps the pairs in memory per second, and in the table
+  `draws_used`, written before the key is applied and read back at start,
+  so a restart or a crash never lets a pair draw twice; a second's pairs
+  go once it has left the window. An honest client is never refused, so a
+  refusal is audited as a suspected attempt to reuse or steer a draw
+  (`FAIR.md` section 6).
 - A retry is the same post with the same `client_id`, and gets the same
   message and draw back. The server cannot re-roll by failing a request.
 - Who is protected from whom: the person cannot predict or choose the

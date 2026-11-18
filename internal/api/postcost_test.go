@@ -268,6 +268,13 @@ func TestPostCost(t *testing.T) {
 	target := say(ann, room, "react to this")["message"].(map[string]any)["id"].(string)
 	show(t, "add a reaction", tr.record(func() { bob.Must(200, "PUT", "/api/v1/messages/"+target+"/reactions/👍", nil) }))
 	show(t, "edit", tr.record(func() { ann.Must(200, "PATCH", "/api/v1/messages/"+target, map[string]any{"text": "edited"}) }))
+	// A post that draws writes its pair to draws_used before the key is
+	// applied (docs/FAIR.md section 6), once per window deletes the pairs
+	// that have left it, and reads them all once after a start.
+	ann.Must(200, "POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "d6"})
+	show(t, "a roll", tr.record(func() {
+		ann.Must(200, "POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "d6"})
+	}))
 	seq := say(ann, room, "read up to here")["message"].(map[string]any)["seq"]
 	show(t, "move the read position", tr.record(func() {
 		bob.Must(200, "PUT", convPath(room)+"/read", map[string]any{"seq": seq})

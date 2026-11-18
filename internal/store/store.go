@@ -92,6 +92,9 @@ type Areas interface {
 
 	// What the built-in modules keep (modules.go).
 	Modules() Modules
+
+	// The pairs the VRF key has drawn for, inside the window (draws.go).
+	Draws() Draws
 }
 
 // Store is a database. Calls made on it directly each run by themselves;

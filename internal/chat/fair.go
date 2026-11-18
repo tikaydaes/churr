@@ -1,14 +1,17 @@
 package chat
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
+	"github.com/tikaydaes/churr/internal/store"
 )
 
 // Provably fair chance (docs/FAIR.md). Every chance outcome a module makes
@@ -26,7 +29,83 @@ import (
 // VRF key, which the Drawer holds. Until it is called a module that asks for
 // chance is refused.
 func (s *Service) SetFair(owner string, p fair.Prover) {
-	s.fair = fair.NewDrawer(p, owner, func() time.Time { return s.now().Time() })
+	s.fair = fair.NewDrawer(p, owner, func() time.Time { return s.now().Time() }, ledger{s.store})
+}
+
+// ledger keeps the Drawer's pairs in the store's draws_used, so that a
+// restart or a crash never lets a pair draw twice (docs/FAIR.md section 6).
+// It is written outside any transaction: a draw is made before the post's.
+type ledger struct{ st store.Store }
+
+func (l ledger) Take(ctx context.Context, u fair.Used) error {
+	return l.st.Draws().Take(ctx, store.DrawUsed{Second: u.Second, Nonce: u.Nonce, Who: u.Who})
+}
+
+func (l ledger) All(ctx context.Context) ([]fair.Used, error) {
+	rows, err := l.st.Draws().All(ctx)
+	out := make([]fair.Used, len(rows))
+	for i, r := range rows {
+		out[i] = fair.Used{Second: r.Second, Nonce: r.Nonce, Who: r.Who}
+	}
+	return out, err
+}
+
+func (l ledger) Forget(ctx context.Context, before int64) error {
+	return l.st.Draws().Forget(ctx, before)
+}
+
+// refusedAuditGap is how often one account's refused draws are audited at
+// most: a client that keeps sending them is noted, not allowed to fill the
+// log.
+const refusedAuditGap = time.Minute
+
+// refusals remembers when each account's last refused draw was audited.
+type refusals struct {
+	mu   sync.Mutex
+	last map[model.AccountID]time.Time
+}
+
+// due reports whether a refused draw of an account is audited now, and
+// notes it.
+func (r *refusals) due(who model.AccountID, now time.Time) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.last == nil {
+		r.last = map[model.AccountID]time.Time{}
+	}
+	if t, ok := r.last[who]; ok && now.Sub(t) < refusedAuditGap {
+		return false
+	}
+	if len(r.last) > 10000 {
+		for a, t := range r.last {
+			if now.Sub(t) >= refusedAuditGap {
+				delete(r.last, a)
+			}
+		}
+	}
+	r.last[who] = now
+	return true
+}
+
+// auditRefused writes fair.draw_refused for a draw refused as a reused nonce
+// or a second outside the window: an honest client is never refused, so it
+// is a suspected attempt to reuse or steer a draw (docs/FAIR.md section 6).
+func (s *Service) auditRefused(ctx context.Context, actor model.Account, conv model.ConversationID, err error) {
+	e, ok := model.AsError(err)
+	if !ok || (e.Code != model.CodeConflict && e.Code != model.CodeClock) {
+		return
+	}
+	now := s.now()
+	if !s.drawRefusals.due(actor.ID, now.Time()) {
+		return
+	}
+	reason := "nonce_reused"
+	if e.Code == model.CodeClock {
+		reason = "second_outside_window"
+	}
+	_ = s.store.Audit().Append(ctx, model.AuditEntry{At: now, ActorID: string(actor.ID), ActorKind: "account",
+		Action: "fair.draw_refused", TargetKind: "conversation", TargetID: string(conv),
+		Detail: map[string]any{"conversation_id": conv, "reason": reason}})
 }
 
 // errNoProver is chance asked for on a server that draws none.
@@ -37,7 +116,10 @@ var errNoClientID = model.Invalid("client_id", "A message that takes chance (a r
 
 // drawer is one message's draw, made when first asked for (modhost.Draws).
 type drawer struct {
+	ctx      context.Context
 	s        *Service
+	actor    model.Account
+	conv     model.ConversationID
 	clientID string
 	t        int64
 	// who names the request, for the Drawer to tell a retry from another
@@ -50,9 +132,9 @@ type drawer struct {
 	err error
 }
 
-func (s *Service) newDrawer(actor model.Account, conv model.ConversationID, in NewMessage) *drawer {
+func (s *Service) newDrawer(ctx context.Context, actor model.Account, conv model.ConversationID, in NewMessage) *drawer {
 	who := string(actor.ID) + "|" + string(conv) + "|" + requestOf(in)
-	return &drawer{s: s, clientID: in.ClientID, t: in.DrawT, who: who}
+	return &drawer{ctx: ctx, s: s, actor: actor, conv: conv, clientID: in.ClientID, t: in.DrawT, who: who}
 }
 
 // Stream implements modhost.Draws: the next chance object's stream of the
@@ -78,9 +160,10 @@ func (d *drawer) draw() error {
 		d.err = errNoClientID
 		return d.err
 	}
-	b, err := d.s.fair.Draw(d.t, d.clientID, d.who)
+	b, err := d.s.fair.Draw(d.ctx, d.t, d.clientID, d.who)
 	if err != nil {
 		d.err = err
+		d.s.auditRefused(d.ctx, d.actor, d.conv, err)
 		return err
 	}
 	d.block, d.objs = &b, fair.NewObjects(b.Beta)

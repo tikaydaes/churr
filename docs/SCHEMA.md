@@ -1558,7 +1558,9 @@ file store, on both backends.
   `0015_approvals` adds `approvals` and `approvers`;
   `0020_first_contact` adds `chat_requests.level` and `override` and
   `channel_offers`; `0025_vrf_pins` adds `servers.vrf_keys`;
-  `0026_message_fair` adds `messages.fair`.
+  `0026_message_fair` adds `messages.fair`; `0028_draws_used` adds
+  `draws_used`, the pairs of second and nonce the VRF key has drawn for
+  while their second is inside the window (`FAIR.md` section 6).
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

@@ -254,7 +254,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	// The message's one draw, made when something in it first asks for
 	// chance (fair.go).
 	orig := in
-	draws := s.newDrawer(actor, conv.ID, in)
+	draws := s.newDrawer(ctx, actor, conv.ID, in)
 	if in.Command != nil {
 		made, err := s.modules.Command(ctx, actor, conv.ID, in.Command.Name, in.Command.Text, draws)
 		if err != nil {
