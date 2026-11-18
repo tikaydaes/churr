@@ -248,7 +248,12 @@ func (h *Hub) recordFrame(c channel) (wire.Frame, error) {
 }
 
 // sendRecord sends a record to servers, each with the `have` that is its
-// own: for a server the hub admitted, what the log held when it did.
+// own: for a server the hub admitted, what the log held when it did. To each
+// it sends first the records by which the home changed hands, then the key of
+// the epoch the record calls for, then the record: a server takes a key only
+// from the channel's home, and knows this hub for the home only once it has
+// seen the old home name it, so a key sent ahead of the handover was dropped
+// and had to be asked for again.
 func (h *Hub) sendRecord(c channel, f wire.Frame, to []string) {
 	for _, name := range to {
 		out := f
@@ -264,6 +269,9 @@ func (h *Hub) sendRecord(c channel, f wire.Frame, to []string) {
 				h.sendTo([]string{name}, wire.Frame{Frame: wire.FChannel, Signed: ho.Signed, Sig: ho.Sig, HomeHub: c.rec.HomeHub, Have: out.Have})
 			}
 		}
+		// The key goes ahead of the record, so that a server holds it when it
+		// learns that the epoch has begun.
+		h.sendKeys(c, []string{name})
 		h.sendTo([]string{name}, out)
 	}
 }
@@ -329,9 +337,8 @@ func (h *Hub) tellChannels() {
 						to = append(to, n)
 					}
 				}
-				// The key of the epoch the record calls for goes ahead of the
-				// record, to every server in it, here or on another hub.
-				h.sendKeys(c, to)
+				// With the key of the epoch the record calls for ahead of it,
+				// to every server in it, here or on another hub.
 				h.sendRecord(c, f, to)
 				// And to the hubs whose servers it concerns.
 				h.sendRecordToTrunks(c, f, extra)
@@ -371,7 +378,6 @@ func (h *Hub) resendChannels(sc *serverConn) {
 		}
 		if err == nil && !c.rec.Closed && has(h.audienceOf(c), sc.name) {
 			if f, err := h.recordFrame(c); err == nil {
-				h.sendKeys(c, []string{sc.name})
 				h.sendRecord(c, f, []string{sc.name})
 			}
 		}

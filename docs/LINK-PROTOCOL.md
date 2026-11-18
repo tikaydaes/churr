@@ -1356,6 +1356,10 @@ nothing under a later one (`bad_frame`). There is no
 hub sends `key` to every instance in the list, sealed to each, ahead of
 the record, again with the record to an instance that reconnects, and
 over a trunk in `forward` to an instance on another hub of the cluster.
+A hub that a channel was handed to sends each instance the record by
+which the old home handed it over first, then the key, then its own
+record: the instance takes the key only once it knows that hub for the
+home.
 An instance takes such a channel's key from its home hub, under the key
 the cluster roster gives that hub, and from nobody else. Its current
 epoch is the one the newest record it holds calls for, once it holds
