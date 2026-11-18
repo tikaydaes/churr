@@ -1256,7 +1256,12 @@ accounts of everyone who wrote in it or is in it, as any instance's
 copy holds them. A closed channel's rows are removed when the hub
 sweeps its stream, 30 days after it closed. Nothing else in it ages:
 no retention runs there, and `conversations.retention_seconds` is
-null.
+null. Two settings, written by the holder and nowhere else, serve a
+channel's home moving within a cluster (`LINK-PROTOCOL.md` section
+23b): `link.held_from.<stream_id>`, on the new home, the hub the
+channel was handed over from, which is asked for its contents first;
+and `link.handed_over.<stream_id>`, on the old home, when it handed
+the channel over, in milliseconds: its copy is removed 7 days later.
 
 ## 12. Sealed chats
 
