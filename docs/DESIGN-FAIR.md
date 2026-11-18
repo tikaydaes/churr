@@ -43,9 +43,13 @@ on the operating system's randomness.
   - pinned by each peer on a direct link (`servers.vrf_keys`) and by the
     hub for each of its servers: a later history must be the pinned one
     with keys added, or it is refused and audited;
-  - given to clients in getServer; the web chat and the app pin it on
-    first sight and warn when a later one is not the pinned one with
-    keys added.
+  - given to clients in getServer, and every other server's in the
+    shared conversations that may hold its draws (`shared.vrf_keys`, from
+    the hub channel's record or the direct link's pin); the web chat and
+    the app pin each by server name on first sight and warn when a later
+    one is not the pinned one with keys added. A draw by a server whose
+    history a client was never given says it cannot be checked there.
+    [built]
 - A message's `pk` must be the key the record or the pin held for that
   server at that time. A server cannot use a second key. [built: a
   receiving server and the clients check it, `FAIR.md` section 9]

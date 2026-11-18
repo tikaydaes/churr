@@ -303,10 +303,19 @@ check; the clients re-derive them.
 
 **The clients** (the web chat, `shared/fair/verify.js`; the app,
 `lib/core/fair/verify.dart`) check 1 to 5 against the history they pinned
-for their own server, and mark the roll "Verified" or, plainly, "Not
-verified" with why; the roll is shown either way, and the block is shown
-in full on request. A draw by another server (a remote author's roll)
-shows "Not verified": the client holds no history for that server yet.
+for the block's owner, by name, and mark the roll "Verified", or, plainly,
+"Not verified" with why (a check that was made and did not hold), or
+"Cannot be checked here" with why (a draw by a server whose history the
+client was never given); the roll is shown every way, and the block is
+shown in full on request. Their own server's history comes from getServer;
+every other server's from the conversation: a shared conversation's
+`shared.vrf_keys` (`Conversation`, `docs/openapi.yaml`) gives the history of
+every server whose draws it may hold, from sources that outlive those
+servers: a hub channel's record (every server it ever named, one that left
+included, and the hub's own) or the serving server's pin of each server of
+a direct link. A client pins each history by server name on first sight; a
+later one that is the pinned one with keys added is taken, and any other is
+a warning and every draw of that server "Not verified".
 
 ## 10. Still drawn with ordinary randomness
 

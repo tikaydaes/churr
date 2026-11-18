@@ -282,8 +282,11 @@ in a hub channel's record (`ChannelRecord.vrf_keys`, section 23a).
 Whoever has seen a history keeps it and takes a later one only when it
 extends it: the peer on a direct link (section 5), the hub of a server,
 the hub and holder of a channel's record, and each client (the web chat
-in its browser, the app on its device, both from getServer). A history
-that does not extend the kept one is refused, never taken.
+in its browser, the app on its device, by server name: their own server's
+from getServer, every other server's from a shared conversation's
+`shared.vrf_keys`, which its server fills from the channel record or the
+direct link's pin). A history that does not extend the kept one is
+refused, never taken.
 
 ### `/.well-known/churr`
 
