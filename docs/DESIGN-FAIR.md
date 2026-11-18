@@ -112,20 +112,19 @@ request; pk against the record or pin.
 
 ## 5. Sealed chats [proposed]
 
-The server sees alpha and makes the proof; it never sees the request or
-the outcome.
+A sealed message has a part that is not sealed. The server sees the
+input and makes the proof; it never sees the request or the outcome.
 
-1. At send, the client asks the owner for the next draw. It gets n and
-   the whole `fair` block.
-2. The client derives the outcome, writes it into the text, and seals
-   the message; `fair` goes in the unsealed metadata and n inside the
-   sealed part too.
-3. A draw that is taken and not sent within a short time is posted by
-   the server as a notice ("draw 7 was taken by X and not sent"), with
-   its proof. Cherry-picking is public.
+1. The client seals the message as now, with the request (the dice, the
+   deck) inside. The unsealed part carries `<t>` and the message's
+   `client_id`, as any drawing post does.
+2. The server accepts the message, makes the draw and puts the `fair`
+   block in the unsealed part.
+3. Each reader's client checks the proof and derives the outcome from the
+   output and the request it unsealed.
 
-So the result is in the text, the check works offline, and the server
-learns only that a draw happened.
+The sender cannot see the result before sending. The server learns only
+that a draw happened. The sealed text itself holds no result.
 
 ## 6. Across servers [proposed]
 
@@ -148,11 +147,10 @@ learns only that a draw happened.
 
 ## 8. What this does not stop
 
-- **The key holder knows results early.** An operator can compute the
-  next draw before anyone asks. Alone that changes nothing. With a
-  player in on it, they can choose when to roll or let someone else take
-  a draw. Mixing two servers' outputs (section 6) removes this wherever
-  a second server exists; on a single instance it remains.
+- **A pre-disclosed input is known to the key holder.** Where an input is
+  announced before the result is wanted (a crash round), the server can
+  work the result out at once. That is intended; it is fair to the
+  players when the party that chose the input is not the key holder.
 - **Order is the server's.** Whose message comes first, and whether a cash-out
   arrived before the crash, is decided by the server's ordering of
   messages. The VRF does not prove ordering.
@@ -244,6 +242,78 @@ A closed list, stated in the proof block so readers know who knew what:
   the derivation and its vectors, the server's key at a well-known
   address, and the public chain logs. The ecvrf library verifies it in
   thirteen languages.
+
+## 11. Pre-disclosed inputs and outside verification (owner, 2026-11-18)
+
+Owner: "people can take the alpha, the public key, the proof (from
+pre-disclosed alphas, like for crash or other bot games), and use the
+verified output. This helps if servers want to run real-money games in
+bots, etc. The primitives we're using here enable these kinds of
+activities."
+
+What that needs from Churr [proposed]:
+- The input is the text `<unix seconds>|<nonce>` (R111); the key, alpha
+  and proof are all anyone needs, with any standard
+  ECVRF-SECP256K1-SHA256-TAI verifier. No Churr code is required.
+- **Register now, reveal later.** A caller (a bot, a game) submits an
+  alpha inside the time window. The server marks the pair used, makes
+  the proof, keeps it, and returns a receipt signed by its identity key:
+  "this alpha was registered at this time". The receipt is what a game
+  shows players before bets. The proof is released when the caller asks,
+  or at a stated time.
+- The receipt and the later proof are both public and checkable with no
+  account: the key at the well-known address, the derivation in
+  `docs/FAIR.md`.
+- A bot never holds the key, and the server never picks a bot's alpha.
+
+## 12. The "Validate result" view (owner, 2026-11-18)
+
+Owner: "I'd like a 'Validate result' view that can take a game's alpha,
+beta, proof, pk, requested primitives and certify accuracy (separately)
+- people can take the data and independently verify too if they wish."
+
+[proposed shape]
+- A page on every instance and hub, public, no account, working with no
+  network once loaded (the verifier and derivation run in the browser).
+  The same view in the app. Opened from any roll's "Verified" mark with
+  the fields filled in, or empty for pasting.
+- Fields: alpha, beta, proof, pk, and the requested primitives with the
+  claimed outcome (one JSON block, and the fields separately).
+- Separate verdicts, each with its reason:
+  1. the proof is valid for this pk and alpha;
+  2. beta is the output of that proof;
+  3. each requested primitive, re-derived from beta, gives the claimed
+     outcome (one line per primitive);
+  4. the alpha is well formed (`<unix seconds>|<nonce>`), with its time
+     shown;
+  5. whose key this is: checked against a server's published key history
+     when the viewer names a server or the page knows it; otherwise
+     "key not attributed".
+- "Copy the data" and "Download" give one JSON document with everything
+  needed, plus pointers to the specification and the ecvrf library, so
+  anyone can verify without Churr.
+- A link to the view carries the data in the URL fragment, so the server
+  serving the page never sees what is being checked.
+
+## 13. The shield (owner, 2026-11-18)
+
+Owner: "make it a little green shield that can be included on any card
+(a 'type'?)"
+
+[proposed shape]
+- A catalogue block, `fair_mark`, that any card may include: a built-in
+  module's, a manifest's or a bot's. Its data only names which draw and
+  which outcomes on the card it stands for. It carries no verdict.
+- The client draws it from its OWN check, never from what the card
+  says: green shield when the proof, the output and every named outcome
+  check out; grey shield "cannot be checked here" when the key is not
+  known; warning mark "not verified" when a check fails. A card cannot
+  make it green.
+- A tap opens "Validate result" with that draw filled in.
+- Not colour alone: each state has its own shape and a spoken label.
+- Reserved: no other block may draw this shield (the rule against
+  imitating trust marks). Built-in kinds (a dice roll, a card draw) show
+  it by default.
 
 ## Order of work
 
