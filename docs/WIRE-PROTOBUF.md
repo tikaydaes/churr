@@ -92,14 +92,21 @@ and may have others (`SystemNotice`) is a message with its known
 fields typed and an `extra_fields` map of `Value` for the rest.
 
 **Values of the catalogue.** A `ValueEnvelope` (a message's `view`, an
-`object` entity; DESIGN-MODULES.md section 4.1) carries its `data` as
-the encoded protobuf message of its kind, in JSON as base64url like any
-other bytes. Each kind's message is in `churr.proto` (`dice_roll` is
-`DiceRoll`), and `x-kinds` beside `data` in `docs/openapi.yaml` names it
-with the kind's catalogue level. The data is the same bytes in both
-forms, so a reader that does not know a kind keeps it byte for byte.
-`wirepb.EncodeKind` and `DecodeKind` turn a kind's data from JSON into
-bytes and back.
+`object` entity; DESIGN-MODULES.md section 4.1) carries its `data` in
+the shape of its kind: in protobuf the kind's message, encoded, as
+bytes; in JSON the same message as a plain object, named as every other
+JSON object of the contract is. Each kind's message is in `churr.proto`
+(`dice_roll` is `DiceRoll`), and `x-kinds` beside `data` in
+`docs/openapi.yaml` names it with the kind's catalogue level. The codec
+reads `kind` beside the data to turn one form into the other. A server
+that does not know a kind carries its data in the form it came in: an
+object of a kind it does not know has no protobuf form, so the answer or
+frame holding it goes as JSON, unchanged; bytes of a kind it does not
+know (or holding fields newer than its schema) go to a JSON reader as
+base64url text, and back to protobuf as the same bytes. No reader draws
+text as data: it falls back to `alt`, then to the message's text.
+`wirepb.EncodeKind` and `DecodeKind` do the same for a kind's data on
+its own.
 
 **The envelope.** Every frame of the live connection is one
 `Envelope`: `at`, `conversation_id` and `seq` where the frame has

@@ -66,9 +66,9 @@ func AppendValue(b []byte, v any) ([]byte, error) { return appendValue(b, v) }
 func ReadValue(b []byte) (any, error) { return readValue(b) }
 
 // A value of the catalogue (docs/DESIGN-MODULES.md section 4.1) carries its
-// data as the encoded message of its kind, opaque bytes in JSON and in
-// protobuf alike, so that a reader that does not know the kind keeps it byte
-// for byte. These give a kind's data from its JSON and back.
+// data as its kind's object in JSON and as its kind's message, encoded, in
+// protobuf; the codec turns one into the other wherever a ValueEnvelope is
+// (appendData, readData). These do the same for a kind's data on its own.
 
 func kindOf(kind string) (kindDef, bool) {
 	for _, k := range kinds {

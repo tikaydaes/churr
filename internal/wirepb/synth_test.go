@@ -47,6 +47,10 @@ func (s *synth) one(f *field, depth int) any {
 		return synthTimes[i%len(synthTimes)]
 	case kindBytes:
 		return synthBytes[i%len(synthBytes)]
+	case kindData:
+		// The made-up kind beside it is none the catalogue has, so its data
+		// is the bytes it came as (TestKinds has the kinds' own).
+		return synthBytes[i%len(synthBytes)]
 	case kindEnum:
 		var values []string
 		for _, v := range enums[f.ref] {

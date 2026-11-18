@@ -44,6 +44,30 @@ func (rd reader) unknown(n int, where string) (int, error) {
 // this schema does not have.
 type skipped struct{}
 
+// data is a value's data as it came, before the message it is in has been
+// read to the end and its kind is known.
+type data []byte
+
+// readData gives a value's data as JSON: the object of its kind, read
+// strictly. Data of a kind the schema does not have, or holding fields it
+// does not have (a newer server's), stays the bytes it is, as base64url
+// text, so that nothing of it is lost on the way through: written back to
+// protobuf it is the same bytes. A JSON reader draws no text as data and
+// falls back to the value's alt, then to the text.
+func readData(raw data, kind any) (any, error) {
+	name, _ := kind.(string)
+	if k, ok := kindOf(name); ok {
+		v, err := reader{strict: true}.readMessage(k.msg, raw)
+		if err == nil {
+			return v, nil
+		}
+		if !errors.Is(err, ErrUnknownField) {
+			return nil, err
+		}
+	}
+	return base64.RawURLEncoding.EncodeToString(raw), nil
+}
+
 // readScalar reads one varint or fixed64 value of a packable kind.
 func (rd reader) readScalar(f *field, t protowire.Type, b []byte) (any, int, error) {
 	if f.kind == kindDouble {
@@ -108,6 +132,8 @@ func (rd reader) readOne(f *field, t protowire.Type, b []byte) (any, int, error)
 		v = formatUUID(raw)
 	case kindBytes:
 		v = base64.RawURLEncoding.EncodeToString(raw)
+	case kindData:
+		v = data(raw) // read once the message's kind is known: readObject
 	case kindMsg:
 		v, err = rd.readMessage(f.ref, raw)
 	case kindValue:
@@ -380,6 +406,17 @@ func (rd reader) readObject(m *message, b []byte, out map[string]any, other func
 		for i := range m.fields {
 			if f := &m.fields[i]; f.kind == kindConst {
 				out[f.json] = f.text
+			}
+		}
+	}
+	for i := range m.fields {
+		if f := &m.fields[i]; f.kind == kindData {
+			if raw, ok := out[f.json].(data); ok {
+				v, err := readData(raw, out["kind"])
+				if err != nil {
+					return at(f.json, err)
+				}
+				out[f.json] = v
 			}
 		}
 	}

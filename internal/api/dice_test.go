@@ -1,8 +1,9 @@
 package api_test
 
 import (
-	"encoding/base64"
 	"encoding/json"
+	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -24,15 +25,36 @@ func rollOf(t *testing.T, v map[string]any) map[string]any {
 	if v["kind"] != model.KindDiceRoll || v["level"] != float64(1) || v["by"] != "dice" {
 		t.Fatalf("not a roll: %v", v)
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(v["data"].(string))
+	r, ok := v["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("a roll's data is not the roll's object: %v", v["data"])
+	}
+	return r
+}
+
+// sameOverProtobuf asks for something in JSON and in protobuf and checks
+// the protobuf answer is protobuf, not JSON fallen back to, and reads back
+// as the JSON answer: a value's data is bytes on that wire and the kind's
+// object on the other.
+func sameOverProtobuf(t *testing.T, ts *testkit.TestServer, bearer, op, path string) {
+	t.Helper()
+	auth := "Bearer " + bearer
+	_, _, want := ts.Raw("GET", path, http.Header{"Authorization": {auth}}, nil)
+	status, h, pb := ts.Raw("GET", path, http.Header{"Authorization": {auth}, "Accept": {wirepb.MediaType}}, nil)
+	if _, is := wirepb.BodyVersion(h.Get("Content-Type")); status != 200 || !is {
+		_, why := wirepb.EncodeResponse(op, 200, want)
+		t.Fatalf("%s was not answered in protobuf: %d %s (%v)", op, status, h.Get("Content-Type"), why)
+	}
+	got, err := wirepb.DecodeResponse(op, status, pb)
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := wirepb.DecodeKind(model.KindDiceRoll, raw)
-	if err != nil {
-		t.Fatal(err)
+	var a, b any
+	json.Unmarshal(want, &a)
+	json.Unmarshal(got, &b)
+	if !reflect.DeepEqual(a, b) {
+		t.Fatalf("%s differs over protobuf:\n got %s\nwant %s", op, got, want)
 	}
-	return r.(map[string]any)
 }
 
 // remarshal turns a JSON value into a Go value through its JSON.
@@ -78,7 +100,7 @@ func TestInlineDice(t *testing.T) {
 	if roll["dice"] != "2d6+3" || len(rows) != 1 || row["dice"] != "2d6+3" || len(arr(row, "terms")) != 2 || int(d["at"].(float64)) != 10 || int(d["len"].(float64)) != 9 {
 		t.Fatalf("the roll: %v %v", d, roll)
 	}
-	if n, _ := total.(int64); n < 5 || n > 15 {
+	if n, _ := total.(float64); n < 5 || n > 15 {
 		t.Fatalf("the total: %v", roll)
 	}
 	if m["text"] != "I hit for [[2d6+3]] and [[1d4]]" {
@@ -94,7 +116,7 @@ func TestInlineDice(t *testing.T) {
 		t.Fatalf("after the edit: %v", e["entities"])
 	}
 	kept := after[0]["object"].(map[string]any)
-	if kept["data"] != d["object"].(map[string]any)["data"] || int(after[0]["at"].(float64)) != 14 {
+	if !reflect.DeepEqual(kept["data"], d["object"].(map[string]any)["data"]) || int(after[0]["at"].(float64)) != 14 {
 		t.Fatalf("the kept roll: %v (was %v)", after[0], d)
 	}
 	if gone := after[1]["object"].(map[string]any); gone["removed"] != true || gone["data"] != nil {
@@ -152,9 +174,15 @@ func TestARollIsTextAndView(t *testing.T) {
 
 	// Read back, the same; the text is searched.
 	got := owner.Must(200, "GET", "/api/v1/messages/"+m["id"].(string), nil)["message"].(map[string]any)
-	if got["text"] != m["text"] || got["view"].(map[string]any)["data"] != m["view"].(map[string]any)["data"] {
+	if got["text"] != m["text"] || !reflect.DeepEqual(got["view"], m["view"]) {
 		t.Fatalf("read back: %v", got)
 	}
+
+	// The same on both wires, the view and an inline roll beside it.
+	owner.Post(room, "and [[1d6]] more")
+	bearer := owner.Token().Bearer
+	sameOverProtobuf(t, ts, bearer, "getMessage", "/api/v1/messages/"+m["id"].(string))
+	sameOverProtobuf(t, ts, bearer, "listMessages", msgs)
 
 	// No edit reaches it.
 	sam.Refused(409, model.CodeConflict, "PATCH", "/api/v1/messages/"+m["id"].(string), map[string]any{"text": "Rolled 1d20: [20] = 20"})

@@ -36,14 +36,19 @@ func diceValue(roll *model.DiceRoll) (model.ValueEnvelope, error) {
 	if err != nil {
 		return v, err
 	}
+	// Held to the kind's schema here, so that every reader on either wire
+	// gets it in full.
 	var data any
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.UseNumber()
 	if err := dec.Decode(&data); err != nil {
 		return v, err
 	}
-	v.Data, err = wirepb.EncodeKind(model.KindDiceRoll, data)
-	return v, err
+	if _, err := wirepb.EncodeKind(model.KindDiceRoll, data); err != nil {
+		return v, err
+	}
+	v.Data = raw
+	return v, nil
 }
 
 // InlineDice implements markdown.DiceSource: the dice are rolled from

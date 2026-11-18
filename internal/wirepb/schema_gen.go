@@ -559,7 +559,7 @@ var messages = []message{
 	{name: "ValueEnvelope", shape: shapeObject, extra: 0, fields: []field{
 		{"kind", 3, kindString, cardOne, 0, ""},
 		{"level", 4, kindInt, cardOne, 0, ""},
-		{"data", 5, kindBytes, cardOne, 0, ""},
+		{"data", 5, kindData, cardOne, 0, ""},
 		{"alt", 6, kindMsg, cardOne, 89, ""},
 		{"by", 7, kindString, cardOne, 0, ""},
 		{"source", 8, kindString, cardOne, 0, ""},

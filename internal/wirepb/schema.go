@@ -48,6 +48,7 @@ const (
 	kindValue    // any JSON value
 	kindEnvelope // an event inside a body: the live connection's Envelope
 	kindConst    // always the same text; not on the wire
+	kindData     // a value's data: its kind's message as bytes on the wire, its kind's object in JSON
 )
 
 type card uint8
@@ -106,7 +107,8 @@ type frame struct {
 }
 
 // kindDef is one kind of the catalogue (docs/DESIGN-MODULES.md section 4.1):
-// a value's data is that kind's message, encoded, carried as bytes.
+// a value's data is that kind's object in JSON and its message, encoded, in
+// protobuf. The field beside the data named `kind` says which.
 type kindDef struct {
 	name  string
 	level int

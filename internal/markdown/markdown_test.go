@@ -83,7 +83,7 @@ func (r *corpusResolver) Origin() string { return r.Home }
 
 // InlineDice rolls every die to its highest face, so that cases can say
 // what is stored: the value of kind dice_roll a server stores, its data
-// encoded as the server encodes it. "edit" marks dice as an edit does.
+// the roll's object. "edit" marks dice as an edit does.
 func (r *corpusResolver) InlineDice() (string, func(*model.DiceRoll) (model.ValueEnvelope, bool)) {
 	mode := DiceRoll
 	if r.DiceMode == "edit" {
@@ -99,15 +99,8 @@ func (r *corpusResolver) InlineDice() (string, func(*model.DiceRoll) (model.Valu
 		for i := range roll.Rows {
 			roll.Rows[i].Terms, roll.Rows[i].Total = model.RollDice(roll.Rows[i].Terms, func(sides int) int { return sides })
 		}
-		raw, _ := json.Marshal(roll)
-		var data any
-		dec := json.NewDecoder(bytes.NewReader(raw))
-		dec.UseNumber()
-		if dec.Decode(&data) != nil {
-			return v, false
-		}
-		var err error
-		v.Data, err = wirepb.EncodeKind(model.KindDiceRoll, data)
+		raw, err := json.Marshal(roll)
+		v.Data = raw
 		return v, err == nil
 	}
 }

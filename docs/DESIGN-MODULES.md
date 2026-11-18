@@ -372,7 +372,8 @@ listed above.
     Envelope {
       kind     "dice_roll"       the catalogue kind
       level    3                 the lowest catalogue level that reads data in full
-      data     bytes             that kind's own protobuf message
+      data     {...}             that kind's own message: an object in JSON,
+                                 its encoded bytes in protobuf
       alt      Envelope          the generic rendition, for a kind after the baseline
       by       "dice"            the module, manifest or bot that made it;
                                  absent when the composer marked a kind by itself

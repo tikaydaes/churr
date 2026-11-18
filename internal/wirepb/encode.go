@@ -417,11 +417,48 @@ func appendObject(b []byte, m *message, obj map[string]any, skip map[string]bool
 		if !present || v == nil {
 			continue
 		}
-		if b, err = appendField(b, f, v); err != nil {
+		if f.kind == kindData {
+			b, err = appendData(b, f, v, obj["kind"])
+		} else {
+			b, err = appendField(b, f, v)
+		}
+		if err != nil {
 			return nil, at(f.json, err)
 		}
 	}
 	return b, nil
+}
+
+// appendData writes a value's data (docs/DESIGN-MODULES.md section 4.1),
+// which in JSON is the object of the kind named beside it and on the wire
+// that kind's message as bytes. Text is data that came as bytes of a kind
+// the server could not read, and goes back as the same bytes. An object of
+// a kind the schema does not have has no protobuf form: the encoder refuses,
+// and what holds it travels as JSON, unchanged.
+func appendData(b []byte, f *field, v, kind any) ([]byte, error) {
+	var content []byte
+	switch x := v.(type) {
+	case string:
+		raw, err := base64.RawURLEncoding.Strict().DecodeString(x)
+		if err != nil {
+			return nil, noFit("not base64url")
+		}
+		content = raw
+	case map[string]any:
+		name, _ := kind.(string)
+		k, ok := kindOf(name)
+		if !ok {
+			return nil, noFit(fmt.Sprintf("the catalogue has no kind %q to write its data as", name))
+		}
+		sub, err := appendMessage(nil, k.msg, x)
+		if err != nil {
+			return nil, err
+		}
+		content = sub
+	default:
+		return nil, noFit("not an object")
+	}
+	return protowire.AppendBytes(protowire.AppendTag(b, f.num, protowire.BytesType), content), nil
 }
 
 // find returns the field with a JSON name, or nil. Messages are small; a

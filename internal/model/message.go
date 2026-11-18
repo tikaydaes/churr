@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -55,11 +56,14 @@ const (
 // ValueEnvelope is a value of the catalogue (schema ValueEnvelope): on a
 // span of a message's text as an object entity, or on the whole message as
 // its view. The text is the message; the value is a view of it. Data is the
-// kind's own protobuf message, encoded (wirepb.EncodeKind), kept as it came.
+// kind's own object, as JSON (in protobuf the codec writes it as the kind's
+// message), kept exactly as it came; for a kind that reached this server
+// only as protobuf bytes it cannot read, it is those bytes as base64url
+// text, which no JSON reader draws.
 type ValueEnvelope struct {
-	Kind  string `json:"kind"`
-	Level int    `json:"level"`
-	Data  Bytes  `json:"data,omitempty"`
+	Kind  string          `json:"kind"`
+	Level int             `json:"level"`
+	Data  json.RawMessage `json:"data,omitempty"`
 	// Alt is the generic rendition, for a kind newer than the baseline.
 	Alt *ValueEnvelope `json:"alt,omitempty"`
 	// By is the module, manifest or bot that made it.

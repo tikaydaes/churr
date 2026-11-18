@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -262,7 +263,7 @@ func TestTableMatchesProto(t *testing.T) {
 	fd := loadDescriptor(t)
 	kinds := map[kind]protoreflect.Kind{kindString: protoreflect.StringKind, kindInt: protoreflect.Int64Kind,
 		kindDouble: protoreflect.DoubleKind, kindBool: protoreflect.BoolKind, kindUuid: protoreflect.BytesKind,
-		kindTime: protoreflect.Int64Kind, kindBytes: protoreflect.BytesKind, kindEnum: protoreflect.EnumKind,
+		kindTime: protoreflect.Int64Kind, kindBytes: protoreflect.BytesKind, kindData: protoreflect.BytesKind, kindEnum: protoreflect.EnumKind,
 		kindMsg: protoreflect.MessageKind, kindValue: protoreflect.MessageKind, kindEnvelope: protoreflect.MessageKind}
 	count := 0
 	for i := range messages {
@@ -389,7 +390,9 @@ func BenchmarkEncodeMessageCreated(b *testing.B) {
 
 // TestKinds: every kind of the catalogue has a message in churr.proto, and
 // its data goes to bytes protobuf itself reads as that message, and back to
-// the same JSON.
+// the same JSON; in an envelope the JSON wire carries the kind's object and
+// the protobuf wire its bytes; and data of a kind this schema cannot read is
+// carried unchanged on both.
 func TestKinds(t *testing.T) {
 	fd := loadDescriptor(t)
 	for _, k := range kinds {
@@ -427,4 +430,78 @@ func TestKinds(t *testing.T) {
 	if _, err := EncodeKind("no_such_kind", v); err == nil {
 		t.Error("a kind the catalogue does not have was encoded")
 	}
+
+	// In an envelope: the JSON wire has the kind's object, the protobuf wire
+	// the kind's message as bytes, and each turns into the other exactly.
+	mi := mustIndex(t, "ValueEnvelope")
+	envelope := `{"kind":"dice_roll","level":1,"by":"dice","data":` + roll + `}`
+	pb, err := encodeBody(mi, []byte(envelope))
+	if err != nil {
+		t.Fatalf("the envelope has no protobuf form: %v", err)
+	}
+	em := dynamicpb.NewMessage(fd.Messages().ByName("ValueEnvelope"))
+	if err := proto.Unmarshal(pb, em); err != nil || hasUnknown(em) {
+		t.Fatalf("protobuf does not read the envelope: %v", err)
+	}
+	onWire := em.Get(em.Descriptor().Fields().ByName("data")).Bytes()
+	if !bytes.Equal(onWire, b) {
+		t.Errorf("the envelope's data on the wire is not the DiceRoll's bytes")
+	}
+	for _, strict := range []bool{true, false} {
+		back, err := decodeBody(mi, pb, strict)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if canonical(t, back) != canonical(t, []byte(envelope)) {
+			t.Errorf("the envelope came back as %s", back)
+		}
+	}
+	// The same inside a message's view and an object entity, as a client is
+	// sent them.
+	msg := `{"id":"0193a6f2-7c1e-7b3a-9f0e-000000000001","text":"Rolled","view":` + envelope +
+		`,"entities":[{"type":"object","at":0,"len":6,"object":` + envelope + `}]}`
+	if pb, err := encodeBody(mustIndex(t, "Message"), []byte(msg)); err != nil {
+		t.Errorf("a message with a view has no protobuf form: %v", err)
+	} else if back, err := decodeBody(mustIndex(t, "Message"), pb, false); err != nil || canonical(t, back) != canonical(t, []byte(msg)) {
+		t.Errorf("a message with a view came back as %s (%v)", back, err)
+	}
+
+	// A kind this server does not know. Its object has no protobuf form, so
+	// what holds it goes as JSON, unchanged; its bytes, come as protobuf,
+	// are read as base64url text and written back as the same bytes.
+	if _, err := encodeBody(mi, []byte(`{"kind":"tarot_spread","level":4,"data":{"cards":[1,2]}}`)); err == nil {
+		t.Error("an object of an unknown kind was written as protobuf")
+	}
+	if _, typed, _ := EncodeFrameJSON([]byte(`{"type":"message.created","at":"2026-11-13T09:30:00.000Z","message":{"id":"0193a6f2-7c1e-7b3a-9f0e-000000000001","text":"x","view":{"kind":"tarot_spread","level":4,"data":{"cards":[1,2]}}}}`)); typed {
+		t.Error("a frame holding an object of an unknown kind was not carried as JSON")
+	}
+	future := protowire.AppendVarint(protowire.AppendTag(nil, 3, protowire.VarintType), 7)
+	unknownPB := protowire.AppendBytes(protowire.AppendTag(protowire.AppendString(protowire.AppendTag(nil, 3, protowire.BytesType), "tarot_spread"), 5, protowire.BytesType), future)
+	// And a known kind with a field newer than this schema: kept as bytes too.
+	newerPB := protowire.AppendBytes(protowire.AppendTag(protowire.AppendString(protowire.AppendTag(nil, 3, protowire.BytesType), "dice_roll"), 5, protowire.BytesType),
+		protowire.AppendVarint(protowire.AppendTag(append([]byte(nil), b...), 99, protowire.VarintType), 1))
+	for name, in := range map[string][]byte{"an unknown kind": unknownPB, "a newer dice_roll": newerPB} {
+		text, err := decodeBody(mi, in, false)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		var got map[string]any
+		json.Unmarshal(text, &got)
+		if _, isText := got["data"].(string); !isText {
+			t.Errorf("%s: its data was read as %v", name, got["data"])
+		}
+		again, err := encodeBody(mi, text)
+		if err != nil || !bytes.Equal(again, in) {
+			t.Errorf("%s: not the same bytes again (%v)", name, err)
+		}
+	}
+}
+
+func mustIndex(t *testing.T, name string) int {
+	t.Helper()
+	mi, ok := messageIndex(name)
+	if !ok {
+		t.Fatalf("the schema has no message %s", name)
+	}
+	return mi
 }

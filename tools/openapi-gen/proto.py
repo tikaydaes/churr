@@ -37,10 +37,10 @@ FIRST_FIELD = 3       # 1 and 2 are empty_fields and null_fields in every messag
 FIRST_BODY = 10       # the envelope's bodies; 3 to 7 are its own fields
 ENVELOPE_FIELDS = [('type', 3, 'string'), ('at', 4, 'time'), ('conversation_id', 5, 'uuid'),
                    ('seq', 6, 'int'), ('json', 7, 'bytes')]
-KINDS = ['string', 'int', 'double', 'bool', 'uuid', 'time', 'bytes', 'enum', 'msg', 'value', 'envelope', 'const']
+KINDS = ['string', 'int', 'double', 'bool', 'uuid', 'time', 'bytes', 'enum', 'msg', 'value', 'envelope', 'const', 'data']
 CARDS = ['one', 'list', 'map', 'umap']
 PROTO_TYPE = {'string': 'string', 'int': 'int64', 'double': 'double', 'bool': 'bool', 'uuid': 'bytes',
-              'time': 'int64', 'bytes': 'bytes', 'value': 'Value', 'envelope': 'Envelope'}
+              'time': 'int64', 'bytes': 'bytes', 'data': 'bytes', 'value': 'Value', 'envelope': 'Envelope'}
 MEDIA_TYPE = 'application/x-protobuf'
 
 
@@ -76,6 +76,8 @@ class Builder:
         """(card, kind, ref) for a schema. ctx names anything that has to be made for it."""
         if '$ref' in s:
             return self.ref(s['$ref'].split('/')[-1])
+        if 'x-kinds' in s:
+            return ('one', 'data', None)     # a value's data: bytes on the wire, its kind's object in JSON
         if 'x-const' in s:
             return ('one', 'const', s['x-const'])
         if 'allOf' in s:
@@ -462,6 +464,8 @@ def dart_text(b, frames, ops, lock):
             q(name), m['shape'], m.get('extra_num', 0), name))
         for f in m['fields']:
             j, num, kind, card, ref, const = field_row(f, mi, ei)
+            if kind == 'data':
+                kind = 'bytes'     # the app's codec keeps a value's data as bytes: base64url in its JSON
             out.append('    WireField(%s, %d, WireKind.%s, WireCard.%s, %d%s),\n' % (
                 q(j), num, kind + ('_' if kind in ('double', 'int', 'bool', 'enum', 'const') else ''), card, ref,
                 ', ' + q(const) if const else ''))

@@ -24637,9 +24637,16 @@ components:
           format: int64
           description: The lowest catalogue level that reads `data` in full.
         data:
-          type: string
-          contentEncoding: base64url
-          description: That kind's own protobuf message, encoded; `x-kinds` names each kind's schema.
+          description: 'The value itself, in the shape of its kind (`x-kinds` names each kind''s schema). In JSON
+            it is that schema''s object; in protobuf, that schema''s message encoded as bytes. A server that does
+            not know a kind carries its data in the form it came in: an object it cannot write as bytes makes the
+            whole answer or frame go as JSON, and bytes it cannot read as an object go to a JSON reader as base64url
+            text, which no reader draws: it falls back to `alt`, then to the text.'
+          oneOf:
+          - type: object
+            additionalProperties: true
+          - type: string
+            contentEncoding: base64url
           x-kinds:
             dice_roll:
               $ref: '#/components/schemas/DiceRoll'

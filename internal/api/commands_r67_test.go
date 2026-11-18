@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -52,9 +53,9 @@ func TestActionAndChance(t *testing.T) {
 		if c["dice"] != "4d6kh3+2" || len(rows) != 1 || len(rolls) != 4 || len(dice["dropped"].([]any)) != 1 || m["chance"] != nil {
 			t.Fatalf("roll: %v", m)
 		}
-		total := row["total"].(int64)
-		if total < 5 || total > 20 || total != dice["value"].(int64)+2 {
-			t.Fatalf("roll total %d: %v", total, c)
+		total := row["total"].(float64)
+		if total < 5 || total > 20 || total != dice["value"].(float64)+2 {
+			t.Fatalf("roll total %v: %v", total, c)
 		}
 		if text, _ := m["text"].(string); !strings.HasPrefix(text, "Rolled 4d6kh3+2: [") {
 			t.Fatalf("a roll's text is the roll in words: %v", m)
@@ -72,7 +73,7 @@ func TestActionAndChance(t *testing.T) {
 	sam.Refused(400, model.CodeInvalidRequest, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"chance": map[string]any{"kind": "roll"}})
 	sam.Refused(409, model.CodeConflict, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"text": "for initiative"})
 	got := owner.Must(200, "GET", "/api/v1/messages/"+r["id"].(string), nil)["message"].(map[string]any)
-	if got["text"] != r["text"] || got["view"].(map[string]any)["data"] != r["view"].(map[string]any)["data"] || rollOf(t, r["view"].(map[string]any))["dice"] != "1d20" {
+	if got["text"] != r["text"] || !reflect.DeepEqual(got["view"], r["view"]) || rollOf(t, r["view"].(map[string]any))["dice"] != "1d20" {
 		t.Fatalf("read back: %v, posted %v", got, r)
 	}
 

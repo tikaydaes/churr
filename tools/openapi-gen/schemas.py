@@ -784,9 +784,11 @@ S('SealedPayload', "The content of a sealed-chat message. Only the two people's 
 
 # ----------------------------------------------------------------------------
 # The catalogue's values (docs/DESIGN-MODULES.md section 4.1). A value is an envelope: the catalogue kind,
-# the lowest catalogue level that reads its data in full, and the data as that kind's own protobuf message.
-# Each kind's message is a schema of its own, named in `x-kinds` beside `data`; proto.py gives every one a
-# message in churr.proto and the codec tables, and the Go table maps each kind to its message and level.
+# the lowest catalogue level that reads its data in full, and the data in that kind's own shape: in JSON
+# the kind's object, in protobuf the kind's message encoded as bytes. Each kind's shape is a schema of its
+# own, named in `x-kinds` beside `data`; proto.py gives every one a message in churr.proto and the codec
+# tables, and the Go table maps each kind to its message and level, which is how the Go codec turns the
+# one form into the other.
 
 S('DiceRollTerm', 'One term of a roll: some dice, or a plain number added or taken away.', {
    'sign': ('int', '1 to add the term, -1 to take it away.'),
@@ -816,8 +818,15 @@ S('ValueEnvelope', 'A value of the catalogue (DESIGN-MODULES.md section 4.1): on
   'it does not understand byte for byte.', {
    'kind': ('str', 'The catalogue kind, such as `dice_roll`.'),
    'level': ('int', 'The lowest catalogue level that reads `data` in full.'),
-   'data?': ('b64', "That kind's own protobuf message, encoded; `x-kinds` names each kind's schema.",
-             {'x-kinds': {k: {'$ref': '#/components/schemas/' + m, 'x-level': lv} for k, (m, lv) in KINDS.items()}}),
+   'data?': {'$raw': {
+       'description': "The value itself, in the shape of its kind (`x-kinds` names each kind's schema). In JSON it is "
+                      "that schema's object; in protobuf, that schema's message encoded as bytes. A server that does "
+                      "not know a kind carries its data in the form it came in: an object it cannot write as bytes "
+                      "makes the whole answer or frame go as JSON, and bytes it cannot read as an object go to a JSON "
+                      "reader as base64url text, which no reader draws: it falls back to `alt`, then to the text.",
+       'oneOf': [{'type': 'object', 'additionalProperties': True},
+                 {'type': 'string', 'contentEncoding': 'base64url'}],
+       'x-kinds': {k: {'$ref': '#/components/schemas/' + m, 'x-level': lv} for k, (m, lv) in KINDS.items()}}},
    'alt?': ('#ValueEnvelope', 'The generic rendition, for a kind newer than the baseline.'),
    'by?': ('str', 'The module, manifest or bot that made it. Absent when the composer marked a kind by itself.'),
    'source?': ('str', 'The derived type it was read as, when there is one (`parcels/parcel`).'),
