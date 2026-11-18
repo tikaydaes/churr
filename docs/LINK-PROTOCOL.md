@@ -1367,8 +1367,12 @@ first. An instance therefore keeps, for 60 seconds, a key of a
 hub-owned channel from a hub it does not know for the channel's home
 yet, and takes it when a record it takes names that hub the home; a
 hub's holder likewise keeps a key of a channel it does not hold yet
-until the record that makes its hub the home arrives. A key whose
-sender no record names the home is dropped (`key_not_from_owner`).
+until the record that makes its hub the home arrives. Only a key from
+a hub that could be the home is kept so: the hub the key came by, or
+another hub of its cluster under the key the roster gives it. A key
+from anyone else, a member instance above all, is dropped at once
+(`key_not_from_owner`), as is a kept key whose sender no record names
+the home.
 An instance takes such a channel's key from its home hub, under the key
 the cluster roster gives that hub, and from nobody else. Its current
 epoch is the one the newest record it holds calls for, once it holds

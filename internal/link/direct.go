@@ -506,6 +506,20 @@ func (s *Service) takeEarlyKeys(ctx context.Context, id model.StreamID) {
 	}
 }
 
+// mayBeHome reports whether the sender of a direct message is a hub that
+// could be a channel's home: the hub of the peer it came by, or another hub
+// of that hub's cluster, under the key the roster gives it. A key from
+// anyone else (a member instance, above all) can never come to be the
+// home's, and is not kept for a record that would say so.
+func (s *Service) mayBeHome(ctx context.Context, m directMessage) bool {
+	peer, err := s.store.Peers().Get(ctx, m.peer)
+	if err != nil || peer.Kind != wire.KindHub || m.from.Name == "" {
+		return false
+	}
+	key := s.clusterHubKey(peer, m.from.Name)
+	return len(key) > 0 && bytes.Equal(key, m.from.SignKey)
+}
+
 // takeKey is onKey; replay says the key was kept and is taken again.
 func (s *Service) takeKey(ctx context.Context, m directMessage, replay bool) {
 	var body struct {
@@ -521,7 +535,7 @@ func (s *Service) takeKey(ctx context.Context, m directMessage, replay bool) {
 	if err == nil && hubOwned(st) && m.from.Name != st.HomeHub {
 		from = false
 	}
-	if (err == nil && hubOwned(st) && st.PeerID == m.peer && !from) || (errors.Is(err, model.ErrNotFound) && s.holder) {
+	if ((err == nil && hubOwned(st) && st.PeerID == m.peer && !from) || (errors.Is(err, model.ErrNotFound) && s.holder)) && s.mayBeHome(ctx, m) {
 		// Perhaps from the channel's next home, ahead of the record by which
 		// the home hands the channel to it; or, to a hub's holder, ahead of
 		// the record that makes its hub the home. Kept a minute, and taken

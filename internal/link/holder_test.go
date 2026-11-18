@@ -602,9 +602,13 @@ func TestAnEarlyJoinerIsGivenTheRestOfTheHistory(t *testing.T) {
 	a.Owner.Post(ch, "said before the hub held it")
 	stream, local := l.Share(0, ch, "annals", map[string]any{"listing": "open", "history_days": 30}, 1)
 	ctx, id := context.Background(), model.StreamID(stream)
-	if owed := l.Hub.Hub.Holder().HistoryOwed(ctx, id); len(owed) != 1 || owed[0] != "a.localhost" {
-		t.Fatalf("the holder waits on %v", owed)
-	}
+	// The holder writes down every instance of the first record it takes.
+	// On a slow machine that record already names b, which then answers
+	// with the nothing it holds and comes off the list; a, deaf, stays.
+	testkit.Eventually(t, "the holder waits on a alone", func() bool {
+		owed := l.Hub.Hub.Holder().HistoryOwed(ctx, id)
+		return len(owed) == 1 && owed[0] == "a.localhost"
+	})
 	a.Owner.Post(ch, "said after b joined")
 	time.Sleep(time.Second)
 	for _, m := range b.Owner.Messages(local[1]) {
