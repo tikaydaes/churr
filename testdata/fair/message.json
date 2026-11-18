@@ -1,0 +1,111 @@
+{
+ "description": "A message whose roll and inline dice took chance from its draw, as a client is handed it, with the VRF key history the client pinned for its server and the names the conversation's chain may have. A client's check passes on it and fails on it changed (docs/FAIR.md section 9).",
+ "server": "a.example",
+ "keys": [
+  {
+   "key": "A2nTdMGDWXVcvt0hiXeDBJ5Ih6q30fqenv0JBkpAXf6E",
+   "began": "2026-01-01T00:00:00.000Z"
+  },
+  {
+   "key": "A4nTYJh2WzRPplosvw5VimudZgigpKy1HiHsN8l58xi1",
+   "began": "2026-05-01T00:00:00.000Z"
+  }
+ ],
+ "chains": [
+  "01a1ee00-0000-7000-8000-000000000001",
+  "01a1ee00-0000-7000-8000-0000000000ff"
+ ],
+ "message": {
+  "conversation_id": "01a1ee00-0000-7000-8000-000000000001",
+  "created_at": "2026-09-21T14:13:20.000Z",
+  "entities": [
+   {
+    "at": 0,
+    "len": 9,
+    "object": {
+     "by": "dice",
+     "data": {
+      "dice": "2d6+3",
+      "rows": [
+       {
+        "dice": "2d6+3",
+        "terms": [
+         {
+          "sign": 1,
+          "count": 2,
+          "sides": 6,
+          "rolls": [
+           6,
+           3
+          ],
+          "value": 9
+         },
+         {
+          "sign": 1,
+          "value": 3
+         }
+        ],
+        "total": 12
+       }
+      ]
+     },
+     "draw": {
+      "i": 1
+     },
+     "kind": "dice_roll",
+     "level": 1
+    },
+    "type": "object"
+   }
+  ],
+  "fair": {
+   "v": 1,
+   "derive": 1,
+   "owner": "a.example",
+   "n": 3,
+   "pk": "A4nTYJh2WzRPplosvw5VimudZgigpKy1HiHsN8l58xi1",
+   "alpha": "Y2h1cnItZmFpci0xAAlhLmV4YW1wbGUAJDAxYTFlZTAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMQAAAAAAAAADg-K86tXD65CqmFxqDqG2EMcUZ8rxVgR_d3HoX6tBstA",
+   "beta": "wiKT-RfDwmRIyy0y8dL4oaaaTGDryeDGluQ44HLyfVo",
+   "proof": "AxyaDg8cPYM6NGfxfCxw1KOJC09iCEn_Bdmib9KTM3eBEt_taciFOld-wI_6x8yf0Ck20XiR6He-nbaV4O3e2EIlnO_NsSv91ztJFpNqoxQO",
+   "prev": "g-K86tXD65CqmFxqDqG2EMcUZ8rxVgR_d3HoX6tBstA"
+  },
+  "id": "01a1ee00-0000-7000-8000-000000000002",
+  "text": "Rolled 4d6kh3: …",
+  "view": {
+   "by": "dice",
+   "data": {
+    "dice": "4d6kh3",
+    "rows": [
+     {
+      "dice": "4d6kh3",
+      "terms": [
+       {
+        "sign": 1,
+        "count": 4,
+        "sides": 6,
+        "keep": "kh",
+        "keep_n": 3,
+        "rolls": [
+         4,
+         1,
+         2,
+         6
+        ],
+        "dropped": [
+         1
+        ],
+        "value": 12
+       }
+      ],
+      "total": 12
+     }
+    ]
+   },
+   "draw": {
+    "i": 0
+   },
+   "kind": "dice_roll",
+   "level": 1
+  }
+ }
+}

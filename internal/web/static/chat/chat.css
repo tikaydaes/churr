@@ -271,6 +271,14 @@ button.msg-author:hover { box-shadow: inset 0 -2px 0 var(--pink); }
 .chance.spinning .slot:not(.card) .slot-face:not(.art) { box-shadow: inset 0 0 0 2px var(--cyan); }
 .chance-total { font-family: var(--mono); font-size: 1.05rem; }
 .chance-total strong { font-size: 1.3rem; }
+/* The check of a roll's proof (shared/fair/mark.js): small, under the roll. */
+.fair-mark { display: inline-flex; align-items: center; gap: 0.25em; margin-top: 0.25rem; padding: 0 0.4em; border: 1px solid var(--edge); background: none; color: var(--dim); font: inherit; font-size: 0.8rem; cursor: pointer; }
+.fair-mark.verified { color: var(--cyan); border-color: var(--cyan); }
+.fair-mark.failed { color: var(--yel-ink); border-color: var(--yel); }
+.fair-block { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem; }
+.fair-block dd { margin: 0; overflow-wrap: anywhere; }
+.fair-block dd.mono { font-family: var(--mono); font-size: 0.8rem; }
+.fair-says.warn { color: var(--yel-ink); }
 .chance-names { margin: 0; padding-left: 1.4em; display: grid; gap: 2px; }
 /* A card or tile: its name pops up over it on hover, focus or a tap
    (.chance-tip, shown as .open; a popover in the top layer). Face down

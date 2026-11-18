@@ -15,6 +15,7 @@ import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
 import { renderChance, spinLive, spokenResult } from './chance.js';
 import { drawView, newerNote } from '../types/draw.js';
+import { fairMark } from '../fair/mark.js';
 import { ROLE_SAYS } from '../hub.js';
 import { ownerOverrideText, managerDismissedText } from '../roles.js';
 import { ATTENTION, alertText } from '../alerts.js';
@@ -215,6 +216,10 @@ export function renderMessage(m, env, opts = {}) {
     else if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, env.md(m))));
     else if (m.text) main.append(renderMarkdown(m.text, m.entities, env.md(m)));
     if (view.newer) main.append(newerNote());
+    // The check of the message's draw, when anything in it took chance
+    // from one: verified, or plainly not (shared/fair/mark.js).
+    const mark = env.fair ? fairMark(m, env.fair(m)) : null;
+    if (mark) main.append(mark);
     // A result the server drew. It plays once when it arrives live, and
     // never again (rulings R67, R68, R87).
     if (m.chance) {

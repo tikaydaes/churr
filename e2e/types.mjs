@@ -9,7 +9,9 @@
 //   4. values kept untouched through an edit the client makes itself;
 //   5. a roll drawn: as a message's card and as inline dice, through the
 //      catalogue, with the text set as text; and what cannot be drawn left
-//      as its text.
+//      as its text;
+//   6. the check of a roll's proof under its message: verified, or
+//      plainly not, the roll drawn either way.
 //
 // It runs on a small stand-in for the page's elements.
 //
@@ -189,6 +191,27 @@ const marked = { ...roll, data: { dice: '<img src=x onerror=alert(1)>', rows: [{
 v = drawView({ text: 'x', view: marked }, {});
 check('markup in the data is shown as its characters', v.card.querySelector('.chance-title').textContent, 'Rolled <img src=x onerror=alert(1)>');
 check('and makes no element of its own', made.filter((t) => t === 'IMG' || t === 'B'), []);
+
+// 6. The check of a roll's proof under the message (shared/fair/mark.js):
+// "Checking" at first, then "Verified", or plainly "Not verified", the roll
+// shown either way; none for a message that drew nothing.
+{
+  const { fairMark } = await import(S + 'fair/mark.js');
+  const mv = JSON.parse(readFileSync(new URL('../testdata/fair/message.json', import.meta.url), 'utf8'));
+  const ctx = { server: mv.server, keys: mv.keys, chains: mv.chains };
+  check('no mark for a message that drew nothing', fairMark({ text: 'x' }, ctx), null);
+  const good = structuredClone(mv.message);
+  const mark = fairMark(good, ctx);
+  check('the mark checks first', [mark.className, mark.textContent.trim()], ['fair-mark checking', 'Checking the roll…']);
+  await good._fairCheck;
+  check('then says the roll is verified', [mark.className, mark.textContent.trim()], ['fair-mark verified', 'Verified']);
+  const bad = structuredClone(mv.message);
+  bad.fair.n += 1;
+  const no = fairMark(bad, ctx);
+  await bad._fairCheck;
+  check('or plainly that it is not', [no.className, no.textContent.trim(), no.title], ['fair-mark failed', 'Not verified', 'The proof is not for this place in the conversation.']);
+  check('and the roll is still drawn', drawView(bad, {}).card !== null, true);
+}
 
 if (checks < 40) { failures++; console.log('FAIL types: too few checks ran'); }
 console.log(`${failures ? 'FAIL' : 'ok  '} types: ${checks} checks, ${failures} failure(s)`);

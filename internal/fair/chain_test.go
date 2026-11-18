@@ -3,7 +3,9 @@ package fair
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/ecvrf"
@@ -87,4 +89,86 @@ func mustHash(t *testing.T, pi []byte) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// messageFile is a message with a fair block for the clients' checks
+// (e2e/fair.mjs, the app's fair test): what a client is handed, the history
+// it pinned, and the chain's names. Written with the derive vectors
+// (CHURR_WRITE_FAIR_VECTORS=1).
+const messageFile = "../../testdata/fair/message.json"
+
+type messageVector struct {
+	Description string         `json:"description"`
+	Server      string         `json:"server"`
+	Keys        []keyVector    `json:"keys"`
+	Chains      []string       `json:"chains"`
+	Message     map[string]any `json:"message"`
+}
+
+type keyVector struct {
+	Key   model.Bytes `json:"key"`
+	Began model.Time  `json:"began"`
+}
+
+func makeMessageVector(t *testing.T) messageVector {
+	p := prover(t, "the message vector's key")
+	old := prover(t, "an older key")
+	b, err := Make(p, "a.example", "01a1ee00-0000-7000-8000-000000000001", 3, PrevOf([]byte("draw 2's proof")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	roll := func(i uint32, rows []DiceRow) map[string]any {
+		got, err := Roll(NewStream(b.Beta, i), rows)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return map[string]any{"kind": "dice_roll", "level": 1, "by": "dice", "draw": map[string]any{"i": i},
+			"data": map[string]any{"dice": got[0].Dice, "rows": got}}
+	}
+	view := roll(0, []DiceRow{{Dice: "4d6kh3", Terms: []DiceTerm{{Sign: 1, Count: 4, Sides: 6, Keep: "kh", KeepN: 3}}}})
+	inline := roll(1, []DiceRow{{Dice: "2d6+3", Terms: []DiceTerm{{Sign: 1, Count: 2, Sides: 6}, {Sign: 1, Value: 3}}}})
+	return messageVector{
+		Description: "A message whose roll and inline dice took chance from its draw, as a client is handed it, with the VRF key history the client pinned for its server and the names the conversation's chain may have. A client's check passes on it and fails on it changed (docs/FAIR.md section 9).",
+		Server:      "a.example",
+		Keys:        []keyVector{{Key: old.pk, Began: 1767225600000}, {Key: p.pk, Began: 1777593600000}},
+		Chains:      []string{"01a1ee00-0000-7000-8000-000000000001", "01a1ee00-0000-7000-8000-0000000000ff"},
+		Message: map[string]any{"id": "01a1ee00-0000-7000-8000-000000000002", "conversation_id": "01a1ee00-0000-7000-8000-000000000001",
+			"created_at": model.Time(1790000000000), "text": "Rolled 4d6kh3: …", "fair": b, "view": view,
+			"entities": []any{map[string]any{"type": "object", "at": 0, "len": 9, "object": inline}}},
+	}
+}
+
+func TestMessageVector(t *testing.T) {
+	if os.Getenv("CHURR_WRITE_FAIR_VECTORS") == "1" {
+		out, err := json.MarshalIndent(makeMessageVector(t), "", " ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(messageFile, append(out, '\n'), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw, err := os.ReadFile(messageFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var v struct {
+		Server  string      `json:"server"`
+		Keys    []keyVector `json:"keys"`
+		Chains  []string    `json:"chains"`
+		Message struct {
+			CreatedAt model.Time      `json:"created_at"`
+			Fair      model.FairBlock `json:"fair"`
+		} `json:"message"`
+	}
+	if err := json.Unmarshal(raw, &v); err != nil {
+		t.Fatal(err)
+	}
+	var keys []Key
+	for _, k := range v.Keys {
+		keys = append(keys, Key{Key: k.Key, Began: k.Began})
+	}
+	if err := CheckBlock(&v.Message.Fair, v.Server, v.Chains[0], v.Message.CreatedAt, keys); err != nil {
+		t.Fatal(err)
+	}
 }

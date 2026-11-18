@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { isPublicKey, proofToHash, verify } from '../internal/web/static/shared/fair/ecvrf.js';
 import { checkServerPin, comparePin } from '../internal/web/static/shared/fair/pin.js';
 import { DERIVE, Stream, block, draw, isPrimitive, sameRoll } from '../internal/web/static/shared/fair/derive.js';
+import { verifyMessage } from '../internal/web/static/shared/fair/verify.js';
 
 const file = new URL('../testdata/ecvrf/vectors.json', import.meta.url);
 const vf = JSON.parse(readFileSync(file, 'utf8'));
@@ -133,6 +134,34 @@ for (const v of df.cases) {
   }
 }
 for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.label}`);
+
+// A message's draw checked as the chat checks it (shared/fair/verify.js),
+// from testdata/fair/message.json, which the Go and Dart checks read too:
+// it passes as it is, and fails, saying so, for each thing changed.
+{
+  const mv = JSON.parse(readFileSync(new URL('../testdata/fair/message.json', import.meta.url), 'utf8'));
+  const ctx = { server: mv.server, keys: mv.keys, chains: mv.chains };
+  const ok = await verifyMessage(mv.message, ctx);
+  check(ok.state === 'verified' && ok.objects.length === 2 && ok.objects.every((o) => o.ok), 'verify: the message checks out');
+  check((await verifyMessage({ text: 'plain' }, ctx)).state === 'none', 'verify: a message with no draw has nothing to check');
+  const changed = async (what, fn, c = ctx) => {
+    const m = structuredClone(mv.message);
+    fn(m);
+    const r = await verifyMessage(m, c);
+    check(r.state === 'failed' && typeof r.why === 'string' && r.why.length > 0, `verify: fails for ${what}`);
+  };
+  await changed('a die of the card', (m) => { const t = m.view.data.rows[0].terms[0]; t.rolls[0] = t.rolls[0] === 1 ? 2 : 1; });
+  await changed('an inline total', (m) => { m.entities[0].object.data.rows[0].total += 1; });
+  await changed('another object index', (m) => { m.view.draw.i = 5; });
+  await changed('another beta', (m) => { m.fair.beta = m.fair.prev; });
+  await changed('another n', (m) => { m.fair.n += 1; });
+  await changed('a message older than its key', (m) => { m.created_at = '2026-02-01T00:00:00.000Z'; });
+  await changed('a key not pinned', (m) => { m.fair.pk = mv.keys[0].key; });
+  await changed('another owner', (m) => { m.fair.owner = 'b.example'; });
+  await changed('a rule not known', (m) => { m.fair.derive = 2; });
+  await changed('another conversation', () => {}, { ...ctx, chains: ['01a1ee00-0000-7000-8000-0000000000aa'] });
+  await changed('another pin', () => {}, { ...ctx, keys: [mv.keys[0]] });
+}
 
 if (failed) {
   console.log(`fair: ${failed} failed, ${passed} passed`);
