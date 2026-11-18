@@ -191,6 +191,10 @@ func TestSaidWhileTheSnapshotIsCutIsTakenOnce(t *testing.T) {
 // afterwards is still given everything that instance's people wrote, under
 // their names: the history comes from an instance that remains.
 func TestHistoryOutlivesAnInstanceThatLeft(t *testing.T) {
+	// The waits between asking again are shortened: on a slow machine one
+	// missed answer otherwise takes longer than the test waits.
+	defer link.SetFirstHistoryWait(200 * time.Millisecond)()
+	defer link.SetHistoryOwedWait(500 * time.Millisecond)()
 	l := testkit.NewLinked(t, 3, true)
 	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
 	ch := a.Owner.Channel("archive", false)
