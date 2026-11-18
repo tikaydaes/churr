@@ -162,8 +162,11 @@ void main() {
 
   test('things you can type cover every object and unit', () {
     final covered = {for (final t in helpThings()) ...t.covers};
+    // The composer's inline dice become an `object` entity of kind
+    // dice_roll.
+    String entityOf(String k) => k == 'dice' ? 'object' : k;
     for (final k in objectKinds) {
-      expect(covered, contains('entity:$k'));
+      expect(covered, contains('entity:${entityOf(k)}'));
     }
     final codes = {for (final u in measureUnits) u.$2};
     final sorted = {
