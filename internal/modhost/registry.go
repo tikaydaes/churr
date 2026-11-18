@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/wirepb"
@@ -19,6 +20,11 @@ type Registry struct {
 	cmds   map[string]*Module
 	claims []ClaimRule
 	intn   func(n int) int
+	store  Store
+	// deadline is how long a call may take; failed hears of the calls
+	// that panicked or ran out of it (guard.go).
+	deadline time.Duration
+	failed   func(ctx context.Context, f Failure)
 }
 
 // Options are how a registry is made.
@@ -26,6 +32,16 @@ type Options struct {
 	// Intn backs every Host's randomness; left out, crypto/rand. Tests
 	// that must know the outcome give one of their own.
 	Intn func(n int) int
+	// Store keeps the modules' values (host.go); left out, they keep
+	// nothing.
+	Store Store
+	// Failed is told of every call into a module that panicked or gave no
+	// answer within Deadline: the server logs and audits it. Its context
+	// outlives the request.
+	Failed func(ctx context.Context, f Failure)
+	// Deadline replaces the Deadline of every call, for tests that cannot
+	// wait two seconds.
+	Deadline time.Duration
 }
 
 // ClaimRule is a claim as the reader of text applies it: the kind, its
@@ -57,7 +73,10 @@ var moduleName = regexp.MustCompile(`^[a-z0-9-]{2,32}$`)
 // one a command may have; every claimed kind is in the catalogue, with marks
 // and a pattern Go compiles.
 func New(o Options, mods ...Module) (*Registry, error) {
-	r := &Registry{cmds: map[string]*Module{}, intn: o.Intn}
+	r := &Registry{cmds: map[string]*Module{}, intn: o.Intn, store: o.Store, failed: o.Failed, deadline: o.Deadline}
+	if r.deadline <= 0 {
+		r.deadline = Deadline
+	}
 	names := map[string]bool{}
 	kinds := map[string]bool{}
 	for i := range mods {
@@ -94,11 +113,6 @@ func New(o Options, mods ...Module) (*Registry, error) {
 	return r, nil
 }
 
-// host makes the Host of one call.
-func (r *Registry) host(actor model.Account, conv model.ConversationID) *Host {
-	return NewHost(HostOptions{Actor: actor, Conversation: conv, Intn: r.intn})
-}
-
 // Commands lists every module's commands, in the order they were
 // registered.
 func (r *Registry) Commands() []ListedCommand {
@@ -123,7 +137,12 @@ func (r *Registry) Command(ctx context.Context, actor model.Account, conv model.
 	if m == nil {
 		return Made{}, model.ErrNotFound.With("There is no command called /" + name + " here.")
 	}
-	reply, err := m.Handler.Command(ctx, r.host(actor, conv), Invocation{Command: name, Text: text})
+	var reply Reply
+	err := r.call(ctx, m, actor, conv, "/"+name, func(ctx context.Context, h *Host) error {
+		var err error
+		reply, err = m.Handler.Command(ctx, h, Invocation{Command: name, Text: text})
+		return err
+	})
 	if err != nil {
 		return Made{}, err
 	}
@@ -168,7 +187,12 @@ func (r *Registry) Resolve(ctx context.Context, actor model.Account, conv model.
 	if !ok || !c.Inside.MatchString(text) {
 		return model.ValueEnvelope{}, false
 	}
-	v, err := c.module.Handler.Resolve(ctx, r.host(actor, conv), Marked{Kind: kind, Text: text})
+	var v Value
+	err := r.call(ctx, c.module, actor, conv, kind, func(ctx context.Context, h *Host) error {
+		var err error
+		v, err = c.module.Handler.Resolve(ctx, h, Marked{Kind: kind, Text: text})
+		return err
+	})
 	if err != nil || v.Kind != kind {
 		return model.ValueEnvelope{}, false
 	}

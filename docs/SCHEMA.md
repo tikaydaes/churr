@@ -1126,6 +1126,18 @@ Commands a bot has registered. Names are unique across all bots and
 cannot be a built-in name or a community saved reply. Deleted when
 the bot unregisters them or is removed.
 
+### `module_values`
+
+Added by migration 0023. What the built-in modules keep
+(DESIGN-MODULES.md section 6.2): keys and bytes, kept apart by
+`module`, with no migrations of a module's own. `scope` is
+`instance`, `conversation` (with `conversation_id`; the rows go with
+the conversation) or `account` (with `account_id`; the rows go on
+account removal). A module names only the key: the host fills in the
+conversation and the person from the call. The host refuses a key over
+200 bytes and a value over 64 KB; the store refuses a value that would
+take a module past 1 MB in one conversation or 64 MB in all.
+
 ## 10. Calls
 
 ### `calls`
@@ -1396,7 +1408,8 @@ account's rows in: `sessions`, `devices`, `passkeys`, `access_keys`, `sidebars`,
 `account_records`, `unlock_requests`, `notify_anyway` (as target),
 `group_members`, `members`, `thread_states`, `mentions`,
 `bookmarks`, `blocks` (both directions), `timeouts`, `scheduled`,
-personal `status_presets`, personal `saved_replies` and `themes`. Unused
+personal `status_presets`, personal `saved_replies`, `themes` and the
+modules' values kept for the person (`module_values`). Unused
 invites it made are revoked. For a bot, its `commands` go and its
 `webhooks` are set to `revoked`.
 

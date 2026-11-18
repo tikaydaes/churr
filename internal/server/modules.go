@@ -1,8 +1,11 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"time"
 
+	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
 	"github.com/tikaydaes/churr/internal/modules/dice"
 )
@@ -15,7 +18,7 @@ import (
 //
 // It runs after chat and commands exist.
 func (s *Server) wireModules() error {
-	reg, err := modhost.New(modhost.Options{}, dice.Module())
+	reg, err := modhost.New(modhost.Options{Store: s.Store.Modules(), Failed: s.moduleFailed}, dice.Module())
 	if err != nil {
 		return fmt.Errorf("server: the built-in modules: %w", err)
 	}
@@ -23,4 +26,28 @@ func (s *Server) wireModules() error {
 	s.Chat.SetModules(reg)
 	s.Commands.SetModules(reg)
 	return nil
+}
+
+// moduleFailed is told of a module that panicked or gave no answer in time.
+// The person already has their refusal; this logs it with its stack and
+// puts it in the audit log, where the admins see it. The audit is written
+// on its own, so that a failure in the posting path never waits on the
+// database's writer.
+func (s *Server) moduleFailed(ctx context.Context, f modhost.Failure) {
+	s.Log.Error("modules: "+f.String(), "module", f.Module, "entry", f.Entry, "conversation", f.Conversation, "stack", f.Stack)
+	detail := map[string]any{"entry": f.Entry, "conversation_id": f.Conversation}
+	action := "module.timed_out"
+	if f.Panic != nil {
+		action = "module.panicked"
+		detail["panic"] = fmt.Sprint(f.Panic)
+	}
+	entry := model.AuditEntry{ActorID: string(f.Actor.ID), ActorKind: "account", Action: action,
+		TargetKind: "module", TargetID: f.Module, Detail: detail}
+	go func() {
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		if err := s.Store.Audit().Append(ctx, entry); err != nil {
+			s.Log.Error("modules: auditing a failure", "module", f.Module, "err", err)
+		}
+	}()
 }

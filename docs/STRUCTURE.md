@@ -217,7 +217,15 @@ catalogue.
   entry points are `Command` and `Resolve`; further entry points are
   interfaces of their own, so a module that needs none never changes.
 - `Host`, all a module may reach: the verified actor and conversation,
-  and randomness from `crypto/rand`.
+  randomness from `crypto/rand`, and the module's own store (`Get`,
+  `Put`, `Delete` by scope: the instance, this conversation, this
+  person), which reaches `store.Modules` through the small `Store`
+  interface, with its limits (64 KB a value, 1 MB a conversation, 64 MB
+  a module). A Host lasts one call.
+- Every call into a module runs on its own goroutine under a 2 s
+  deadline, with panics recovered: the person gets an ordinary
+  `unavailable` refusal and `Options.Failed` is told, which the server
+  logs and audits (`module.panicked`, `module.timed_out`).
 - `New(Options, ...Module) (*Registry, error)`; `(*Registry).Command`,
   `Resolve`, `Unresolved`, `Claims`, `Commands`. The registry refuses a
   reply with no text, holds every value to its kind's schema and check,

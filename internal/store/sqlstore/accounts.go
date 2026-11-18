@@ -475,6 +475,7 @@ func (a accounts) Remove(ctx context.Context, account, by model.AccountID, at mo
 			`DELETE FROM status_presets WHERE owner_id = ?`,
 			`DELETE FROM saved_replies WHERE owner_id = ?`,
 			`DELETE FROM themes WHERE owner_id = ?`,
+			`DELETE FROM module_values WHERE account_id = ?`,
 			`DELETE FROM commands WHERE bot_id = ?`,
 			`UPDATE webhooks SET state = 'revoked', token_hash = NULL, signing_secret = NULL WHERE bot_id = ?`,
 		} {

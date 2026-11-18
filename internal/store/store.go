@@ -89,6 +89,9 @@ type Areas interface {
 
 	// What the janitor needs across tables (janitor.go).
 	Janitor() Janitor
+
+	// What the built-in modules keep (modules.go).
+	Modules() Modules
 }
 
 // Store is a database. Calls made on it directly each run by themselves;
