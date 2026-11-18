@@ -98,7 +98,6 @@ Map<String, dynamic> hubChannel({
   'moderators': moderators,
   'invited': invited,
   'requests': requests,
-  'key_maker': 's0.example.org',
   'closed': false,
   'private': private,
   'updated_at': '2026-11-14T09:00:00.000Z',

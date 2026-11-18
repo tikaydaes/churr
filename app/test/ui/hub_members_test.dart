@@ -35,7 +35,6 @@ void main() {
     'moderators': [if (meModerator) acct('me', 'kai')],
     'invited': <String>[],
     'requests': <String>[],
-    'key_maker': 's0.example.org',
     'closed': false,
     'private': true,
     'updated_at': '2026-11-14T09:00:00.000Z',

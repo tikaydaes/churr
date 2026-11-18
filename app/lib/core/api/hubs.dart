@@ -56,7 +56,6 @@ class HubChannel {
       moderators = listOf(raw['moderators'], HubAccount.fromJson),
       invited = strings(raw['invited']),
       requests = strings(raw['requests']),
-      keyMaker = raw['key_maker'] as String? ?? '',
       closed = raw['closed'] == true,
       private = raw['private'] == true,
       updatedAt = parseTime(raw['updated_at']);
@@ -88,7 +87,6 @@ class HubChannel {
   /// else.
   final List<String> invited;
   final List<String> requests;
-  final String keyMaker;
   final bool closed;
 
   /// Private for good: never listed, and its people on every instance

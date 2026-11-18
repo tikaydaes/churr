@@ -470,7 +470,6 @@ async function hubPane(id, body, run) {
       ch.description ? fact('Description', ch.description) : null,
       ch.private ? fact('Private', 'Private for good: never listed, and on every instance nobody joins it unless a moderator or manager admits them.')
         : fact('Listing', `${listingName(ch.listing)}. ${(LISTING[ch.listing] || {}).says || ''}`),
-      fact('Key made by', ch.key_maker || '–'),
       fact('Record', `version ${ch.version}, signed by the hub ${dateTime(ch.updated_at)}`)),
     h('h3', { class: 'label' }, `Instances (${ch.servers.length})`),
     h('ul', { class: 'rows' }, ch.servers.map((name, i) => serverRow(name, [name === own ? h('span', { class: 'tag line' }, 'this instance') : null, name === own && i === 0 ? ' ' : null, i === 0 ? h('span', { class: 'tag line' }, 'longest standing') : null],
