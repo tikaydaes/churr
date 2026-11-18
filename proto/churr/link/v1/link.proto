@@ -237,7 +237,7 @@ message Counters {
   map<string, int64> values = 1;
 }
 
-// What a channel's home hub keeps beside the record, handed to the hub that takes the home over (section 23b).
+// What a channel's home hub keeps beside the record, handed to the hub that takes the home over (section 23b). keys is a HandoffKeys message sealed from the old home to the new one (section 7, Sealing).
 message Handoff {
   optional string creator = 1;
   map<string, string> inviters = 2;
@@ -245,6 +245,19 @@ message Handoff {
   repeated string declined = 4;
   optional string move_id = 5;
   optional int64 epoch = 6;
+  optional bytes keys = 7;
+}
+
+// One key epoch's stream key and the servers it began for.
+message HandoffKey {
+  optional int64 epoch = 1;
+  optional bytes key = 2;
+  repeated string servers = 3;
+}
+
+// Every stream key a channel's home hub holds, handed to the hub that takes the home over.
+message HandoffKeys {
+  repeated HandoffKey keys = 1;
 }
 
 message SubmitFrame {

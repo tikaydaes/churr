@@ -295,4 +295,21 @@ type Handoff struct {
 	Declined   []string                    `json:"declined"`
 	MoveID     string                      `json:"move_id"`
 	Epoch      int64                       `json:"epoch"`
+	// Keys is every stream key the old home holds of the channel, as a
+	// HandoffKeys message sealed from the old home to the new one: the hubs
+	// on the way cannot open it.
+	Keys Bytes `json:"keys,omitempty"`
+}
+
+// HandoffKey is one key epoch's stream key of a channel, and the servers
+// the epoch began for.
+type HandoffKey struct {
+	Epoch   int64    `json:"epoch"`
+	Key     Bytes    `json:"key"`
+	Servers []string `json:"servers"`
+}
+
+// HandoffKeys is what Handoff.Keys seals.
+type HandoffKeys struct {
+	Keys []HandoffKey `json:"keys"`
 }

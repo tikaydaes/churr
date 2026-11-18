@@ -84,6 +84,15 @@ var pbMessages = []pbMessage{
 		{"declined", 4, pbStr, pbList, 0, ""},
 		{"move_id", 5, pbStr, pbOne, 0, ""},
 		{"epoch", 6, pbInt, pbOne, 0, ""},
+		{"keys", 7, pbBytes, pbOne, 0, ""},
+	}},
+	{name: "HandoffKey", wrap: false, base: "", fields: []pbField{
+		{"epoch", 1, pbInt, pbOne, 0, ""},
+		{"key", 2, pbBytes, pbOne, 0, ""},
+		{"servers", 3, pbStr, pbList, 0, ""},
+	}},
+	{name: "HandoffKeys", wrap: false, base: "", fields: []pbField{
+		{"keys", 1, pbMsg, pbList, 11, ""},
 	}},
 	{name: "SubmitFrame", wrap: false, base: "", fields: []pbField{
 		{"envelope", 15, pbMsg, pbOne, 1, ""},
@@ -296,7 +305,7 @@ var pbMessages = []pbMessage{
 		{"hub", 1, pbStr, pbOne, 0, ""},
 		{"version", 2, pbInt, pbOne, 0, ""},
 		{"at", 3, pbTime, pbOne, 0, ""},
-		{"servers", 4, pbMsg, pbList, 50, ""},
+		{"servers", 4, pbMsg, pbList, 52, ""},
 	}},
 	{name: "Control", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
@@ -323,7 +332,7 @@ var pbMessages = []pbMessage{
 		{"description", 7, pbStr, pbOne, 0, ""},
 		{"listing", 8, pbStr, pbOne, 0, ""},
 		{"servers", 9, pbStr, pbList, 0, ""},
-		{"moderators", 10, pbMsg, pbList, 53, ""},
+		{"moderators", 10, pbMsg, pbList, 55, ""},
 		{"invited", 11, pbStr, pbList, 0, ""},
 		{"requests", 12, pbStr, pbList, 0, ""},
 		{"epoch", 13, pbInt, pbOne, 0, ""},
@@ -333,7 +342,7 @@ var pbMessages = []pbMessage{
 		{"prepared", 19, pbBool, pbOne, 0, ""},
 		{"at", 20, pbTime, pbOne, 0, ""},
 		{"private", 21, pbBool, pbOne, 0, ""},
-		{"managers", 22, pbMsg, pbList, 53, ""},
+		{"managers", 22, pbMsg, pbList, 55, ""},
 		{"history_days", 24, pbInt, pbOne, 0, ""},
 	}},
 	{name: "ChannelCreate", wrap: false, base: "", fields: []pbField{
@@ -341,7 +350,7 @@ var pbMessages = []pbMessage{
 		{"name", 2, pbStr, pbOne, 0, ""},
 		{"description", 3, pbStr, pbOne, 0, ""},
 		{"listing", 4, pbStr, pbOne, 0, ""},
-		{"creator", 5, pbMsg, pbOne, 53, ""},
+		{"creator", 5, pbMsg, pbOne, 55, ""},
 		{"move_id", 6, pbUuid, pbOne, 0, ""},
 		{"servers", 7, pbStr, pbList, 0, ""},
 		{"epoch", 9, pbInt, pbOne, 0, ""},
@@ -349,7 +358,7 @@ var pbMessages = []pbMessage{
 		{"accept_sig", 11, pbBytes, pbOne, 0, ""},
 		{"at", 12, pbTime, pbOne, 0, ""},
 		{"private", 13, pbBool, pbOne, 0, ""},
-		{"managers", 14, pbMsg, pbList, 53, ""},
+		{"managers", 14, pbMsg, pbList, 55, ""},
 		{"history_days", 15, pbInt, pbOne, 0, ""},
 	}},
 	{name: "MoveAccept", wrap: false, base: "", fields: []pbField{
@@ -359,7 +368,7 @@ var pbMessages = []pbMessage{
 		{"hub_key", 4, pbBytes, pbOne, 0, ""},
 		{"owner", 5, pbStr, pbOne, 0, ""},
 		{"server", 6, pbStr, pbOne, 0, ""},
-		{"managers", 7, pbMsg, pbList, 53, ""},
+		{"managers", 7, pbMsg, pbList, 55, ""},
 		{"expires_at", 8, pbTime, pbOne, 0, ""},
 		{"at", 9, pbTime, pbOne, 0, ""},
 	}},
@@ -372,15 +381,15 @@ var pbMessages = []pbMessage{
 		{"have_at", 6, pbMs, pbMap, 0, ""},
 		{"epoch", 7, pbInt, pbOne, 0, ""},
 		{"at", 9, pbTime, pbOne, 0, ""},
-		{"managers", 10, pbMsg, pbList, 53, ""},
+		{"managers", 10, pbMsg, pbList, 55, ""},
 	}},
 	{name: "ChannelAction", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
 		{"action_id", 2, pbUuid, pbOne, 0, ""},
 		{"action", 3, pbStr, pbOne, 0, ""},
-		{"by", 4, pbMsg, pbOne, 53, ""},
+		{"by", 4, pbMsg, pbOne, 55, ""},
 		{"server", 5, pbStr, pbOne, 0, ""},
-		{"account", 6, pbMsg, pbOne, 53, ""},
+		{"account", 6, pbMsg, pbOne, 55, ""},
 		{"name", 7, pbStr, pbOne, 0, ""},
 		{"description", 8, pbStr, pbOne, 0, ""},
 		{"listing", 9, pbStr, pbOne, 0, ""},
@@ -393,13 +402,13 @@ var pbMessages = []pbMessage{
 		{"listing", 4, pbStr, pbOne, 0, ""},
 		{"servers", 6, pbInt, pbOne, 0, ""},
 		{"yours", 7, pbStr, pbOne, 0, ""},
-		{"managers", 8, pbMsg, pbList, 53, ""},
+		{"managers", 8, pbMsg, pbList, 55, ""},
 	}},
 	{name: "Directory", wrap: false, base: "", fields: []pbField{
 		{"hub", 1, pbStr, pbOne, 0, ""},
 		{"hub_key", 2, pbBytes, pbOne, 0, ""},
 		{"at", 3, pbTime, pbOne, 0, ""},
-		{"channels", 4, pbMsg, pbList, 59, ""},
+		{"channels", 4, pbMsg, pbList, 61, ""},
 	}},
 	{name: "ClusterMember", wrap: false, base: "", fields: []pbField{
 		{"cluster", 1, pbBytes, pbOne, 0, ""},
@@ -455,8 +464,8 @@ var pbMessages = []pbMessage{
 		{"parent_id", 4, pbUuid, pbOne, 0, ""},
 		{"quote", 5, pbClient, pbOne, 0, "Quote"},
 		{"text", 6, pbStr, pbOne, 0, ""},
-		{"entities", 7, pbMsg, pbList, 64, ""},
-		{"files", 8, pbMsg, pbList, 65, ""},
+		{"entities", 7, pbMsg, pbList, 66, ""},
+		{"files", 8, pbMsg, pbList, 67, ""},
 		{"cards", 9, pbClient, pbList, 0, "Card"},
 		{"form", 10, pbClient, pbOne, 0, "Form"},
 		{"fallback", 11, pbStr, pbOne, 0, ""},
@@ -500,8 +509,8 @@ var pbMessages = []pbMessage{
 	}},
 	{name: "HistoryMessage", wrap: false, base: "", fields: []pbField{
 		{"order", 1, pbStr, pbOne, 0, ""},
-		{"message", 2, pbMsg, pbOne, 67, ""},
-		{"reactions", 3, pbMsg, pbList, 71, ""},
+		{"message", 2, pbMsg, pbOne, 69, ""},
+		{"reactions", 3, pbMsg, pbList, 73, ""},
 		{"tasks", 4, pbClient, pbList, 0, "Task"},
 	}},
 	{name: "AddedOption", wrap: false, base: "", fields: []pbField{
@@ -512,7 +521,7 @@ var pbMessages = []pbMessage{
 	{name: "FormAnswer", wrap: false, base: "", fields: []pbField{
 		{"button_id", 1, pbStr, pbOne, 0, ""},
 		{"answers", 2, pbValue, pbOne, 0, ""},
-		{"added_options", 3, pbMsg, pbList, 73, ""},
+		{"added_options", 3, pbMsg, pbList, 75, ""},
 	}},
 	{name: "CallMedia", wrap: false, base: "", fields: []pbField{
 		{"host", 1, pbStr, pbOne, 0, ""},
@@ -525,7 +534,7 @@ var pbMessages = []pbMessage{
 	}},
 	{name: "DeviceLists", wrap: false, base: "", fields: []pbField{
 		{"account_id", 1, pbUuid, pbOne, 0, ""},
-		{"versions", 2, pbMsg, pbList, 76, ""},
+		{"versions", 2, pbMsg, pbList, 78, ""},
 	}},
 	{name: "DeafEars", wrap: false, base: "", fields: []pbField{
 		{"account_id", 1, pbUuid, pbOne, 0, ""},
@@ -557,11 +566,11 @@ var pbMessages = []pbMessage{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
 		{"part", 22, pbInt, pbOne, 0, ""},
 		{"last", 23, pbBool, pbOne, 0, ""},
-		{"conversation", 24, pbMsg, pbOne, 70, ""},
-		{"accounts", 25, pbMsg, pbList, 68, ""},
+		{"conversation", 24, pbMsg, pbOne, 72, ""},
+		{"accounts", 25, pbMsg, pbList, 70, ""},
 		{"member_ids", 26, pbUuid, pbList, 0, ""},
-		{"messages", 27, pbMsg, pbList, 72, ""},
-		{"blobs", 28, pbMsg, pbList, 66, ""},
+		{"messages", 27, pbMsg, pbList, 74, ""},
+		{"blobs", 28, pbMsg, pbList, 68, ""},
 	}},
 	{name: "HistoryRequestDirect", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
@@ -592,10 +601,10 @@ var pbMessages = []pbMessage{
 		{"invited", 14, pbStr, pbList, 0, ""},
 		{"max_blob_bytes", 15, pbInt, pbOne, 0, ""},
 		{"expires_at", 16, pbTime, pbOne, 0, ""},
-		{"by_account", 17, pbMsg, pbOne, 68, ""},
+		{"by_account", 17, pbMsg, pbOne, 70, ""},
 		{"account_ids", 18, pbUuid, pbList, 0, ""},
-		{"members", 19, pbMsg, pbList, 68, ""},
-		{"device_lists", 20, pbMsg, pbOne, 77, ""},
+		{"members", 19, pbMsg, pbList, 70, ""},
+		{"device_lists", 20, pbMsg, pbOne, 79, ""},
 		{"epoch_record", 21, pbBytes, pbOne, 0, ""},
 		{"private", 53, pbBool, pbOne, 0, ""},
 	}},
@@ -616,7 +625,7 @@ var pbMessages = []pbMessage{
 		{"call_id", 38, pbUuid, pbOne, 0, ""},
 		{"account_id", 39, pbUuid, pbOne, 0, ""},
 		{"pass", 40, pbStr, pbOne, 0, ""},
-		{"media", 41, pbMsg, pbOne, 75, ""},
+		{"media", 41, pbMsg, pbOne, 77, ""},
 	}},
 	{name: "CallSignalDirect", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
@@ -627,7 +636,7 @@ var pbMessages = []pbMessage{
 	}},
 	{name: "DeviceListDirect", wrap: false, base: "", fields: []pbField{
 		{"account_id", 39, pbUuid, pbOne, 0, ""},
-		{"versions", 43, pbMsg, pbList, 76, ""},
+		{"versions", 43, pbMsg, pbList, 78, ""},
 	}},
 	{name: "DeviceListRequestDirect", wrap: false, base: "", fields: []pbField{
 		{"account_id", 39, pbUuid, pbOne, 0, ""},
@@ -657,25 +666,25 @@ var pbMessages = []pbMessage{
 		{"move_id", 46, pbUuid, pbOne, 0, ""},
 	}},
 	{name: "DeafEarsDirect", wrap: false, base: "", fields: []pbField{
-		{"deaf_ears", 51, pbMsg, pbList, 78, ""},
+		{"deaf_ears", 51, pbMsg, pbList, 80, ""},
 		{"ask", 52, pbBool, pbOne, 0, ""},
 	}},
 	{name: "MessageCreatedEvent", wrap: false, base: "", fields: []pbField{
-		{"message", 1, pbMsg, pbOne, 67, ""},
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"message", 1, pbMsg, pbOne, 69, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 	}},
 	{name: "MessageEditedEvent", wrap: false, base: "", fields: []pbField{
-		{"message", 1, pbMsg, pbOne, 67, ""},
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"message", 1, pbMsg, pbOne, 69, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 	}},
 	{name: "ReactionAddedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 		{"message_id", 3, pbUuid, pbOne, 0, ""},
 		{"account_id", 4, pbUuid, pbOne, 0, ""},
 		{"emoji", 15, pbValue, pbOne, 0, ""},
 	}},
 	{name: "ReactionRemovedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 		{"message_id", 3, pbUuid, pbOne, 0, ""},
 		{"account_id", 4, pbUuid, pbOne, 0, ""},
 		{"emoji", 15, pbValue, pbOne, 0, ""},
@@ -693,7 +702,7 @@ var pbMessages = []pbMessage{
 		{"availability", 63, pbValue, pbOne, 0, ""},
 	}},
 	{name: "PresenceSnapshotEvent", wrap: false, base: "", fields: []pbField{
-		{"accounts", 64, pbMsg, pbList, 69, ""},
+		{"accounts", 64, pbMsg, pbList, 71, ""},
 	}},
 	{name: "MessageDeletedEvent", wrap: false, base: "", fields: []pbField{
 		{"message_id", 3, pbUuid, pbOne, 0, ""},
@@ -701,11 +710,11 @@ var pbMessages = []pbMessage{
 		{"deleted_at", 6, pbTime, pbOne, 0, ""},
 	}},
 	{name: "MessageRemovedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 		{"message_id", 3, pbUuid, pbOne, 0, ""},
 		{"removed_by_id", 7, pbUuid, pbOne, 0, ""},
 		{"removed_at", 8, pbTime, pbOne, 0, ""},
-		{"removed_by", 9, pbMsg, pbOne, 68, ""},
+		{"removed_by", 9, pbMsg, pbOne, 70, ""},
 	}},
 	{name: "MessagePurgedEvent", wrap: false, base: "", fields: []pbField{
 		{"message_id", 3, pbUuid, pbOne, 0, ""},
@@ -716,7 +725,7 @@ var pbMessages = []pbMessage{
 		{"scope", 12, pbStr, pbOne, 0, ""},
 	}},
 	{name: "PreviewAddedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 		{"message_id", 3, pbUuid, pbOne, 0, ""},
 		{"cards", 13, pbClient, pbList, 0, "Card"},
 	}},
@@ -772,8 +781,8 @@ var pbMessages = []pbMessage{
 		{"closed_at", 29, pbTime, pbOne, 0, ""},
 	}},
 	{name: "MemberJoinedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
-		{"account", 30, pbMsg, pbOne, 68, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
+		{"account", 30, pbMsg, pbOne, 70, ""},
 		{"joined_at", 31, pbTime, pbOne, 0, ""},
 	}},
 	{name: "MemberLeftEvent", wrap: false, base: "", fields: []pbField{
@@ -786,8 +795,8 @@ var pbMessages = []pbMessage{
 		{"server", 33, pbStr, pbOne, 0, ""},
 	}},
 	{name: "AccountUpdatedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
-		{"account", 30, pbMsg, pbOne, 68, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
+		{"account", 30, pbMsg, pbOne, 70, ""},
 	}},
 	{name: "ConversationUpdatedEvent", wrap: false, base: "", fields: []pbField{
 		{"name", 34, pbStr, pbOne, 0, ""},
@@ -848,162 +857,162 @@ var pbMessages = []pbMessage{
 		{"device_id", 57, pbUuid, pbOne, 0, ""},
 	}},
 	{name: "MemberRequestedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
-		{"account", 30, pbMsg, pbOne, 68, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
+		{"account", 30, pbMsg, pbOne, 70, ""},
 	}},
 	{name: "MemberAdmittedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 		{"account_id", 4, pbUuid, pbOne, 0, ""},
 		{"by_account_id", 32, pbUuid, pbOne, 0, ""},
 		{"server", 33, pbStr, pbOne, 0, ""},
-		{"by_account", 65, pbMsg, pbOne, 68, ""},
+		{"by_account", 65, pbMsg, pbOne, 70, ""},
 	}},
 	{name: "MemberRequestDeclinedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 		{"account_id", 4, pbUuid, pbOne, 0, ""},
 		{"by_account_id", 32, pbUuid, pbOne, 0, ""},
 		{"server", 33, pbStr, pbOne, 0, ""},
-		{"by_account", 65, pbMsg, pbOne, 68, ""},
+		{"by_account", 65, pbMsg, pbOne, 70, ""},
 	}},
 	{name: "MemberRemovedEvent", wrap: false, base: "", fields: []pbField{
-		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"blobs", 2, pbMsg, pbList, 68, ""},
 		{"account_id", 4, pbUuid, pbOne, 0, ""},
 		{"by_account_id", 32, pbUuid, pbOne, 0, ""},
 		{"server", 33, pbStr, pbOne, 0, ""},
-		{"by_account", 65, pbMsg, pbOne, 68, ""},
+		{"by_account", 65, pbMsg, pbOne, 70, ""},
 	}},
 }
 
 // pbFrames is every body of Frame: its name, its number and its message.
 var pbFrames = []pbMember{
-	{"submit", 3, 11},
-	{"deliver", 4, 12},
-	{"accepted", 5, 13},
-	{"ack", 6, 14},
-	{"ephemeral", 7, 15},
-	{"direct", 8, 16},
-	{"ping", 9, 17},
-	{"pong", 10, 18},
-	{"relay", 11, 19},
-	{"relay_ack", 12, 20},
-	{"error", 13, 21},
-	{"hello", 14, 22},
-	{"auth", 15, 23},
-	{"ready", 16, 24},
-	{"bye", 17, 25},
-	{"catch_up", 18, 26},
-	{"caught_up", 19, 27},
-	{"stream_open", 20, 28},
-	{"server_joined", 21, 29},
-	{"server_left", 22, 30},
-	{"leave", 23, 31},
-	{"owner_changed", 24, 32},
-	{"stream_close", 25, 33},
-	{"roster", 26, 34},
-	{"channel_create", 27, 35},
-	{"channel", 28, 36},
-	{"channel_action", 42, 37},
-	{"join", 30, 38},
-	{"directory", 31, 39},
-	{"channel_commit", 32, 40},
-	{"cluster", 33, 41},
-	{"cluster_join", 34, 42},
-	{"hub_servers", 35, 43},
-	{"hub_clocks", 36, 44},
-	{"sync", 37, 45},
-	{"ask", 38, 46},
-	{"forward", 39, 47},
-	{"rehome", 40, 48},
-	{"stream_ctl", 41, 49},
+	{"submit", 3, 13},
+	{"deliver", 4, 14},
+	{"accepted", 5, 15},
+	{"ack", 6, 16},
+	{"ephemeral", 7, 17},
+	{"direct", 8, 18},
+	{"ping", 9, 19},
+	{"pong", 10, 20},
+	{"relay", 11, 21},
+	{"relay_ack", 12, 22},
+	{"error", 13, 23},
+	{"hello", 14, 24},
+	{"auth", 15, 25},
+	{"ready", 16, 26},
+	{"bye", 17, 27},
+	{"catch_up", 18, 28},
+	{"caught_up", 19, 29},
+	{"stream_open", 20, 30},
+	{"server_joined", 21, 31},
+	{"server_left", 22, 32},
+	{"leave", 23, 33},
+	{"owner_changed", 24, 34},
+	{"stream_close", 25, 35},
+	{"roster", 26, 36},
+	{"channel_create", 27, 37},
+	{"channel", 28, 38},
+	{"channel_action", 42, 39},
+	{"join", 30, 40},
+	{"directory", 31, 41},
+	{"channel_commit", 32, 42},
+	{"cluster", 33, 43},
+	{"cluster_join", 34, 44},
+	{"hub_servers", 35, 45},
+	{"hub_clocks", 36, 46},
+	{"sync", 37, 47},
+	{"ask", 38, 48},
+	{"forward", 39, 49},
+	{"rehome", 40, 50},
+	{"stream_ctl", 41, 51},
 }
 
 // pbDirects is every body of Direct: its name, its number and its message.
 var pbDirects = []pbMember{
-	{"blob_chunk", 5, 79},
-	{"blob_request", 6, 80},
-	{"key", 7, 81},
-	{"key_request", 8, 82},
-	{"history", 9, 83},
-	{"history_request", 10, 84},
-	{"open_request", 11, 85},
-	{"opened", 12, 86},
-	{"error", 13, 87},
-	{"offer", 14, 88},
-	{"accept", 15, 89},
-	{"decline", 16, 90},
-	{"call_pass_request", 17, 91},
-	{"call_pass", 18, 92},
-	{"call_signal", 19, 93},
-	{"device_list", 20, 94},
-	{"device_list_request", 21, 95},
-	{"move_propose", 22, 96},
-	{"move_accept", 23, 97},
-	{"move_decline", 24, 98},
-	{"move_abandon", 25, 99},
-	{"deaf_ears", 26, 100},
+	{"blob_chunk", 5, 81},
+	{"blob_request", 6, 82},
+	{"key", 7, 83},
+	{"key_request", 8, 84},
+	{"history", 9, 85},
+	{"history_request", 10, 86},
+	{"open_request", 11, 87},
+	{"opened", 12, 88},
+	{"error", 13, 89},
+	{"offer", 14, 90},
+	{"accept", 15, 91},
+	{"decline", 16, 92},
+	{"call_pass_request", 17, 93},
+	{"call_pass", 18, 94},
+	{"call_signal", 19, 95},
+	{"device_list", 20, 96},
+	{"device_list_request", 21, 97},
+	{"move_propose", 22, 98},
+	{"move_accept", 23, 99},
+	{"move_decline", 24, 100},
+	{"move_abandon", 25, 101},
+	{"deaf_ears", 26, 102},
 }
 
 // pbEvents is every body of Event: its name, its number and its message.
 var pbEvents = []pbMember{
-	{"message.created", 3, 101},
-	{"message.edited", 4, 102},
-	{"reaction.added", 5, 103},
-	{"reaction.removed", 6, 104},
-	{"typing.started", 7, 105},
-	{"presence.changed", 8, 106},
-	{"presence.snapshot", 9, 107},
-	{"message.deleted", 10, 108},
-	{"message.removed", 11, 109},
-	{"message.purged", 12, 110},
-	{"messages.expired", 13, 111},
-	{"preview.added", 14, 112},
-	{"preview.removed", 15, 113},
-	{"task.changed", 16, 114},
-	{"form.answered", 17, 115},
-	{"form.answer_withdrawn", 18, 116},
-	{"form.answer_refused", 19, 117},
-	{"form.option_added", 20, 118},
-	{"form.tallied", 21, 119},
-	{"form.closed", 22, 120},
-	{"member.joined", 23, 121},
-	{"member.left", 24, 122},
-	{"member.invited", 25, 123},
-	{"account.updated", 26, 124},
-	{"conversation.updated", 27, 125},
-	{"call.started", 28, 126},
-	{"call.participant_joined", 29, 127},
-	{"call.participant_left", 30, 128},
-	{"call.ended", 31, 129},
-	{"stream.servers_changed", 32, 130},
-	{"stream.owner_changed", 33, 131},
-	{"stream.limits_changed", 34, 132},
-	{"stream.closed", 35, 133},
-	{"stream.moved", 36, 134},
-	{"sealed.epoch_started", 37, 135},
-	{"member.requested", 38, 136},
-	{"member.admitted", 39, 137},
-	{"member.request_declined", 40, 138},
-	{"member.removed", 41, 139},
+	{"message.created", 3, 103},
+	{"message.edited", 4, 104},
+	{"reaction.added", 5, 105},
+	{"reaction.removed", 6, 106},
+	{"typing.started", 7, 107},
+	{"presence.changed", 8, 108},
+	{"presence.snapshot", 9, 109},
+	{"message.deleted", 10, 110},
+	{"message.removed", 11, 111},
+	{"message.purged", 12, 112},
+	{"messages.expired", 13, 113},
+	{"preview.added", 14, 114},
+	{"preview.removed", 15, 115},
+	{"task.changed", 16, 116},
+	{"form.answered", 17, 117},
+	{"form.answer_withdrawn", 18, 118},
+	{"form.answer_refused", 19, 119},
+	{"form.option_added", 20, 120},
+	{"form.tallied", 21, 121},
+	{"form.closed", 22, 122},
+	{"member.joined", 23, 123},
+	{"member.left", 24, 124},
+	{"member.invited", 25, 125},
+	{"account.updated", 26, 126},
+	{"conversation.updated", 27, 127},
+	{"call.started", 28, 128},
+	{"call.participant_joined", 29, 129},
+	{"call.participant_left", 30, 130},
+	{"call.ended", 31, 131},
+	{"stream.servers_changed", 32, 132},
+	{"stream.owner_changed", 33, 133},
+	{"stream.limits_changed", 34, 134},
+	{"stream.closed", 35, 135},
+	{"stream.moved", 36, 136},
+	{"sealed.epoch_started", 37, 137},
+	{"member.requested", 38, 138},
+	{"member.admitted", 39, 139},
+	{"member.request_declined", 40, 140},
+	{"member.removed", 41, 141},
 }
 
 // pbBlocks gives each signed block the message its signed bytes hold.
 var pbBlocks = map[string]int{
-	"roster":         51, // Roster
-	"hub_servers":    51, // Roster
-	"stream_open":    52, // Control
-	"server_joined":  52, // Control
-	"server_left":    52, // Control
-	"leave":          52, // Control
-	"owner_changed":  52, // Control
-	"stream_close":   52, // Control
-	"channel":        54, // ChannelRecord
-	"channel_create": 55, // ChannelCreate
-	"move_accept":    56, // MoveAccept
-	"channel_commit": 57, // MoveCommit
-	"channel_action": 58, // ChannelAction
-	"join":           58, // ChannelAction
-	"directory":      60, // Directory
-	"cluster_member": 61, // ClusterMember
-	"cluster_gone":   62, // ClusterGone
-	"rehome_answer":  63, // RehomeAnswer
+	"roster":         53, // Roster
+	"hub_servers":    53, // Roster
+	"stream_open":    54, // Control
+	"server_joined":  54, // Control
+	"server_left":    54, // Control
+	"leave":          54, // Control
+	"owner_changed":  54, // Control
+	"stream_close":   54, // Control
+	"channel":        56, // ChannelRecord
+	"channel_create": 57, // ChannelCreate
+	"move_accept":    58, // MoveAccept
+	"channel_commit": 59, // MoveCommit
+	"channel_action": 60, // ChannelAction
+	"join":           60, // ChannelAction
+	"directory":      62, // Directory
+	"cluster_member": 63, // ClusterMember
+	"cluster_gone":   64, // ClusterGone
+	"rehome_answer":  65, // RehomeAnswer
 }

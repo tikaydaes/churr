@@ -69,6 +69,76 @@ func (h *Hub) streamKey(q querier, stream string, epoch int64) ([]byte, []string
 	return key, list, nil
 }
 
+// handoffKeys seals every key this hub holds of a channel to the hub that is
+// to take the channel's home over (section 23b): the new home can then give
+// a server the key of any epoch it was in, as this hub could. Nil if there
+// is nothing to hand over or the other hub's box key is not known.
+func (h *Hub) handoffKeys(q querier, stream, to string) []byte {
+	box := h.topology().cluster.Members[to].BoxKey
+	if len(box) != 32 {
+		return nil
+	}
+	rows, err := q.Query(`SELECT epoch FROM stream_keys WHERE stream_id = ? ORDER BY epoch`, stream)
+	if err != nil {
+		return nil
+	}
+	var epochs []int64
+	for rows.Next() {
+		var e int64
+		if rows.Scan(&e) == nil {
+			epochs = append(epochs, e)
+		}
+	}
+	rows.Close()
+	var all wire.HandoffKeys
+	for _, e := range epochs {
+		key, servers, err := h.streamKey(q, stream, e)
+		if err != nil {
+			return nil
+		}
+		all.Keys = append(all.Keys, wire.HandoffKey{Epoch: e, Key: key, Servers: servers})
+	}
+	if len(all.Keys) == 0 {
+		return nil
+	}
+	sealed, err := wire.SealTo(h.id.Name, to, box, mustMessage("HandoffKeys", all))
+	if err != nil {
+		return nil
+	}
+	return sealed
+}
+
+// takeKeys keeps, sealed at rest under this hub's own key file, the keys the
+// old home of a channel handed over with it.
+func (h *Hub) takeKeys(tx *sql.Tx, stream, from string, sealed []byte) error {
+	if len(sealed) == 0 {
+		return nil
+	}
+	plain, err := h.keys.OpenBoxBetween(sealed, from, h.id.Name)
+	if err != nil {
+		h.log.Warn("the keys handed over with a channel could not be opened", "stream", stream, "from", from)
+		return nil
+	}
+	var all wire.HandoffKeys
+	if err := wire.Unmarshal("HandoffKeys", plain, &all); err != nil {
+		return nil
+	}
+	for _, k := range all.Keys {
+		if len(k.Key) != 32 || k.Epoch < 1 {
+			continue
+		}
+		sealedHere, err := h.keys.Seal(k.Key, "stream_keys", "sealed", keyPlace(stream, k.Epoch))
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`INSERT INTO stream_keys (stream_id, epoch, sealed, servers, created_at) VALUES (?, ?, ?, ?, ?)
+			ON CONFLICT (stream_id, epoch) DO NOTHING`, stream, k.Epoch, sealedHere, string(mustJSON(orEmpty(k.Servers))), int64(h.now())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // TestStreamKeys returns every key this hub holds for a stream, by epoch. It is for
 // tests.
 func (h *Hub) TestStreamKeys(stream string) map[int64][]byte {

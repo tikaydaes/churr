@@ -369,7 +369,16 @@
    "epoch": 6,
    "inviters": 2,
    "joined_have": 3,
+   "keys": 7,
    "move_id": 5
+  },
+  "HandoffKey": {
+   "epoch": 1,
+   "key": 2,
+   "servers": 3
+  },
+  "HandoffKeys": {
+   "keys": 1
   },
   "HistoryConversation": {
    "name": 1,

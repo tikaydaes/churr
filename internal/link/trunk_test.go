@@ -422,12 +422,23 @@ func TestTrunkRehome(t *testing.T) {
 		return true
 	})
 	// The new home began a key epoch of its own when it took the channel:
-	// every server is on it, under the new home's key, and the old home,
-	// now only a hub that carries the channel, holds none of its keys.
+	// every server is on it, under the new home's key. The old home handed
+	// it every earlier key, sealed to it, and now, only a hub that carries
+	// the channel, holds none.
 	newKeys := l.Cluster.Hubs[2].Hub.TestStreamKeys(stream)
 	rec, _, _, _ := l.Servers[0].Server.Link.TestChannel(model.StreamID(stream))
-	if len(newKeys) != 1 || newKeys[rec.Epoch] == nil {
+	if newKeys[rec.Epoch] == nil || len(newKeys) != int(rec.Epoch) {
 		t.Fatalf("the new home holds keys of epochs %v; the record calls for %d", newKeys, rec.Epoch)
+	}
+	for epoch := int64(1); epoch < rec.Epoch; epoch++ {
+		for i, ts := range l.Servers {
+			if held := ts.Server.Link.TestKeys(model.StreamID(stream))[epoch]; held != nil && !bytes.Equal(held, newKeys[epoch]) {
+				t.Fatalf("server %d's key of epoch %d is not the one the new home was handed", i, epoch)
+			}
+		}
+	}
+	if key, err := l.Servers[0].Server.Link.TestAskHubKey(model.StreamID(stream), 1); err != nil || !bytes.Equal(key, newKeys[1]) {
+		t.Fatalf("the new home does not give out the key of epoch 1, from before it was the home: %v", err)
 	}
 	for i, ts := range l.Servers {
 		ts := ts

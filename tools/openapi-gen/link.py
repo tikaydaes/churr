@@ -112,8 +112,11 @@ M('RelayRefusal', [('stream_id', 'uuid'), ('origin_event_id', 'uuid'), ('origin'
 M('HubClock', [('offset_ms', 'int'), ('uncertainty_ms', 'int'), ('age_ms', 'int')], 'One line of a hub_clocks frame.')
 W('Counters', '{int}', 'For each origin, a counter.')
 M('Handoff', [('creator', 'str'), ('inviters', '{str}'), ('joined_have', '{#Counters}'), ('declined', '[str]'),
-              ('move_id', 'str'), ('epoch', 'int')],
-  'What a channel\'s home hub keeps beside the record, handed to the hub that takes the home over (section 23b).')
+              ('move_id', 'str'), ('epoch', 'int'), ('keys', 'bytes')],
+  'What a channel\'s home hub keeps beside the record, handed to the hub that takes the home over (section 23b). keys is '
+  'a HandoffKeys message sealed from the old home to the new one (section 7, Sealing).')
+M('HandoffKey', [('epoch', 'int'), ('key', 'bytes'), ('servers', '[str]')], 'One key epoch\'s stream key and the servers it began for.')
+M('HandoffKeys', [('keys', '[#HandoffKey]')], 'Every stream key a channel\'s home hub holds, handed to the hub that takes the home over.')
 
 BAGS['frame'] = OD([
     # hello

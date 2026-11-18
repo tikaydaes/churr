@@ -3904,7 +3904,10 @@ transaction on the new one.
    **handover**), does not put it in force, and sends it to the other
    hub, hop by hop, with what it keeps beside the record (who shared
    the channel, who invited whom, where each server started from, the
-   highest epoch begun):
+   highest epoch begun, and in `keys` every stream key it holds of the
+   channel with the server list each epoch began for, as a
+   `HandoffKeys` message sealed from the old home to the other hub as a
+   direct message is, so that no hub on the way can open it):
 
        {"frame": "rehome", "from": "<home>", "to": "<other hub>",
         "step": "offer", "offer": "<id>", "stream_id": "…",
@@ -3917,15 +3920,17 @@ transaction on the new one.
 3. **Take.** The other hub, on an offer it has not seen settled,
    checks the old home's signature and the clocks as in step 1, and
    in one transaction takes the channel: it stores the handover, owns
-   the channel, and signs the next version itself, at a new key epoch
-   it begins with its own key: it was given none of the old home's.
+   the channel, keeps the keys it was handed, sealed at rest under its
+   own key file, and signs the next version itself, at a new key epoch
+   it begins with its own key. From then on it answers `key_request`
+   for every epoch of the channel, those of the old home's included.
    From that transaction it is the home in every way. It answers `step`
    `taken` with that record. An offer it will not take it refuses
    (`step` `refused`) and remembers as dead.
 4. **Step down.** The old home, on a record of the channel later
    than its offer under the other hub's signature (in the answer, or
-   arriving as any record does), stores it, lets go of every key it
-   held of the channel, and carries the channel from then as any hub
+   arriving as any record does), stores it, deletes every key it held
+   of the channel (the new home holds them), and carries the channel from then as any hub
    does. The new home sends the handover before
    its own record to every hub and server the channel concerns, so
    each follows the chain: a server takes the handover because the
@@ -4340,8 +4345,9 @@ drives them over loopback. Each case names what must be proved.
     joins afterwards is given everything its people wrote, with their
     profiles, as history from an instance that remains.
 75b. A channel handed to another hub of a cluster goes on under a key
-    epoch the new home began with its own key; the old home holds no
-    key of it any more.
+    epoch the new home began with its own key; the new home holds and
+    gives out the keys of the old home's epochs too, which it was
+    handed sealed, and the old home holds no key of it any more.
 76. A moderator deletes another instance's message and it is deleted
     on every instance; an Owner or Admin on neither list deletes no
     one else's message in the copy.

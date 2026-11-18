@@ -120,7 +120,8 @@ func (h *Hub) sendRecordOver(tc *trunkConn, c channel, f wire.Frame, also []stri
 		// home: what the home keeps beside the record goes with it.
 		var epoch int64
 		h.db.QueryRow(`SELECT epoch FROM streams WHERE id = ?`, c.rec.StreamID).Scan(&epoch)
-		out.State = &handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch}
+		out.State = &handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch,
+			Keys: h.handoffKeys(h.db, c.rec.StreamID, c.rec.HomeHub)}
 	}
 	tc.send(out)
 }
@@ -345,9 +346,13 @@ func (h *Hub) takeOver(tx *sql.Tx, c *channel, state *handoff) error {
 	if _, err := tx.Exec(`UPDATE streams SET owner = ?, home_hub = ?, epoch = max(epoch, ?) WHERE id = ?`, h.id.Name, h.id.Name, s.Epoch, c.rec.StreamID); err != nil {
 		return err
 	}
+	// The keys of every epoch so far, which the old home handed over sealed
+	// to this hub; it lets go of its own when it steps down.
+	if err := h.takeKeys(tx, c.rec.StreamID, c.rec.Hub, s.Keys); err != nil {
+		return err
+	}
 	c.signed, c.sig, c.homeTo = nil, nil, ""
-	// A new key epoch, with this hub's key: the old home keeps none, and this
-	// hub was given none of its keys.
+	// And a new key epoch, with this hub's own key.
 	if !c.rec.Closed && len(c.rec.Servers) > 0 {
 		h.relist(c, nil, nil)
 	}
@@ -557,7 +562,8 @@ func (h *Hub) startRehomes() {
 			var epoch int64
 			tx.QueryRow(`SELECT epoch FROM streams WHERE id = ?`, mv.id).Scan(&epoch)
 			o := rehomeOffer{ID: model.NewID[string](), To: mv.to, Version: rec.Version, Signed: f.Signed, Sig: f.Sig, At: int64(h.now()),
-				State: &handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch}}
+				State: &handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch,
+					Keys: h.handoffKeys(tx, mv.id, mv.to)}}
 			if _, err := tx.Exec(`UPDATE channels SET offer = ?, rehome = '' WHERE stream_id = ?`, string(mustJSON(o)), mv.id); err != nil {
 				return err
 			}
