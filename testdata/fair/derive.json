@@ -1,0 +1,3315 @@
+{
+ "description": "The vectors of derive 1 (docs/FAIR.md): the stream's blocks, whole numbers below n by rejection, every primitive and every form of dice, consumed in order from one object's stream, and primitives every implementation refuses. Go (internal/fair), JavaScript (internal/web/static/shared/fair/derive.js) and Dart (app/lib/core/fair/derive.dart) all read this file. Frozen: a change is a new derive number. beta and block are hex; words is how many 32-bit words the case takes.",
+ "derive": 1,
+ "streams": [
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 0,
+   "k": 0,
+   "block": "85e29ed6149b6eefb0bdb4418e998e91ba4e6a5bb9108869c02ce9b77e05efd9"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 0,
+   "k": 1,
+   "block": "fad93a9ebeb080c21e65660e664d09b4a9abada9616eab2ac8fa081a2b6ca2ac"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 0,
+   "k": 2,
+   "block": "0444507dec605a3df78ec71445b34b71dd4f585c041d1df899958111b6ddc76d"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 1,
+   "k": 0,
+   "block": "37e4033d7d4b5cfd48624aff199a9449b72ee05fb585487148c3d6d2f4d117a4"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 1,
+   "k": 1,
+   "block": "450828c87d1b08724b282a894b8b974446f14c714eb4590c457a6fe81864e47e"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 1,
+   "k": 2,
+   "block": "65f1f7a9624454e5f671677ca488ce975aececcb0f46e63d3e39616ee252de44"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 7,
+   "k": 0,
+   "block": "eed38fbd6633275c02256afc3e6dd721bf4afdf49dd1fb1667b1910c72111e56"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 7,
+   "k": 1,
+   "block": "43d9af1fae9e8495ed752088910754ece2fe41aeef34b864816164c8cdc2e353"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 7,
+   "k": 2,
+   "block": "79f47730534279e52cb1c1d9b9fa851eae0be457ce75facafd6f9e26389d2b6e"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 4294967295,
+   "k": 0,
+   "block": "54c96dfddc40aa95dad48a9b96daba51c0150f71b0bb50bf9839badcc2c30e85"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 4294967295,
+   "k": 1,
+   "block": "ae723283d7c69f0db93612b8408fe7948b3029a064f971ad6ca5a72d48fb5309"
+  },
+  {
+   "beta": "98b6bae9c470e5bfa381e22a2f5b5c94bd60a6985d95437a4cb252c429cc694d",
+   "i": 4294967295,
+   "k": 2,
+   "block": "207d7c2c7e9d09868d0ec68b24867c06269a562f39ab3b600b8b5216998cff23"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 0,
+   "k": 0,
+   "block": "21b783e453beeed3581ca81182dd6a398a5084c8ad6faf4d65bfbf001434bebb"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 0,
+   "k": 1,
+   "block": "0b56b40d088d699414fed7b1e24094473970ab899d8bd5e90ca0a3c662c1cf97"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 0,
+   "k": 2,
+   "block": "552e82300d7bc9d48bcf90f263d55aa11051e7e2c97be14752af834a7dd2b189"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 1,
+   "k": 0,
+   "block": "395e1115b35b0da2844249450ea76361b25bcee252fa1cdff305e5d2af91ecf4"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 1,
+   "k": 1,
+   "block": "6c357defda4f6def547d0dcb07f33ba5e6340111cfdf1279a937781ccebbaf65"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 1,
+   "k": 2,
+   "block": "3fa64c0c10b5948dce5be47f814764aa1764c06b235e8c39506c59edf500a388"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 7,
+   "k": 0,
+   "block": "3933e6005b177083a0c91b39a718cd9c4cca1566f23a07948692338bc3f02a95"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 7,
+   "k": 1,
+   "block": "3bcc6c3ea99dd72a0c652e0b3d20a69dd43aef060e0b297af271c18921f5f35c"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 7,
+   "k": 2,
+   "block": "f3df8d0a648a9f35aca07f41029f005e136fcf0263bef82e448a996324db1b6e"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 4294967295,
+   "k": 0,
+   "block": "53363e2cfa6c70c5a18cc2fe8fe2c64286b2e3e65dc8094ebe483c648fd153a8"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 4294967295,
+   "k": 1,
+   "block": "be67a880d702957b8447a1a3cb3c217791b08a2fb2b532d8992899b89502607c"
+  },
+  {
+   "beta": "cb63eabba53c7ed84e787489f7fe269aea3cf9e9470bd3e5ad6df67be3589093",
+   "i": 4294967295,
+   "k": 2,
+   "block": "2aa655e170feadd307470428bdc1fdca0c764410bbf1731e7100bee782031170"
+  }
+ ],
+ "below": [
+  {
+   "beta": "fcf5282901fababe98507d1c7f1e360d687249a7e50743f0327fc6b72f7107e8",
+   "i": 0,
+   "ns": [
+    1,
+    2,
+    3,
+    6,
+    20,
+    100,
+    1000,
+    1,
+    2,
+    7,
+    52,
+    2147483648,
+    4294967296
+   ],
+   "values": [
+    0,
+    0,
+    2,
+    0,
+    18,
+    19,
+    641,
+    0,
+    0,
+    1,
+    50,
+    146091286,
+    3809722545
+   ],
+   "words": 11
+  },
+  {
+   "beta": "70ded7c9a4c101e254ef3b88aab1bd03b2a145719cf98a159cd8d97d405bd00a",
+   "i": 3,
+   "ns": [
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472,
+    3221225472
+   ],
+   "values": [
+    1397947452,
+    895170596,
+    1477494516,
+    2293775864,
+    1421764906,
+    1060223360,
+    299525635,
+    2156444726,
+    225031035,
+    377236411,
+    264404784,
+    619844133
+   ],
+   "words": 17
+  },
+  {
+   "beta": "a436c66c80d8d6462c1c083a092502bf1a022cb30d4060fce7961f714ea8f525",
+   "i": 2,
+   "ns": [
+    4294967295,
+    2147483649,
+    4294967291,
+    999999937,
+    12345
+   ],
+   "values": [
+    1082308997,
+    1261118209,
+    1662582922,
+    941143189,
+    10713
+   ],
+   "words": 5
+  }
+ ],
+ "cases": [
+  {
+   "label": "int: a d6 and a range across zero",
+   "beta": "1ccf8fd534b5f5101c66aa2be0eeec4d6249332b40620ec1479347ef159f497a",
+   "i": 0,
+   "draws": [
+    {
+     "op": "int",
+     "min": 1,
+     "max": 6
+    },
+    {
+     "op": "int",
+     "min": -50,
+     "max": 50
+    },
+    {
+     "op": "int",
+     "min": 7,
+     "max": 7
+    }
+   ],
+   "results": [
+    {
+     "value": 1
+    },
+    {
+     "value": 32
+    },
+    {
+     "value": 7
+    }
+   ],
+   "words": 2
+  },
+  {
+   "label": "int: the whole signed 32-bit range",
+   "beta": "9babbda59a9a016173e13ae0548a550e44216ae68715a49fa628c030049d3d5a",
+   "i": 1,
+   "draws": [
+    {
+     "op": "int",
+     "min": -2147483648,
+     "max": 2147483647
+    },
+    {
+     "op": "int",
+     "min": -2147483648,
+     "max": 2147483647
+    }
+   ],
+   "results": [
+    {
+     "value": 1704880561
+    },
+    {
+     "value": -1282984286
+    }
+   ],
+   "words": 2
+  },
+  {
+   "label": "ints: ten d10 then five coins",
+   "beta": "74de53d41a635c07499dbc6acbcf7e3fbfb45d345e10863c62aa258301e5aa40",
+   "i": 0,
+   "draws": [
+    {
+     "op": "ints",
+     "min": 1,
+     "max": 10,
+     "count": 10
+    },
+    {
+     "op": "ints",
+     "max": 1,
+     "count": 5
+    }
+   ],
+   "results": [
+    {
+     "values": [
+      8,
+      9,
+      7,
+      8,
+      5,
+      1,
+      5,
+      3,
+      1,
+      3
+     ]
+    },
+    {
+     "values": [
+      1,
+      1,
+      0,
+      0,
+      1
+     ]
+    }
+   ],
+   "words": 15
+  },
+  {
+   "label": "ints: rejection taken in its stride",
+   "beta": "5c6932a07aa6f9ebcce541b0a4f9ac15f63c553cf540dc57ebae0a093a5046bd",
+   "i": 4,
+   "draws": [
+    {
+     "op": "ints",
+     "min": -2147483648,
+     "max": 1073741823,
+     "count": 20
+    }
+   ],
+   "results": [
+    {
+     "values": [
+      -306732736,
+      -2080224117,
+      332743146,
+      673742403,
+      -567742404,
+      -311562214,
+      -354699825,
+      -1523307372,
+      738727271,
+      414097835,
+      -948135808,
+      -1458786809,
+      380710023,
+      -413965955,
+      -2070133977,
+      720632738,
+      13574970,
+      -799395584,
+      532136569,
+      -413155383
+     ]
+    }
+   ],
+   "words": 24
+  },
+  {
+   "label": "pick: one of five, two of five, all five",
+   "beta": "5594f3e1ec4b4c22d5ede4f34c9477e4c1390c96af58545cb2e8d19c472a56eb",
+   "i": 0,
+   "draws": [
+    {
+     "op": "pick",
+     "n": 5,
+     "k": 1
+    },
+    {
+     "op": "pick",
+     "n": 5,
+     "k": 2
+    },
+    {
+     "op": "pick",
+     "n": 5,
+     "k": 5
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      3
+     ]
+    },
+    {
+     "picked": [
+      4,
+      3
+     ]
+    },
+    {
+     "picked": [
+      1,
+      4,
+      3,
+      0,
+      2
+     ]
+    }
+   ],
+   "words": 7
+  },
+  {
+   "label": "pick: with replacement",
+   "beta": "e5dcef71788964a1b86e5da7dbcd6c9e38aed6342106c389894ddc20181fcc17",
+   "i": 2,
+   "draws": [
+    {
+     "op": "pick",
+     "n": 3,
+     "k": 12,
+     "replace": true
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      0,
+      1,
+      1,
+      1,
+      2,
+      2,
+      1,
+      1,
+      2,
+      0,
+      1,
+      2
+     ]
+    }
+   ],
+   "words": 12
+  },
+  {
+   "label": "pick: weighted, with replacement",
+   "beta": "d505cb8e9e45f074e9d5becb973bd5bb18111bac0770d3d282d0ddc59a32f816",
+   "i": 0,
+   "draws": [
+    {
+     "op": "pick",
+     "n": 4,
+     "k": 10,
+     "replace": true,
+     "weights": [
+      1,
+      2,
+      3,
+      4
+     ]
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      3,
+      2,
+      3,
+      0,
+      2,
+      3,
+      1,
+      1,
+      1,
+      3
+     ]
+    }
+   ],
+   "words": 10
+  },
+  {
+   "label": "pick: weighted, without replacement, a weight of 0 never taken",
+   "beta": "6395c8355c3a21931c9f0bfd09795c1cc16dffcf8244bc12a1ce7519eb0e2fbf",
+   "i": 5,
+   "draws": [
+    {
+     "op": "pick",
+     "n": 5,
+     "k": 4,
+     "weights": [
+      5,
+      0,
+      1,
+      10,
+      3
+     ]
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      3,
+      4,
+      0,
+      2
+     ]
+    }
+   ],
+   "words": 3
+  },
+  {
+   "label": "pick: weights up to 2^32",
+   "beta": "a8c5e5000089c5e0f24ca5209df43e6469832b8d359928a2eb3f357d879cc972",
+   "i": 6,
+   "draws": [
+    {
+     "op": "pick",
+     "n": 2,
+     "k": 1,
+     "weights": [
+      2147483648,
+      2147483648
+     ]
+    },
+    {
+     "op": "pick",
+     "n": 3,
+     "k": 3,
+     "weights": [
+      1,
+      1048576,
+      7
+     ]
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      1
+     ]
+    },
+    {
+     "picked": [
+      1,
+      2,
+      0
+     ]
+    }
+   ],
+   "words": 3
+  },
+  {
+   "label": "shuffle: one, two, ten, fifty-two",
+   "beta": "81b85989539b59787fc6cfb8fe3ec4aa827f93ba244932d1f2512f3be8303e51",
+   "i": 0,
+   "draws": [
+    {
+     "op": "shuffle",
+     "n": 1
+    },
+    {
+     "op": "shuffle",
+     "n": 2
+    },
+    {
+     "op": "shuffle",
+     "n": 10
+    },
+    {
+     "op": "shuffle",
+     "n": 52
+    }
+   ],
+   "results": [
+    {
+     "order": [
+      0
+     ]
+    },
+    {
+     "order": [
+      0,
+      1
+     ]
+    },
+    {
+     "order": [
+      5,
+      3,
+      1,
+      0,
+      4,
+      2,
+      7,
+      8,
+      6,
+      9
+     ]
+    },
+    {
+     "order": [
+      8,
+      27,
+      7,
+      24,
+      15,
+      25,
+      31,
+      36,
+      5,
+      50,
+      4,
+      10,
+      46,
+      48,
+      19,
+      30,
+      23,
+      39,
+      1,
+      41,
+      42,
+      12,
+      13,
+      22,
+      51,
+      47,
+      34,
+      44,
+      35,
+      6,
+      17,
+      9,
+      14,
+      33,
+      49,
+      45,
+      2,
+      26,
+      40,
+      18,
+      32,
+      28,
+      3,
+      0,
+      29,
+      11,
+      37,
+      16,
+      43,
+      38,
+      21,
+      20
+     ]
+    }
+   ],
+   "words": 61
+  },
+  {
+   "label": "deal: two hands of five from 52, then the rest of a small deck",
+   "beta": "111a5cc699247a84641cb36d929ac6869a63ca124f710971d459c9fb6dd73e51",
+   "i": 1,
+   "draws": [
+    {
+     "op": "deal",
+     "n": 52,
+     "hands": [
+      5,
+      5
+     ]
+    },
+    {
+     "op": "deal",
+     "n": 4,
+     "hands": [
+      1,
+      3
+     ]
+    }
+   ],
+   "results": [
+    {
+     "dealt": [
+      [
+       43,
+       24,
+       15,
+       23,
+       27
+      ],
+      [
+       18,
+       12,
+       0,
+       5,
+       42
+      ]
+     ]
+    },
+    {
+     "dealt": [
+      [
+       0
+      ],
+      [
+       2,
+       1,
+       3
+      ]
+     ]
+    }
+   ],
+   "words": 13
+  },
+  {
+   "label": "yesno: a half, a third, never, always, one in 2^32",
+   "beta": "8651acc68c8fcfe38407af1e29b77428fe498f36728ff9253b6d83d98ed2f9e4",
+   "i": 0,
+   "draws": [
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 2
+    },
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 3
+    },
+    {
+     "op": "yesno",
+     "den": 5
+    },
+    {
+     "op": "yesno",
+     "num": 5,
+     "den": 5
+    },
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 4294967296
+    },
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 1
+    }
+   ],
+   "results": [
+    {
+     "yes": true
+    },
+    {
+     "yes": true
+    },
+    {
+     "yes": false
+    },
+    {
+     "yes": true
+    },
+    {
+     "yes": false
+    },
+    {
+     "yes": true
+    }
+   ],
+   "words": 5
+  },
+  {
+   "label": "dice: d20",
+   "beta": "6fde52c8446c5b969a5c2cb617be9f3243a0234c9a08435c5b4f30c1242adac4",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 20,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 20,
+         "rolls": [
+          9
+         ],
+         "value": 9
+        }
+       ],
+       "total": 9
+      }
+     ]
+    }
+   ],
+   "words": 1
+  },
+  {
+   "label": "dice: 2d6+3",
+   "beta": "0f50a18c6357d1b372873d2a7d2e0ed18bd1f686c3383588f212b9962e718197",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 2,
+         "sides": 6,
+         "value": 0
+        },
+        {
+         "sign": 1,
+         "value": 3
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 2,
+         "sides": 6,
+         "rolls": [
+          6,
+          5
+         ],
+         "value": 11
+        },
+        {
+         "sign": 1,
+         "value": 3
+        }
+       ],
+       "total": 14
+      }
+     ]
+    }
+   ],
+   "words": 2
+  },
+  {
+   "label": "dice: d20+1d4-1",
+   "beta": "7a4abecebeccc8ec763c64dee342d56c3aa6bd32c18cfc48767e2159985be440",
+   "i": 1,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 20,
+         "value": 0
+        },
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 4,
+         "value": 0
+        },
+        {
+         "sign": -1,
+         "value": 1
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 20,
+         "rolls": [
+          19
+         ],
+         "value": 19
+        },
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 4,
+         "rolls": [
+          2
+         ],
+         "value": 2
+        },
+        {
+         "sign": -1,
+         "value": 1
+        }
+       ],
+       "total": 20
+      }
+     ]
+    }
+   ],
+   "words": 2
+  },
+  {
+   "label": "dice: 4d6kh3",
+   "beta": "cacbc6b0fe5d0f0966f59204a35e34ee22491b116f497833afd65c8f1bf6579a",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 4,
+         "sides": 6,
+         "keep": "kh",
+         "keep_n": 3,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 4,
+         "sides": 6,
+         "keep": "kh",
+         "keep_n": 3,
+         "rolls": [
+          2,
+          2,
+          5,
+          6
+         ],
+         "dropped": [
+          1
+         ],
+         "value": 13
+        }
+       ],
+       "total": 13
+      }
+     ]
+    }
+   ],
+   "words": 4
+  },
+  {
+   "label": "dice: keep and drop, highest and lowest, with ties",
+   "beta": "004e3faa2fd1dab54a5149e74d9ae98fba6a8ad0fbf035a986214fc5a0d1ae01",
+   "i": 9,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "kh",
+         "keep_n": 3,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "kl",
+         "keep_n": 3,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "dh",
+         "keep_n": 2,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "dl",
+         "keep_n": 2,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "kh",
+         "keep_n": 3,
+         "rolls": [
+          3,
+          3,
+          1,
+          2,
+          2,
+          3,
+          1,
+          3
+         ],
+         "dropped": [
+          2,
+          3,
+          4,
+          6,
+          7
+         ],
+         "value": 9
+        }
+       ],
+       "total": 9
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "kl",
+         "keep_n": 3,
+         "rolls": [
+          1,
+          3,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3
+         ],
+         "dropped": [
+          1,
+          4,
+          5,
+          6,
+          7
+         ],
+         "value": 3
+        }
+       ],
+       "total": 3
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "dh",
+         "keep_n": 2,
+         "rolls": [
+          1,
+          3,
+          2,
+          2,
+          2,
+          3,
+          1,
+          2
+         ],
+         "dropped": [
+          1,
+          5
+         ],
+         "value": 10
+        }
+       ],
+       "total": 10
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 8,
+         "sides": 3,
+         "keep": "dl",
+         "keep_n": 2,
+         "rolls": [
+          2,
+          1,
+          1,
+          3,
+          1,
+          3,
+          2,
+          1
+         ],
+         "dropped": [
+          4,
+          7
+         ],
+         "value": 12
+        }
+       ],
+       "total": 12
+      }
+     ]
+    }
+   ],
+   "words": 32
+  },
+  {
+   "label": "dice: advantage and disadvantage (2d20kh1, 2d20kl1)",
+   "beta": "d4fbfcc56bf1b3cd447a1d907a5c033afd564dc55f1cb3c4b998d01f8a586fec",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 2,
+         "sides": 20,
+         "keep": "kh",
+         "keep_n": 1,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 2,
+         "sides": 20,
+         "keep": "kl",
+         "keep_n": 1,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 2,
+         "sides": 20,
+         "keep": "kh",
+         "keep_n": 1,
+         "rolls": [
+          18,
+          12
+         ],
+         "dropped": [
+          1
+         ],
+         "value": 18
+        }
+       ],
+       "total": 18
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 2,
+         "sides": 20,
+         "keep": "kl",
+         "keep_n": 1,
+         "rolls": [
+          19,
+          14
+         ],
+         "dropped": [
+          0
+         ],
+         "value": 14
+        }
+       ],
+       "total": 14
+      }
+     ]
+    }
+   ],
+   "words": 4
+  },
+  {
+   "label": "dice: d% (1d100) and a d2",
+   "beta": "59217cd9a09a186fbaa3b3efc1c52dcb89ca56b0368f45ffb69897c1aac6d97f",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 100,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 3,
+         "sides": 2,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 100,
+         "rolls": [
+          91
+         ],
+         "value": 91
+        }
+       ],
+       "total": 91
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 3,
+         "sides": 2,
+         "rolls": [
+          2,
+          1,
+          2
+         ],
+         "value": 5
+        }
+       ],
+       "total": 5
+      }
+     ]
+    }
+   ],
+   "words": 4
+  },
+  {
+   "label": "dice: rows, as /roll 4d4+d6, 3d10k2",
+   "beta": "654f92238fd2061c86e500e30a3af016e4b61ba37a9e9922d4294733de639e1e",
+   "i": 3,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 4,
+         "sides": 4,
+         "value": 0
+        },
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 6,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 3,
+         "sides": 10,
+         "keep": "kh",
+         "keep_n": 2,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 4,
+         "sides": 4,
+         "rolls": [
+          2,
+          4,
+          4,
+          3
+         ],
+         "value": 13
+        },
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 6,
+         "rolls": [
+          1
+         ],
+         "value": 1
+        }
+       ],
+       "total": 14
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 3,
+         "sides": 10,
+         "keep": "kh",
+         "keep_n": 2,
+         "rolls": [
+          8,
+          3,
+          6
+         ],
+         "dropped": [
+          1
+         ],
+         "value": 14
+        }
+       ],
+       "total": 14
+      }
+     ]
+    }
+   ],
+   "words": 8
+  },
+  {
+   "label": "dice: exploding d6 and d2",
+   "beta": "24cc620e7b9a25e25e394d6a87658779572d7a9c119690c93e6bd48d3280a962",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 6,
+         "sides": 6,
+         "explode": true,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 4,
+         "sides": 2,
+         "explode": true,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 6,
+         "sides": 6,
+         "explode": true,
+         "rolls": [
+          5,
+          3,
+          2,
+          2,
+          2,
+          3
+         ],
+         "value": 17
+        }
+       ],
+       "total": 17
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 4,
+         "sides": 2,
+         "explode": true,
+         "rolls": [
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1
+         ],
+         "value": 18
+        }
+       ],
+       "total": 18
+      }
+     ]
+    }
+   ],
+   "words": 17
+  },
+  {
+   "label": "dice: an exploding d2 meets the cap",
+   "beta": "9daa7b3accd08a996a973f8c49ad2f09594792e0d2b40bdadba9f6e1a2ad35bd",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1000,
+         "sides": 2,
+         "explode": true,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1000,
+         "sides": 2,
+         "explode": true,
+         "rolls": [
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          1,
+          2,
+          2
+         ],
+         "value": 1670
+        }
+       ],
+       "total": 1670
+      }
+     ]
+    }
+   ],
+   "words": 1100
+  },
+  {
+   "label": "dice: successes, kept and exploding",
+   "beta": "0810f820fa083e2bc328659bedfe5a77d36a53fb6730a27440477ae24142cf47",
+   "i": 2,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 10,
+         "sides": 10,
+         "success": 7,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 6,
+         "sides": 6,
+         "keep": "kh",
+         "keep_n": 4,
+         "success": 5,
+         "value": 0
+        }
+       ],
+       "total": 0
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 5,
+         "sides": 10,
+         "explode": true,
+         "success": 8,
+         "value": 0
+        },
+        {
+         "sign": -1,
+         "value": 1
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 10,
+         "sides": 10,
+         "success": 7,
+         "rolls": [
+          6,
+          8,
+          3,
+          4,
+          6,
+          1,
+          9,
+          2,
+          1,
+          1
+         ],
+         "value": 2
+        }
+       ],
+       "total": 2
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 6,
+         "sides": 6,
+         "keep": "kh",
+         "keep_n": 4,
+         "success": 5,
+         "rolls": [
+          4,
+          1,
+          1,
+          6,
+          2,
+          2
+         ],
+         "dropped": [
+          1,
+          2
+         ],
+         "value": 1
+        }
+       ],
+       "total": 1
+      },
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 5,
+         "sides": 10,
+         "explode": true,
+         "success": 8,
+         "rolls": [
+          5,
+          8,
+          3,
+          8,
+          3
+         ],
+         "value": 2
+        },
+        {
+         "sign": -1,
+         "value": 1
+        }
+       ],
+       "total": 1
+      }
+     ]
+    }
+   ],
+   "words": 21
+  },
+  {
+   "label": "dice: a thousand-sided die and a hundred dice",
+   "beta": "a72a98e39244f7a1225aa33d7633c324a8718c8b0254f49d853d6d880f57f19f",
+   "i": 0,
+   "draws": [
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 1000,
+         "value": 0
+        },
+        {
+         "sign": -1,
+         "count": 100,
+         "sides": 6,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    }
+   ],
+   "results": [
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 1,
+         "sides": 1000,
+         "rolls": [
+          62
+         ],
+         "value": 62
+        },
+        {
+         "sign": -1,
+         "count": 100,
+         "sides": 6,
+         "rolls": [
+          1,
+          4,
+          4,
+          5,
+          2,
+          1,
+          6,
+          2,
+          2,
+          3,
+          3,
+          6,
+          3,
+          2,
+          2,
+          5,
+          4,
+          6,
+          1,
+          2,
+          5,
+          2,
+          5,
+          5,
+          6,
+          5,
+          2,
+          4,
+          4,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          5,
+          1,
+          2,
+          5,
+          5,
+          6,
+          1,
+          2,
+          4,
+          5,
+          3,
+          4,
+          4,
+          3,
+          6,
+          6,
+          3,
+          5,
+          3,
+          4,
+          5,
+          4,
+          1,
+          4,
+          5,
+          2,
+          5,
+          5,
+          2,
+          1,
+          2,
+          5,
+          1,
+          4,
+          3,
+          4,
+          6,
+          3,
+          1,
+          2,
+          5,
+          6,
+          5,
+          4,
+          5,
+          2,
+          6,
+          6,
+          2,
+          4,
+          6,
+          4,
+          3,
+          2,
+          1,
+          5,
+          4,
+          4,
+          4,
+          3,
+          2,
+          5,
+          2,
+          4,
+          3
+         ],
+         "value": 351
+        }
+       ],
+       "total": -289
+      }
+     ]
+    }
+   ],
+   "words": 101
+  },
+  {
+   "label": "mixed: one object's stream, primitives one after another",
+   "beta": "dba44dcd9a21effb338b420db136e750a7b12807f93301dd06f4a63b6be04f18",
+   "i": 11,
+   "draws": [
+    {
+     "op": "yesno",
+     "num": 2,
+     "den": 3
+    },
+    {
+     "op": "dice",
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 3,
+         "sides": 8,
+         "value": 0
+        }
+       ],
+       "total": 0
+      }
+     ]
+    },
+    {
+     "op": "shuffle",
+     "n": 6
+    },
+    {
+     "op": "int",
+     "max": 99
+    }
+   ],
+   "results": [
+    {
+     "yes": true
+    },
+    {
+     "rows": [
+      {
+       "terms": [
+        {
+         "sign": 1,
+         "count": 3,
+         "sides": 8,
+         "rolls": [
+          5,
+          4,
+          8
+         ],
+         "value": 17
+        }
+       ],
+       "total": 17
+      }
+     ]
+    },
+    {
+     "order": [
+      5,
+      4,
+      0,
+      1,
+      3,
+      2
+     ]
+    },
+    {
+     "value": 5
+    }
+   ],
+   "words": 10
+  }
+ ],
+ "invalid": [
+  {
+   "label": "no such op",
+   "draw": {
+    "op": "coin"
+   }
+  },
+  {
+   "label": "int: min above max",
+   "draw": {
+    "op": "int",
+    "min": 2,
+    "max": 1
+   }
+  },
+  {
+   "label": "int: below the signed 32-bit range",
+   "draw": {
+    "op": "int",
+    "min": -2147483649
+   }
+  },
+  {
+   "label": "ints: no count",
+   "draw": {
+    "op": "ints",
+    "min": 1,
+    "max": 6
+   }
+  },
+  {
+   "label": "ints: too many",
+   "draw": {
+    "op": "ints",
+    "min": 1,
+    "max": 6,
+    "count": 1001
+   }
+  },
+  {
+   "label": "pick: more than n without replacement",
+   "draw": {
+    "op": "pick",
+    "n": 3,
+    "k": 4
+   }
+  },
+  {
+   "label": "pick: weights not one per position",
+   "draw": {
+    "op": "pick",
+    "n": 3,
+    "k": 1,
+    "weights": [
+     1,
+     2
+    ]
+   }
+  },
+  {
+   "label": "pick: weights all 0",
+   "draw": {
+    "op": "pick",
+    "n": 2,
+    "k": 1,
+    "weights": [
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "label": "pick: weights over 2^32 in all",
+   "draw": {
+    "op": "pick",
+    "n": 2,
+    "k": 1,
+    "weights": [
+     4294967296,
+     1
+    ]
+   }
+  },
+  {
+   "label": "pick: more than have weight, without replacement",
+   "draw": {
+    "op": "pick",
+    "n": 3,
+    "k": 3,
+    "weights": [
+     1,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "label": "shuffle: none",
+   "draw": {
+    "op": "shuffle"
+   }
+  },
+  {
+   "label": "shuffle: too many",
+   "draw": {
+    "op": "shuffle",
+    "n": 10001
+   }
+  },
+  {
+   "label": "deal: more than the deck",
+   "draw": {
+    "op": "deal",
+    "n": 5,
+    "hands": [
+     3,
+     3
+    ]
+   }
+  },
+  {
+   "label": "deal: an empty hand",
+   "draw": {
+    "op": "deal",
+    "n": 5,
+    "hands": [
+     0
+    ]
+   }
+  },
+  {
+   "label": "yesno: num above den",
+   "draw": {
+    "op": "yesno",
+    "num": 3,
+    "den": 2
+   }
+  },
+  {
+   "label": "yesno: den 0",
+   "draw": {
+    "op": "yesno"
+   }
+  },
+  {
+   "label": "dice: no rows",
+   "draw": {
+    "op": "dice"
+   }
+  },
+  {
+   "label": "dice: a one-sided die",
+   "draw": {
+    "op": "dice",
+    "rows": [
+     {
+      "terms": [
+       {
+        "sign": 1,
+        "count": 1,
+        "sides": 1,
+        "value": 0
+       }
+      ],
+      "total": 0
+     }
+    ]
+   }
+  },
+  {
+   "label": "dice: keep more than rolled",
+   "draw": {
+    "op": "dice",
+    "rows": [
+     {
+      "terms": [
+       {
+        "sign": 1,
+        "count": 2,
+        "sides": 6,
+        "keep": "kh",
+        "keep_n": 3,
+        "value": 0
+       }
+      ],
+      "total": 0
+     }
+    ]
+   }
+  },
+  {
+   "label": "dice: drop all",
+   "draw": {
+    "op": "dice",
+    "rows": [
+     {
+      "terms": [
+       {
+        "sign": 1,
+        "count": 2,
+        "sides": 6,
+        "keep": "dl",
+        "keep_n": 2,
+        "value": 0
+       }
+      ],
+      "total": 0
+     }
+    ]
+   }
+  },
+  {
+   "label": "dice: a sign of 0",
+   "draw": {
+    "op": "dice",
+    "rows": [
+     {
+      "terms": [
+       {
+        "sign": 0,
+        "count": 1,
+        "sides": 6,
+        "value": 0
+       }
+      ],
+      "total": 0
+     }
+    ]
+   }
+  },
+  {
+   "label": "dice: success above the sides",
+   "draw": {
+    "op": "dice",
+    "rows": [
+     {
+      "terms": [
+       {
+        "sign": 1,
+        "count": 1,
+        "sides": 6,
+        "success": 7,
+        "value": 0
+       }
+      ],
+      "total": 0
+     }
+    ]
+   }
+  },
+  {
+   "label": "dice: a plain number that explodes",
+   "draw": {
+    "op": "dice",
+    "rows": [
+     {
+      "terms": [
+       {
+        "sign": 1,
+        "explode": true,
+        "value": 3
+       }
+      ],
+      "total": 0
+     }
+    ]
+   }
+  }
+ ]
+}

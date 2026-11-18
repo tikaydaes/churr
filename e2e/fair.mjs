@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { isPublicKey, proofToHash, verify } from '../internal/web/static/shared/fair/ecvrf.js';
 import { checkServerPin, comparePin } from '../internal/web/static/shared/fair/pin.js';
+import { DERIVE, Stream, block, draw, isPrimitive, sameRoll } from '../internal/web/static/shared/fair/derive.js';
 
 const file = new URL('../testdata/ecvrf/vectors.json', import.meta.url);
 const vf = JSON.parse(readFileSync(file, 'utf8'));
@@ -88,8 +89,53 @@ for (const v of vf.negative_vectors) {
   check(checkServerPin(server([a]), broken).state === 'new', 'stored pin: storage that throws is a first sight');
 }
 
+// The derivation (docs/FAIR.md): every vector of testdata/fair/derive.json,
+// the stream's blocks, rejection, each primitive in order from one object's
+// stream, and the primitives refused.
+const df = JSON.parse(readFileSync(new URL('../testdata/fair/derive.json', import.meta.url), 'utf8'));
+const deepEqual = (a, b) => {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, j) => deepEqual(x, b[j]));
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const ka = Object.keys(a).sort(), kb = Object.keys(b).sort();
+    return deepEqual(ka, kb) && ka.every((k) => deepEqual(a[k], b[k]));
+  }
+  return a === b;
+};
+check(df.derive === DERIVE && df.cases.length > 0 && df.invalid.length > 0, 'derive: the vectors file is derive 1\'s');
+for (const v of df.streams) {
+  check(toHex(await block(hex(v.beta), v.i, v.k)) === v.block, `derive: block ${v.i}/${v.k}`);
+}
+for (const v of df.below) {
+  const s = new Stream(hex(v.beta), v.i);
+  const got = [];
+  for (const n of v.ns) got.push(await s.below(n));
+  check(deepEqual(got, v.values) && s.used === v.words, `derive: below ${v.ns.join(',')}`);
+}
+for (const v of df.cases) {
+  const s = new Stream(hex(v.beta), v.i);
+  const got = [];
+  for (const p of v.draws) got.push(await draw(s, p));
+  check(deepEqual(got, v.results) && s.used === v.words, `derive: ${v.label}`);
+  for (const [j, p] of v.draws.entries()) {
+    if (p.op !== 'dice') continue;
+    // A verifier re-derives the stored rows; a die changed is caught.
+    const before = new Stream(hex(v.beta), v.i);
+    for (const q of v.draws.slice(0, j)) await draw(before, q);
+    check(await sameRoll(before, v.results[j].rows), `derive: re-derives ${v.label}`);
+    const forged = structuredClone(v.results[j].rows);
+    const t = forged[0].terms.find((x) => x.rolls);
+    t.rolls[0] = t.rolls[0] === 1 ? 2 : 1;
+    const again = new Stream(hex(v.beta), v.i);
+    for (const q of v.draws.slice(0, j)) await draw(again, q);
+    check(!(await sameRoll(again, forged)), `derive: a changed die is caught in ${v.label}`);
+  }
+}
+for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.label}`);
+
 if (failed) {
   console.log(`fair: ${failed} failed, ${passed} passed`);
   process.exit(1);
 }
-console.log(`fair: ${passed} checks passed (${vf.vectors.length} vectors, ${vf.negative_vectors.length} negative)`);
+console.log(`fair: ${passed} checks passed (${vf.vectors.length} vectors, ${vf.negative_vectors.length} negative, ${df.cases.length} derive cases)`);
