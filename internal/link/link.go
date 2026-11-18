@@ -563,6 +563,10 @@ type streamRT struct {
 	// record the taking of a hub's records of a channel, one at a time.
 	work   sync.Mutex
 	record sync.Mutex
+	// aheadRec is, on the other server of a move onto a hub, the newest record
+	// of the channel the hub sent before this server switched (move.go,
+	// keepAhead). Guarded by record.
+	aheadRec *aheadRecord
 	// moving is held while a move of the stream onto a hub is being run
 	// (move.go): one run at a time. moveAgain says a run was asked for while
 	// one was going: the one going runs again before it lets go.

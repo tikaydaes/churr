@@ -1065,10 +1065,66 @@ func (s *Service) onMovedRecord(ctx context.Context, pc *peerConn, st store.Stre
 		// The hub has activated the channel, so the owner server has
 		// committed. This server switches only on stream.moved, which is
 		// in the direct log: it asks for it.
+		if rec.HomeHub == mv.HubName {
+			s.keepAhead(ctx, s.rt(st.ID), pc, f, rec)
+		}
 		s.catchUp(ctx, st, true)
 		return nil
 	}
 	return nil
+}
+
+// aheadRecord is a hub-signed channel record kept as it came.
+type aheadRecord struct {
+	signed, sig []byte
+	rec         wire.ChannelRecord
+}
+
+// keepAhead keeps a record of a channel that the hub has activated and that
+// reached the other server of the move before it switched; rt.record is
+// held. The hub sends each version once, and stream.moved carries only the
+// prepared record: without this the switch would leave this server on the
+// prepared record, under the key epoch the direct life ended with, and its
+// own posts would be refused as stale for good. Across a cluster nothing
+// sends the record again. It is kept in memory, not written, because the
+// switch's transaction may be writing the same row at this moment; it is
+// stored once the switch has committed (takeAhead). If the switch has
+// already committed, it is stored now.
+func (s *Service) keepAhead(ctx context.Context, rt *streamRT, pc *peerConn, f wire.Frame, rec wire.ChannelRecord) {
+	if rt.aheadRec == nil || rt.aheadRec.rec.Version < rec.Version {
+		rt.aheadRec = &aheadRecord{signed: f.Signed, sig: f.Sig, rec: rec}
+	}
+	if st, err := s.store.Streams().Get(ctx, rt.id); err == nil && st.PeerID == pc.peer.ID {
+		s.takeAheadLocked(ctx, rt)
+	}
+}
+
+// takeAhead stores the record keepAhead kept, if it is newer than the one
+// held, once this server has switched to the hub.
+func (s *Service) takeAhead(ctx context.Context, rt *streamRT) {
+	rt.record.Lock()
+	s.takeAheadLocked(ctx, rt)
+	rt.record.Unlock()
+}
+
+func (s *Service) takeAheadLocked(ctx context.Context, rt *streamRT) {
+	e := rt.aheadRec
+	if e == nil {
+		return
+	}
+	rt.aheadRec = nil
+	held, err := s.store.Streams().Channel(ctx, rt.id)
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
+		return
+	}
+	if err == nil && held.Version >= e.rec.Version {
+		return
+	}
+	if err := s.storeChannel(ctx, s.store, e.signed, e.sig, e.rec); err != nil {
+		s.log.Warn("link: a channel record that came before the switch could not be kept", "stream", rt.id, "err", err)
+		return
+	}
+	s.adoptEpoch(ctx, rt.id)
 }
 
 // moved applies stream.moved on the other server of a moved stream: the
@@ -1213,6 +1269,9 @@ func (s *Service) switched(ctx context.Context, mv store.StreamMove, acked []wai
 	for _, w := range acked {
 		s.acknowledged(ctx, st, w)
 	}
+	// A record of the hub's that came before the switch is the channel's
+	// record from here, if it is newer than the one stream.moved carried.
+	s.takeAhead(ctx, rt)
 	s.audit(ctx, s.store, "", "link.move_done", "stream", string(st.ID), map[string]any{"move_id": mv.ID, "hub": mv.HubName})
 	s.sendCommit(ctx, mv)
 	s.catchUp(ctx, st, true)
