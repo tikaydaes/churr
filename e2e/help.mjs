@@ -87,7 +87,9 @@ check('/mahjongg says how many tiles', more('mahjong').rows[0].count.includes('1
 
 // Things you can type: every kind of object the composer knows.
 const covered = new Set(HELP.things.flatMap((t) => t.covers));
-for (const k of OBJECT_KINDS) check(`things cover ${k}`, covered.has('entity:' + k));
+// The composer's inline dice become an `object` entity of kind dice_roll.
+const entityOf = (k) => (k === 'dice' ? 'object' : k);
+for (const k of OBJECT_KINDS) check(`things cover ${k}`, covered.has('entity:' + entityOf(k)));
 for (const k of ['account', 'group', 'broadcast', 'conversation', 'emoji', 'link', 'task', 'instant', 'event']) check(`things cover ${k}`, covered.has('entity:' + k));
 const codes = new Set(MEASURE_UNITS.map((u) => u[1]));
 const sorted = new Set(HELP.measure_kinds.flatMap((k) => k.units));
