@@ -270,6 +270,14 @@ func TestWatchAcrossServers(t *testing.T) {
 	_, local := l.Share(0, ch, "bridge", nil, 1)
 	bob := b.Member("bob")
 	bob.Must(200, "POST", "/api/v1/conversations/"+local[1]+"/join", nil)
+	// bob may watch only someone he is shown: ann and cat, once b has them
+	// as members of the channel they share. The join's answer comes before
+	// a's members have reached b.
+	testkit.Eventually(t, "b knows ann and cat", func() bool {
+		_, hasAnn, _ := b.Server.Store.Members().Get(context.Background(), model.ConversationID(local[1]), ann.ID)
+		_, hasCat, _ := b.Server.Store.Members().Get(context.Background(), model.ConversationID(local[1]), cat.ID)
+		return hasAnn && hasCat
+	})
 
 	bobS, _ := bob.Events(nil)
 	w := obj(bob.Must(201, "PUT", fWatches+string(ann.ID), nil), "scheduled")
