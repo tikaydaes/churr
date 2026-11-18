@@ -88,8 +88,11 @@ func TestClockComposition(t *testing.T) {
 	if early, late := before-env.At, env.At-after; early > told.Uncertainty+50 || late > told.Uncertainty+50 {
 		t.Fatalf("the stamp is %d ms from the home hub's clock", max(early, late))
 	}
-	n := a1.count(id)
-	testkit.Eventually(t, "it reaches the home side", func() bool { return a1.count(id) == n+1 })
+	// Looked for by its origin and counter: shared returns when c1's own hub
+	// has taken what c1 said on joining, which may still be crossing the
+	// trunks, so a count of what a1 holds can go up by two.
+	sent := fmt.Sprintf("%s/%d", c1.name, env.N)
+	testkit.Eventually(t, "it reaches the home side", func() bool { return has(a1.received(id), sent) })
 
 	// Stamped with the offset against its own hub instead, 2 s out, it is
 	// refused by its own hub, which says what it holds.
