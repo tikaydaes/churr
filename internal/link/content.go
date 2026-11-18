@@ -541,6 +541,13 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 	rt := s.rt(st.ID)
 	rt.mu.Lock()
 	asked := m.Re != "" && rt.firstAsked[m.Re] != ""
+	if asked && h.Last {
+		// Noted for the diagnosis of a test that waits in vain (Diagnose).
+		if rt.firstAnswered == nil {
+			rt.firstAnswered = map[string]bool{}
+		}
+		rt.firstAnswered[m.Re] = true
+	}
 	rt.mu.Unlock()
 	// A message or an account that came as history may be one that held
 	// events wait for.

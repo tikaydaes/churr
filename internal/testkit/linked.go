@@ -122,7 +122,9 @@ func Eventually(t testing.TB, what string, ok func() bool) {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("timed out waiting until %s", what)
+			// What every server of the test held then, so that a wait
+			// that runs out on a slow machine says what was stuck.
+			t.Fatalf("timed out waiting until %s%s", what, diagnosis(t))
 		}
 		time.Sleep(20 * time.Millisecond)
 	}

@@ -66,6 +66,7 @@ func NewHubNamed(t testing.TB, name string) *TestHub {
 	th.URL = fmt.Sprintf("http://127.0.0.1:%d", th.port)
 	th.start(ln)
 	t.Cleanup(th.Stop)
+	diagnoseWith(t, name, func(ctx context.Context, max int) string { return th.Hub.Diagnose(ctx, max) })
 	return th
 }
 

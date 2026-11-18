@@ -642,6 +642,8 @@ type streamRT struct {
 	// firstAsked are this server's own requests for the snapshot a joining
 	// server is sent, by msg_id (hubchan.go).
 	firstAsked map[string]string
+	// firstAnswered are those of them whose last part has arrived.
+	firstAnswered map[string]bool
 	// earlyKeys are keys of a hub-owned channel that came from a hub this
 	// server did not yet know for the channel's home, or before it held the
 	// channel at all, kept for a minute (direct.go): a channel handed to

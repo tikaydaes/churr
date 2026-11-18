@@ -149,6 +149,7 @@ func NewServer(t testing.TB, opts ...Options) *TestServer {
 		<-done
 	}
 	t.Cleanup(func() { ts.stop() })
+	diagnoseWith(t, cfg.Hostname, func(ctx context.Context, max int) string { return ts.Server.Link.Diagnose(ctx, max) })
 	ts.rp = virtualwebauthn.RelyingParty{Name: "Churr", ID: cfg.Hostname, Origin: ts.Origin}
 	if !o.NoOwner {
 		ts.Owner = ts.Browser()
