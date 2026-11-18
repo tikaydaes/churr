@@ -1,6 +1,7 @@
 package storetest
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -46,6 +47,16 @@ func testPeers(t *testing.T, s store.Store) {
 	got, _ = s.Peers().Server(ctx, a.ID)
 	eq(t, "unblocked", got.Blocked(), false)
 	wantErr(t, s.Peers().SetServerBlocked(ctx, model.NewID[model.ServerID](), at), model.ErrNotFound)
+	// The VRF key history pinned on a direct link: none until set, then
+	// what was set, the JSON as given.
+	eq(t, "no VRF pin yet", got.VRFKeys == nil, true)
+	pin := `[{"key":"AAAA","began":"2026-11-18T00:00:00.000Z","sig":"AAAA"}]`
+	must(t, s.Peers().SetServerVRFKeys(ctx, a.ID, []byte(pin)))
+	got, _ = s.Peers().Server(ctx, a.ID)
+	var pinned []map[string]any
+	must(t, json.Unmarshal(got.VRFKeys, &pinned))
+	eq(t, "the VRF pin", len(pinned) == 1 && pinned[0]["key"] == "AAAA", true)
+	wantErr(t, s.Peers().SetServerVRFKeys(ctx, model.NewID[model.ServerID](), []byte(pin)), model.ErrNotFound)
 	all, err := s.Peers().Servers(ctx)
 	must(t, err)
 	eq(t, "servers by name", len(all) == 2 && all[0].Name == "a.example", true)

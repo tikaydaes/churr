@@ -14,11 +14,15 @@ type peers struct{ *queries }
 // Peers returns the Peers area.
 func (q *queries) Peers() store.Peers { return peers{q} }
 
-const serverCols = `id, name, sign_key, box_key, first_seen_at, blocked_at`
+const serverCols = `id, name, sign_key, box_key, first_seen_at, blocked_at, vrf_keys`
 
 func scanServer(s scanner) (store.Server, error) {
 	var out store.Server
-	err := s.Scan(str(&out.ID), &out.Name, blob(&out.SignKey), blob(&out.BoxKey), tm(&out.FirstSeenAt), tm(&out.BlockedAt))
+	var vrf sql.NullString
+	err := s.Scan(str(&out.ID), &out.Name, blob(&out.SignKey), blob(&out.BoxKey), tm(&out.FirstSeenAt), tm(&out.BlockedAt), &vrf)
+	if vrf.Valid {
+		out.VRFKeys = []byte(vrf.String)
+	}
 	return out, err
 }
 
@@ -67,6 +71,10 @@ func (p peers) Servers(ctx context.Context) ([]store.Server, error) {
 
 func (p peers) SetServerBlocked(ctx context.Context, server model.ServerID, at model.Time) error {
 	return p.changed(p.wr.ExecContext(ctx, `UPDATE servers SET blocked_at = ? WHERE id = ?`, ms(at), string(server)))
+}
+
+func (p peers) SetServerVRFKeys(ctx context.Context, server model.ServerID, keys []byte) error {
+	return p.changed(p.wr.ExecContext(ctx, `UPDATE servers SET vrf_keys = ? WHERE id = ?`, string(keys), string(server)))
 }
 
 const peerCols = `id, kind, server_id, hub_name, hub_sign_key, url, dials, state, invite_hash, invite_expires_at,
@@ -183,7 +191,7 @@ func (p peers) SetReachable(ctx context.Context, peer model.PeerID, servers []mo
 
 func (p peers) Reachable(ctx context.Context, peer model.PeerID) ([]store.Server, error) {
 	rows, err := p.rd.QueryContext(ctx, `
-		SELECT s.id, s.name, s.sign_key, s.box_key, s.first_seen_at, s.blocked_at
+		SELECT s.id, s.name, s.sign_key, s.box_key, s.first_seen_at, s.blocked_at, s.vrf_keys
 		FROM peer_servers ps JOIN servers s ON s.id = ps.server_id WHERE ps.peer_id = ? ORDER BY s.name`, string(peer))
 	return collect(rows, err, scanServer)
 }

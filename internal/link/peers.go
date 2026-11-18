@@ -251,6 +251,10 @@ func (s *Service) AcceptInvitation(ctx context.Context, by model.AccountID, text
 			conn.CloseWith(wire.Frame{Frame: wire.FBye, Reason: "removed"})
 			return Peer{}, model.ErrConflict.With(inv.Name + " is blocked on this server.")
 		}
+		if err := s.checkVRFPin(ctx, sv, conn.Remote.VRFKeys); err != nil {
+			conn.CloseWith(wire.Frame{Frame: wire.FBye, Reason: "removed"})
+			return Peer{}, model.ErrConflict.With(inv.Name + " was linked before with another VRF key history. Its old one is still pinned.")
+		}
 		p.ServerID = sv.ID
 	}
 	if err := s.store.Peers().Create(ctx, &p); err != nil {
@@ -499,9 +503,10 @@ func (s *Service) noteError(id model.PeerID, err error) {
 // must show the pinned key.
 func (s *Service) dial(ctx context.Context, p store.Peer) (*wire.Conn, error) {
 	name, key := p.HubName, p.HubSignKey
+	var sv store.Server
 	if p.Kind == wire.KindServer {
-		sv, err := s.store.Peers().Server(ctx, p.ServerID)
-		if err != nil {
+		var err error
+		if sv, err = s.store.Peers().Server(ctx, p.ServerID); err != nil {
 			return nil, err
 		}
 		name, key = sv.Name, sv.SignKey
@@ -512,6 +517,11 @@ func (s *Service) dial(ctx context.Context, p store.Peer) (*wire.Conn, error) {
 		}
 		if !bytes.Equal(h.SignKey, key) {
 			return wire.Errf(wire.EKeyMismatch, "%s shows a key other than the pinned one.", name)
+		}
+		if p.Kind == wire.KindServer {
+			// Every entry is signed by the pinned key, so a hello replayed
+			// by someone else changes the pin to nothing it would not be.
+			return s.checkVRFPin(ctx, sv, h.VRFKeys)
 		}
 		return nil
 	}})
@@ -567,6 +577,9 @@ func (s *Service) authorize(ctx context.Context, d wire.Frame, proof, th []byte)
 				if !sameKeys {
 					return none, wire.Errf(wire.EKeyMismatch, "%s is pinned with other keys.", d.Name)
 				}
+				if err := s.checkVRFPin(ctx, known, d.VRFKeys); err != nil {
+					return none, err
+				}
 				return p, nil
 			case store.PeerPaused:
 				return none, wire.Errf(wire.EUnavailable, "The link is paused.")
@@ -602,6 +615,9 @@ func (s *Service) authorize(ctx context.Context, d wire.Frame, proof, th []byte)
 	}
 	sv, _, err := s.store.Peers().PinServer(ctx, store.Server{Name: d.Name, SignKey: d.SignKey, BoxKey: d.BoxKey})
 	if err != nil {
+		return none, err
+	}
+	if err := s.checkVRFPin(ctx, sv, d.VRFKeys); err != nil {
 		return none, err
 	}
 	// The invitation is used up, the keys are pinned, the peer is active.

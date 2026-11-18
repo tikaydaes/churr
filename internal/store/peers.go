@@ -16,6 +16,10 @@ type Server struct {
 	BoxKey      []byte
 	FirstSeenAt model.Time
 	BlockedAt   model.Time
+	// VRFKeys is the server's VRF key history as pinned on a direct link,
+	// the JSON the link carries it as; nil until pinned. PinServer does not
+	// write it: SetServerVRFKeys does.
+	VRFKeys []byte
 }
 
 // Blocked reports whether this server accepts nothing from that one.
@@ -76,6 +80,9 @@ type Peers interface {
 	// SetServerBlocked sets blocked_at, or clears it when at is zero.
 	// model.ErrNotFound for an unknown server.
 	SetServerBlocked(ctx context.Context, id model.ServerID, at model.Time) error
+	// SetServerVRFKeys replaces the pinned VRF key history of a server.
+	// model.ErrNotFound for an unknown server.
+	SetServerVRFKeys(ctx context.Context, id model.ServerID, keys []byte) error
 
 	// Create stores a peer. An empty ID and zero CreatedAt are filled in.
 	Create(ctx context.Context, p *Peer) error
