@@ -19,7 +19,7 @@ const module = "github.com/tikaydaes/churr/"
 // packages in lower layers, and model. It may not import one in its own
 // layer or above, except as mayAlso says.
 var layers = map[string]int{
-	"model": 0, "version": 0, "instant": 0, "timing": 0, "unicodename": 0,
+	"model": 0, "version": 0, "instant": 0, "timing": 0, "unicodename": 0, "ecvrf": 0,
 	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1, "wirepb": 1, "memguard": 1, "modhost": 1,
 	"store": 2, "modules": 2,
 	"blob": 3, "perm": 3, "notices": 3,
@@ -56,6 +56,9 @@ var onlyThese = map[string][]string{
 	// A built-in module reaches only the host's toolkit and the model's
 	// types: no database, no socket, no other feature.
 	"modules": {"modhost", "model"},
+	// The vendored VRF library (docs/DESIGN-FAIR.md) is the owner's code as
+	// published: it leans on nothing of ours.
+	"ecvrf": {},
 }
 
 // moduleUsers are the only packages that import a built-in module: the
@@ -76,6 +79,7 @@ var owners = []struct {
 	{"github.com/jackc/pgx", []string{"store/postgres"}, "only store/postgres imports the PostgreSQL driver"},
 	{"github.com/go-webauthn/", []string{"auth"}, "only auth imports the WebAuthn library"},
 	{"github.com/pion/", []string{"calls"}, "only calls imports Pion"},
+	{"github.com/decred/dcrd/dcrec/secp256k1", []string{"ecvrf"}, "only ecvrf does secp256k1 arithmetic"},
 	{"github.com/minio/", []string{"blob"}, "only blob imports the object-store client"},
 	{"google.golang.org/protobuf", []string{"wirepb", "link/wire"}, "only wirepb and the link's wire package speak Protocol Buffers"},
 	{"github.com/coder/websocket", []string{"live", "link", "hub", "testkit"}, "only live, link and the hub speak WebSocket"},

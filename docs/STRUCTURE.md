@@ -40,6 +40,7 @@ The module is `github.com/tikaydaes/churr`.
         model/                      shared types; imports nothing of ours
         config/                     flags and environment for all three programs
         version/                    version and commit, set at build time
+        ecvrf/                      ECVRF-SECP256K1-SHA256-TAI, vendored from the owner's library
         secret/                     key files, sealing, tokens, hashes
         ratelimit/                  token buckets
         memguard/                   the memory guard: how much memory there is, and when it is short
@@ -117,6 +118,7 @@ The module is `github.com/tikaydaes/churr`.
         slack/                      small Slack exports for the importer
         webhooks/                   Slack, Discord and GitHub payloads with expected cards
         sealed/                     test vectors written by internal/sealed/ref
+        ecvrf/                      the ECVRF library's vectors, run by Go, the web and the app
         art/                        the chance artwork sheets and their faces, from tools/art-gen
 
       examples/                     small bots that show how (DESIGN.md 19)
@@ -182,6 +184,15 @@ validation and JSON.
   and the same for the others.
 
 **`version`** — `Version`, `Commit`, `String()`.
+
+**`ecvrf`** — the verifiable random function every chance outcome is
+proved with (`DESIGN-FAIR.md`): ECVRF-SECP256K1-SHA256-TAI of RFC 9381,
+vendored unchanged from the owner's library github.com/atikayda/ecvrf
+(the commit is in the package comment, its licence beside it).
+`Prove`, `Verify`, `ProofToHash`, `DerivePublicKey`. Passes the
+library's vectors in `testdata/ecvrf`. The web chat
+(`internal/web/static/shared/fair/`) and the app (`app/lib/core/fair/`)
+verify with their own copies, held to the same vectors.
 
 **`secret`** — the key files in `keys/` and everything done with them.
 
@@ -627,7 +638,7 @@ above, except where the last column says so.
 
 | Layer | Packages | May also import |
 |-------|----------|-----------------|
-| 0 | `model`, `version` | Nothing of ours |
+| 0 | `model`, `version`, `ecvrf` | Nothing of ours |
 | 1 | `config`, `secret`, `ratelimit`, `markdown`, `memguard`, `wirepb`, `modhost` | `modhost` imports `model`, `markdown`, `instant` and `wirepb` only |
 | 2 | `store` and its backends; `modules/*` | `modules/*` import `modhost` and `model` only |
 | 3 | `blob`, `perm` | `perm` imports `store` and `model` only |
@@ -657,7 +668,7 @@ Further rules:
 | `modules/*` import `modhost` and `model` and nothing else of ours, and no `net`, `os/exec`, `syscall`, `plugin` or `unsafe` | A module reaches no database, no socket and no other feature |
 | Only `server` and `hub` import `modules/*` | No feature leans on a module being there; `server` registers them, as it connects every feature |
 | Only `preview`, `push`, `blob`, `auth`, `link`, `acme`, `importer` and `relay` make outbound connections | These are the rows of the outside-connections table. A test checks that nothing else dials |
-| Only `calls` imports Pion; only `auth` imports the WebAuthn, OIDC and SAML libraries; only `blob` imports the object-store client | Each large dependency has one owner |
+| Only `calls` imports Pion; only `auth` imports the WebAuthn, OIDC and SAML libraries; only `blob` imports the object-store client; only `ecvrf` imports the secp256k1 library | Each large dependency has one owner |
 
 A test in the repository root reads the import graph and fails when a
 rule in this section is broken, so the table is enforced and not just
@@ -685,6 +696,7 @@ dependency must be pure Go.
 | `golang.org/x/text` | `model`, `markdown` | Normalising names and search text |
 | `github.com/minio/minio-go/v7` | `blob` | S3-compatible object storage client, pure Go |
 | `github.com/google/uuid` | `model` | UUIDv7 identifiers |
+| `github.com/decred/dcrd/dcrec/secp256k1/v4` | `ecvrf` | secp256k1 arithmetic, constant-time, pure Go, for the VRF that proves chance outcomes (`DESIGN-FAIR.md`); what the owner's library is written on |
 | `google.golang.org/protobuf` | `wirepb`, `link/wire` | The protobuf wire format (`protowire`); the tests use the rest of it to check the codec against the schema as `protoc` reads it |
 | `github.com/skip2/go-qrcode` | `api` | The pairing QR code on the account page, as in Codemail |
 | `github.com/descope/virtualwebauthn` | Tests only | A virtual passkey authenticator, as in Codemail |
