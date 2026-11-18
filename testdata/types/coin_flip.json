@@ -1,0 +1,15 @@
+{
+  "kind": "coin_flip",
+  "level": 1,
+  "about": "The data of kind coin_flip (docs/FAIR.md section 5a): a coin the server flipped. Every check of it gives the same answer: valid cases are drawn, invalid ones fall back a step. Go: internal/model (TestChanceKindCases); web: e2e/types.mjs; the app: test/core/types_test.dart.",
+  "valid": [
+    {"name": "heads", "data": {"outcome": "heads"}},
+    {"name": "tails", "data": {"outcome": "tails"}},
+    {"name": "a field this reader does not know", "data": {"outcome": "tails", "later": 1}}
+  ],
+  "invalid": [
+    {"name": "no outcome", "data": {}},
+    {"name": "an edge", "data": {"outcome": "edge"}},
+    {"name": "not text", "data": {"outcome": 1}}
+  ]
+}

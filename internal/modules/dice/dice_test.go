@@ -273,8 +273,8 @@ func asError(err error, out **model.Error) bool {
 
 // The help of /roll and /dice is the module's (it left help.json): each has
 // a description, its argument explained, two or more examples written with
-// {cmd}, and where and who; and both are typed in two forms, dice or
-// nothing.
+// {cmd}, and where and who; /roll and /dice are typed in two forms, dice or
+// nothing, and /flip in one, nothing.
 func TestHelpAndForms(t *testing.T) {
 	m := Module()
 	if !m.PeopleOnly {
@@ -282,7 +282,11 @@ func TestHelpAndForms(t *testing.T) {
 	}
 	for _, c := range m.Commands {
 		h := c.Help
-		if len(h.Description) < 40 || len(h.Args) != 1 || len(h.Examples) < 2 || h.Where == "" || h.Who == "" {
+		args, forms := 1, 2
+		if c.Name == "flip" {
+			args, forms = 0, 1
+		}
+		if len(h.Description) < 40 || len(h.Args) != args || len(h.Examples) < 2 || h.Where == "" || h.Who == "" {
 			t.Errorf("/%s: the help %+v", c.Name, h)
 		}
 		for _, e := range h.Examples {
@@ -290,7 +294,13 @@ func TestHelpAndForms(t *testing.T) {
 				t.Errorf("/%s: the example %+v", c.Name, e)
 			}
 		}
-		if len(c.Forms) != 2 || len(c.Forms[0].Slots) != 1 || c.Forms[0].Slots[0].Kind != TypeDice || len(c.Forms[1].Slots) != 0 {
+		if c.Name == "flip" {
+			if len(c.Forms) != forms || len(c.Forms[0].Slots) != 0 {
+				t.Errorf("/%s: the forms %+v", c.Name, c.Forms)
+			}
+			continue
+		}
+		if len(c.Forms) != forms || len(c.Forms[0].Slots) != 1 || c.Forms[0].Slots[0].Kind != TypeDice || len(c.Forms[1].Slots) != 0 {
 			t.Errorf("/%s: the forms %+v", c.Name, c.Forms)
 		}
 	}

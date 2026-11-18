@@ -55,7 +55,7 @@
    ],
    "where": "Channels and chats. Typed in a thread, the poll goes in the thread.",
    "who": "Anyone who can post in the conversation.",
-   "related": ["rsvp", "signup", "approve", "form", "pick"]
+   "related": ["rsvp", "signup", "approve", "form"]
   },
   "rsvp": {
    "description": "Posts an invitation people answer with Going, Maybe or Can't, with everyone's name shown beside their answer. The time you give is when the event happens: it is shown as the date, and answers close then. A time in the past is refused before anything is posted.",
@@ -221,90 +221,6 @@
    "who": "Anyone who can post.",
    "related": ["me", "say"]
   },
-  "flip": {
-   "description": "Flips a coin, flipped by the server: heads or tails, the same for everyone and impossible to edit. Pressing the result spins it again, but only for show: the outcome does not change.",
-   "args": [],
-   "examples": [
-    {"type": "/flip", "then": "Posts heads or tails."},
-    {"type": "/flip (in a thread)", "then": "Flips in the thread, so the answer stays with the question."}
-   ],
-   "where": "Channels and chats.",
-   "who": "Anyone who can post.",
-   "related": ["pick"]
-  },
-  "pick": {
-   "description": "Picks one of the options you give, picked by the server, so nobody can say you chose. Everyone sees all the options and which one came up.",
-   "args": [
-    {"name": "a | b | c", "about": "Two to twenty options, separated by |. None may be empty."}
-   ],
-   "examples": [
-    {"type": "/pick Pizza | Sushi | Tacos", "then": "The server picks one of the three."},
-    {"type": "/pick Monday | Wednesday | Friday", "then": "Settles which day the meeting is."}
-   ],
-   "where": "Channels and chats.",
-   "who": "Anyone who can post.",
-   "related": ["shuffle", "poll"]
-  },
-  "shuffle": {
-   "description": "Puts the options you give in a random order, shuffled by the server. Handy for speaking orders and rotas: everyone sees the same order.",
-   "args": [
-    {"name": "a | b | c", "about": "Two to twenty options, separated by |."}
-   ],
-   "examples": [
-    {"type": "/shuffle Ada | Sam | Lee | Kit", "then": "Posts the four names in a random order."},
-    {"type": "/shuffle red | blue | green", "then": "Shuffles three teams."}
-   ],
-   "where": "Channels and chats.",
-   "who": "Anyone who can post.",
-   "related": ["pick", "draw"]
-  },
-  "draw": {
-   "description": "Draws cards from a freshly shuffled deck, drawn by the server. Each card is shown by name and picture; from the tarot deck a card may come up reversed, drawn upside down. No card comes up more often than the deck holds it.",
-   "args": [
-    {"name": "count", "about": "How many cards: 1 unless given, at most the size of the deck."},
-    {"name": "deck", "about": "Which deck, by name or by another name it answers to (the list is below). The standard deck unless given. A count alone, a deck alone, or a count then a deck."}
-   ],
-   "examples": [
-    {"type": "/draw", "then": "Draws one card from a standard deck."},
-    {"type": "/draw 5", "then": "Deals five cards from a standard deck."},
-    {"type": "/draw 3 tarot", "then": "Draws three tarot cards, some perhaps reversed."},
-    {"type": "/draw hanafuda", "then": "Draws one flower card."}
-   ],
-   "where": "Channels and chats.",
-   "who": "Anyone who can post.",
-   "related": ["tarot", "mahjongg", "shuffle"],
-   "more": "decks"
-  },
-  "tarot": {
-   "description": "Lays out a tarot reading, drawn by the server: one card for each position of the spread, laid out in the spread's shape (a row, the Celtic cross and its staff, a horseshoe), each upright or reversed, and a line on the reading as a whole. Press a card for its position, name and meaning. It is for fun.",
-   "args": [
-    {"name": "spread", "about": "Which spread, by name or another name it answers to (the list is below). Three cards unless given."}
-   ],
-   "examples": [
-    {"type": "/tarot", "then": "Past, present and future: three cards."},
-    {"type": "/tarot celtic", "then": "The Celtic cross: ten cards."},
-    {"type": "/tarot love", "then": "The relationship spread: seven cards."}
-   ],
-   "where": "Channels and chats.",
-   "who": "Anyone who can post.",
-   "related": ["draw"],
-   "more": "spreads"
-  },
-  "mahjongg": {
-   "description": "Draws tiles from a full mahjong set, drawn by the server, each shown by name and picture.",
-   "args": [
-    {"name": "count", "about": "How many tiles: 1 unless given, at most the size of the set."}
-   ],
-   "examples": [
-    {"type": "/mahjongg", "then": "Draws one tile."},
-    {"type": "/mahjongg 13", "then": "Draws a hand of thirteen tiles."}
-   ],
-   "where": "Channels and chats.",
-   "who": "Anyone who can post.",
-   "related": ["draw"],
-   "more": "mahjong"
-  },
-  "mahjong": {"same_as": "mahjongg"},
   "join": {
    "description": "Joins a public channel and opens it. Type # and pick the channel, or type its name; it must name exactly one channel you can see. A private channel is joined by accepting an invitation, and a knock channel by asking with /knock. A channel a group of yours has access to, or that was offered to you as a default channel, you join directly, whatever its access, even after declining it.",
    "args": [

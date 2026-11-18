@@ -369,7 +369,7 @@ func (a *API) respondToInteraction(r *Request) error {
 		if m.Sealed != nil || m.Quiet {
 			return model.Invalid("message", "A bot is never in a sealed chat.")
 		}
-		in := chat.NewMessage{ClientID: m.ClientID, Text: m.Text, Quote: m.Quote, Cards: m.Cards, Form: m.Form, Action: m.Action, Chance: m.Chance, DrawT: m.DrawT,
+		in := chat.NewMessage{ClientID: m.ClientID, Text: m.Text, Quote: m.Quote, Cards: m.Cards, Form: m.Form, Action: m.Action, DrawT: m.DrawT,
 			Instants: m.instants()}
 		if m.ParentID != "" {
 			if in.ParentID, err = BodyID[model.MessageID]("message.parent_id", m.ParentID); err != nil {

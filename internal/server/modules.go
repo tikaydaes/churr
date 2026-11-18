@@ -7,18 +7,22 @@ import (
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
+	"github.com/tikaydaes/churr/internal/modules/cards"
+	"github.com/tikaydaes/churr/internal/modules/choose"
 	"github.com/tikaydaes/churr/internal/modules/dice"
 )
 
 // wireModules registers the built-in modules (docs/DESIGN-MODULES.md
 // section 6.2) and hands the host to the two places that call them: chat,
 // which resolves the objects they claim when a message is posted (inline
-// dice), and commands, which runs their commands (/roll, /dice), with what
+// dice), and commands, which runs their commands (/roll, /dice, /flip,
+// /pick, /shuffle, /draw, /tarot, /mahjongg), with what
 // chat draws their chance with. This is the one place that imports a module.
 //
 // It runs after chat and commands exist.
 func (s *Server) wireModules() error {
-	reg, err := modhost.New(modhost.Options{Store: s.Store.Modules(), Switches: s.Store.Modules(), Failed: s.moduleFailed}, dice.Module())
+	reg, err := modhost.New(modhost.Options{Store: s.Store.Modules(), Switches: s.Store.Modules(), Failed: s.moduleFailed},
+		dice.Module(), choose.Module(), cards.Module())
 	if err != nil {
 		return fmt.Errorf("server: the built-in modules: %w", err)
 	}

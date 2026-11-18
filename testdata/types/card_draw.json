@@ -1,0 +1,21 @@
+{
+  "kind": "card_draw",
+  "level": 1,
+  "about": "The data of kind card_draw (docs/FAIR.md section 5a): cards the server drew from a deck, none put back, for /draw and /mahjongg. Every check of it gives the same answer: valid cases are drawn, invalid ones fall back a step. Go: internal/model (TestChanceKindCases); web: e2e/types.mjs; the app: test/core/types_test.dart.",
+  "valid": [
+    {"name": "standard", "data": {"deck": "standard", "cards": ["spades-ace", "hearts-10"]}},
+    {"name": "tarot, with orientation", "data": {"deck": "tarot", "cards": ["cups-queen", "major-0"], "reversed": [true, false]}},
+    {"name": "mahjong, a tile twice", "data": {"deck": "mahjong", "cards": ["dots-5", "dots-5", "wind-east"]}},
+    {"name": "pinochle, two of a card", "data": {"deck": "pinochle", "cards": ["spades-ace", "spades-ace"]}}
+  ],
+  "invalid": [
+    {"name": "a card twice", "data": {"deck": "standard", "cards": ["spades-ace", "spades-ace"]}},
+    {"name": "no cards", "data": {"deck": "standard", "cards": []}},
+    {"name": "no such deck", "data": {"deck": "53", "cards": ["spades-ace"]}},
+    {"name": "a deck by its alias", "data": {"deck": "52", "cards": ["spades-ace"]}},
+    {"name": "a card the deck has not", "data": {"deck": "standard", "cards": ["major-0"]}},
+    {"name": "tarot without orientation", "data": {"deck": "tarot", "cards": ["major-0"]}},
+    {"name": "orientation on a deck without it", "data": {"deck": "standard", "cards": ["spades-ace"], "reversed": [false]}},
+    {"name": "five of a tile", "data": {"deck": "mahjong", "cards": ["dots-1", "dots-1", "dots-1", "dots-1", "dots-1"]}}
+  ]
+}

@@ -11858,7 +11858,6 @@ class Message extends $pb.GeneratedMessage {
     $fixnum.Int64? deletedAt,
     $core.List<$core.int>? deletedById,
     $core.bool? action,
-    Chance? chance,
     ValueEnvelope? view,
     FairBlock? fair,
   }) {
@@ -11896,7 +11895,6 @@ class Message extends $pb.GeneratedMessage {
     if (deletedAt != null) result.deletedAt = deletedAt;
     if (deletedById != null) result.deletedById = deletedById;
     if (action != null) result.action = action;
-    if (chance != null) result.chance = chance;
     if (view != null) result.view = view;
     if (fair != null) result.fair = fair;
     return result;
@@ -11965,8 +11963,6 @@ class Message extends $pb.GeneratedMessage {
     ..a<$core.List<$core.int>>(
         32, _omitFieldNames ? '' : 'deletedById', $pb.PbFieldType.OY)
     ..aOB(33, _omitFieldNames ? '' : 'action')
-    ..aOM<Chance>(34, _omitFieldNames ? '' : 'chance',
-        subBuilder: Chance.$_createMessage)
     ..aOM<ValueEnvelope>(35, _omitFieldNames ? '' : 'view',
         subBuilder: ValueEnvelope.$_createMessage)
     ..aOM<FairBlock>(36, _omitFieldNames ? '' : 'fair',
@@ -12260,38 +12256,27 @@ class Message extends $pb.GeneratedMessage {
   @$pb.TagNumber(33)
   void clearAction() => $_clearField(33);
 
-  @$pb.TagNumber(34)
-  Chance get chance => $_getN(33);
-  @$pb.TagNumber(34)
-  set chance(Chance value) => $_setField(34, value);
-  @$pb.TagNumber(34)
-  $core.bool hasChance() => $_has(33);
-  @$pb.TagNumber(34)
-  void clearChance() => $_clearField(34);
-  @$pb.TagNumber(34)
-  Chance ensureChance() => $_ensure(33);
-
   @$pb.TagNumber(35)
-  ValueEnvelope get view => $_getN(34);
+  ValueEnvelope get view => $_getN(33);
   @$pb.TagNumber(35)
   set view(ValueEnvelope value) => $_setField(35, value);
   @$pb.TagNumber(35)
-  $core.bool hasView() => $_has(34);
+  $core.bool hasView() => $_has(33);
   @$pb.TagNumber(35)
   void clearView() => $_clearField(35);
   @$pb.TagNumber(35)
-  ValueEnvelope ensureView() => $_ensure(34);
+  ValueEnvelope ensureView() => $_ensure(33);
 
   @$pb.TagNumber(36)
-  FairBlock get fair => $_getN(35);
+  FairBlock get fair => $_getN(34);
   @$pb.TagNumber(36)
   set fair(FairBlock value) => $_setField(36, value);
   @$pb.TagNumber(36)
-  $core.bool hasFair() => $_has(35);
+  $core.bool hasFair() => $_has(34);
   @$pb.TagNumber(36)
   void clearFair() => $_clearField(36);
   @$pb.TagNumber(36)
-  FairBlock ensureFair() => $_ensure(35);
+  FairBlock ensureFair() => $_ensure(34);
 }
 
 /// What a reply quotes. No range means the whole message.
@@ -13703,6 +13688,7 @@ class Card extends $pb.GeneratedMessage {
     $fixnum.Int64? at,
     $core.String? previewUrl,
     CardTheme? theme,
+    FairMark? fairMark,
   }) {
     final result = Card._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -13718,6 +13704,7 @@ class Card extends $pb.GeneratedMessage {
     if (at != null) result.at = at;
     if (previewUrl != null) result.previewUrl = previewUrl;
     if (theme != null) result.theme = theme;
+    if (fairMark != null) result.fairMark = fairMark;
     return result;
   }
 
@@ -13752,6 +13739,8 @@ class Card extends $pb.GeneratedMessage {
     ..aOS(12, _omitFieldNames ? '' : 'previewUrl')
     ..aOM<CardTheme>(13, _omitFieldNames ? '' : 'theme',
         subBuilder: CardTheme.$_createMessage)
+    ..aOM<FairMark>(14, _omitFieldNames ? '' : 'fairMark',
+        subBuilder: FairMark.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -13876,6 +13865,17 @@ class Card extends $pb.GeneratedMessage {
   void clearTheme() => $_clearField(13);
   @$pb.TagNumber(13)
   CardTheme ensureTheme() => $_ensure(12);
+
+  @$pb.TagNumber(14)
+  FairMark get fairMark => $_getN(13);
+  @$pb.TagNumber(14)
+  set fairMark(FairMark value) => $_setField(14, value);
+  @$pb.TagNumber(14)
+  $core.bool hasFairMark() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearFairMark() => $_clearField(14);
+  @$pb.TagNumber(14)
+  FairMark ensureFairMark() => $_ensure(13);
 }
 
 class CardAuthor extends $pb.GeneratedMessage {
@@ -14036,6 +14036,68 @@ class CardField extends $pb.GeneratedMessage {
   $core.bool hasShort() => $_has(3);
   @$pb.TagNumber(5)
   void clearShort() => $_clearField(5);
+}
+
+/// The shield of a card (DESIGN-FAIR.md section 13): it names which outcomes of the message's draw (`fair`) the card stands on, and carries no verdict. Each client draws it from its own check of the proof and of every outcome named: a green shield when they all check out, a grey one when the drawing server's key history is not known here, a warning mark when a check fails. No other part of a card may draw that shield.
+class FairMark extends $pb.GeneratedMessage {
+  factory FairMark({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<$fixnum.Int64>? objects,
+  }) {
+    final result = FairMark._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (objects != null) result.objects.addAll(objects);
+    return result;
+  }
+
+  FairMark._();
+
+  factory FairMark.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FairMark()..mergeFromBuffer(data, registry);
+  factory FairMark.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FairMark()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FairMark',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: FairMark.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..p<$fixnum.Int64>(3, _omitFieldNames ? '' : 'objects', $pb.PbFieldType.K6)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FairMark clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FairMark copyWith(void Function(FairMark) updates) =>
+      super.copyWith((message) => updates(message as FairMark)) as FairMark;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use FairMark() / FairMark.new instead')
+  static FairMark create() => FairMark._();
+  static $pb.GeneratedMessage $_createMessage() => FairMark._();
+  @$core.override
+  FairMark createEmptyInstance() => FairMark._();
+  @$core.pragma('dart2js:noInline')
+  static FairMark getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FairMark>(FairMark.$_createMessage);
+  static FairMark? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<$fixnum.Int64> get objects => $_getList(2);
 }
 
 /// How a message asks for input. One per message.
@@ -14978,156 +15040,13 @@ class FormVotersValueOuter extends $pb.GeneratedMessage {
   $pb.PbMap<$core.String, FormVotersValue> get values => $_getMap(0);
 }
 
-/// A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message's text and `view`.
-class Chance extends $pb.GeneratedMessage {
-  factory Chance({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    ChanceKind? kind,
-    ChanceOutcome? outcome,
-    $core.Iterable<$core.String>? options,
-    $fixnum.Int64? picked,
-    $core.Iterable<$fixnum.Int64>? order,
-    $core.String? deck,
-    $core.Iterable<$core.String>? cards,
-    $core.Iterable<$core.bool>? reversed,
-    $core.String? spread,
-  }) {
-    final result = Chance._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (kind != null) result.kind = kind;
-    if (outcome != null) result.outcome = outcome;
-    if (options != null) result.options.addAll(options);
-    if (picked != null) result.picked = picked;
-    if (order != null) result.order.addAll(order);
-    if (deck != null) result.deck = deck;
-    if (cards != null) result.cards.addAll(cards);
-    if (reversed != null) result.reversed.addAll(reversed);
-    if (spread != null) result.spread = spread;
-    return result;
-  }
-
-  Chance._();
-
-  factory Chance.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Chance()..mergeFromBuffer(data, registry);
-  factory Chance.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Chance()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'Chance',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: Chance.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aE<ChanceKind>(3, _omitFieldNames ? '' : 'kind',
-        enumValues: ChanceKind.values)
-    ..aE<ChanceOutcome>(7, _omitFieldNames ? '' : 'outcome',
-        enumValues: ChanceOutcome.values)
-    ..pPS(8, _omitFieldNames ? '' : 'options')
-    ..aInt64(9, _omitFieldNames ? '' : 'picked')
-    ..p<$fixnum.Int64>(10, _omitFieldNames ? '' : 'order', $pb.PbFieldType.K6)
-    ..aOS(11, _omitFieldNames ? '' : 'deck')
-    ..pPS(12, _omitFieldNames ? '' : 'cards')
-    ..p<$core.bool>(13, _omitFieldNames ? '' : 'reversed', $pb.PbFieldType.KB)
-    ..aOS(14, _omitFieldNames ? '' : 'spread')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Chance clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Chance copyWith(void Function(Chance) updates) =>
-      super.copyWith((message) => updates(message as Chance)) as Chance;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use Chance() / Chance.new instead')
-  static Chance create() => Chance._();
-  static $pb.GeneratedMessage $_createMessage() => Chance._();
-  @$core.override
-  Chance createEmptyInstance() => Chance._();
-  @$core.pragma('dart2js:noInline')
-  static Chance getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<Chance>(Chance.$_createMessage);
-  static Chance? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  ChanceKind get kind => $_getN(2);
-  @$pb.TagNumber(3)
-  set kind(ChanceKind value) => $_setField(3, value);
-  @$pb.TagNumber(3)
-  $core.bool hasKind() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearKind() => $_clearField(3);
-
-  @$pb.TagNumber(7)
-  ChanceOutcome get outcome => $_getN(3);
-  @$pb.TagNumber(7)
-  set outcome(ChanceOutcome value) => $_setField(7, value);
-  @$pb.TagNumber(7)
-  $core.bool hasOutcome() => $_has(3);
-  @$pb.TagNumber(7)
-  void clearOutcome() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $pb.PbList<$core.String> get options => $_getList(4);
-
-  @$pb.TagNumber(9)
-  $fixnum.Int64 get picked => $_getI64(5);
-  @$pb.TagNumber(9)
-  set picked($fixnum.Int64 value) => $_setInt64(5, value);
-  @$pb.TagNumber(9)
-  $core.bool hasPicked() => $_has(5);
-  @$pb.TagNumber(9)
-  void clearPicked() => $_clearField(9);
-
-  @$pb.TagNumber(10)
-  $pb.PbList<$fixnum.Int64> get order => $_getList(6);
-
-  @$pb.TagNumber(11)
-  $core.String get deck => $_getSZ(7);
-  @$pb.TagNumber(11)
-  set deck($core.String value) => $_setString(7, value);
-  @$pb.TagNumber(11)
-  $core.bool hasDeck() => $_has(7);
-  @$pb.TagNumber(11)
-  void clearDeck() => $_clearField(11);
-
-  @$pb.TagNumber(12)
-  $pb.PbList<$core.String> get cards => $_getList(8);
-
-  @$pb.TagNumber(13)
-  $pb.PbList<$core.bool> get reversed => $_getList(9);
-
-  @$pb.TagNumber(14)
-  $core.String get spread => $_getSZ(10);
-  @$pb.TagNumber(14)
-  set spread($core.String value) => $_setString(10, value);
-  @$pb.TagNumber(14)
-  $core.bool hasSpread() => $_has(10);
-  @$pb.TagNumber(14)
-  void clearSpread() => $_clearField(14);
-}
-
-/// A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the VRF key `pk` of the server `owner` over `alpha`, which the conversation's chain fixes, and its output `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no server reachable. Kept when the message is deleted; never edited.
+/// A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the VRF key `pk` of the server `owner` over `alpha`, which the author's client fixes, and its output `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no server reachable. Kept when the message is deleted; never edited.
 class FairBlock extends $pb.GeneratedMessage {
   factory FairBlock({
     $core.Iterable<$core.int>? nullFields,
     $fixnum.Int64? v,
     $fixnum.Int64? derive,
     $core.String? owner,
-    $fixnum.Int64? n,
     $core.List<$core.int>? pk,
     $core.String? alpha,
     $core.List<$core.int>? beta,
@@ -15139,7 +15058,6 @@ class FairBlock extends $pb.GeneratedMessage {
     if (v != null) result.v = v;
     if (derive != null) result.derive = derive;
     if (owner != null) result.owner = owner;
-    if (n != null) result.n = n;
     if (pk != null) result.pk = pk;
     if (alpha != null) result.alpha = alpha;
     if (beta != null) result.beta = beta;
@@ -15165,7 +15083,6 @@ class FairBlock extends $pb.GeneratedMessage {
     ..aInt64(3, _omitFieldNames ? '' : 'v')
     ..aInt64(4, _omitFieldNames ? '' : 'derive')
     ..aOS(5, _omitFieldNames ? '' : 'owner')
-    ..aInt64(6, _omitFieldNames ? '' : 'n')
     ..a<$core.List<$core.int>>(
         7, _omitFieldNames ? '' : 'pk', $pb.PbFieldType.OY)
     ..aOS(8, _omitFieldNames ? '' : 'alpha')
@@ -15226,57 +15143,48 @@ class FairBlock extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearOwner() => $_clearField(5);
 
-  @$pb.TagNumber(6)
-  $fixnum.Int64 get n => $_getI64(4);
-  @$pb.TagNumber(6)
-  set n($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(6)
-  $core.bool hasN() => $_has(4);
-  @$pb.TagNumber(6)
-  void clearN() => $_clearField(6);
-
   @$pb.TagNumber(7)
-  $core.List<$core.int> get pk => $_getN(5);
+  $core.List<$core.int> get pk => $_getN(4);
   @$pb.TagNumber(7)
-  set pk($core.List<$core.int> value) => $_setBytes(5, value);
+  set pk($core.List<$core.int> value) => $_setBytes(4, value);
   @$pb.TagNumber(7)
-  $core.bool hasPk() => $_has(5);
+  $core.bool hasPk() => $_has(4);
   @$pb.TagNumber(7)
   void clearPk() => $_clearField(7);
 
   @$pb.TagNumber(8)
-  $core.String get alpha => $_getSZ(6);
+  $core.String get alpha => $_getSZ(5);
   @$pb.TagNumber(8)
-  set alpha($core.String value) => $_setString(6, value);
+  set alpha($core.String value) => $_setString(5, value);
   @$pb.TagNumber(8)
-  $core.bool hasAlpha() => $_has(6);
+  $core.bool hasAlpha() => $_has(5);
   @$pb.TagNumber(8)
   void clearAlpha() => $_clearField(8);
 
   @$pb.TagNumber(9)
-  $core.List<$core.int> get beta => $_getN(7);
+  $core.List<$core.int> get beta => $_getN(6);
   @$pb.TagNumber(9)
-  set beta($core.List<$core.int> value) => $_setBytes(7, value);
+  set beta($core.List<$core.int> value) => $_setBytes(6, value);
   @$pb.TagNumber(9)
-  $core.bool hasBeta() => $_has(7);
+  $core.bool hasBeta() => $_has(6);
   @$pb.TagNumber(9)
   void clearBeta() => $_clearField(9);
 
   @$pb.TagNumber(10)
-  $core.List<$core.int> get proof => $_getN(8);
+  $core.List<$core.int> get proof => $_getN(7);
   @$pb.TagNumber(10)
-  set proof($core.List<$core.int> value) => $_setBytes(8, value);
+  set proof($core.List<$core.int> value) => $_setBytes(7, value);
   @$pb.TagNumber(10)
-  $core.bool hasProof() => $_has(8);
+  $core.bool hasProof() => $_has(7);
   @$pb.TagNumber(10)
   void clearProof() => $_clearField(10);
 
   @$pb.TagNumber(12)
-  $fixnum.Int64 get t => $_getI64(9);
+  $fixnum.Int64 get t => $_getI64(8);
   @$pb.TagNumber(12)
-  set t($fixnum.Int64 value) => $_setInt64(9, value);
+  set t($fixnum.Int64 value) => $_setInt64(8, value);
   @$pb.TagNumber(12)
-  $core.bool hasT() => $_has(9);
+  $core.bool hasT() => $_has(8);
   @$pb.TagNumber(12)
   void clearT() => $_clearField(12);
 }
@@ -22256,7 +22164,7 @@ class ScheduledItem extends $pb.GeneratedMessage {
   void clearWatchAccountId() => $_clearField(15);
 }
 
-/// A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.
+/// A new message. It needs at least one of text, a file, a card, a form, or `sealed`.
 class MessageInput extends $pb.GeneratedMessage {
   factory MessageInput({
     $core.Iterable<$core.int>? emptyFields,
@@ -22271,7 +22179,6 @@ class MessageInput extends $pb.GeneratedMessage {
     SealedPayload? sealed,
     $core.bool? quiet,
     $core.bool? action,
-    ChanceInput? chance,
     $core.String? timeZone,
     $core.Iterable<InstantHint>? instantHints,
     $core.Iterable<ObjectHint>? objectHints,
@@ -22290,7 +22197,6 @@ class MessageInput extends $pb.GeneratedMessage {
     if (sealed != null) result.sealed = sealed;
     if (quiet != null) result.quiet = quiet;
     if (action != null) result.action = action;
-    if (chance != null) result.chance = chance;
     if (timeZone != null) result.timeZone = timeZone;
     if (instantHints != null) result.instantHints.addAll(instantHints);
     if (objectHints != null) result.objectHints.addAll(objectHints);
@@ -22330,8 +22236,6 @@ class MessageInput extends $pb.GeneratedMessage {
         subBuilder: SealedPayload.$_createMessage)
     ..aOB(11, _omitFieldNames ? '' : 'quiet')
     ..aOB(12, _omitFieldNames ? '' : 'action')
-    ..aOM<ChanceInput>(13, _omitFieldNames ? '' : 'chance',
-        subBuilder: ChanceInput.$_createMessage)
     ..aOS(14, _omitFieldNames ? '' : 'timeZone')
     ..pPM<InstantHint>(15, _omitFieldNames ? '' : 'instantHints',
         subBuilder: InstantHint.$_createMessage)
@@ -22452,38 +22356,27 @@ class MessageInput extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   void clearAction() => $_clearField(12);
 
-  @$pb.TagNumber(13)
-  ChanceInput get chance => $_getN(12);
-  @$pb.TagNumber(13)
-  set chance(ChanceInput value) => $_setField(13, value);
-  @$pb.TagNumber(13)
-  $core.bool hasChance() => $_has(12);
-  @$pb.TagNumber(13)
-  void clearChance() => $_clearField(13);
-  @$pb.TagNumber(13)
-  ChanceInput ensureChance() => $_ensure(12);
-
   @$pb.TagNumber(14)
-  $core.String get timeZone => $_getSZ(13);
+  $core.String get timeZone => $_getSZ(12);
   @$pb.TagNumber(14)
-  set timeZone($core.String value) => $_setString(13, value);
+  set timeZone($core.String value) => $_setString(12, value);
   @$pb.TagNumber(14)
-  $core.bool hasTimeZone() => $_has(13);
+  $core.bool hasTimeZone() => $_has(12);
   @$pb.TagNumber(14)
   void clearTimeZone() => $_clearField(14);
 
   @$pb.TagNumber(15)
-  $pb.PbList<InstantHint> get instantHints => $_getList(14);
+  $pb.PbList<InstantHint> get instantHints => $_getList(13);
 
   @$pb.TagNumber(16)
-  $pb.PbList<ObjectHint> get objectHints => $_getList(15);
+  $pb.PbList<ObjectHint> get objectHints => $_getList(14);
 
   @$pb.TagNumber(17)
-  $fixnum.Int64 get drawT => $_getI64(16);
+  $fixnum.Int64 get drawT => $_getI64(15);
   @$pb.TagNumber(17)
-  set drawT($fixnum.Int64 value) => $_setInt64(16, value);
+  set drawT($fixnum.Int64 value) => $_setInt64(15, value);
   @$pb.TagNumber(17)
-  $core.bool hasDrawT() => $_has(16);
+  $core.bool hasDrawT() => $_has(15);
   @$pb.TagNumber(17)
   void clearDrawT() => $_clearField(17);
 }
@@ -22670,119 +22563,6 @@ class FormInput extends $pb.GeneratedMessage {
   $core.bool hasClosesAt() => $_has(12);
   @$pb.TagNumber(13)
   void clearClosesAt() => $_clearField(13);
-}
-
-/// Asks the server to draw a result, which becomes the message's `chance` and `fallback`. People only; refused in a sealed chat. A roll of dice is no chance result: `/roll` and `/dice` are the dice module's commands, run with `runCommand`.
-class ChanceInput extends $pb.GeneratedMessage {
-  factory ChanceInput({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    ChanceInputKind? kind,
-    $core.Iterable<$core.String>? options,
-    $fixnum.Int64? count,
-    $core.String? deck,
-    $core.String? spread,
-  }) {
-    final result = ChanceInput._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (kind != null) result.kind = kind;
-    if (options != null) result.options.addAll(options);
-    if (count != null) result.count = count;
-    if (deck != null) result.deck = deck;
-    if (spread != null) result.spread = spread;
-    return result;
-  }
-
-  ChanceInput._();
-
-  factory ChanceInput.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      ChanceInput()..mergeFromBuffer(data, registry);
-  factory ChanceInput.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      ChanceInput()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'ChanceInput',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: ChanceInput.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aE<ChanceInputKind>(3, _omitFieldNames ? '' : 'kind',
-        enumValues: ChanceInputKind.values)
-    ..pPS(5, _omitFieldNames ? '' : 'options')
-    ..aInt64(6, _omitFieldNames ? '' : 'count')
-    ..aOS(7, _omitFieldNames ? '' : 'deck')
-    ..aOS(8, _omitFieldNames ? '' : 'spread')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ChanceInput clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ChanceInput copyWith(void Function(ChanceInput) updates) =>
-      super.copyWith((message) => updates(message as ChanceInput))
-          as ChanceInput;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use ChanceInput() / ChanceInput.new instead')
-  static ChanceInput create() => ChanceInput._();
-  static $pb.GeneratedMessage $_createMessage() => ChanceInput._();
-  @$core.override
-  ChanceInput createEmptyInstance() => ChanceInput._();
-  @$core.pragma('dart2js:noInline')
-  static ChanceInput getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ChanceInput>(
-          ChanceInput.$_createMessage);
-  static ChanceInput? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  ChanceInputKind get kind => $_getN(2);
-  @$pb.TagNumber(3)
-  set kind(ChanceInputKind value) => $_setField(3, value);
-  @$pb.TagNumber(3)
-  $core.bool hasKind() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearKind() => $_clearField(3);
-
-  @$pb.TagNumber(5)
-  $pb.PbList<$core.String> get options => $_getList(3);
-
-  @$pb.TagNumber(6)
-  $fixnum.Int64 get count => $_getI64(4);
-  @$pb.TagNumber(6)
-  set count($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(6)
-  $core.bool hasCount() => $_has(4);
-  @$pb.TagNumber(6)
-  void clearCount() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $core.String get deck => $_getSZ(5);
-  @$pb.TagNumber(7)
-  set deck($core.String value) => $_setString(5, value);
-  @$pb.TagNumber(7)
-  $core.bool hasDeck() => $_has(5);
-  @$pb.TagNumber(7)
-  void clearDeck() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $core.String get spread => $_getSZ(6);
-  @$pb.TagNumber(8)
-  set spread($core.String value) => $_setString(6, value);
-  @$pb.TagNumber(8)
-  $core.bool hasSpread() => $_has(6);
-  @$pb.TagNumber(8)
-  void clearSpread() => $_clearField(8);
 }
 
 /// A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link's text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
@@ -36863,6 +36643,7 @@ class WebhookCard extends $pb.GeneratedMessage {
     CardTheme? theme,
     $core.String? imageUrl,
     $core.String? imagePart,
+    FairMark? fairMark,
   }) {
     final result = WebhookCard._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -36880,6 +36661,7 @@ class WebhookCard extends $pb.GeneratedMessage {
     if (theme != null) result.theme = theme;
     if (imageUrl != null) result.imageUrl = imageUrl;
     if (imagePart != null) result.imagePart = imagePart;
+    if (fairMark != null) result.fairMark = fairMark;
     return result;
   }
 
@@ -36916,6 +36698,8 @@ class WebhookCard extends $pb.GeneratedMessage {
         subBuilder: CardTheme.$_createMessage)
     ..aOS(14, _omitFieldNames ? '' : 'imageUrl')
     ..aOS(15, _omitFieldNames ? '' : 'imagePart')
+    ..aOM<FairMark>(16, _omitFieldNames ? '' : 'fairMark',
+        subBuilder: FairMark.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -37060,6 +36844,17 @@ class WebhookCard extends $pb.GeneratedMessage {
   $core.bool hasImagePart() => $_has(14);
   @$pb.TagNumber(15)
   void clearImagePart() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  FairMark get fairMark => $_getN(15);
+  @$pb.TagNumber(16)
+  set fairMark(FairMark value) => $_setField(16, value);
+  @$pb.TagNumber(16)
+  $core.bool hasFairMark() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearFairMark() => $_clearField(16);
+  @$pb.TagNumber(16)
+  FairMark ensureFairMark() => $_ensure(15);
 }
 
 class WebhookCardAuthor extends $pb.GeneratedMessage {
@@ -70675,6 +70470,373 @@ class DiceRoll extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(4)
   $pb.PbList<DiceRollRow> get rows => $_getList(3);
+}
+
+/// The data of kind `coin_flip`: a coin the server flipped for `/flip`, from the message's draw by yesno(1, 2), yes being heads (FAIR.md section 5a).
+class CoinFlip extends $pb.GeneratedMessage {
+  factory CoinFlip({
+    $core.Iterable<$core.int>? nullFields,
+    CoinFlipOutcome? outcome,
+  }) {
+    final result = CoinFlip._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (outcome != null) result.outcome = outcome;
+    return result;
+  }
+
+  CoinFlip._();
+
+  factory CoinFlip.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CoinFlip()..mergeFromBuffer(data, registry);
+  factory CoinFlip.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CoinFlip()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CoinFlip',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CoinFlip.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aE<CoinFlipOutcome>(3, _omitFieldNames ? '' : 'outcome',
+        enumValues: CoinFlipOutcome.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CoinFlip clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CoinFlip copyWith(void Function(CoinFlip) updates) =>
+      super.copyWith((message) => updates(message as CoinFlip)) as CoinFlip;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CoinFlip() / CoinFlip.new instead')
+  static CoinFlip create() => CoinFlip._();
+  static $pb.GeneratedMessage $_createMessage() => CoinFlip._();
+  @$core.override
+  CoinFlip createEmptyInstance() => CoinFlip._();
+  @$core.pragma('dart2js:noInline')
+  static CoinFlip getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CoinFlip>(CoinFlip.$_createMessage);
+  static CoinFlip? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  CoinFlipOutcome get outcome => $_getN(1);
+  @$pb.TagNumber(3)
+  set outcome(CoinFlipOutcome value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOutcome() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearOutcome() => $_clearField(3);
+}
+
+/// The data of kind `pick`: one of the options the server picked for `/pick`, from the message's draw by pick(n, 1) (FAIR.md section 5a).
+class Pick extends $pb.GeneratedMessage {
+  factory Pick({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<$core.String>? options,
+    $fixnum.Int64? picked,
+  }) {
+    final result = Pick._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (options != null) result.options.addAll(options);
+    if (picked != null) result.picked = picked;
+    return result;
+  }
+
+  Pick._();
+
+  factory Pick.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Pick()..mergeFromBuffer(data, registry);
+  factory Pick.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Pick()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Pick',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Pick.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPS(3, _omitFieldNames ? '' : 'options')
+    ..aInt64(4, _omitFieldNames ? '' : 'picked')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Pick clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Pick copyWith(void Function(Pick) updates) =>
+      super.copyWith((message) => updates(message as Pick)) as Pick;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Pick() / Pick.new instead')
+  static Pick create() => Pick._();
+  static $pb.GeneratedMessage $_createMessage() => Pick._();
+  @$core.override
+  Pick createEmptyInstance() => Pick._();
+  @$core.pragma('dart2js:noInline')
+  static Pick getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Pick>(Pick.$_createMessage);
+  static Pick? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<$core.String> get options => $_getList(2);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get picked => $_getI64(3);
+  @$pb.TagNumber(4)
+  set picked($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPicked() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearPicked() => $_clearField(4);
+}
+
+/// The data of kind `shuffle`: the options in the order the server shuffled them into for `/shuffle`, from the message's draw by shuffle(n) (FAIR.md section 5a).
+class Shuffle extends $pb.GeneratedMessage {
+  factory Shuffle({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<$core.String>? options,
+    $core.Iterable<$fixnum.Int64>? order,
+  }) {
+    final result = Shuffle._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (options != null) result.options.addAll(options);
+    if (order != null) result.order.addAll(order);
+    return result;
+  }
+
+  Shuffle._();
+
+  factory Shuffle.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Shuffle()..mergeFromBuffer(data, registry);
+  factory Shuffle.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Shuffle()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Shuffle',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Shuffle.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPS(3, _omitFieldNames ? '' : 'options')
+    ..p<$fixnum.Int64>(4, _omitFieldNames ? '' : 'order', $pb.PbFieldType.K6)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Shuffle clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Shuffle copyWith(void Function(Shuffle) updates) =>
+      super.copyWith((message) => updates(message as Shuffle)) as Shuffle;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Shuffle() / Shuffle.new instead')
+  static Shuffle create() => Shuffle._();
+  static $pb.GeneratedMessage $_createMessage() => Shuffle._();
+  @$core.override
+  Shuffle createEmptyInstance() => Shuffle._();
+  @$core.pragma('dart2js:noInline')
+  static Shuffle getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Shuffle>(Shuffle.$_createMessage);
+  static Shuffle? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<$core.String> get options => $_getList(2);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<$fixnum.Int64> get order => $_getList(3);
+}
+
+/// The data of kind `card_draw`: cards the server drew for `/draw` or `/mahjongg` from a freshly shuffled deck, none put back, from the message's draw by pick(size, count) and, for a deck with orientation, ints(0, 1, count) (FAIR.md section 5a).
+class CardDraw extends $pb.GeneratedMessage {
+  factory CardDraw({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? deck,
+    $core.Iterable<$core.String>? cards,
+    $core.Iterable<$core.bool>? reversed,
+  }) {
+    final result = CardDraw._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (deck != null) result.deck = deck;
+    if (cards != null) result.cards.addAll(cards);
+    if (reversed != null) result.reversed.addAll(reversed);
+    return result;
+  }
+
+  CardDraw._();
+
+  factory CardDraw.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CardDraw()..mergeFromBuffer(data, registry);
+  factory CardDraw.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CardDraw()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CardDraw',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CardDraw.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'deck')
+    ..pPS(4, _omitFieldNames ? '' : 'cards')
+    ..p<$core.bool>(5, _omitFieldNames ? '' : 'reversed', $pb.PbFieldType.KB)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CardDraw clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CardDraw copyWith(void Function(CardDraw) updates) =>
+      super.copyWith((message) => updates(message as CardDraw)) as CardDraw;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CardDraw() / CardDraw.new instead')
+  static CardDraw create() => CardDraw._();
+  static $pb.GeneratedMessage $_createMessage() => CardDraw._();
+  @$core.override
+  CardDraw createEmptyInstance() => CardDraw._();
+  @$core.pragma('dart2js:noInline')
+  static CardDraw getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CardDraw>(CardDraw.$_createMessage);
+  static CardDraw? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get deck => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set deck($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDeck() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDeck() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<$core.String> get cards => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.bool> get reversed => $_getList(4);
+}
+
+/// The data of kind `tarot_reading`: a tarot reading the server drew for `/tarot`, a card of the tarot deck for each position of a spread, from the message's draw as a `card_draw` of the tarot deck (FAIR.md section 5a).
+class TarotReading extends $pb.GeneratedMessage {
+  factory TarotReading({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? spread,
+    $core.Iterable<$core.String>? cards,
+    $core.Iterable<$core.bool>? reversed,
+  }) {
+    final result = TarotReading._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (spread != null) result.spread = spread;
+    if (cards != null) result.cards.addAll(cards);
+    if (reversed != null) result.reversed.addAll(reversed);
+    return result;
+  }
+
+  TarotReading._();
+
+  factory TarotReading.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TarotReading()..mergeFromBuffer(data, registry);
+  factory TarotReading.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TarotReading()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TarotReading',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: TarotReading.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'spread')
+    ..pPS(4, _omitFieldNames ? '' : 'cards')
+    ..p<$core.bool>(5, _omitFieldNames ? '' : 'reversed', $pb.PbFieldType.KB)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TarotReading clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TarotReading copyWith(void Function(TarotReading) updates) =>
+      super.copyWith((message) => updates(message as TarotReading))
+          as TarotReading;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use TarotReading() / TarotReading.new instead')
+  static TarotReading create() => TarotReading._();
+  static $pb.GeneratedMessage $_createMessage() => TarotReading._();
+  @$core.override
+  TarotReading createEmptyInstance() => TarotReading._();
+  @$core.pragma('dart2js:noInline')
+  static TarotReading getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TarotReading>(
+          TarotReading.$_createMessage);
+  static TarotReading? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get spread => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set spread($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSpread() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSpread() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<$core.String> get cards => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.bool> get reversed => $_getList(4);
 }
 
 const $core.bool _omitFieldNames =

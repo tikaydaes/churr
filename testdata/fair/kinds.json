@@ -1,0 +1,892 @@
+{
+ "description": "The built-in chance kinds under derive 1 (docs/FAIR.md section 5a): each case is a value of a kind drawn from object i of a draw whose output is beta (hex): the primitives it asks, in order (asks), what derive 1 gives for them (results), and the value's data. A verifier asks the primitives the data names of stream(beta, i, ·) and compares every outcome the data shows. invalid: data whose outcome the draw did not give, which every verifier says does not re-derive. Written once by internal/fair (TestKindVectors); read by the modules' tests, e2e/fair.mjs and app/test/core/fair/kinds_test.dart.",
+ "derive": 1,
+ "cases": [
+  {
+   "label": "coin a",
+   "kind": "coin_flip",
+   "beta": "d30f4c035cda72214280320ac68c6cf9045568db7b403c4b00c405c3ae359a51",
+   "i": 0,
+   "asks": [
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 2
+    }
+   ],
+   "results": [
+    {
+     "yes": true
+    }
+   ],
+   "data": {
+    "outcome": "heads"
+   }
+  },
+  {
+   "label": "coin b",
+   "kind": "coin_flip",
+   "beta": "6198cac9bd8333112cd6b85060781ff8f1e01a7b15ea5a52866e299fcba3e772",
+   "i": 0,
+   "asks": [
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 2
+    }
+   ],
+   "results": [
+    {
+     "yes": false
+    }
+   ],
+   "data": {
+    "outcome": "tails"
+   }
+  },
+  {
+   "label": "coin c",
+   "kind": "coin_flip",
+   "beta": "046603ff4add0c6c9eb134cbd9ed19fd9eacbee8c3920547ec4067808989c8d0",
+   "i": 3,
+   "asks": [
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 2
+    }
+   ],
+   "results": [
+    {
+     "yes": false
+    }
+   ],
+   "data": {
+    "outcome": "tails"
+   }
+  },
+  {
+   "label": "pick two",
+   "kind": "pick",
+   "beta": "f2458b28f57e422922bc87d40d18836ff67374c534b4952aa5ffde1ac3fecddd",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 2,
+     "k": 1
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      0
+     ]
+    }
+   ],
+   "data": {
+    "options": [
+     "tea",
+     "coffee"
+    ],
+    "picked": 0
+   }
+  },
+  {
+   "label": "pick five",
+   "kind": "pick",
+   "beta": "09ee1986eb05fe6c09f5f45fd2257bb19e0fd2431f6990f615330904d86cd2c8",
+   "i": 1,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 5,
+     "k": 1
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      0
+     ]
+    }
+   ],
+   "data": {
+    "options": [
+     "tea",
+     "coffee",
+     "water",
+     "juice",
+     "milk"
+    ],
+    "picked": 0
+   }
+  },
+  {
+   "label": "shuffle three",
+   "kind": "shuffle",
+   "beta": "8f2a647d35ee57b5c019e3d4b4df1d21ef057610c14a20a4e2cca210f52d2ea7",
+   "i": 0,
+   "asks": [
+    {
+     "op": "shuffle",
+     "n": 3
+    }
+   ],
+   "results": [
+    {
+     "order": [
+      1,
+      0,
+      2
+     ]
+    }
+   ],
+   "data": {
+    "options": [
+     "tea",
+     "coffee",
+     "water"
+    ],
+    "order": [
+     1,
+     0,
+     2
+    ]
+   }
+  },
+  {
+   "label": "shuffle five",
+   "kind": "shuffle",
+   "beta": "55360477c5a3fe068b40500058105bfe9fa57b02d1ecc39e0a4912ddd413cee2",
+   "i": 2,
+   "asks": [
+    {
+     "op": "shuffle",
+     "n": 5
+    }
+   ],
+   "results": [
+    {
+     "order": [
+      2,
+      4,
+      3,
+      0,
+      1
+     ]
+    }
+   ],
+   "data": {
+    "options": [
+     "tea",
+     "coffee",
+     "water",
+     "juice",
+     "milk"
+    ],
+    "order": [
+     2,
+     4,
+     3,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "label": "draw standard one",
+   "kind": "card_draw",
+   "beta": "3f96eb1f4d9428da9877995ff793556fd8687acf03ddeeb5f53a22841caa7a43",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 52,
+     "k": 1
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      51
+     ]
+    }
+   ],
+   "data": {
+    "deck": "standard",
+    "cards": [
+     "clubs-king"
+    ]
+   }
+  },
+  {
+   "label": "draw standard five",
+   "kind": "card_draw",
+   "beta": "405594bfba1e1a02959337981e1f63f40f96d2be5b409e7c1a8a6f8229a4defa",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 52,
+     "k": 5
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      45,
+      17,
+      49,
+      24,
+      1
+     ]
+    }
+   ],
+   "data": {
+    "deck": "standard",
+    "cards": [
+     "clubs-7",
+     "hearts-5",
+     "clubs-jack",
+     "hearts-queen",
+     "spades-2"
+    ]
+   }
+  },
+  {
+   "label": "draw tarot three",
+   "kind": "card_draw",
+   "beta": "4eb4a1f34ce4226bb235cb55e3763020325e7199c78e3d562d74ffee2fc6504d",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 78,
+     "k": 3
+    },
+    {
+     "op": "ints",
+     "max": 1,
+     "count": 3
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      11,
+      19,
+      63
+     ]
+    },
+    {
+     "values": [
+      1,
+      0,
+      1
+     ]
+    }
+   ],
+   "data": {
+    "deck": "tarot",
+    "cards": [
+     "wands-knight",
+     "cups-6",
+     "major-7"
+    ],
+    "reversed": [
+     true,
+     false,
+     true
+    ]
+   }
+  },
+  {
+   "label": "draw pinochle twelve",
+   "kind": "card_draw",
+   "beta": "694a30f9175e3a55786a683003e4507a8963e4617f50fefa9d30e01b93e6945d",
+   "i": 1,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 48,
+     "k": 12
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      7,
+      31,
+      17,
+      30,
+      33,
+      32,
+      1,
+      2,
+      27,
+      8,
+      18,
+      34
+     ]
+    }
+   ],
+   "data": {
+    "deck": "pinochle",
+    "cards": [
+     "hearts-10",
+     "hearts-10",
+     "diamonds-ace",
+     "hearts-9",
+     "hearts-queen",
+     "hearts-jack",
+     "spades-10",
+     "spades-jack",
+     "spades-queen",
+     "hearts-jack",
+     "clubs-9",
+     "hearts-king"
+    ]
+   }
+  },
+  {
+   "label": "draw hanafuda all",
+   "kind": "card_draw",
+   "beta": "f795a660189734be2695d3289622f994065b23c0098b1b104e7b0bfb1961c31d",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 48,
+     "k": 48
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      12,
+      15,
+      17,
+      18,
+      28,
+      44,
+      37,
+      2,
+      11,
+      22,
+      39,
+      43,
+      27,
+      33,
+      25,
+      29,
+      0,
+      16,
+      3,
+      46,
+      5,
+      31,
+      9,
+      24,
+      7,
+      32,
+      6,
+      10,
+      47,
+      38,
+      30,
+      8,
+      1,
+      14,
+      26,
+      13,
+      42,
+      35,
+      34,
+      45,
+      19,
+      21,
+      40,
+      23,
+      4,
+      20,
+      41,
+      36
+     ]
+    }
+   ],
+   "data": {
+    "deck": "hanafuda",
+    "cards": [
+     "wisteria-animal",
+     "wisteria-chaff2",
+     "iris-ribbon",
+     "iris-chaff1",
+     "pampas-bright",
+     "paulownia-bright",
+     "maple-ribbon",
+     "pine-chaff1",
+     "cherry-chaff2",
+     "peony-chaff1",
+     "maple-chaff2",
+     "willow-chaff1",
+     "clover-chaff2",
+     "chrysanthemum-ribbon",
+     "clover-ribbon",
+     "pampas-animal",
+     "pine-bright",
+     "iris-animal",
+     "pine-chaff2",
+     "paulownia-chaff2",
+     "plum-ribbon",
+     "pampas-chaff2",
+     "cherry-ribbon",
+     "clover-animal",
+     "plum-chaff2",
+     "chrysanthemum-animal",
+     "plum-chaff1",
+     "cherry-chaff1",
+     "paulownia-chaff3",
+     "maple-chaff1",
+     "pampas-chaff1",
+     "cherry-bright",
+     "pine-ribbon",
+     "wisteria-chaff1",
+     "clover-chaff1",
+     "wisteria-ribbon",
+     "willow-ribbon",
+     "chrysanthemum-chaff2",
+     "chrysanthemum-chaff1",
+     "paulownia-chaff1",
+     "iris-chaff2",
+     "peony-ribbon",
+     "willow-bright",
+     "peony-chaff2",
+     "plum-animal",
+     "peony-animal",
+     "willow-animal",
+     "maple-animal"
+    ]
+   }
+  },
+  {
+   "label": "mahjongg thirteen",
+   "kind": "card_draw",
+   "beta": "296f43e02acbb1b8d9e544c8f62b9ef0235e27bb27ee76e0d9f5dde1d5569e17",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 144,
+     "k": 13
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      71,
+      10,
+      60,
+      98,
+      141,
+      67,
+      70,
+      138,
+      74,
+      39,
+      16,
+      92,
+      81
+     ]
+    }
+   ],
+   "data": {
+    "deck": "mahjong",
+    "cards": [
+     "bamboo-9",
+     "bamboo-2",
+     "dots-7",
+     "bamboo-9",
+     "season-summer",
+     "bamboo-5",
+     "bamboo-8",
+     "flower-chrysanthemum",
+     "characters-3",
+     "bamboo-4",
+     "bamboo-8",
+     "bamboo-3",
+     "dots-1"
+    ]
+   }
+  },
+  {
+   "label": "tarot three",
+   "kind": "tarot_reading",
+   "beta": "0e85d927ba8b7fb0ed2335858d227f1a1324e0c5185101aa71142a2c1e7a18cd",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 78,
+     "k": 3
+    },
+    {
+     "op": "ints",
+     "max": 1,
+     "count": 3
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      12,
+      64,
+      71
+     ]
+    },
+    {
+     "values": [
+      1,
+      0,
+      0
+     ]
+    }
+   ],
+   "data": {
+    "spread": "three",
+    "cards": [
+     "wands-queen",
+     "major-8",
+     "major-15"
+    ],
+    "reversed": [
+     true,
+     false,
+     false
+    ]
+   }
+  },
+  {
+   "label": "tarot celtic",
+   "kind": "tarot_reading",
+   "beta": "4a75aa6838e8aed95417854aabad4a97ea047ae3c2bd7d875c8321d5e9550c62",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 78,
+     "k": 10
+    },
+    {
+     "op": "ints",
+     "max": 1,
+     "count": 10
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      48,
+      74,
+      39,
+      16,
+      65,
+      67,
+      61,
+      19,
+      4,
+      6
+     ]
+    },
+    {
+     "values": [
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0
+     ]
+    }
+   ],
+   "data": {
+    "spread": "celtic",
+    "cards": [
+     "pentacles-7",
+     "major-18",
+     "swords-knight",
+     "cups-3",
+     "major-9",
+     "major-11",
+     "major-5",
+     "cups-6",
+     "wands-5",
+     "wands-7"
+    ],
+    "reversed": [
+     false,
+     false,
+     true,
+     false,
+     true,
+     false,
+     false,
+     false,
+     true,
+     false
+    ]
+   }
+  },
+  {
+   "label": "tarot relationship",
+   "kind": "tarot_reading",
+   "beta": "bdc8baa139af69de5d3201121f59b9d17edf029fa0cdd3c8b33f1199a17f6afc",
+   "i": 4,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 78,
+     "k": 7
+    },
+    {
+     "op": "ints",
+     "max": 1,
+     "count": 7
+    }
+   ],
+   "results": [
+    {
+     "picked": [
+      22,
+      77,
+      23,
+      26,
+      25,
+      50,
+      11
+     ]
+    },
+    {
+     "values": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1
+     ]
+    }
+   ],
+   "data": {
+    "spread": "relationship",
+    "cards": [
+     "cups-9",
+     "major-21",
+     "cups-10",
+     "cups-queen",
+     "cups-knight",
+     "pentacles-9",
+     "wands-knight"
+    ],
+    "reversed": [
+     false,
+     false,
+     true,
+     false,
+     false,
+     false,
+     true
+    ]
+   }
+  }
+ ],
+ "invalid": [
+  {
+   "label": "coin turned over",
+   "kind": "coin_flip",
+   "beta": "d30f4c035cda72214280320ac68c6cf9045568db7b403c4b00c405c3ae359a51",
+   "i": 0,
+   "asks": [
+    {
+     "op": "yesno",
+     "num": 1,
+     "den": 2
+    }
+   ],
+   "results": null,
+   "data": {
+    "outcome": "tails"
+   }
+  },
+  {
+   "label": "another option picked",
+   "kind": "pick",
+   "beta": "09ee1986eb05fe6c09f5f45fd2257bb19e0fd2431f6990f615330904d86cd2c8",
+   "i": 1,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 5,
+     "k": 1
+    }
+   ],
+   "results": null,
+   "data": {
+    "options": [
+     "tea",
+     "coffee",
+     "water",
+     "juice",
+     "milk"
+    ],
+    "picked": 1
+   }
+  },
+  {
+   "label": "two places swapped",
+   "kind": "shuffle",
+   "beta": "55360477c5a3fe068b40500058105bfe9fa57b02d1ecc39e0a4912ddd413cee2",
+   "i": 2,
+   "asks": [
+    {
+     "op": "shuffle",
+     "n": 5
+    }
+   ],
+   "results": null,
+   "data": {
+    "options": [
+     "tea",
+     "coffee",
+     "water",
+     "juice",
+     "milk"
+    ],
+    "order": [
+     4,
+     2,
+     3,
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "label": "another card",
+   "kind": "card_draw",
+   "beta": "405594bfba1e1a02959337981e1f63f40f96d2be5b409e7c1a8a6f8229a4defa",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 52,
+     "k": 5
+    }
+   ],
+   "results": null,
+   "data": {
+    "cards": [
+     "spades-ace",
+     "hearts-5",
+     "clubs-jack",
+     "hearts-queen",
+     "spades-2"
+    ],
+    "deck": "standard"
+   }
+  },
+  {
+   "label": "a card turned",
+   "kind": "card_draw",
+   "beta": "4eb4a1f34ce4226bb235cb55e3763020325e7199c78e3d562d74ffee2fc6504d",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 78,
+     "k": 3
+    },
+    {
+     "op": "ints",
+     "max": 1,
+     "count": 3
+    }
+   ],
+   "results": null,
+   "data": {
+    "cards": [
+     "wands-knight",
+     "cups-6",
+     "major-7"
+    ],
+    "deck": "tarot",
+    "reversed": [
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  {
+   "label": "tarot cards in another order",
+   "kind": "tarot_reading",
+   "beta": "0e85d927ba8b7fb0ed2335858d227f1a1324e0c5185101aa71142a2c1e7a18cd",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 78,
+     "k": 3
+    },
+    {
+     "op": "ints",
+     "max": 1,
+     "count": 3
+    }
+   ],
+   "results": null,
+   "data": {
+    "cards": [
+     "major-15",
+     "major-8",
+     "wands-queen"
+    ],
+    "reversed": [
+     true,
+     false,
+     false
+    ],
+    "spread": "three"
+   }
+  },
+  {
+   "label": "the same pick from another object",
+   "kind": "pick",
+   "beta": "09ee1986eb05fe6c09f5f45fd2257bb19e0fd2431f6990f615330904d86cd2c8",
+   "i": 0,
+   "asks": [
+    {
+     "op": "pick",
+     "n": 5,
+     "k": 1
+    }
+   ],
+   "results": null,
+   "data": {
+    "options": [
+     "tea",
+     "coffee",
+     "water",
+     "juice",
+     "milk"
+    ],
+    "picked": 0
+   }
+  }
+ ]
+}

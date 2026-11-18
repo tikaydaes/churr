@@ -1,0 +1,15 @@
+{
+  "kind": "tarot_reading",
+  "level": 1,
+  "about": "The data of kind tarot_reading (docs/FAIR.md section 5a): a card of the tarot deck for each position of a spread, each upright or reversed. Every check of it gives the same answer: valid cases are drawn, invalid ones fall back a step. Go: internal/model (TestChanceKindCases); web: e2e/types.mjs; the app: test/core/types_test.dart.",
+  "valid": [
+    {"name": "three cards", "data": {"spread": "three", "cards": ["major-16", "wands-page", "pentacles-10"], "reversed": [false, true, false]}}
+  ],
+  "invalid": [
+    {"name": "too few cards", "data": {"spread": "three", "cards": ["major-16", "wands-page"], "reversed": [false, true]}},
+    {"name": "a card twice", "data": {"spread": "three", "cards": ["major-16", "major-16", "pentacles-10"], "reversed": [false, true, false]}},
+    {"name": "no orientation", "data": {"spread": "three", "cards": ["major-16", "wands-page", "pentacles-10"]}},
+    {"name": "no such spread", "data": {"spread": "pyramid", "cards": ["major-16", "wands-page", "pentacles-10"], "reversed": [false, true, false]}},
+    {"name": "a card of another deck", "data": {"spread": "three", "cards": ["spades-ace", "wands-page", "pentacles-10"], "reversed": [false, true, false]}}
+  ]
+}

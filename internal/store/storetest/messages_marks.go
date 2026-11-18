@@ -12,8 +12,7 @@ import (
 
 func init() { register("messages_marks", testMessageMarks) }
 
-// testMessageMarks: a /me action and a chance result are stored with the
-// message, survive an edit, and a delete takes the result away (ruling R67).
+// testMessageMarks: a /me action is stored with the message (ruling R67).
 func testMessageMarks(t *testing.T, s store.Store) {
 	ann := newAccount(t, s, "ann", model.RoleOwner)
 	c := newChannel(t, s, "games", false, ann.ID)
@@ -32,22 +31,12 @@ func testMessageMarks(t *testing.T, s store.Store) {
 	got, err := s.Messages().Get(ctx, act.ID)
 	must(t, err)
 	eq(t, "action", got.Action, true)
-	eq(t, "no chance", got.Chance == nil, true)
 
-	flip := model.Message{ConversationID: c.ID, AuthorID: ann.ID, Fallback: "Flipped a coin: tails", Chance: &model.Chance{Kind: model.ChanceFlip, Outcome: "tails"}}
-	post(&flip)
-	got, err = s.Messages().Get(ctx, flip.ID)
+	plain := model.Message{ConversationID: c.ID, AuthorID: ann.ID, Text: "hello"}
+	post(&plain)
+	got, err = s.Messages().Get(ctx, plain.ID)
 	must(t, err)
 	eq(t, "not an action", got.Action, false)
-	eq(t, "chance kept", got.Chance != nil && got.Chance.Valid() && got.Chance.Outcome == "tails", true)
-	edited, err := s.Messages().Edit(ctx, store.MessageEdit{ID: flip.ID, Text: "for first move", Fallback: got.Fallback, KeepVersion: true, By: ann.ID, At: model.Now()})
-	must(t, err)
-	eq(t, "chance after an edit", edited.Chance != nil && edited.Chance.Outcome == "tails", true)
-	_, err = s.Messages().Delete(ctx, flip.ID, ann.ID, model.Now())
-	must(t, err)
-	got, err = s.Messages().Get(ctx, flip.ID)
-	must(t, err)
-	eq(t, "chance gone with the delete", got.Chance == nil, true)
 }
 
 func init() { register("messages_view", testMessageView) }
@@ -85,7 +74,7 @@ func testMessageView(t *testing.T, s store.Store) {
 	eq(t, "the text is the message", got.Text, "Rolled 2d6+3: [4, 2] + 3 = 9")
 	eq(t, "view kept", v != nil && v.Kind == model.KindDiceRoll && v.Level == 1 && v.By == "dice" && sameJSON(v.Data, data), true)
 	eq(t, "its rendition kept", v != nil && v.Alt != nil && v.Alt.Kind == "unknown_later" && v.Alt.Level == 7 && string(v.Alt.Data) == `"AQID_w"`, true)
-	eq(t, "the text is searched", got.SearchText != "" && got.Chance == nil, true)
+	eq(t, "the text is searched", got.SearchText != "", true)
 	edited, err := s.Messages().Edit(ctx, store.MessageEdit{ID: roll.ID, Text: got.Text, Entities: []model.Entity{{Type: model.EntityObject, At: 0, Len: 6,
 		Object: &model.ValueEnvelope{Kind: model.KindDiceRoll, Level: 1, By: "dice", Removed: true}}}, By: ann.ID, At: model.Now()})
 	must(t, err)

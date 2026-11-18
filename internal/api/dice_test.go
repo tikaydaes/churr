@@ -199,5 +199,5 @@ func TestARollIsTextAndView(t *testing.T) {
 	}
 	sam.Refused(400, model.CodeInvalidValue, "POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "1,2,3,4,5,6,7,8,9"})
 	// A roll is no chance result.
-	sam.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll"}})
+	sam.Refused(400, model.CodeInvalidRequest, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll"}})
 }

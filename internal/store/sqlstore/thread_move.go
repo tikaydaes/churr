@@ -130,11 +130,11 @@ func (ms messages) MoveThread(ctx context.Context, mv store.ThreadMove) (store.T
 		}
 		if err := exec(`
 			INSERT INTO messages (id, conversation_id, seq, author_id, text, entities, cards, fallback, via_kind, via_name,
-				via_account_id, via_icon_file_id, quiet, notified_anyway, version, created_at, edited_at, deleted_at, deleted_by, action, chance, view)
-			VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)`,
+				via_account_id, via_icon_file_id, quiet, notified_anyway, version, created_at, edited_at, deleted_at, deleted_by, action, view)
+			VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
 			copyID, D, string(p.AuthorID), p.Text, jsonList(p.Entities), jsonList(mv.CopyCards), p.Fallback, id(via.Kind),
 			id(via.Name), id(via.AccountID), id(via.IconFileID), p.Quiet, false, int64(p.CreatedAt), ms2(p.EditedAt),
-			ms2(p.DeletedAt), id(p.DeletedByID), p.Action, chanceArg(p.Chance), viewArg(p.View)); err != nil {
+			ms2(p.DeletedAt), id(p.DeletedByID), p.Action, viewArg(p.View)); err != nil {
 			return err
 		}
 		for i := range mv.CopyFiles {

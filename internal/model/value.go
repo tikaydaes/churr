@@ -20,10 +20,21 @@ type kindCheck struct {
 // kindChecks are the kinds this server reads. Their levels are the
 // schema's (wirepb holds the two to the same numbers).
 var kindChecks = map[string]kindCheck{
-	KindDiceRoll: {level: 1, valid: func(data json.RawMessage) bool {
-		var r DiceRoll
-		return json.Unmarshal(data, &r) == nil && r.Valid()
-	}},
+	KindDiceRoll:     {level: 1, valid: checkOf[DiceRoll]()},
+	KindCoinFlip:     {level: 1, valid: checkOf[CoinFlip]()},
+	KindPick:         {level: 1, valid: checkOf[Pick]()},
+	KindShuffle:      {level: 1, valid: checkOf[Shuffle]()},
+	KindCardDraw:     {level: 1, valid: checkOf[CardDraw]()},
+	KindTarotReading: {level: 1, valid: checkOf[TarotReading]()},
+}
+
+// checkOf is the check of a kind whose data is T: it reads as T, and holds
+// together by T's own Valid.
+func checkOf[T interface{ Valid() bool }]() func(json.RawMessage) bool {
+	return func(data json.RawMessage) bool {
+		var v T
+		return json.Unmarshal(data, &v) == nil && v.Valid()
+	}
 }
 
 // KindLevels gives the catalogue level of each kind this server checks.

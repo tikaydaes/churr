@@ -1,0 +1,15 @@
+{
+  "kind": "shuffle",
+  "level": 1,
+  "about": "The data of kind shuffle (docs/FAIR.md section 5a): the options in the order the server shuffled them into. Every check of it gives the same answer: valid cases are drawn, invalid ones fall back a step. Go: internal/model (TestChanceKindCases); web: e2e/types.mjs; the app: test/core/types_test.dart.",
+  "valid": [
+    {"name": "three", "data": {"options": ["a", "b", "c"], "order": [2, 0, 1]}},
+    {"name": "unchanged", "data": {"options": ["a", "b"], "order": [0, 1]}}
+  ],
+  "invalid": [
+    {"name": "one twice", "data": {"options": ["a", "b", "c"], "order": [0, 0, 1]}},
+    {"name": "one missing", "data": {"options": ["a", "b", "c"], "order": [0, 1]}},
+    {"name": "past the end", "data": {"options": ["a", "b"], "order": [0, 2]}},
+    {"name": "one option", "data": {"options": ["a"], "order": [0]}}
+  ]
+}

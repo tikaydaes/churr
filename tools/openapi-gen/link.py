@@ -266,7 +266,7 @@ M('Blob', [('id', 'uuid'), ('sha256', 'bytes'), ('size', 'int'), ('media_type', 
 M('Message', [('id', 'uuid'), ('author_id', 'uuid'), ('client_id', 'str'), ('parent_id', 'uuid'), ('quote', 'client:Quote'),
               ('text', 'str'), ('entities', '[#Entity]'), ('files', '[#File]'), ('cards', '[client:Card]'),
               ('form', 'client:Form'), ('fallback', 'str'), ('via', 'client:Via'), ('system', 'value'),
-              ('sealed', 'client:SealedPayload'), ('quiet', 'bool'), ('action', 'bool'), ('chance', 'client:Chance'),
+              ('sealed', 'client:SealedPayload'), ('quiet', 'bool'), ('action', 'bool'),
               ('created_at', 'time'), ('edited_at', 'time'), ('view', 'client:ValueEnvelope'),
               ('fair', 'client:FairBlock')],
   'A message as it travels between servers (section 11, "A message on the wire").')

@@ -50,7 +50,7 @@ const (
 // The kinds of the catalogue (docs/DESIGN-MODULES.md section 4.1) the
 // server makes.
 const (
-	KindDiceRoll = "dice_roll" // data: DiceRoll
+	KindDiceRoll = "dice_roll" // data: DiceRoll; the others: kinds_chance.go
 )
 
 // ValueEnvelope is a value of the catalogue (schema ValueEnvelope): on a
@@ -271,6 +271,37 @@ type Card struct {
 	// Theme is set on the card the server attaches for a link to one of
 	// its own themes (a theme card); such a card has a PreviewURL too.
 	Theme *CardTheme `json:"theme,omitempty"`
+	// FairMark is the card's shield (schema FairMark): which outcomes of
+	// the message's draw it stands on. It carries no verdict: each client
+	// draws one from its own check.
+	FairMark *FairMark `json:"fair_mark,omitempty"`
+}
+
+// FairMark is the shield of a card (docs/DESIGN-FAIR.md section 13): the
+// object indices of the message's draw whose values the card stands on; none
+// is every value of the message that took chance. It says nothing of whether
+// they check out, and nothing in it can: a client works that out itself.
+type FairMark struct {
+	Objects []int `json:"objects,omitempty"`
+}
+
+// The limits of a shield: how many objects it names, and the highest index.
+const (
+	MaxFairMarkObjects = 20
+	MaxFairMarkObject  = 99
+)
+
+// Valid reports whether a shield names objects a message's draw may have.
+func (f FairMark) Valid() bool {
+	if len(f.Objects) > MaxFairMarkObjects {
+		return false
+	}
+	for _, i := range f.Objects {
+		if i < 0 || i > MaxFairMarkObject {
+			return false
+		}
+	}
+	return true
 }
 
 // CardColors are the colours a card may have.
@@ -314,10 +345,9 @@ type SealedPayload struct {
 // docs/MESSAGE-FORMAT.md defines, with the stored columns that are not sent.
 //
 // Action marks text typed with /me: it is drawn after the author's name.
-// Chance is a result the server drew for /flip, /pick, /shuffle, /draw or
-// /tarot, which no edit changes (ruling R67). View is the message as a value
-// of the catalogue, such as a roll: Text is the message, in words, and the
-// view is how a client that knows the kind draws it.
+// View is the message as a value of the catalogue, such as a roll or a coin
+// flipped: Text is the message, in words, and the view is how a client that
+// knows the kind draws it. No edit changes it (ruling R67).
 type Message struct {
 	ID             MessageID      `json:"id"`
 	ConversationID ConversationID `json:"conversation_id"`
@@ -337,7 +367,6 @@ type Message struct {
 	Cards          []Card         `json:"cards,omitempty"`
 	Form           *Form          `json:"form,omitempty"`
 	Action         bool           `json:"action,omitempty"`
-	Chance         *Chance        `json:"chance,omitempty"`
 	View           *ValueEnvelope `json:"view,omitempty"`
 	Fair           *FairBlock     `json:"fair,omitempty"`
 	Fallback       string         `json:"fallback,omitempty"`

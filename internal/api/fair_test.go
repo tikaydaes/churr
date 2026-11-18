@@ -196,3 +196,47 @@ func TestAProofMovedToAnotherMessageFails(t *testing.T) {
 		t.Fatal("a proof moved to another message checked out")
 	}
 }
+
+// Every chance command posts a message whose fair block checks out under the
+// server's published key, whose view says which share of the draw it took
+// and what it asked, and whose outcome is what derive 1 gives for it from
+// that share (docs/FAIR.md section 5a): /roll, /dice, /flip, /pick,
+// /shuffle, /draw, /tarot, /mahjongg and /mahjong.
+func TestEveryChanceCommandIsProved(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner, sam := ts.Owner, ts.Member("sam")
+	room := owner.Channel("table", false, sam)
+	for _, c := range []struct{ name, text, kind, by string }{
+		{"roll", "2d6+3", model.KindDiceRoll, "dice"}, {"dice", "4", model.KindDiceRoll, "dice"},
+		{"flip", "", model.KindCoinFlip, "dice"},
+		{"pick", "tea | coffee | water", model.KindPick, "choose"}, {"shuffle", "a | b | c | d", model.KindShuffle, "choose"},
+		{"draw", "5", model.KindCardDraw, "cards"}, {"draw", "3 tarot", model.KindCardDraw, "cards"},
+		{"tarot", "celtic", model.KindTarotReading, "cards"},
+		{"mahjongg", "13", model.KindCardDraw, "cards"}, {"mahjong", "", model.KindCardDraw, "cards"},
+	} {
+		m := rolled(sam, room, c.name, c.text)
+		b := blockOf(t, m)
+		var created model.Time
+		remarshal(t, m["created_at"], &created)
+		if err := fair.CheckBlock(&b, ts.Server.Config.Hostname, m["client_id"].(string), created, fair.Window, keysOf(ts)); err != nil {
+			t.Fatalf("/%s %s: the block does not check out: %v", c.name, c.text, err)
+		}
+		var view model.ValueEnvelope
+		remarshal(t, m["view"], &view)
+		if view.Kind != c.kind || view.By != c.by || view.Draw == nil || view.Draw.I != 0 || m["text"] == "" {
+			t.Fatalf("/%s %s: %v", c.name, c.text, m)
+		}
+		if ok, err := fair.Rederive(view.Kind, view.Data, b.Beta, uint32(view.Draw.I)); !ok || err != nil {
+			t.Fatalf("/%s %s: the outcome is not the draw's (%v): %s", c.name, c.text, err, view.Data)
+		}
+		// What the value says it asked is what its kind asks of its data.
+		asks, _ := fair.KindAsks(view.Kind, view.Data)
+		if view.Kind != model.KindDiceRoll {
+			a, _ := json.Marshal(asks)
+			w, _ := json.Marshal(view.Draw.Primitives)
+			if !bytes.Equal(a, w) {
+				t.Fatalf("/%s %s: recorded %s, asks %s", c.name, c.text, w, a)
+			}
+		}
+	}
+}

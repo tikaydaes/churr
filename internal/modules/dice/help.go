@@ -31,3 +31,13 @@ var diceHelp = model.CommandHelp{
 	Where: "Channels and chats. Typed in a thread, the roll goes in the thread. Not in sealed chats.",
 	Who:   "Anyone who can post. Not bots.",
 }
+
+var flipHelp = model.CommandHelp{
+	Description: "Flips a coin, flipped by the server: heads or tails, the same for everyone and impossible to edit. The server proves the flip, and the shield beside it says whether this app checked the proof. Pressing the result spins it again, but only for show: the outcome does not change.",
+	Examples: []model.CommandExample{
+		{Type: "/{cmd}", Then: "Posts heads or tails."},
+		{Type: "/{cmd} (in a thread)", Then: "Flips in the thread, so the answer stays with the question."},
+	},
+	Where: "Channels and chats. Not in sealed chats.",
+	Who:   "Anyone who can post. Not bots.",
+}

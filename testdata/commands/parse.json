@@ -1,21 +1,13 @@
 {
- "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, a bot's or a module's command, or a message: /roll and /dice are the dice module's, which the server reads), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; args is the text after the name as typed; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json. A case may name hidden: the built-ins hidden for the reader there (by the rule of hidden_cases), which the grammar does not read, so the text goes on as a saved reply, bot command or message. hidden_cases are that one rule (ruling R72): given what the command list holds for a reader (name and kind) and whether the reader is an admin, the built-in names that are hidden: every built-in or alias that a listed command of another kind has the name of, except the protected ones (every built-in not marked replaceable in commands.json) and their aliases, which are never hidden that way; and the admin-only ones and their aliases for anyone else. literal_cases are the literal slash (ruling R74): text that starts with whitespace and then / is never a command; it is sent as a message with that whitespace dropped (literal is what is sent), and anything else gives null (it is read as usual: a command if it starts with /, a message otherwise). Text in a code span or block never starts with /, so it is never a command either. mute_max_seconds is the longest time-out /mute takes, the server's own limit (docs/FEATURES.md section 15); a longer one is the error mute_too_long.",
+ "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, a bot's or a module's command, or a message: /roll, /dice and /flip are the dice module's, /pick and /shuffle the choose module's, /draw, /tarot and /mahjongg the cards module's, which the server reads), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; args is the text after the name as typed; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json. A case may name hidden: the built-ins hidden for the reader there (by the rule of hidden_cases), which the grammar does not read, so the text goes on as a saved reply, bot command or message. hidden_cases are that one rule (ruling R72): given what the command list holds for a reader (name and kind) and whether the reader is an admin, the built-in names that are hidden: every built-in or alias that a listed command of another kind has the name of, except the protected ones (every built-in not marked replaceable in commands.json) and their aliases, which are never hidden that way; and the admin-only ones and their aliases for anyone else. literal_cases are the literal slash (ruling R74): text that starts with whitespace and then / is never a command; it is sent as a message with that whitespace dropped (literal is what is sent), and anything else gives null (it is read as usual: a command if it starts with /, a message otherwise). Text in a code span or block never starts with /, so it is never a command either. mute_max_seconds is the longest time-out /mute takes, the server's own limit (docs/FEATURES.md section 15); a longer one is the error mute_too_long.",
  "mute_max_seconds": 2419200,
  "errors": [
   "needs_text",
   "takes_nothing",
-  "needs_options",
-  "too_many_options",
-  "empty_option",
-  "bad_draw",
-  "unknown_deck",
-  "too_many_cards",
   "needs_channel",
   "needs_person",
   "bad_person",
   "bad_duration",
-  "unknown_spread",
-  "bad_count",
   "bad_broadcast_time",
   "mute_too_long"
  ],
@@ -133,167 +125,19 @@
   },
   {
    "text": "/flip",
-   "want": {
-    "name": "flip"
-   }
-  },
-  {
-   "text": "/flip a coin",
-   "want": {
-    "name": "flip",
-    "error": "takes_nothing"
-   }
+   "want": null
   },
   {
    "text": "/pick tea | coffee | water",
-   "want": {
-    "name": "pick",
-    "options": [
-     "tea",
-     "coffee",
-     "water"
-    ]
-   }
-  },
-  {
-   "text": "/pick tea|coffee",
-   "want": {
-    "name": "pick",
-    "options": [
-     "tea",
-     "coffee"
-    ]
-   }
-  },
-  {
-   "text": "/pick tea",
-   "want": {
-    "name": "pick",
-    "error": "needs_options"
-   }
-  },
-  {
-   "text": "/pick",
-   "want": {
-    "name": "pick",
-    "error": "needs_options"
-   }
-  },
-  {
-   "text": "/pick tea | | coffee",
-   "want": {
-    "name": "pick",
-    "error": "empty_option"
-   }
+   "want": null
   },
   {
    "text": "/shuffle 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20",
-   "want": {
-    "name": "shuffle",
-    "error": "too_many_options"
-   }
-  },
-  {
-   "text": "/shuffle a | b | c",
-   "want": {
-    "name": "shuffle",
-    "options": [
-     "a",
-     "b",
-     "c"
-    ]
-   }
+   "want": null
   },
   {
    "text": "/draw",
-   "want": {
-    "name": "draw",
-    "count": 1,
-    "deck": "standard"
-   }
-  },
-  {
-   "text": "/draw 5",
-   "want": {
-    "name": "draw",
-    "count": 5,
-    "deck": "standard"
-   }
-  },
-  {
-   "text": "/draw 3 tarot",
-   "want": {
-    "name": "draw",
-    "count": 3,
-    "deck": "tarot"
-   }
-  },
-  {
-   "text": "/draw 3 Tarot",
-   "want": {
-    "name": "draw",
-    "count": 3,
-    "deck": "tarot"
-   }
-  },
-  {
-   "text": "/draw 2 54",
-   "want": {
-    "name": "draw",
-    "count": 2,
-    "deck": "jokers"
-   }
-  },
-  {
-   "text": "/draw hanafuda",
-   "want": {
-    "name": "draw",
-    "count": 1,
-    "deck": "hanafuda"
-   }
-  },
-  {
-   "text": "/draw 14 mahjong",
-   "want": {
-    "name": "draw",
-    "count": 14,
-    "deck": "mahjong"
-   }
-  },
-  {
-   "text": "/draw 3 uno",
-   "want": {
-    "name": "draw",
-    "error": "unknown_deck"
-   }
-  },
-  {
-   "text": "/draw 33 piquet",
-   "want": {
-    "name": "draw",
-    "error": "too_many_cards"
-   }
-  },
-  {
-   "text": "/draw 0",
-   "want": {
-    "name": "draw",
-    "error": "bad_draw"
-   }
-  },
-  {
-   "text": "/draw 3 tarot please",
-   "want": {
-    "name": "draw",
-    "error": "bad_draw"
-   }
-  },
-  {
-   "text": "/draw tarot 3",
-   "want": {
-    "name": "draw",
-    "error": "bad_draw"
-   }
+   "want": null
   },
   {
    "text": "/join <#0193a0c7-1234-7abc-8def-0123456789ab>",
@@ -809,109 +653,14 @@
   },
   {
    "text": "/tarot",
-   "want": {
-    "name": "tarot",
-    "spread": "three"
-   }
-  },
-  {
-   "text": "/tarot celtic cross",
-   "want": {
-    "name": "tarot",
-    "error": "unknown_spread"
-   }
-  },
-  {
-   "text": "/tarot Celtic-Cross",
-   "want": {
-    "name": "tarot",
-    "spread": "celtic"
-   }
-  },
-  {
-   "text": "/tarot horseshoe",
-   "want": {
-    "name": "tarot",
-    "spread": "horseshoe"
-   }
-  },
-  {
-   "text": "/tarot love",
-   "want": {
-    "name": "tarot",
-    "spread": "relationship"
-   }
-  },
-  {
-   "text": "/tarot pyramid",
-   "want": {
-    "name": "tarot",
-    "error": "unknown_spread"
-   }
+   "want": null
   },
   {
    "text": "/mahjongg",
-   "want": {
-    "name": "mahjongg",
-    "count": 1
-   }
-  },
-  {
-   "text": "/mahjongg 14",
-   "want": {
-    "name": "mahjongg",
-    "count": 14
-   }
+   "want": null
   },
   {
    "text": "/mahjong 13",
-   "want": {
-    "name": "mahjongg",
-    "count": 13
-   }
-  },
-  {
-   "text": "/mahjongg 145",
-   "want": {
-    "name": "mahjongg",
-    "error": "bad_count"
-   }
-  },
-  {
-   "text": "/mahjongg 0",
-   "want": {
-    "name": "mahjongg",
-    "error": "bad_count"
-   }
-  },
-  {
-   "text": "/mahjongg lots",
-   "want": {
-    "name": "mahjongg",
-    "error": "bad_count"
-   }
-  },
-  {
-   "text": "/draw 6 shoe6",
-   "want": {
-    "name": "draw",
-    "count": 6,
-    "deck": "shoe6"
-   }
-  },
-  {
-   "text": "/draw 2 55",
-   "want": {
-    "name": "draw",
-    "count": 2,
-    "deck": "jokers3"
-   }
-  },
-  {
-   "text": "/tarot celtic",
-   "hidden": [
-    "tarot"
-   ],
    "want": null
   },
   {
@@ -1476,7 +1225,6 @@
     "amsg",
     "broadcast",
     "exile",
-    "flip",
     "kline",
     "unexile",
     "unkline"
@@ -1623,10 +1371,6 @@
    ],
    "admin": true,
    "hidden": [
-    "draw",
-    "mahjong",
-    "pick",
-    "shuffle",
     "unflip"
    ]
   },

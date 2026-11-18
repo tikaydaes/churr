@@ -656,6 +656,8 @@ S('Card', 'A fixed layout for structured information. A card must have at least 
    'preview_url?': ('uri',
                     'Set by the server on a link preview: the address it previews. A card without it was posted by a '
                     'bot or webhook.'),
+   'fair_mark?': ('#FairMark', 'The shield of the card: which outcomes of the message\'s draw it stands on. The '
+                               'client draws its verdict from its own check, never from the card.'),
    'theme?': ('#CardTheme',
               'Set by the server on a theme card: the card for a link to one of its own themes '
               '(`{origin}/themes/{id}`). It also has `preview_url` and is removed like a link preview. A client '
@@ -833,8 +835,47 @@ S('DiceRoll', 'The data of kind `dice_roll`: dice the server rolled (FEATURES.md
    'dice': ('str', 'The roll as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`), its rows separated by `, `.'),
    'rows': ('[#DiceRollRow]', 'Its rows, in order (1 to 8), each with its dice and total.')})
 
+S('CoinFlip', 'The data of kind `coin_flip`: a coin the server flipped for `/flip`, from the message\'s draw by '
+              'yesno(1, 2), yes being heads (FAIR.md section 5a).', {
+   'outcome': 'enum:heads|tails'})
+
+S('Pick', 'The data of kind `pick`: one of the options the server picked for `/pick`, from the message\'s draw by '
+          'pick(n, 1) (FAIR.md section 5a).', {
+   'options': ('[str]', 'The options as given, trimmed: 2 to 20, each one line of at most 200 characters.'),
+   'picked': ('int', 'The position in `options` of the one picked.')})
+
+S('Shuffle', 'The data of kind `shuffle`: the options in the order the server shuffled them into for `/shuffle`, from '
+             'the message\'s draw by shuffle(n) (FAIR.md section 5a).', {
+   'options': ('[str]', 'The options as given, trimmed: 2 to 20, each one line of at most 200 characters.'),
+   'order': ('[int]', 'The positions in `options`, in the order the shuffle put them.')})
+
+S('CardDraw', 'The data of kind `card_draw`: cards the server drew for `/draw` or `/mahjongg` from a freshly shuffled '
+              'deck, none put back, from the message\'s draw by pick(size, count) and, for a deck with orientation, '
+              'ints(0, 1, count) (FAIR.md section 5a).', {
+   'deck': ('str', 'The name of the deck (testdata/commands/decks.json): its cards, in their order there, are the '
+                   'positions the draw picked.'),
+   'cards': ('[str]', 'The cards drawn, in the order drawn, by code.'),
+   'reversed?': ('[bool]', 'For a deck with orientation (tarot), and only then: whether each card came up reversed.')})
+
+S('TarotReading', 'The data of kind `tarot_reading`: a tarot reading the server drew for `/tarot`, a card of the '
+                  'tarot deck for each position of a spread, from the message\'s draw as a `card_draw` of the tarot '
+                  'deck (FAIR.md section 5a).', {
+   'spread': ('str', 'The spread, by name (testdata/commands/tarot.json).'),
+   'cards': ('[str]', 'The card in each position of the spread, in order, by code.'),
+   'reversed': ('[bool]', 'Whether each card came up reversed.')})
+
+S('FairMark', 'The shield of a card (DESIGN-FAIR.md section 13): it names which outcomes of the message\'s draw '
+              '(`fair`) the card stands on, and carries no verdict. Each client draws it from its own check of the '
+              'proof and of every outcome named: a green shield when they all check out, a grey one when the '
+              'drawing server\'s key history is not known here, a warning mark when a check fails. No other part of '
+              'a card may draw that shield.', {
+   'objects?': ('[int]', "The object indices of the message's draw (FAIR.md section 3) whose values the card stands "
+                         "on, 0 to 99, at most 20; none means every value of the message that took chance.",
+                {'maxItems': 20})})
+
 # kind: (the schema of its data, the lowest catalogue level that reads it in full)
-KINDS = {'dice_roll': ('DiceRoll', 1)}
+KINDS = {'dice_roll': ('DiceRoll', 1), 'coin_flip': ('CoinFlip', 1), 'pick': ('Pick', 1), 'shuffle': ('Shuffle', 1),
+         'card_draw': ('CardDraw', 1), 'tarot_reading': ('TarotReading', 1)}
 
 S('FairPrimitive', 'One declared outcome a module asked of the message\'s draw (FAIR.md section 4): its `op` and inputs, '
                    'as derive 1 reads them. Fields an op does not use are left out; a missing number is 0.', {
@@ -879,36 +920,17 @@ S('ValueEnvelope', 'A value of the catalogue (DESIGN-MODULES.md section 4.1): on
    'draw?': ('#ValueDraw', "The value's chance came from the message's draw (`fair`): which share of it, and what was asked.")})
 
 S('FairBlock', "A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the "
-               "VRF key `pk` of the server `owner` over `alpha`, which the conversation's chain fixes, and its output "
+               "VRF key `pk` of the server `owner` over `alpha`, which the author's client fixes, and its output "
                "`beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no "
                "server reachable. Kept when the message is deleted; never edited.", {
    'v': ('int', 'The layout of this block: 1.'),
    'derive': ('int', 'The rule outcomes are derived by: 1.'),
    'owner': ('str', 'The server that drew, by name.'),
-   'n': ('int', "The draw's number in its chain, from 1."),
    'pk': ('b64', "The owner's VRF public key, 33 bytes compressed: its key in force when the message was made."),
    'alpha': ('str', 'What was proved, as text: `t` in decimal, `|`, and the message\'s `client_id` in lowercase, hyphenated (`1763456789|0193a8ff-7c2e-7b1a-9f3e-2d4c5b6a7e80`); the VRF is given its UTF-8 bytes (FAIR.md section 6).'),
    'beta': ('b64', "The proof's output, 32 bytes."),
    'proof': ('b64', 'The ECVRF proof, 81 bytes.'),
    't': ('int', "The second, in Unix time, the author's client gave the draw (`draw_t`); with the message's `client_id` it is the input `alpha` is made from.")})
-
-S('Chance', 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message\'s text and `view`.', {
-   'kind': 'enum:flip|pick|shuffle|draw|tarot',
-   'outcome?': ('enum:heads|tails', 'A flip.'),
-   'options?': ('[str]', 'A pick or shuffle: the options as given.'),
-   'picked?': ('int', 'A pick: the position in `options` of the one picked.'),
-   'order?': ('[int]', 'A shuffle: the positions in `options`, in the order the shuffle put them.'),
-   'deck?': ('str', 'A draw or tarot reading: the name of the deck (testdata/commands/decks.json).'),
-   'cards?': ('[str]', 'A draw: the cards drawn, in order, by code. A tarot reading: the card in each position of the spread.'),
-   'reversed?': ('[bool]', 'A draw from a deck with orientation, and a tarot reading: whether each card came up reversed.'),
-   'spread?': ('str', 'A tarot reading: the spread (testdata/commands/tarot.json).')})
-
-S('ChanceInput', 'Asks the server to draw a result, which becomes the message\'s `chance` and `fallback`. People only; refused in a sealed chat. A roll of dice is no chance result: `/roll` and `/dice` are the dice module\'s commands, run with `runCommand`.', {
-   'kind': 'enum:flip|pick|shuffle|draw|tarot',
-   'options?': ('[str]', 'A pick or shuffle: 2 to 20 options of up to 200 characters.', {'maxItems': 20}),
-   'count?': ('int', 'A draw: how many cards. Default 1.'),
-   'deck?': ('str', 'A draw: the deck, by name or alias. Default `standard`.'),
-   'spread?': ('str', 'A tarot reading: the spread, by name or alias. Default `three`.')})
 
 S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines. In a sealed chat only `id`, `conversation_id`, `seq`, `order`, `author_id`, `client_id`, `sealed`, `quiet` and `created_at` are present, `late` and `unsent` where they apply, and `deleted_at` once deleted.', {
    'id': 'uuid',
@@ -929,10 +951,9 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
    'cards?': '[#Card]',
    'form?': '#Form',
    'action?': ('bool', 'The text says what the author is doing (typed with `/me`); drawn after the author\'s name.'),
-   'chance?': '#Chance',
    'view?': ('#ValueEnvelope', 'The message as a value of the catalogue, such as a roll of dice. `text` is the message; this is a view of it, drawn by a client that knows its kind.'),
-   'fair?': ('#FairBlock', "The proof of the message's draw, when anything in it took chance from one (a roll of dice). Kept when the message is deleted; never edited."),
-   'fallback?': ('str', 'Plain text the server wrote to stand in for the cards, form and chance result.'),
+   'fair?': ('#FairBlock', "The proof of the message's draw, when anything in it took chance from one (a roll of dice, a coin, a pick, cards). Kept when the message is deleted; never edited."),
+   'fallback?': ('str', 'Plain text the server wrote to stand in for the cards and form.'),
    'reactions?': '[#Reaction]',
    'thread?': '#ThreadSummary',
    'via?': '#Via',
@@ -965,7 +986,7 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
    'deleted_at?': ('time', 'Set on a deleted message. Its text, files, cards and form are then empty.'),
    'deleted_by_id?': 'uuid'})
 
-S('MessageInput', 'A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.', {
+S('MessageInput', 'A new message. It needs at least one of text, a file, a card, a form, or `sealed`.', {
    'client_id?': ('uuid',
                   'Made by the client. Sending the same one again in the same conversation within 24 hours returns '
                   'the message already created. Required in a sealed chat, and in a message that takes chance (inline '
@@ -988,7 +1009,6 @@ S('MessageInput', 'A new message. It needs at least one of text, a file, a card,
    'sealed?': ('#SealedPayload', 'Sealed chats only, and then the only content field allowed.'),
    'quiet?': ('bool', "Sealed chats only. Must match the flag in the ciphertext's header."),
    'action?': ('bool', 'The text says what the author is doing (`/me`). Needs text. In a sealed chat the mark goes inside the sealed content.'),
-   'chance?': ('#ChanceInput', 'Have the server draw a result. The message then has no text, files, cards or form. People only; refused in a sealed chat.'),
    'time_zone?': ('str', 'The author\'s IANA zone (`Europe/Berlin`), in which a date and time typed without a zone is read as an `instant` entity (ruling R69). Without it such text stays plain; a date and time typed with a zone resolves either way.'),
    'instant_hints?': ('[#InstantHint]', 'Phrases the author made into instants in the composer. Up to 50 are read.', {'maxItems': 50}),
    'object_hints?': ('[#ObjectHint]', 'What the author chose for ranges of the text: plain text, or one kind of object. Up to 50 are read.', {'maxItems': 50})})

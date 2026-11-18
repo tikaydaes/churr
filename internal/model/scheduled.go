@@ -62,10 +62,8 @@ type MessageInput struct {
 	Quote    *Quote     `json:"quote,omitempty"`
 	Cards    []Card     `json:"cards,omitempty"`
 	Form     *FormInput `json:"form,omitempty"`
-	// Action and Chance: see Message (ruling R67). A chance result is
-	// drawn when the message is posted.
-	Action bool         `json:"action,omitempty"`
-	Chance *ChanceInput `json:"chance,omitempty"`
+	// Action: see Message (ruling R67).
+	Action bool `json:"action,omitempty"`
 	// TimeZone and InstantHints say what the dates and times in the text
 	// mean (ruling R69): the author's IANA zone, and phrases the author
 	// made into instants.
@@ -173,13 +171,6 @@ var BuiltinCommands = []Command{
 	{Name: "tableflip", Kind: CommandBuiltin, Description: "Adds (╯°□°)╯︵ ┻━┻ to the text", Hint: "[text]", Sealed: true, Replaceable: true},
 	{Name: "unflip", Kind: CommandBuiltin, Description: "Adds ┬─┬ノ( º _ ºノ) to the text", Hint: "[text]", Sealed: true, Replaceable: true},
 	{Name: "spoiler", Kind: CommandBuiltin, Description: "Hides the text until the reader selects it", Hint: "text", Sealed: true},
-	{Name: "flip", Kind: CommandBuiltin, Description: "Flips a coin, flipped by the server", Replaceable: true},
-	{Name: "pick", Kind: CommandBuiltin, Description: "Picks one, picked by the server", Hint: "a | b | c", Replaceable: true},
-	{Name: "shuffle", Kind: CommandBuiltin, Description: "Shuffles them, shuffled by the server", Hint: "a | b | c", Replaceable: true},
-	{Name: "draw", Kind: CommandBuiltin, Description: "Draws cards, drawn by the server: standard, jokers, tarot, hanafuda and other decks", Hint: "[count] [deck]", Replaceable: true},
-	{Name: "tarot", Kind: CommandBuiltin, Description: "Reads tarot cards, drawn by the server: three, celtic, horseshoe, relationship", Hint: "[spread]", Replaceable: true},
-	{Name: "mahjongg", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server", Hint: "[count]", Replaceable: true},
-	{Name: "mahjong", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server (as /mahjongg)", Hint: "[count]", Replaceable: true},
 	{Name: "join", Kind: CommandBuiltin, Description: "Joins a channel", Hint: "#channel", Sealed: true},
 	{Name: "leave", Kind: CommandBuiltin, Description: "Leaves this channel, or the one named", Hint: "[#channel]"},
 	{Name: "part", Kind: CommandBuiltin, Description: "Leaves this channel, or the one named (as /leave)", Hint: "[#channel]"},

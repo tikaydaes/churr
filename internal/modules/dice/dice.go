@@ -45,6 +45,8 @@ func Module() modhost.Module {
 				Forms: forms("Dice, such as 2d6+3"), Help: rollHelp},
 			{Name: "dice", Hint: "[dice]", Summary: "Rolls six-sided dice, rolled by the server: 4 is 4d6, 4+3 is 4d6+3",
 				Forms: forms("A number of d6, such as 4 or 4+3"), Help: diceHelp},
+			// A coin is a two-sided die (docs/DESIGN-MODULES.md section 9.1).
+			{Name: "flip", Summary: "Flips a coin, flipped by the server", Forms: []model.CommandForm{{}}, Help: flipHelp},
 		},
 		// The characters dice are written in; what they say is the
 		// grammar's to decide when the command runs.
@@ -61,6 +63,9 @@ type handler struct{}
 // Command rolls /roll's dice, or /dice's six-sided ones: nothing at all is
 // 1d20 for /roll and 1d6 for /dice.
 func (handler) Command(_ context.Context, h *modhost.Host, in modhost.Invocation) (modhost.Reply, error) {
+	if in.Command == "flip" {
+		return flip(h, in.Text)
+	}
 	expr := in.Text
 	if in.Command == "dice" {
 		expr = D6(expr)
@@ -120,4 +125,21 @@ func roll(h *modhost.Host, r model.DiceRoll) (model.DiceRoll, error) {
 		r.Rows[i].Total = row.Total
 	}
 	return r, nil
+}
+
+// flip flips a coin from the call's stream by derive 1's composition
+// (docs/FAIR.md section 5a): yesno(1, 2), yes being heads.
+func flip(h *modhost.Host, text string) (modhost.Reply, error) {
+	if strings.TrimSpace(text) != "" {
+		return modhost.Reply{}, model.Invalid("text", "/flip takes nothing after it.")
+	}
+	rs, err := h.Draw(fair.CoinAsks()...)
+	if err != nil {
+		return modhost.Reply{}, err
+	}
+	c := model.CoinFlip{Outcome: "tails"}
+	if *rs[0].Yes {
+		c.Outcome = "heads"
+	}
+	return modhost.Reply{Text: c.Text(), View: &modhost.Value{Kind: model.KindCoinFlip, Data: c}}, nil
 }

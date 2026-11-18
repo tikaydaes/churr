@@ -150,10 +150,8 @@ type NewMessage struct {
 	Cards          []model.Card
 	Form           *model.FormInput
 	Via            *model.Via
-	// Action marks text typed with /me; Chance asks the server to draw a
-	// result for /flip, /pick, /shuffle, /draw or /tarot (ruling R67).
+	// Action marks text typed with /me (ruling R67).
 	Action bool
-	Chance *model.ChanceInput
 	// View is a built-in module's answer to a command, as the host checked
 	// it (commands.go): Text is then the module's words for it. It is never
 	// taken from a request.
@@ -238,9 +236,6 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		return Posted{}, hide(err)
 	}
 	conv := st.Conversation
-	if conv.Sealed() && in.Chance != nil {
-		return Posted{}, model.Invalid("chance", "The server cannot write into a sealed chat, so it cannot draw a result there.")
-	}
 	if conv.Sealed() && (in.View != nil || in.Command != nil) {
 		return Posted{}, model.Invalid("name", "The server cannot write into a sealed chat, so no module runs there.")
 	}
@@ -296,14 +291,10 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			}
 		}
 	}
-	chance, err := checkMarks(actor, in)
-	if err != nil {
+	if err := checkMarks(in); err != nil {
 		return Posted{}, err
 	}
-	if chance != nil {
-		fallback = chance.Fallback()
-	}
-	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && chance == nil && !(in.Reminder && in.Quote != nil) {
+	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && !(in.Reminder && in.Quote != nil) {
 		return Posted{}, model.BadRequest("A message needs text, a file or a card.")
 	}
 	// A reply names any message of the thread; its parent is the thread's
@@ -381,7 +372,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	m := model.Message{
 		ID: model.NewID[model.MessageID](), ConversationID: conv.ID, AuthorID: actor.ID, ParentID: parent.ID,
 		Quote: in.Quote, ClientID: in.ClientID, Text: in.Text, Entities: got.entities, Cards: in.Cards, Via: in.Via,
-		Action: in.Action, Chance: chance, View: in.View, CreatedAt: s.now(),
+		Action: in.Action, View: in.View, CreatedAt: s.now(),
 	}
 	m.Fallback = fallback
 	m.Fair = draws.block

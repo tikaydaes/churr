@@ -41,22 +41,22 @@ func TestCommandNameClash(t *testing.T) {
 		t.Fatalf("/shrug ran the custom command: %v", m)
 	}
 
-	// A bot's /pick, where the bot is; the built-in elsewhere.
+	// A bot's /unflip, where the bot is; the built-in elsewhere.
 	bot := owner.Bot("picker")
-	bot.Must(200, "PUT", "/api/v1/commands", map[string]any{"commands": []any{map[string]any{"name": "pick", "description": "Picks a lunch place"}}})
+	bot.Must(200, "PUT", "/api/v1/commands", map[string]any{"commands": []any{map[string]any{"name": "unflip", "description": "Puts the table back"}}})
 	ann.Add(room, "member", bot)
-	if menu := menuOf(bob, room); menu["pick"] != model.CommandBot {
-		t.Fatalf("the bot's /pick: %v", menu)
+	if menu := menuOf(bob, room); menu["unflip"] != model.CommandBot {
+		t.Fatalf("the bot's /unflip: %v", menu)
 	}
-	if menu := menuOf(bob, other); menu["pick"] != model.CommandBuiltin {
-		t.Fatalf("where the bot is not, /pick is the built-in: %v", menu)
+	if menu := menuOf(bob, other); menu["unflip"] != model.CommandBuiltin {
+		t.Fatalf("where the bot is not, /unflip is the built-in: %v", menu)
 	}
-	bob.Refused(400, model.CodeInvalidValue, "POST", conv+other+"/commands", map[string]any{"name": "pick"})
+	bob.Refused(400, model.CodeInvalidValue, "POST", conv+other+"/commands", map[string]any{"name": "unflip"})
 
 	// A personal saved reply named like a built-in wins for its owner.
-	ann.Must(201, "POST", "/api/v1/saved-replies", map[string]any{"name": "flip", "text": "(flips the table politely)"})
-	if menuOf(ann, room)["flip"] != model.CommandSavedReply || menuOf(bob, room)["flip"] != model.CommandBuiltin {
-		t.Fatal("a personal /flip is ann's alone")
+	ann.Must(201, "POST", "/api/v1/saved-replies", map[string]any{"name": "tableflip", "text": "(flips the table politely)"})
+	if menuOf(ann, room)["tableflip"] != model.CommandSavedReply || menuOf(bob, room)["tableflip"] != model.CommandBuiltin {
+		t.Fatal("a personal /tableflip is ann's alone")
 	}
 
 	// /exile and /unexile are in the menu of admins only; /ban and /unban

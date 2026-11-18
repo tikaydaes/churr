@@ -915,6 +915,7 @@ message WakeUpMessage {
 message Message {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
+  reserved 34;
   optional bytes id = 3; // identifier
   optional bytes conversation_id = 4; // identifier
   optional int64 seq = 5;
@@ -929,7 +930,6 @@ message Message {
   repeated Card cards = 14;
   Form form = 15;
   optional bool action = 33;
-  Chance chance = 34;
   ValueEnvelope view = 35;
   FairBlock fair = 36;
   optional string fallback = 16;
@@ -1092,6 +1092,7 @@ message Card {
   optional string footer = 10;
   optional int64 at = 11; // time
   optional string preview_url = 12;
+  FairMark fair_mark = 14;
   CardTheme theme = 13;
 }
 
@@ -1107,6 +1108,13 @@ message CardField {
   optional string label = 3;
   optional string value = 4;
   optional bool short = 5;
+}
+
+// The shield of a card (DESIGN-FAIR.md section 13): it names which outcomes of the message's draw (`fair`) the card stands on, and carries no verdict. Each client draws it from its own check of the proof and of every outcome named: a green shield when they all check out, a grey one when the drawing server's key history is not known here, a warning mark when a check fails. No other part of a card may draw that shield.
+message FairMark {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated int64 objects = 3;
 }
 
 // How a message asks for input. One per message.
@@ -1190,30 +1198,13 @@ message FormVotersValueOuter {
   map<string, FormVotersValue> values = 1;
 }
 
-// A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message's text and `view`.
-message Chance {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  reserved 4, 5, 6, 15;
-  optional ChanceKind kind = 3;
-  optional ChanceOutcome outcome = 7;
-  repeated string options = 8;
-  optional int64 picked = 9;
-  repeated int64 order = 10;
-  optional string deck = 11;
-  repeated string cards = 12;
-  repeated bool reversed = 13;
-  optional string spread = 14;
-}
-
-// A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the VRF key `pk` of the server `owner` over `alpha`, which the conversation's chain fixes, and its output `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no server reachable. Kept when the message is deleted; never edited.
+// A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the VRF key `pk` of the server `owner` over `alpha`, which the author's client fixes, and its output `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no server reachable. Kept when the message is deleted; never edited.
 message FairBlock {
   repeated int32 null_fields = 2;
-  reserved 11;
+  reserved 6, 11;
   optional int64 v = 3;
   optional int64 derive = 4;
   optional string owner = 5;
-  optional int64 n = 6;
   optional bytes pk = 7;
   optional string alpha = 8;
   optional bytes beta = 9;
@@ -1815,10 +1806,11 @@ message ScheduledItem {
   optional int64 created_at = 14; // time
 }
 
-// A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.
+// A new message. It needs at least one of text, a file, a card, a form, or `sealed`.
 message MessageInput {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
+  reserved 13;
   optional bytes client_id = 3; // identifier
   optional int64 draw_t = 17;
   optional string text = 4;
@@ -1830,7 +1822,6 @@ message MessageInput {
   SealedPayload sealed = 10;
   optional bool quiet = 11;
   optional bool action = 12;
-  ChanceInput chance = 13;
   optional string time_zone = 14;
   repeated InstantHint instant_hints = 15;
   repeated ObjectHint object_hints = 16;
@@ -1851,18 +1842,6 @@ message FormInput {
   optional bytes answerer_group_id = 11; // identifier
   optional bool one_answer = 12;
   optional int64 closes_at = 13; // time
-}
-
-// Asks the server to draw a result, which becomes the message's `chance` and `fallback`. People only; refused in a sealed chat. A roll of dice is no chance result: `/roll` and `/dice` are the dice module's commands, run with `runCommand`.
-message ChanceInput {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  reserved 4;
-  optional ChanceInputKind kind = 3;
-  repeated string options = 5;
-  optional int64 count = 6;
-  optional string deck = 7;
-  optional string spread = 8;
 }
 
 // A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link's text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
@@ -3044,6 +3023,7 @@ message WebhookCard {
   optional string footer = 10;
   optional int64 at = 11; // time
   optional string preview_url = 12;
+  FairMark fair_mark = 16;
   CardTheme theme = 13;
   optional string image_url = 14;
   optional string image_part = 15;
@@ -5740,6 +5720,46 @@ message DiceRoll {
   repeated DiceRollRow rows = 4;
 }
 
+// The data of kind `coin_flip`: a coin the server flipped for `/flip`, from the message's draw by yesno(1, 2), yes being heads (FAIR.md section 5a).
+message CoinFlip {
+  repeated int32 null_fields = 2;
+  optional CoinFlipOutcome outcome = 3;
+}
+
+// The data of kind `pick`: one of the options the server picked for `/pick`, from the message's draw by pick(n, 1) (FAIR.md section 5a).
+message Pick {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated string options = 3;
+  optional int64 picked = 4;
+}
+
+// The data of kind `shuffle`: the options in the order the server shuffled them into for `/shuffle`, from the message's draw by shuffle(n) (FAIR.md section 5a).
+message Shuffle {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated string options = 3;
+  repeated int64 order = 4;
+}
+
+// The data of kind `card_draw`: cards the server drew for `/draw` or `/mahjongg` from a freshly shuffled deck, none put back, from the message's draw by pick(size, count) and, for a deck with orientation, ints(0, 1, count) (FAIR.md section 5a).
+message CardDraw {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string deck = 3;
+  repeated string cards = 4;
+  repeated bool reversed = 5;
+}
+
+// The data of kind `tarot_reading`: a tarot reading the server drew for `/tarot`, a card of the tarot deck for each position of a spread, from the message's draw as a `card_draw` of the tarot deck (FAIR.md section 5a).
+message TarotReading {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string spread = 3;
+  repeated string cards = 4;
+  repeated bool reversed = 5;
+}
+
 enum ServerSignInRegistration {
   SERVER_SIGN_IN_REGISTRATION_UNSPECIFIED = 0;
   SERVER_SIGN_IN_REGISTRATION_OPEN = 1; // "open"
@@ -6127,22 +6147,6 @@ enum FormResults {
   FORM_RESULTS_AFTER_CLOSE = 3; // "after_close"
 }
 
-enum ChanceKind {
-  CHANCE_KIND_UNSPECIFIED = 0;
-  reserved 1;
-  CHANCE_KIND_FLIP = 2; // "flip"
-  CHANCE_KIND_PICK = 3; // "pick"
-  CHANCE_KIND_SHUFFLE = 4; // "shuffle"
-  CHANCE_KIND_DRAW = 5; // "draw"
-  CHANCE_KIND_TAROT = 6; // "tarot"
-}
-
-enum ChanceOutcome {
-  CHANCE_OUTCOME_UNSPECIFIED = 0;
-  CHANCE_OUTCOME_HEADS = 1; // "heads"
-  CHANCE_OUTCOME_TAILS = 2; // "tails"
-}
-
 enum ViaKind {
   VIA_KIND_UNSPECIFIED = 0;
   VIA_KIND_WEBHOOK = 1; // "webhook"
@@ -6412,16 +6416,6 @@ enum FormInputResults {
   FORM_INPUT_RESULTS_LIVE = 1; // "live"
   FORM_INPUT_RESULTS_AFTER_ANSWER = 2; // "after_answer"
   FORM_INPUT_RESULTS_AFTER_CLOSE = 3; // "after_close"
-}
-
-enum ChanceInputKind {
-  CHANCE_INPUT_KIND_UNSPECIFIED = 0;
-  reserved 1;
-  CHANCE_INPUT_KIND_FLIP = 2; // "flip"
-  CHANCE_INPUT_KIND_PICK = 3; // "pick"
-  CHANCE_INPUT_KIND_SHUFFLE = 4; // "shuffle"
-  CHANCE_INPUT_KIND_DRAW = 5; // "draw"
-  CHANCE_INPUT_KIND_TAROT = 6; // "tarot"
 }
 
 enum InstantHintPrecision {
@@ -7254,4 +7248,10 @@ enum CallRingStoppedFrameReason {
   CALL_RING_STOPPED_FRAME_REASON_DECLINED_ELSEWHERE = 2; // "declined_elsewhere"
   CALL_RING_STOPPED_FRAME_REASON_ENDED = 3; // "ended"
   CALL_RING_STOPPED_FRAME_REASON_TIMEOUT = 4; // "timeout"
+}
+
+enum CoinFlipOutcome {
+  COIN_FLIP_OUTCOME_UNSPECIFIED = 0;
+  COIN_FLIP_OUTCOME_HEADS = 1; // "heads"
+  COIN_FLIP_OUTCOME_TAILS = 2; // "tails"
 }

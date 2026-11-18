@@ -70,9 +70,7 @@ type wireBlob struct {
 }
 
 // wireMessage is a message as it travels (section 11, "A message on the
-// wire"). Action and Chance are a /me message and a result the sending
-// server drew (ruling R67); a server too old to know them ignores them and
-// shows the text, or the fallback. View is the message as a value of the
+// wire"). Action is a /me message (ruling R67). View is the message as a value of the
 // catalogue, such as a roll, and object entities carry values over spans;
 // each receiver holds them to their kinds' checks (model.CheckValue).
 type wireMessage struct {
@@ -92,7 +90,6 @@ type wireMessage struct {
 	Sealed    *model.SealedPayload `json:"sealed,omitempty"`
 	Quiet     bool                 `json:"quiet,omitempty"`
 	Action    bool                 `json:"action,omitempty"`
-	Chance    *model.Chance        `json:"chance,omitempty"`
 	View      *model.ValueEnvelope `json:"view,omitempty"`
 	Fair      *model.FairBlock     `json:"fair,omitempty"`
 	CreatedAt model.Time           `json:"created_at"`
@@ -602,12 +599,7 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 		len(w.Cards) > model.MaxCardsPerMessage || w.CreatedAt.IsZero() {
 		return rm, reject("invalid"), nil
 	}
-	if w.Text == "" && len(w.Files) == 0 && len(w.Cards) == 0 && w.System == nil && w.Form == nil && w.Quote == nil && w.Sealed == nil && w.Chance == nil {
-		return rm, reject("invalid"), nil
-	}
-	if w.Chance != nil && (!w.Chance.Valid() || w.Sealed != nil) {
-		// The sending server vouches for the draw; a result that does not
-		// hold together is refused.
+	if w.Text == "" && len(w.Files) == 0 && len(w.Cards) == 0 && w.System == nil && w.Form == nil && w.Quote == nil && w.Sealed == nil {
 		return rm, reject("invalid"), nil
 	}
 	if w.Form != nil {
@@ -621,8 +613,15 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 	if rej != nil {
 		return rm, rej, nil
 	}
+	for i := range w.Cards {
+		// A shield that names nothing a draw may have is dropped; the card
+		// still arrives (docs/DESIGN-FAIR.md section 13).
+		if f := w.Cards[i].FairMark; f != nil && !f.Valid() {
+			w.Cards[i].FairMark = nil
+		}
+	}
 	m := model.Message{ID: w.ID, AuthorID: w.AuthorID, ParentID: w.ParentID, Quote: w.Quote, Text: w.Text, Cards: w.Cards,
-		Fallback: w.Fallback, Via: w.Via, System: w.System, Action: w.Action && w.Text != "", Chance: w.Chance, CreatedAt: w.CreatedAt}
+		Fallback: w.Fallback, Via: w.Via, System: w.System, Action: w.Action && w.Text != "", CreatedAt: w.CreatedAt}
 	if w.Sealed == nil {
 		// A value that fails its kind's check falls back a step, to its alt
 		// or to the text; the message still arrives. A sealed message's

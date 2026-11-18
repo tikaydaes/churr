@@ -1,0 +1,193 @@
+{
+ "description": "The chance kinds besides a roll (docs/FAIR.md section 5a, docs/MESSAGE-FORMAT.md section 1.2, ruling R67): /flip (the dice module), /pick and /shuffle (the choose module), /draw, /tarot and /mahjongg (the cards module). texts: a value of each kind, its data, and the text the module writes for it, which is the message's text; clients speak the same words. refusals: a command, what was typed after it, and words its refusal must contain.",
+ "texts": [
+  {
+   "kind": "coin_flip",
+   "data": {
+    "outcome": "tails"
+   },
+   "text": "Flipped a coin: tails"
+  },
+  {
+   "kind": "pick",
+   "data": {
+    "options": [
+     "tea",
+     "coffee"
+    ],
+    "picked": 1
+   },
+   "text": "Picked coffee from: tea | coffee"
+  },
+  {
+   "kind": "shuffle",
+   "data": {
+    "options": [
+     "a",
+     "b",
+     "c"
+    ],
+    "order": [
+     2,
+     0,
+     1
+    ]
+   },
+   "text": "Shuffled: c, a, b"
+  },
+  {
+   "kind": "card_draw",
+   "data": {
+    "deck": "tarot",
+    "cards": [
+     "cups-queen",
+     "major-0"
+    ],
+    "reversed": [
+     true,
+     false
+    ]
+   },
+   "text": "Drew from the tarot deck: queen of cups (reversed), The Fool"
+  },
+  {
+   "kind": "card_draw",
+   "data": {
+    "deck": "hanafuda",
+    "cards": [
+     "pine-bright",
+     "willow-chaff1"
+    ]
+   },
+   "text": "Drew from the hanafuda deck: pine bright, willow chaff"
+  },
+  {
+   "kind": "card_draw",
+   "data": {
+    "deck": "standard",
+    "cards": [
+     "spades-ace",
+     "hearts-10"
+    ]
+   },
+   "text": "Drew from the standard deck: ace of spades, ten of hearts"
+  },
+  {
+   "kind": "card_draw",
+   "data": {
+    "deck": "mahjong",
+    "cards": [
+     "dots-5",
+     "wind-east",
+     "dragon-red",
+     "season-spring"
+    ]
+   },
+   "text": "Drew from the mahjong deck: dots 5, east wind, red dragon, spring"
+  },
+  {
+   "kind": "card_draw",
+   "data": {
+    "deck": "german",
+    "cards": [
+     "acorns-unter"
+    ]
+   },
+   "text": "Drew from the german deck: unter of acorns"
+  },
+  {
+   "kind": "tarot_reading",
+   "data": {
+    "spread": "three",
+    "cards": [
+     "major-16",
+     "wands-page",
+     "pentacles-10"
+    ],
+    "reversed": [
+     false,
+     true,
+     false
+    ]
+   },
+   "text": "Tarot, Three cards: Past: The Tower (upright); Present: page of wands (reversed); Future: ten of pentacles (upright)"
+  }
+ ],
+ "refusals": [
+  {
+   "command": "pick",
+   "text": "a",
+   "error": "Give 2 to 20 options"
+  },
+  {
+   "command": "pick",
+   "text": "",
+   "error": "Give 2 to 20 options"
+  },
+  {
+   "command": "shuffle",
+   "text": "0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20",
+   "error": "Give 2 to 20 options"
+  },
+  {
+   "command": "pick",
+   "text": "a |  ",
+   "error": "cannot be empty"
+  },
+  {
+   "command": "pick",
+   "text": "a | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "error": "at most 200 characters"
+  },
+  {
+   "command": "flip",
+   "text": "heads",
+   "error": "takes nothing"
+  },
+  {
+   "command": "draw",
+   "text": "2 uno",
+   "error": "There is no deck called uno. The decks are: standard, jokers, jokers3, piquet, durak, euchre, tarot, spanish, italian, german, austrian, swiss, pinochle, canasta, hanafuda, mahjong, shoe2, shoe4, shoe6, shoe8."
+  },
+  {
+   "command": "draw",
+   "text": "33 piquet",
+   "error": "Draw 1 to 32 cards from the piquet deck."
+  },
+  {
+   "command": "draw",
+   "text": "0",
+   "error": "Draw 1 to 52 cards from the standard deck."
+  },
+  {
+   "command": "draw",
+   "text": "tarot 3",
+   "error": "Write /draw [count] [deck]"
+  },
+  {
+   "command": "draw",
+   "text": "1 2 3",
+   "error": "Write /draw [count] [deck]"
+  },
+  {
+   "command": "mahjongg",
+   "text": "145",
+   "error": "Draw 1 to 144 cards"
+  },
+  {
+   "command": "mahjong",
+   "text": "lots",
+   "error": "Write /mahjong [count]"
+  },
+  {
+   "command": "tarot",
+   "text": "pyramid",
+   "error": "There is no spread called pyramid. The spreads are: three, celtic, horseshoe, relationship."
+  },
+  {
+   "command": "tarot",
+   "text": "celtic cross",
+   "error": "Write /tarot [spread]"
+  }
+ ]
+}

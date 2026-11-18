@@ -11,19 +11,15 @@ import (
 // The shared cases of testdata/commands (ruling R67). The clients read the
 // same files.
 
-// chanceVectors are the cases of testdata/commands/dice.json that are the
-// model's: the text of a stored result other than a roll (a roll's is the
-// dice module's), and requests refused.
-type chanceVectors struct {
-	// Every case but a roll's is a Chance and its fallback.
-	Fallback []struct {
-		Chance json.RawMessage `json:"chance"`
-		Text   string          `json:"text"`
-	} `json:"fallback"`
-	Refusals []struct {
-		Input ChanceInput `json:"input"`
-		Error string      `json:"error"`
-	} `json:"refusals"`
+// chanceTexts are the cases of testdata/commands/chance.json that are the
+// model's: a value of each chance kind but a roll (the dice module's) and
+// its text.
+type chanceTexts struct {
+	Texts []struct {
+		Kind string          `json:"kind"`
+		Data json.RawMessage `json:"data"`
+		Text string          `json:"text"`
+	} `json:"texts"`
 }
 
 func readJSON(t *testing.T, path string, v any) {
@@ -37,28 +33,49 @@ func readJSON(t *testing.T, path string, v any) {
 	}
 }
 
+// texter is a chance kind's data: whether it holds together, and its words.
+type texter interface {
+	Valid() bool
+	Text() string
+}
+
+func kindData(t *testing.T, kind string, data json.RawMessage) texter {
+	t.Helper()
+	var v texter
+	switch kind {
+	case KindCoinFlip:
+		v = &CoinFlip{}
+	case KindPick:
+		v = &Pick{}
+	case KindShuffle:
+		v = &Shuffle{}
+	case KindCardDraw:
+		v = &CardDraw{}
+	case KindTarotReading:
+		v = &TarotReading{}
+	default:
+		t.Fatalf("no kind %q", kind)
+	}
+	if err := json.Unmarshal(data, v); err != nil {
+		t.Fatal(err)
+	}
+	return v
+}
+
 func TestChanceVectors(t *testing.T) {
-	var v chanceVectors
-	readJSON(t, "../../testdata/commands/dice.json", &v)
-	for _, c := range v.Fallback {
-		var kind struct {
-			Kind string `json:"kind"`
+	var v chanceTexts
+	readJSON(t, "../../testdata/commands/chance.json", &v)
+	if len(v.Texts) < 5 {
+		t.Fatal("too few cases")
+	}
+	for _, c := range v.Texts {
+		d := kindData(t, c.Kind, c.Data)
+		if !d.Valid() {
+			t.Errorf("%s %s is not valid", c.Kind, c.Data)
+			continue
 		}
-		if err := json.Unmarshal(c.Chance, &kind); err != nil {
-			t.Fatal(err)
-		}
-		if kind.Kind == "roll" {
-			continue // the dice module's (internal/modules/dice)
-		}
-		var ch Chance
-		if err := json.Unmarshal(c.Chance, &ch); err != nil {
-			t.Fatal(err)
-		}
-		if got := ch.Fallback(); got != c.Text {
-			t.Errorf("fallback: got %q, want %q", got, c.Text)
-		}
-		if !ch.Valid() {
-			t.Errorf("%+v is not valid", ch)
+		if got := d.Text(); got != c.Text {
+			t.Errorf("text: got %q, want %q", got, c.Text)
 		}
 	}
 	var dk struct {
@@ -91,51 +108,42 @@ func TestChanceVectors(t *testing.T) {
 			}
 		}
 	}
-	for _, c := range v.Refusals {
-		_, err := DrawChance(c.Input, func(n int) int { return 0 })
-		if err == nil || !strings.Contains(err.Error(), c.Error) {
-			t.Errorf("%+v: got %v, want an error with %q", c.Input, err, c.Error)
-		}
+	if (DiceRoll{Dice: "1d6", Rows: []DiceRow{{Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: 7}}}).Valid() {
+		t.Error("a die above its sides was taken")
 	}
 }
 
-// TestDrawChance draws with the lowest and highest number every time and
-// checks each result is whole: in range, no card twice, a shuffle a
-// permutation.
-func TestDrawChance(t *testing.T) {
-	for _, pick := range []func(n int) int{func(int) int { return 0 }, func(n int) int { return n - 1 }} {
-		for _, in := range []ChanceInput{
-			{Kind: ChanceFlip},
-			{Kind: ChancePick, Options: []string{"a", "b", "c"}}, {Kind: ChanceShuffle, Options: []string{"a", "b", "c", "d"}},
-			{Kind: ChanceDraw}, {Kind: ChanceDraw, Count: 78, Deck: "tarot"}, {Kind: ChanceDraw, Count: 5, Deck: "54"},
-			{Kind: ChanceDraw, Count: 144, Deck: "mahjong"}, {Kind: ChanceDraw, Count: 108, Deck: "canasta"},
-			{Kind: ChanceDraw, Count: 416, Deck: "shoe8"}, {Kind: ChanceTarot}, {Kind: ChanceTarot, Spread: "Celtic-Cross"},
-			{Kind: ChanceTarot, Spread: "horseshoe"}, {Kind: ChanceTarot, Spread: "love"},
-		} {
-			c, err := DrawChance(in, pick)
-			if err != nil {
-				t.Fatalf("%+v: %v", in, err)
-			}
-			if !c.Valid() || c.Fallback() == "" {
-				t.Errorf("%+v gave %+v", in, c)
+// TestChanceKindCases: the server's check of each chance kind that came from
+// somewhere else gives the answers testdata/types/<kind>.json gives, the ones
+// the clients' checks give.
+func TestChanceKindCases(t *testing.T) {
+	for _, kind := range []string{KindCoinFlip, KindPick, KindShuffle, KindCardDraw, KindTarotReading} {
+		var cases struct {
+			Kind           string `json:"kind"`
+			Level          int    `json:"level"`
+			Valid, Invalid []struct {
+				Name string          `json:"name"`
+				Data json.RawMessage `json:"data"`
 			}
 		}
-	}
-	bad := Chance{Kind: ChanceDraw, Deck: "standard", Cards: []string{"spades-ace", "spades-ace"}}
-	if bad.Valid() {
-		t.Error("a card drawn twice was taken")
-	}
-	if !(Chance{Kind: ChanceDraw, Deck: "pinochle", Cards: []string{"spades-ace", "spades-ace"}}).Valid() {
-		t.Error("pinochle has two of each card")
-	}
-	if (Chance{Kind: ChanceDraw, Deck: "tarot", Cards: []string{"major-0"}}).Valid() {
-		t.Error("a tarot card needs its orientation")
-	}
-	if _, err := DrawChance(ChanceInput{Kind: "roll"}, func(int) int { return 0 }); err == nil {
-		t.Error("a roll was drawn as a chance result")
-	}
-	if (DiceRoll{Dice: "1d6", Rows: []DiceRow{{Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: 7}}}).Valid() {
-		t.Error("a die above its sides was taken")
+		readJSON(t, "../../testdata/types/"+kind+".json", &cases)
+		if cases.Kind != kind || cases.Level != KindLevels()[kind] || len(cases.Valid) == 0 || len(cases.Invalid) < 3 {
+			t.Fatalf("%s: the file is not this kind's, or has too few cases", kind)
+		}
+		check := func(data json.RawMessage) bool {
+			v := &ValueEnvelope{Kind: kind, Level: 1, Data: data}
+			return CheckValue(v) == v
+		}
+		for _, c := range cases.Valid {
+			if !check(c.Data) {
+				t.Errorf("%s %s: refused", kind, c.Name)
+			}
+		}
+		for _, c := range cases.Invalid {
+			if check(c.Data) {
+				t.Errorf("%s %s: taken", kind, c.Name)
+			}
+		}
 	}
 }
 
@@ -221,31 +229,6 @@ func TestDecksAndSpreads(t *testing.T) {
 	if c := count("german"); c["acorns-unter"] != 1 || c["acorns-jack"] != 0 {
 		t.Errorf("german: %v", c)
 	}
-	for i := 0; i < 50; i++ {
-		c, err := DrawChance(ChanceInput{Kind: ChanceDraw, Count: 30, Deck: "pinochle"}, cryptoForTest)
-		if err != nil || !c.Valid() || len(c.Cards) != 30 {
-			t.Fatalf("%v %+v", err, c)
-		}
-		left := count("pinochle")
-		for _, x := range c.Cards {
-			if left[x]--; left[x] < 0 {
-				t.Fatalf("%s drawn more often than the deck holds it: %v", x, c.Cards)
-			}
-		}
-	}
-	for name, n := range map[string]int{"three": 3, "celtic": 10, "horseshoe": 7, "relationship": 7} {
-		c, err := DrawChance(ChanceInput{Kind: ChanceTarot, Spread: name}, cryptoForTest)
-		if err != nil || len(c.Cards) != n || len(c.Reversed) != n || !c.Valid() {
-			t.Errorf("%s: %v %+v", name, err, c)
-		}
-		seen := map[string]bool{}
-		for _, x := range c.Cards {
-			if seen[x] {
-				t.Errorf("%s: %s twice", name, x)
-			}
-			seen[x] = true
-		}
-	}
 	var tarot struct {
 		Meanings map[string]struct {
 			Upright  string `json:"upright"`
@@ -305,16 +288,6 @@ func TestTarotLayouts(t *testing.T) {
 			}
 		}
 	}
-}
-
-// cryptoForTest stands in for crypto/rand, which model does not import.
-var testSeed uint64 = 88172645463325252
-
-func cryptoForTest(n int) int {
-	testSeed ^= testSeed << 13
-	testSeed ^= testSeed >> 7
-	testSeed ^= testSeed << 17
-	return int(testSeed % uint64(n))
 }
 
 // TestHiddenBuiltins holds the one rule of which built-ins are hidden

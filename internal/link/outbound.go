@@ -918,7 +918,7 @@ func (s *Service) wireMessageOf(ctx context.Context, a store.Areas, st store.Str
 		quote = &q
 	}
 	w := wireMessage{ID: m.ID, AuthorID: m.AuthorID, ParentID: m.ParentID, Quote: quote, Text: m.Text, Cards: m.Cards, Fallback: m.Fallback,
-		Via: m.Via, System: m.System, Action: m.Action, Chance: m.Chance, View: m.View, Fair: m.Fair, CreatedAt: m.CreatedAt, EditedAt: m.EditedAt}
+		Via: m.Via, System: m.System, Action: m.Action, View: m.View, Fair: m.Fair, CreatedAt: m.CreatedAt, EditedAt: m.EditedAt}
 	if conv.Sealed() {
 		w.ClientID, w.Sealed, w.Quiet = m.ClientID, m.Sealed, m.Quiet
 	}

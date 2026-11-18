@@ -736,6 +736,7 @@ message Blob {
 
 // A message as it travels between servers (section 11, "A message on the wire").
 message Message {
+  reserved 17;
   optional bytes id = 1; // identifier
   optional bytes author_id = 2; // identifier
   optional string client_id = 3;
@@ -752,7 +753,6 @@ message Message {
   .churr.v1.SealedPayload sealed = 14;
   optional bool quiet = 15;
   optional bool action = 16;
-  .churr.v1.Chance chance = 17;
   optional int64 created_at = 18; // time
   optional int64 edited_at = 19; // time
   .churr.v1.ValueEnvelope view = 20;

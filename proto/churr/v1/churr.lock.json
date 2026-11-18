@@ -222,6 +222,10 @@
    "guest": 2,
    "member": 1
   },
+  "CoinFlipOutcome": {
+   "heads": 1,
+   "tails": 2
+  },
   "CommandKind": {
    "bot": 3,
    "builtin": 1,
@@ -1859,6 +1863,7 @@
    "at": 11,
    "author": 4,
    "color": 3,
+   "fair_mark": 14,
    "fields": 8,
    "footer": 10,
    "image_file_id": 9,
@@ -1871,6 +1876,11 @@
   "CardAuthor": {
    "icon_file_id": 4,
    "name": 3
+  },
+  "CardDraw": {
+   "cards": 4,
+   "deck": 3,
+   "reversed": 5
   },
   "CardField": {
    "label": 3,
@@ -2029,6 +2039,9 @@
    "category_name": 6,
    "code_point": 3,
    "name": 4
+  },
+  "CoinFlip": {
+   "outcome": 3
   },
   "CollectWebhookAddressResponse": {
    "signing_secret": 4,
@@ -2564,6 +2577,9 @@
    "proof": 10,
    "t": 12,
    "v": 3
+  },
+  "FairMark": {
+   "objects": 3
   },
   "FairPrimitive": {
    "count": 6,
@@ -3646,6 +3662,10 @@
    "synced": 12,
    "uncertainty_ms": 6
   },
+  "Pick": {
+   "options": 3,
+   "picked": 4
+  },
   "Pin": {
    "message": 6,
    "message_id": 3,
@@ -4404,6 +4424,10 @@
   "ShareChannelResponse": {
    "stream": 3
   },
+  "Shuffle": {
+   "options": 3,
+   "order": 4
+  },
   "Sidebar": {
    "groups": 6,
    "headings": 5,
@@ -4592,6 +4616,11 @@
    "message_id": 6,
    "name": 9,
    "participant_ids": 11
+  },
+  "TarotReading": {
+   "cards": 4,
+   "reversed": 5,
+   "spread": 3
   },
   "Task": {
    "checked": 4,
@@ -4988,6 +5017,7 @@
    "at": 11,
    "author": 4,
    "color": 3,
+   "fair_mark": 16,
    "fields": 8,
    "footer": 10,
    "image_file_id": 9,

@@ -1,0 +1,17 @@
+{
+  "kind": "pick",
+  "level": 1,
+  "about": "The data of kind pick (docs/FAIR.md section 5a): one of the options the server picked. Every check of it gives the same answer: valid cases are drawn, invalid ones fall back a step. Go: internal/model (TestChanceKindCases); web: e2e/types.mjs; the app: test/core/types_test.dart.",
+  "valid": [
+    {"name": "two options", "data": {"options": ["tea", "coffee"], "picked": 1}},
+    {"name": "the first", "data": {"options": ["a", "b", "c"], "picked": 0}}
+  ],
+  "invalid": [
+    {"name": "one option", "data": {"options": ["a"], "picked": 0}},
+    {"name": "past the end", "data": {"options": ["a", "b"], "picked": 2}},
+    {"name": "below the start", "data": {"options": ["a", "b"], "picked": -1}},
+    {"name": "an empty option", "data": {"options": ["a", ""], "picked": 0}},
+    {"name": "two lines", "data": {"options": ["a", "b\nc"], "picked": 0}},
+    {"name": "twenty-one options", "data": {"options": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"], "picked": 0}}
+  ]
+}

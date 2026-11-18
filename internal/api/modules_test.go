@@ -37,7 +37,7 @@ func TestModuleSwitches(t *testing.T) {
 
 	// The admin's list says what the module declares.
 	d := diceModule(arr(owner.Must(200, "GET", admin, nil), "modules"))
-	if d["on"] != true || d["server_on"] != true || d["title"] != "Dice" || len(arr(d, "commands")) != 2 ||
+	if d["on"] != true || d["server_on"] != true || d["title"] != "Dice" || len(arr(d, "commands")) != 3 ||
 		arr(d, "claims")[0] != model.KindDiceRoll {
 		t.Fatalf("the dice module: %v", d)
 	}
@@ -63,7 +63,7 @@ func TestModuleSwitches(t *testing.T) {
 		t.Fatalf("inline dice while off stay text: %v", got)
 	}
 	kim.Refused(403, model.CodeFeatureOff, "POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "d20"})
-	if menu := menuOf(kim, room); menu["roll"] != "" || menu["dice"] != "" || menu["flip"] != model.CommandBuiltin {
+	if menu := menuOf(kim, room); menu["roll"] != "" || menu["dice"] != "" || menu["flip"] != "" || menu["pick"] != model.CommandModule || menu["shrug"] != model.CommandBuiltin {
 		t.Fatalf("offered while off: %v", menu)
 	}
 	if typed := kim.Post(room, "and [[1d6]]"); len(diceIn(typed)) != 0 || typed["text"] != "and [[1d6]]" {

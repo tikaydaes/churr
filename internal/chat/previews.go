@@ -408,6 +408,11 @@ func serverCardOnly(c model.Card) error {
 	if c.PreviewURL != "" || c.Theme != nil {
 		return model.Invalid("cards", "Only the server sets preview_url and theme on a card.")
 	}
+	// A shield names outcomes of the draw; whether they check out is each
+	// reader's to work out (docs/DESIGN-FAIR.md section 13).
+	if c.FairMark != nil && !c.FairMark.Valid() {
+		return model.Invalid("cards", "A card's fair_mark names at most 20 objects of the message's draw, each 0 to 99.")
+	}
 	return nil
 }
 

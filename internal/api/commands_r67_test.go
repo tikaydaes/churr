@@ -11,7 +11,7 @@ import (
 )
 
 // The built-in commands of ruling R67 that reach the server: /me's action
-// mark and the chance results the server draws.
+// mark, and the chance commands, which are modules' that the server runs.
 
 func names(cmds []any) map[string]bool {
 	out := map[string]bool{}
@@ -39,7 +39,7 @@ func TestActionAndChance(t *testing.T) {
 	if edited["action"] != true {
 		t.Fatalf("the action mark after an edit: %v", edited)
 	}
-	owner.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"action": true, "chance": map[string]any{"kind": "flip"}})
+	owner.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"action": true})
 
 	// A roll: /roll runs through the dice module on the server, which rolls
 	// every die and posts the total as the message's text and view
@@ -52,7 +52,7 @@ func TestActionAndChance(t *testing.T) {
 		terms := row["terms"].([]any)
 		dice := terms[0].(map[string]any)
 		rolls := dice["rolls"].([]any)
-		if c["dice"] != "4d6kh3+2" || len(rows) != 1 || len(rolls) != 4 || len(dice["dropped"].([]any)) != 1 || m["chance"] != nil {
+		if c["dice"] != "4d6kh3+2" || len(rows) != 1 || len(rolls) != 4 || len(dice["dropped"].([]any)) != 1 {
 			t.Fatalf("roll: %v", m)
 		}
 		total := row["total"].(float64)
@@ -83,46 +83,42 @@ func TestActionAndChance(t *testing.T) {
 	}
 	// No edit reaches the result.
 	r := rolled(sam, room, "roll", "")
-	sam.Refused(400, model.CodeInvalidRequest, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"chance": map[string]any{"kind": "flip"}})
+	sam.Refused(400, model.CodeInvalidRequest, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"view": map[string]any{"kind": "coin_flip"}})
 	sam.Refused(409, model.CodeConflict, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"text": "for initiative"})
 	got := owner.Must(200, "GET", "/api/v1/messages/"+r["id"].(string), nil)["message"].(map[string]any)
 	if got["text"] != r["text"] || !reflect.DeepEqual(got["view"], r["view"]) || rollOf(t, r["view"].(map[string]any))["dice"] != "1d20" {
 		t.Fatalf("read back: %v, posted %v", got, r)
 	}
 
-	// The others.
-	flip := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "flip"}})["message"].(map[string]any)["chance"].(map[string]any)
-	if o := flip["outcome"]; o != "heads" && o != "tails" {
+	// The others, each a module's: the outcome is the message's view and
+	// its text the outcome in words (fair_test.go holds each to its proof).
+	view := func(m map[string]any) map[string]any { return m["view"].(map[string]any)["data"].(map[string]any) }
+	flip := rolled(sam, room, "flip", "")
+	if o := view(flip)["outcome"]; (o != "heads" && o != "tails") || flip["text"] != "Flipped a coin: "+o.(string) {
 		t.Fatalf("flip: %v", flip)
 	}
-	pick := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "pick", "options": []string{" tea ", "coffee"}}})["message"].(map[string]any)["chance"].(map[string]any)
+	pick := view(rolled(sam, room, "pick", " tea | coffee"))
 	if p := pick["picked"].(float64); (p != 0 && p != 1) || pick["options"].([]any)[0] != "tea" {
 		t.Fatalf("pick: %v", pick)
 	}
-	sh := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "shuffle", "options": []string{"a", "b", "c"}}})["message"].(map[string]any)["chance"].(map[string]any)
-	if len(sh["order"].([]any)) != 3 {
+	if sh := view(rolled(sam, room, "shuffle", "a | b | c")); len(sh["order"].([]any)) != 3 {
 		t.Fatalf("shuffle: %v", sh)
 	}
-	draw := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "draw", "count": 3, "deck": "Tarot"}})["message"].(map[string]any)["chance"].(map[string]any)
-	if draw["deck"] != "tarot" || len(draw["cards"].([]any)) != 3 || len(draw["reversed"].([]any)) != 3 {
+	if draw := view(rolled(sam, room, "draw", "3 Tarot")); draw["deck"] != "tarot" || len(draw["cards"].([]any)) != 3 || len(draw["reversed"].([]any)) != 3 {
 		t.Fatalf("draw: %v", draw)
 	}
 
-	// Refusals: the grammar's limits, text beside a result, a bot.
-	for _, body := range []map[string]any{
-		{"chance": map[string]any{"kind": "roll"}},
-		{"chance": map[string]any{"kind": "pick", "options": []string{"one"}}},
-		{"chance": map[string]any{"kind": "draw", "deck": "nonsense"}},
-		{"chance": map[string]any{"kind": "draw", "count": 60}},
-		{"chance": map[string]any{"kind": "dice"}},
-		{"text": "hi", "chance": map[string]any{"kind": "flip"}},
-		{"action": true},
-	} {
-		sam.Refused(400, model.CodeInvalidValue, "POST", msgs, body)
+	// Refusals: the grammar's limits, a request for a result in a post.
+	for _, c := range []struct{ name, text string }{{"pick", "one"}, {"draw", "2 nonsense"}, {"draw", "60"}, {"flip", "now"}, {"tarot", "pyramid"}} {
+		sam.Refused(400, model.CodeInvalidValue, "POST", cmdPath, map[string]any{"name": c.name, "text": c.text})
 	}
+	sam.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"action": true})
+	sam.Refused(400, model.CodeInvalidRequest, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "flip"}})
 	bot := owner.Bot("dealer")
 	owner.Add(room, "member", bot)
-	bot.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "flip"}})
+	for _, n := range []string{"flip", "pick", "draw", "tarot"} {
+		bot.Refused(400, model.CodeInvalidValue, "POST", cmdPath, map[string]any{"name": n, "text": "a | b"})
+	}
 
 	// A bot gets no roll either.
 	bot.Refused(400, model.CodeInvalidValue, "POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "d20"})
@@ -131,15 +127,17 @@ func TestActionAndChance(t *testing.T) {
 	// command has taken is the app's to carry out; /roll is the dice
 	// module's, which the server runs.
 	cmds := names(sam.Must(200, "GET", "/api/v1/commands?conversation_id="+room, nil)["commands"].([]any))
-	for _, n := range []string{"me", "draw", "join", "quiet", "poll"} {
+	for _, n := range []string{"me", "join", "quiet", "poll"} {
 		if !cmds[n] {
 			t.Fatalf("/%s is not listed: %v", n, cmds)
 		}
 	}
-	if menu := menuOf(sam, room); menu["roll"] != model.CommandModule || menu["dice"] != model.CommandModule {
-		t.Fatalf("/roll and /dice are the module's: %v", menu)
+	menu := menuOf(sam, room)
+	for _, n := range []string{"roll", "dice", "flip", "pick", "shuffle", "draw", "tarot", "mahjongg", "mahjong"} {
+		if menu[n] != model.CommandModule || cmds[n] {
+			t.Fatalf("/%s is a module's: %v", n, menu)
+		}
 	}
-	sam.Refused(400, model.CodeInvalidValue, "POST", convPath(room)+"/commands", map[string]any{"name": "draw", "text": "3"})
 	if m := rolled(sam, room, "roll", "d20"); rollOf(t, m["view"].(map[string]any))["dice"] != "1d20" || m["author_id"] != string(sam.ID) {
 		t.Fatalf("/roll through the server: %v", m)
 	}
@@ -148,11 +146,12 @@ func TestActionAndChance(t *testing.T) {
 func TestChanceRefusedInSealedChat(t *testing.T) {
 	w := newSealedWorld(t)
 	chat := w.annPhone.Open(w.bob.ID)
-	w.ann.Refused(400, model.CodeInvalidValue, "POST", convPath(chat.ID)+"/messages", map[string]any{"chance": map[string]any{"kind": "flip"}})
-	w.ann.Refused(403, model.CodeForbidden, "POST", convPath(chat.ID)+"/commands", map[string]any{"name": "roll", "text": "d20"})
+	for _, n := range []string{"roll", "flip", "pick", "shuffle", "draw", "tarot", "mahjongg"} {
+		w.ann.Refused(403, model.CodeForbidden, "POST", convPath(chat.ID)+"/commands", map[string]any{"name": n, "text": "a | b"})
+	}
 	w.ann.Refused(400, model.CodeInvalidRequest, "POST", convPath(chat.ID)+"/messages", map[string]any{"text": "waves", "action": true})
 	cmds := names(w.ann.Must(200, "GET", "/api/v1/commands?conversation_id="+chat.ID, nil)["commands"].([]any))
-	if !cmds["me"] || !cmds["shrug"] || !cmds["remind"] || cmds["roll"] || cmds["poll"] || cmds["kick"] {
+	if !cmds["me"] || !cmds["shrug"] || !cmds["remind"] || cmds["roll"] || cmds["flip"] || cmds["draw"] || cmds["poll"] || cmds["kick"] {
 		t.Fatalf("in a sealed chat the menu offers: %v", cmds)
 	}
 }

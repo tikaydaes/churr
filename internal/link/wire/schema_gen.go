@@ -485,7 +485,6 @@ var pbMessages = []pbMessage{
 		{"sealed", 14, pbClient, pbOne, 0, "SealedPayload"},
 		{"quiet", 15, pbBool, pbOne, 0, ""},
 		{"action", 16, pbBool, pbOne, 0, ""},
-		{"chance", 17, pbClient, pbOne, 0, "Chance"},
 		{"created_at", 18, pbTime, pbOne, 0, ""},
 		{"edited_at", 19, pbTime, pbOne, 0, ""},
 		{"view", 20, pbClient, pbOne, 0, "ValueEnvelope"},
