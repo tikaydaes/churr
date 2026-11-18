@@ -100,7 +100,26 @@ changes follow that comparison.
 A channel moved to a hub transfers to the hub. The hub owns it and is
 trusted as its owner; the instances the hub joins to it are trusted too.
 The channel keeps its managers, permissions and members. A private channel
-stays private on a hub and can never be listed or opened. Being built.
+stays private on a hub and can never be listed or opened. Built
+(`docs/FEATURES.md` section 21.5b).
+
+**Still to change: the hub reads its own channels.** As built, a hub never
+holds a channel's key: a member instance makes each key, and the hub cannot
+read the content of the channels it owns (`docs/LINK-PROTOCOL.md` sections
+10 and 23a). The owner decided on 2026-11-17 that this is a defect: the hub
+is trusted as the owner and nothing is kept from it. The hub will make and
+hold the keys of its channels, so it can read, check and act in them.
+`docs/DESIGN-MODULES.md` section 8 says what changes and what it replaces.
+
+## 5a. Modules, types and bots
+
+Commands and features (dice, cards, instants, measurements) become modules.
+Clients carry one catalogue of types that every card, dialog and command
+argument is made from. Churr is extended in three ways with one contract:
+built-in modules, data-only manifests, and external bots. No third-party
+code runs in an instance or a hub. A conversation runs its owner's modules.
+The design, awaiting the owner's answers to its open questions, is
+`docs/DESIGN-MODULES.md`.
 
 ## 6. Smaller planned items
 
