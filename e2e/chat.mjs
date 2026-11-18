@@ -473,8 +473,8 @@ export async function chatFlow(kaity, sam, origin) {
     await cross.locator('.slot.card').nth(1).click();
     const detail = cross.locator('.slot.card').nth(1).locator('.chance-detail');
     await detail.waitFor({ state: 'visible' });
-    const words = await detail.textContent();
-    assert(words.startsWith('Challenge') && /upright|reversed/.test(words), `a press opens the card's details: ${words}`);
+    const detailWords = await detail.textContent();
+    assert(detailWords.startsWith('Challenge') && /upright|reversed/.test(detailWords), `a press opens the card's details: ${detailWords}`);
     await a.keyboard.press('Escape');
     await detail.waitFor({ state: 'hidden' });
   }, a);
