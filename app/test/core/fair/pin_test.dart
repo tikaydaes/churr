@@ -1,4 +1,4 @@
-// The app's pin of a server's VRF key history (lib/core/fair/pin.dart), the
+// The app's pins of servers' VRF key histories (lib/core/fair/pin.dart), the
 // same cases as the web chat's in e2e/fair.mjs.
 
 import 'package:churr/core/fair/pin.dart';
@@ -22,19 +22,39 @@ void main() {
     expect(comparePin(null, const []).state, PinState.changed);
   });
 
-  test('checkPin keeps the first sight and what grows, never a change', () async {
+  test('the pins keep the first sight and what grows, never a change', () {
     String? stored;
-    Future<PinState> load(List<Map<String, dynamic>> shown) async =>
-        (await checkPin(() async => stored, (v) async => stored = v, shown))
-            .state;
-    expect(await load([a]), PinState.first);
-    expect(await load([a]), PinState.same);
-    expect(await load([c]), PinState.changed);
-    expect(await load([a]), PinState.same);
-    expect(await load([a, b]), PinState.grown);
-    expect(await load([a, b]), PinState.same);
+    PinState? load(List<Map<String, dynamic>> shown) => (FairHistories(
+      (v) async => stored = v,
+    )..load(stored)).show('a.example', shown)?.state;
+    expect(load([a]), PinState.first);
+    expect(load([a]), PinState.same);
+    expect(load([c]), PinState.changed);
+    expect(load([a]), PinState.same);
+    expect(load([a, b]), PinState.grown);
+    expect(load([a, b]), PinState.same);
     stored = 'not json';
-    expect(await load([a]), PinState.first);
+    expect(load([a]), PinState.first);
+  });
+
+  test('one pin per server name, from any source', () {
+    final pins = FairHistories((_) async {})..load(null);
+    expect(pins.of('b.example'), isNull);
+    pins.showShared({
+      'vrf_keys': [
+        {
+          'server': 'b.example',
+          'keys': [b],
+        },
+        'junk',
+      ],
+    });
+    expect(pins.of('b.example')!.keys, [b]);
+    pins.show('b.example', [c]);
+    expect(pins.of('b.example')!.changed, isTrue);
+    expect(pins.of('b.example')!.keys, [b]);
+    pins.show('b.example', [b]);
+    expect(pins.of('b.example')!.changed, isTrue, reason: 'a change stays');
   });
 
   test('getServer gives the history', () {

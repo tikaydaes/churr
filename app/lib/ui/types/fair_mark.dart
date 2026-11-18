@@ -1,5 +1,7 @@
 // The mark under a message whose chance was drawn (docs/FAIR.md), as the web
-// chat's shared/fair/mark.js: "Verified", or plainly "Not verified" with why.
+// chat's shared/fair/mark.js: "Verified", or plainly "Not verified" with why
+// (a check made that did not hold), or "Cannot be checked here" with why (a
+// draw by a server whose key history this device was never given).
 // Tapped, it shows the proof itself, so anyone can check it again elsewhere.
 // The roll stays shown whatever the check says. The check is made on the
 // device with nothing asked of the server (core/fair/verify.dart), once per
@@ -15,11 +17,19 @@ import '../theme/tokens.dart';
 
 const _verified = 'Verified';
 const _failed = 'Not verified';
+const _unknown = 'Cannot be checked here';
 const _saysVerified =
-    "Every die shown here is the one the server's proof gives. The proof was "
-    'made with the key this server published, for this place in the '
-    'conversation, and nobody, the server included, could have made it come '
-    'out otherwise.';
+    "Everything shown here is what the server's proof gives. The proof was "
+    'made with the key the server that drew it published, for this place in '
+    'the conversation, and nobody, that server included, could have made it '
+    'come out otherwise.';
+
+/// The mark's word for what a check found.
+String fairWord(FairState s) => switch (s) {
+  FairState.verified => _verified,
+  FairState.unknown => _unknown,
+  _ => _failed,
+};
 
 // The block's fields, in the order the proof is read.
 const _fields = [
@@ -35,16 +45,18 @@ const _fields = [
 
 final _checked = <String, FairCheck>{};
 
-/// The check of [m]'s draw against what [server] holds, made once.
+/// The check of [m]'s draw against what [server] holds, made once for each
+/// state of the pins.
 FairCheck fairCheckOf(ServerState server, Message m) {
-  final key = '${m.id}|${(m.raw['fair'] as Map?)?['proof']}';
+  final conv = server.conversation(m.conversationId);
+  final shared = conv?.raw['shared'];
+  final histories = server.vrfHistories..showShared(shared);
+  final key =
+      '${m.id}|${(m.raw['fair'] as Map?)?['proof']}|${histories.version}';
   return _checked[key] ??= () {
-    final conv = server.conversation(m.conversationId);
-    final shared = conv?.raw['shared'];
     return verifyMessage(
       m.raw,
-      server: server.info?.name ?? '',
-      keys: server.vrfPinned,
+      keysOf: histories.of,
       chains: [
         m.conversationId,
         if (shared is Map && shared['stream_id'] is String)
@@ -65,12 +77,17 @@ class FairMark extends StatelessWidget {
     final c = ChurrColors.of(context);
     final res = fairCheckOf(server, message);
     final ok = res.state == FairState.verified;
-    final colour = ok ? c.cyan : c.yellowInk;
+    final unknown = res.state == FairState.unknown;
+    final colour = ok ? c.cyan : (unknown ? c.dim : c.yellowInk);
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Semantics(
         button: true,
-        label: ok ? 'Roll verified' : 'Roll not verified: ${res.why}',
+        label: ok
+            ? 'Roll verified'
+            : unknown
+            ? 'Roll cannot be checked here: ${res.why}'
+            : 'Roll not verified: ${res.why}',
         child: Tooltip(
           message: ok ? _saysVerified : res.why,
           child: InkWell(
@@ -89,7 +106,7 @@ class FairMark extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    ok ? _verified : _failed,
+                    fairWord(res.state),
                     style: TextStyle(fontSize: 12, color: colour),
                   ),
                 ],
@@ -126,7 +143,7 @@ Future<void> showFairProof(BuildContext context, FairCheck res) {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${ok ? _verified : _failed}: ${ok ? _saysVerified : res.why}',
+                  '${fairWord(res.state)}: ${ok ? _saysVerified : res.why}',
                   style: TextStyle(color: ok ? c.ink : c.yellowInk),
                 ),
                 const SizedBox(height: 10),

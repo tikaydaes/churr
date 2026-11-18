@@ -1,23 +1,28 @@
 // Checking a message's draw on the device (docs/FAIR.md section 9), as the
 // web chat does (shared/fair/verify.js), with nothing asked of any server:
-// the message and the VRF key history pinned on this device hold all it
-// needs. The block's layout and rule are known; alpha is the one the
+// the message and the VRF key history pinned on this device for the server
+// that drew it hold all it needs. The block's layout and rule are known; alpha is the one the
 // conversation's chain gives for its n and prev; pk is the key its owner had
 // when the message was made, by the pinned history; the proof verifies under
 // pk and gives beta; and every roll that took chance from the draw is what
-// derive 1 gives for it. A check that fails says why; it never hides the
-// roll. Plain Dart, tested without Flutter.
+// derive 1 gives for it. A check that fails says why; a draw by a server
+// whose history this device was never given says it cannot be checked here,
+// which is not a failure. It never hides the roll. Plain Dart, tested
+// without Flutter.
 
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'derive.dart';
+import 'pin.dart';
 import 'ecvrf.dart' as ecvrf;
 
 const _label = 'churr-fair-1';
 
-/// What a check found.
-enum FairState { verified, failed, none }
+/// What a check found: [unknown] is a draw by a server this device holds
+/// no key history for, which cannot be checked here; [failed] a check made
+/// that did not hold.
+enum FairState { verified, failed, unknown, none }
 
 /// The outcome of [verifyMessage]: the state, why it failed, and the block.
 class FairCheck {
@@ -94,13 +99,14 @@ String? keyAt(List<Map<String, dynamic>> history, DateTime at) {
   return out;
 }
 
-/// Checks a message's draw. [server] is this server's name, [keys] the VRF
-/// key history pinned for it, [chains] the names the conversation's chain
-/// may have (its id, and its stream's when shared).
+/// Checks a message's draw. [keysOf] gives the VRF key history pinned for a
+/// server by name, or null when no source has given one (getServer for
+/// this server, a shared conversation's `shared.vrf_keys` for the others);
+/// [chains] the names the conversation's chain may have (its id, and its
+/// stream's when shared).
 FairCheck verifyMessage(
   Map<String, dynamic> m, {
-  required String server,
-  required List<Map<String, dynamic>> keys,
+  required FairHistory? Function(String name) keysOf,
   required List<String> chains,
 }) {
   final raw = m['fair'];
@@ -108,7 +114,9 @@ FairCheck verifyMessage(
   final block = Map<String, dynamic>.from(raw);
   FairCheck fail(String why) =>
       FairCheck(FairState.failed, why: why, block: block);
-  if (block['v'] != 1) return fail('This proof is in a layout this app does not know.');
+  if (block['v'] != 1) {
+    return fail('This proof is in a layout this app does not know.');
+  }
   if (block['derive'] != deriveVersion) {
     return fail('This roll was worked out by a rule this app does not know.');
   }
@@ -134,15 +142,26 @@ FairCheck verifyMessage(
   if (!_same(alpha, alphaOf(owner, chain, n, prev))) {
     return fail('The proof is not for this place in the conversation.');
   }
-  if (owner != server) {
-    return fail('The key of $owner, which made this roll, is not known here.');
+  final history = keysOf(owner);
+  if (history == null) {
+    return FairCheck(
+      FairState.unknown,
+      why:
+          "It was drawn by $owner, and this conversation does not carry that "
+          "server's key history, so it cannot be checked here.",
+      block: block,
+    );
+  }
+  if (history.changed) {
+    return fail(
+      '$owner now shows a different key history than the one this app '
+      'pinned for it, so its proofs are not trusted.',
+    );
   }
   final created = DateTime.tryParse(m['created_at'] as String? ?? '');
-  final key = created == null ? null : fromB64(keyAt(keys, created));
+  final key = created == null ? null : fromB64(keyAt(history.keys, created));
   if (!_same(key, pk)) {
-    return fail(
-      'The roll was not proved with the key this server had at the time.',
-    );
+    return fail('The roll was not proved with the key $owner had at the time.');
   }
   final r = ecvrf.verify(pk, proof, alpha);
   if (!r.valid || !_same(r.beta, beta)) {

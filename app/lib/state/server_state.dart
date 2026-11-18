@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -166,25 +165,21 @@ class ServerState extends ChangeNotifier {
   /// Whether the server shows a VRF key history other than the pinned one.
   bool get vrfPinChanged => vrfPin?.state == PinState.changed;
 
-  /// The VRF key history pinned on this device, which rolls are checked
-  /// against (core/fair/verify.dart): the pin, never a history that
-  /// changed it.
-  List<Map<String, dynamic>> vrfPinned = const [];
+  /// The VRF key histories pinned on this device, by server name, that
+  /// draws are checked against (core/fair/verify.dart): this server's, from
+  /// its description, and every other server's a shared conversation
+  /// carries, pinned as the conversation is shown.
+  late final vrfHistories = FairHistories((v) => db.putSetting(_vrfPinsKey, v));
 
-  static const _vrfPinKey = 'fair.vrf_pin';
+  static const _vrfPinsKey = 'fair.vrf_pins';
+  bool _vrfLoaded = false;
 
   Future<void> _checkVrfPin(ServerInfo i) async {
-    vrfPin = await checkPin(
-      () => db.setting(_vrfPinKey),
-      (v) => db.putSetting(_vrfPinKey, v),
-      i.vrfKeys,
-    );
-    try {
-      final raw = await db.setting(_vrfPinKey);
-      vrfPinned = raw == null ? const [] : vrfKeysOf(jsonDecode(raw));
-    } on FormatException {
-      vrfPinned = const [];
+    if (!_vrfLoaded) {
+      vrfHistories.load(await db.setting(_vrfPinsKey));
+      _vrfLoaded = true;
     }
+    vrfPin = vrfHistories.show(i.name, i.vrfKeys);
   }
 
   /// Fetches the server's description again.
