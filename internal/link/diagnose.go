@@ -122,8 +122,12 @@ func describeHold(rt *streamRT) string {
 		if e.history {
 			waits = "the channel's earlier history"
 		}
-		fmt.Fprintf(&b, "    %s n %d (%s) from peer %s waits for %s; failures %d; until %s\n",
-			e.env.Origin, e.env.N, e.o.in.Type, e.peer, waits, e.failures, time.Until(e.until).Round(time.Millisecond))
+		why := ""
+		if e.rej != nil {
+			why = e.rej.reason
+		}
+		fmt.Fprintf(&b, "    %s n %d (%s) from peer %s waits for %s (%s); failures %d; until %s\n",
+			e.env.Origin, e.env.N, e.o.in.Type, e.peer, waits, why, e.failures, time.Until(e.until).Round(time.Millisecond))
 	}
 	return b.String()
 }

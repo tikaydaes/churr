@@ -558,6 +558,14 @@ func SetRetriesUntimed() func() {
 	}
 }
 
+// SetUnreachedByHolder has a hub's holder find no way to reach the server of
+// that name, as when its roster has not named it yet, and returns the
+// function that ends it.
+func SetUnreachedByHolder(name string) func() {
+	unreachedByHolder.Store(name, true)
+	return func() { unreachedByHolder.Delete(name) }
+}
+
 // SetDeafToHome has the server of that name leave every request for a
 // channel's snapshot unanswered, and returns the function that ends it.
 func SetDeafToHome(name string) func() {

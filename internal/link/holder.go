@@ -446,6 +446,20 @@ func (s *Service) askOwed(ctx context.Context, id model.StreamID) {
 			} else if row, err := s.store.Peers().ServerByName(ctx, name); err == nil {
 				sv, ok = row, s.reaches(ctx, store.Peer{ID: st.PeerID, Kind: wire.KindHub}, row.ID)
 			}
+			if _, hidden := unreachedByHolder.Load(name); hidden {
+				ok = false // a test plays a roster that has not named it yet
+			}
+			if !ok && name != from && s.stillIn(ctx, id, name) {
+				// Not reachable as far as this holder knows yet, but still
+				// in the channel: the roster that names it may simply not
+				// have reached the holder (a slow machine, a hub just
+				// started). It has not gone, and is asked again next round,
+				// or when it connects (Nudge). Settling it now would call
+				// the history complete without its part, and every event
+				// naming one of its people would be rejected for good, here
+				// and on every instance given this copy.
+				continue
+			}
 			if !ok {
 				// Gone from the hub and the cluster: nobody can reach it
 				// again to ask.
@@ -708,4 +722,17 @@ func (s *Service) takeEarly(id model.StreamID) (lost bool) {
 		}
 	}
 	return lost
+}
+
+// unreachedByHolder, when a test sets it for a server's name, has a hub's
+// holder find no way to reach that server, as when the roster that names it
+// has not reached the holder yet.
+var unreachedByHolder sync.Map
+
+// stillIn reports whether a server is still named by the record of a channel
+// this holder keeps: one that has not left it, whatever the holder knows yet
+// of how to reach it.
+func (s *Service) stillIn(ctx context.Context, id model.StreamID, name string) bool {
+	rec, err := s.channelOf(ctx, s.store, id)
+	return err == nil && rec.Has(name)
 }

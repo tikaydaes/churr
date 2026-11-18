@@ -628,3 +628,39 @@ func TestAnEarlyJoinerIsGivenTheRestOfTheHistory(t *testing.T) {
 		t.Fatalf("b rejected %v", r)
 	}
 }
+
+// A hub's holder that cannot yet reach an instance still in the channel (the
+// roster naming it has not reached the holder, on a slow machine) goes on
+// waiting for that instance's part of the history instead of calling the
+// history complete without it: the instance's first post, by people the
+// holder learns of only from that history, waits for it and is not rejected
+// for good, on the holder or on an instance it gives its copy to.
+func TestTheHolderWaitsForAnInstanceItCannotReachYet(t *testing.T) {
+	defer link.SetFirstHistoryWait(200 * time.Millisecond)()
+	unhide := link.SetUnreachedByHolder("a.localhost")
+	defer unhide()
+	l := testkit.NewLinked(t, 2, true)
+	a, b := l.Servers[0], l.Servers[1]
+	ch := a.Owner.Channel("council", false)
+	stream, local := l.Share(0, ch, "council", map[string]any{"listing": "open", "history_days": 30}, 1)
+	a.Owner.Post(ch, "the first word")
+	ctx, id := context.Background(), model.StreamID(stream)
+	owed := func() string { return fmt.Sprint(l.Hub.Hub.Holder().HistoryOwed(ctx, id)) }
+	time.Sleep(time.Second) // rounds of asking, a out of reach
+	if owed() != "[a.localhost]" {
+		t.Fatalf("the holder stopped waiting for a, which is still in the channel: it waits on %s", owed())
+	}
+	unhide()
+	l.Hub.Hub.Holder().Nudge("a.localhost")
+	b.Owner.HasMessage(local[1], "the first word")
+	testkit.Eventually(t, "the hub holds the first word", func() bool {
+		_, held := heldMessages(t, l.Hub, stream)
+		_, ok := held["the first word"]
+		return ok
+	})
+	for i, s := range []*link.Service{l.Hub.Hub.Holder(), b.Server.Link} {
+		if r := s.StatsNow().Rejected["unknown_account"]; r != 0 {
+			t.Fatalf("%d rejected an event for its author %d times", i, r)
+		}
+	}
+}
