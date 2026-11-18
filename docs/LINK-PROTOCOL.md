@@ -1262,7 +1262,10 @@ a refusal of the stamp itself gives it a new one (section 13).
 In this order. "Reject" means: nothing is stored or shown, the
 envelope still counts as held (the origin's counter moves past it),
 and a `link.event_rejected` line goes to the audit log with the
-reason (at most one line per stream, origin and reason per hour).
+reason (at most one line per stream, origin and reason per hour). In
+a channel a hub owns, an event this server failed to apply because it
+failed itself is not rejected but kept and tried again (section 13,
+"When this server fails").
 
 | Step | Check                                             | If it fails        |
 |------|---------------------------------------------------|--------------------|
@@ -1936,6 +1939,27 @@ servers and one log, and nothing is held. A hub's log holds nothing
 either; the home hub's holder, which applies a channel's envelopes as
 an instance does (section 23a), holds events as an instance holds
 them.
+
+**When this server fails.** An event that fails to apply because the
+server itself failed (its database, its disk: rejection `internal`),
+and goes on failing when tried again three times within a fraction of
+a second, is not passed over in a channel a hub owns: the hub owns
+the channel, and no copy of it, the holder's or an instance's, may be
+short of a message. It is **kept** as a held event is, the counter of
+its origin stays below it, and it is tried again after 5 seconds, then
+after a wait that doubles up to 5 minutes, for as long as it takes. It
+has no time limit and is never rejected for waiting. Each failure is
+logged as an error, and the audit log gets `link.event_rejected` with
+reason `internal`, `kept: true`, the event's `n`, `type` and the number
+of failures (at most one line per stream and origin an hour), so an
+operator sees a channel that is stuck. The origin's other events go on
+meanwhile. What is kept is in memory: after a restart the counter
+brings it again from the hub's log, as above. When a stream holds 256
+events and the one to give way is kept for a failure, it is let go
+from memory as one waiting for the history is, and the log is asked
+for it again (`catch_up`) when it would have been tried again. In
+every other stream an event that cannot be applied is rejected after
+the three tries, and its origin's counter passes it.
 
 ### An envelope under a key from before a server joined
 
@@ -3504,7 +3528,11 @@ is given it by the hub with every other instance switched off.
   instance in the channel would: the origin's signature is checked
   against the key the hub's roster gives the origin, the authority
   rules of section 12 are applied to the origin, and an event about a
-  message not yet there is held. Messages are kept as they stand:
+  message not yet there is held. An event the holder fails to apply
+  because its own database or disk failed is kept and tried again until
+  it is applied, and is in its log and audit log meanwhile (section 13,
+  "When this server fails"): the channel's whole copy is never short of
+  it. Messages are kept as they stand:
   edited, deleted, reacted to, ticked, answered. Members join and
   leave as `member.joined`, `member.left` and the record say; the
   members of an instance that leaves or is removed leave the copy, and

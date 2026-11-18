@@ -1,6 +1,10 @@
 package link_test
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -224,5 +228,66 @@ func TestAServerOpensAnEnvelopeOfItsOwn(t *testing.T) {
 	// taken or made.
 	if kind, _, err := s.link(2).TestAskReply(model.PeerID(s.Peers[2]), "a.localhost", "open_request", map[string]any{"stream_id": s.stream, "envelope": env}); err == nil {
 		t.Fatalf("a opened an envelope it never took: %s", kind)
+	}
+}
+
+// In a channel a hub owns, an event a server fails to apply because it failed
+// itself (its database, say) is not passed over: the hub owns the channel and
+// no copy of it may be short of a message (docs/LINK-PROTOCOL.md section 13,
+// "When this server fails"). The event is kept, the counter of its origin
+// stays below it, the failure is in the audit log, the origin's later events
+// go on, and once the server works again the event is applied. Before, after
+// three tries the counter moved past it and the message was lost on that
+// server for good.
+func TestAnEventThatFailsToApplyIsKeptAndTriedAgain(t *testing.T) {
+	defer link.SetFailRetryBase(100 * time.Millisecond)()
+	s := share(t, 3, true, nil)
+	c := s.Servers[2]
+	s.settle("before")
+	broken := atomic.Bool{}
+	broken.Store(true)
+	s.link(2).TestFailApply(func(eventType string) error {
+		if eventType == "message.created" && broken.Load() {
+			return errors.New("the disk is full")
+		}
+		return nil
+	})
+	s.ann.Post(s.conv[0], "the stuck message")
+	s.Servers[1].Owner.HasMessage(s.conv[1], "the stuck message")
+	testkit.Eventually(t, "c fails to apply it twice", func() bool { return s.link(2).StatsNow().ApplyFailed >= 2 })
+	if got := s.link(2).TestHeld(s.stream); got != 1 {
+		t.Fatalf("c keeps %d events, want 1", got)
+	}
+	var stuck wire.Envelope
+	for _, env := range s.Hub.Hub.TestLog(string(s.stream)) {
+		if env.Origin == testkit.ServerName(0) {
+			stuck = env // the last of a's: the stuck message
+		}
+	}
+	if have := s.link(2).TestHave(s.stream)[testkit.ServerName(0)]; have >= stuck.N {
+		t.Fatalf("c's counter of a is %d, at or past the event it failed to apply (%d)", have, stuck.N)
+	}
+	audit := c.Owner.Must(200, "GET", "/api/v1/admin/audit?action=link.event_rejected", nil)
+	if !strings.Contains(fmt.Sprint(audit), "internal") {
+		t.Errorf("the audit log does not report the failure: %v", audit)
+	}
+	// a's next event is of another kind and applies meanwhile.
+	posted := s.ann.HasMessage(s.conv[0], "before")
+	s.ann.Must(200, "PUT", "/api/v1/messages/"+posted["id"].(string)+"/reactions/👍", nil)
+	testkit.Eventually(t, "c applies a's later reaction", func() bool { return reactionsOn(c.Owner, s.conv[2], "before") == 1 })
+	if have := s.link(2).TestHave(s.stream)[testkit.ServerName(0)]; have >= stuck.N {
+		t.Fatalf("c's counter of a moved to %d, past the event it still keeps (%d)", have, stuck.N)
+	}
+	// The server works again: the event is applied, and nothing is kept.
+	broken.Store(false)
+	c.Owner.HasMessage(s.conv[2], "the stuck message")
+	testkit.Eventually(t, "c keeps nothing", func() bool { return s.link(2).TestHeld(s.stream) == 0 })
+	testkit.Eventually(t, "c's counter of a passes the event", func() bool {
+		return s.link(2).TestHave(s.stream)[testkit.ServerName(0)] > stuck.N
+	})
+	s.settle("after")
+	s.sameEverywhere("before", "the stuck message", "after")
+	if n := countText(c.Owner, s.conv[2], "the stuck message"); n != 1 {
+		t.Fatalf("c holds the message %d times", n)
 	}
 }

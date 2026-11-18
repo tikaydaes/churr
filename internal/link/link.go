@@ -123,6 +123,10 @@ type Service struct {
 	// before it leaves and returns the frame to send in its place: a test
 	// plays a server that stamps wrongly, or keeps envelopes back.
 	testSubmitting atomic.Pointer[func(stream model.StreamID, f wire.Frame) wire.Frame]
+	// testFailApply, when a test has set it, is asked before each delivered
+	// event is applied; an error it returns is this server failing to apply
+	// it (a broken database, a full disk).
+	testFailApply atomic.Pointer[func(eventType string) error]
 
 	mu      sync.Mutex
 	conns   map[model.PeerID]*peerConn
@@ -272,6 +276,10 @@ type Stats struct {
 	// HeldShed counts events waiting for a channel's history that were let
 	// go from memory to make room, and taken again from the log after.
 	HeldShed int64
+	// ApplyFailed counts the times an event of a hub-owned channel could
+	// not be applied because this server failed, and was kept to be tried
+	// again.
+	ApplyFailed int64
 	// Snapshots counts presence snapshots sent.
 	Snapshots int64
 }
@@ -404,7 +412,7 @@ func (s *Service) StatsNow() Stats {
 		Dropped: map[string]int64{}, Dials: map[model.PeerID]int64{}, Gaps: s.stats.Gaps, Refused: map[string]int64{},
 		Restamped: s.stats.Restamped, Replaced: map[string]int64{},
 		Held: s.stats.Held, HeldExpired: s.stats.HeldExpired, Reopened: s.stats.Reopened, HistoryAsked: s.stats.HistoryAsked,
-		Snapshots: s.stats.Snapshots}
+		HeldShed: s.stats.HeldShed, ApplyFailed: s.stats.ApplyFailed, Snapshots: s.stats.Snapshots}
 	for k, v := range s.stats.Replaced {
 		out.Replaced[k] = v
 	}

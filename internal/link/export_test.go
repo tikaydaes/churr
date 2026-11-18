@@ -20,6 +20,23 @@ func SetDialBase(d time.Duration) func() {
 	return func() { dialBase.Store(old) }
 }
 
+// SetFailRetryBase shortens the first wait before an event this server
+// failed to apply is tried again, and returns a function that puts it back.
+func SetFailRetryBase(d time.Duration) func() {
+	old := failRetryBase.Swap(int64(d))
+	return func() { failRetryBase.Store(old) }
+}
+
+// TestFailApply has this server fail to apply every delivered event for
+// which f returns an error, as a broken database would; nil stops it.
+func (s *Service) TestFailApply(f func(eventType string) error) {
+	if f == nil {
+		s.testFailApply.Store(nil)
+		return
+	}
+	s.testFailApply.Store(&f)
+}
+
 // NextWait is the dialler's wait after a number of failures.
 func NextWait(failures int, jitter float64) time.Duration {
 	return nextWait(failures, time.Second, jitter)

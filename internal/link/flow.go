@@ -580,6 +580,11 @@ func (s *Service) settle(ctx context.Context, tx store.Tx, rec *chat.Recorder, s
 			return reject("too_old"), nil
 		}
 	}
+	if f := s.testFailApply.Load(); f != nil {
+		if err := (*f)(o.in.Type); err != nil {
+			return nil, err
+		}
+	}
 	rej, err := s.applyEvent(ctx, tx, rec, st, o.origin, o.in, env)
 	if err != nil || rej != nil {
 		return rej, err
@@ -1195,7 +1200,7 @@ func (s *Service) delivered(ctx context.Context, peer model.PeerID, env wire.Env
 			s.unreadable(st, env)
 		}
 	}
-	if s.settleDelivered(ctx, rt, st, peer, env, o, false, time.Time{}) {
+	if s.settleDelivered(ctx, rt, st, peer, env, o, nil) {
 		// A message that has just arrived may be the one held events are
 		// waiting for.
 		s.retryHeld(ctx, rt, false)
@@ -1204,14 +1209,32 @@ func (s *Service) delivered(ctx context.Context, peer model.PeerID, env wire.Env
 
 // settleDelivered applies a delivered envelope and moves this server's
 // counter of its origin, or puts the envelope in the stream's hold if it is
-// about a message that has not arrived (hold.go). released says the envelope
-// has just come out of the hold; until is then when its time there ends. It
-// reports whether the event was applied.
-func (s *Service) settleDelivered(ctx context.Context, rt *streamRT, st store.Stream, peer model.PeerID, env wire.Envelope, o opened, released bool, until time.Time) bool {
+// about a message that has not arrived, or, in a channel a hub owns, one this
+// server failed to apply (hold.go). from is the held event the envelope has
+// just come out of, nil for a delivery. It reports whether the event was
+// applied.
+func (s *Service) settleDelivered(ctx context.Context, rt *streamRT, st store.Stream, peer model.PeerID, env wire.Envelope, o opened, from *heldEvent) bool {
+	released := from != nil
+	var until time.Time
+	failures := 0
+	if released {
+		until, failures = from.until, from.failures
+		if failures > 0 {
+			// Its time was for being tried again: should it now wait for
+			// a message, it waits the ordinary time from now.
+			until = time.Now().Add(time.Duration(holdWait.Load()))
+		}
+	}
 	var rej *rejection
-	parked, history := false, false
+	parked, history, failed := false, false, false
 	rej, err := s.apply(ctx, st.ID, env, o, &rej, func(tx store.Tx, cur store.Stream) error {
-		parked = false
+		parked, failed = false, false
+		if keptOnFailure(cur, rej) {
+			// This server failed, not the event: it is kept and tried
+			// again, and the counter does not pass it.
+			parked, failed = true, true
+			return nil
+		}
 		hold, forHistory := s.mayHold(ctx, tx, cur, rej)
 		history = forHistory
 		if hold && (forHistory || !released || time.Now().Before(until)) {
@@ -1256,10 +1279,20 @@ func (s *Service) settleDelivered(ctx context.Context, rt *streamRT, st store.St
 	})
 	if err != nil {
 		s.log.Warn("link: an envelope could not be settled", "stream", st.ID, "origin", env.Origin, "n", env.N, "err", err)
+		if hubOwned(st) && ctx.Err() == nil && o.in.Type != evMoved {
+			// Not even the note that it failed could be written. It is
+			// kept all the same: one taken out of the hold and dropped
+			// here would let the counter pass it with the next delivery.
+			s.park(ctx, rt, st, peer, env, o, reject("internal"), false, failures+1)
+		}
+		return false
+	}
+	if parked && failed {
+		s.park(ctx, rt, st, peer, env, o, rej, false, failures+1)
 		return false
 	}
 	if parked {
-		s.park(ctx, rt, st, peer, env, o, rej, history)
+		s.park(ctx, rt, st, peer, env, o, rej, history, 0)
 		if released && !history {
 			rt.hold.events[len(rt.hold.events)-1].until = until
 		}

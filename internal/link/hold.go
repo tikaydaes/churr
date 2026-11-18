@@ -55,6 +55,15 @@ import (
 // envelope itself: the origin's signature on the envelope is checked here,
 // the plaintext is vouched for by the server that opened it, as history is.
 // If nobody opens it, the messages of that stretch are asked for as history.
+//
+// 3. In a channel a hub owns, an event this server could not apply because it
+// failed itself (`internal`: its database, its disk). The hub owns the
+// channel and no copy of it may be short of a message, so such an event is
+// not passed over: it is **kept** as a held event is, with the counter of its
+// origin below it, and tried again after a wait that doubles from
+// failRetryBase (5 seconds) to 5 minutes, for as long as it takes. Each
+// failure is logged as an error, and audited (link.event_rejected, reason
+// `internal`, at most once an hour). The origin's other events go on.
 
 // The bounds of holding. Tests shorten the wait.
 const holdMax = 256
@@ -62,6 +71,30 @@ const holdMax = 256
 var holdWait atomic.Int64
 
 func init() { holdWait.Store(int64(60 * time.Second)) }
+
+// failRetryBase is the first wait before an event that could not be applied
+// is tried again; it doubles up to failRetryMax. Tests shorten it.
+var failRetryBase atomic.Int64
+
+func init() { failRetryBase.Store(int64(5 * time.Second)) }
+
+const failRetryMax = 5 * time.Minute
+
+// failRetryWait is the wait after the given number of failures of one event.
+func failRetryWait(failures int) time.Duration {
+	d := time.Duration(failRetryBase.Load())
+	for i := 1; i < failures && d < failRetryMax; i++ {
+		d *= 2
+	}
+	return min(d, failRetryMax)
+}
+
+// keptOnFailure reports whether an event that could not be applied is kept
+// and tried again rather than passed over: in a channel a hub owns, whose
+// every copy must be whole.
+func keptOnFailure(st store.Stream, rej *rejection) bool {
+	return rej != nil && rej.reason == "internal" && hubOwned(st)
+}
 
 // SetHoldWait changes how long an event is held for what it refers to, and
 // returns a function that puts it back. It is for tests.
@@ -83,6 +116,10 @@ type heldEvent struct {
 	// has not been given whole yet (awaitsHistory), and has no time limit
 	// until it has.
 	history bool
+	// failures counts the times it could not be applied because this server
+	// failed (keptOnFailure). It is then tried again at until, and never
+	// given up.
+	failures int
 }
 
 // holdState is what one stream holds. It is touched only by the stream's
@@ -98,8 +135,13 @@ type holdState struct {
 	// channel's history that was let go from memory to make room. The
 	// counter in the database stays below it, and the log is asked for it
 	// again once the history is here (historyHere).
-	shed  map[string]int64
-	timer *time.Timer
+	shed map[string]int64
+	// failShed is the same for events kept because they could not be
+	// applied: those are asked for again from the log at failShedAt, which
+	// is when the one let go would have been tried again.
+	failShed   map[string]int64
+	failShedAt time.Time
+	timer      *time.Timer
 }
 
 func (h *holdState) has(eventID string) bool {
@@ -114,6 +156,9 @@ func (h *holdState) has(eventID string) bool {
 // lowest returns the lowest counter held of an origin, 0 if nothing is.
 func (h *holdState) lowest(origin string) int64 {
 	low := h.shed[origin]
+	if f, ok := h.failShed[origin]; ok && (low == 0 || f < low) {
+		low = f
+	}
 	for _, e := range h.events {
 		if e.env.Origin == origin && (low == 0 || e.env.N < low) {
 			low = e.env.N
@@ -213,9 +258,9 @@ var farOff = time.Unix(1<<40, 0)
 
 // park puts an envelope in the stream's hold. The one held longest gives way
 // if the hold is full.
-func (s *Service) park(ctx context.Context, rt *streamRT, st store.Stream, peer model.PeerID, env wire.Envelope, o opened, rej *rejection, history bool) {
+func (s *Service) park(ctx context.Context, rt *streamRT, st store.Stream, peer model.PeerID, env wire.Envelope, o opened, rej *rejection, history bool, failures int) {
 	if rt.hold == nil {
-		rt.hold = &holdState{seen: map[string]int64{}, shed: map[string]int64{}}
+		rt.hold = &holdState{seen: map[string]int64{}, shed: map[string]int64{}, failShed: map[string]int64{}}
 	}
 	h := rt.hold
 	if h.has(env.OriginEventID) {
@@ -228,11 +273,23 @@ func (s *Service) park(ctx context.Context, rt *streamRT, st store.Stream, peer 
 	if history {
 		until = farOff
 	}
-	h.events = append(h.events, &heldEvent{env: env, o: o, peer: peer, target: rej.missing, until: until, rej: rej, history: history})
-	s.count(func(stats *Stats) { stats.Held++ })
-	s.log.Debug("link: an event is held", "stream", st.ID, "origin", env.Origin, "n", env.N, "type", o.in.Type, "message", rej.missing, "why", rej.reason, "history", history)
+	if failures > 0 {
+		until = time.Now().Add(failRetryWait(failures))
+	}
+	h.events = append(h.events, &heldEvent{env: env, o: o, peer: peer, target: rej.missing, until: until, rej: rej, history: history, failures: failures})
+	if failures > 0 {
+		// Loud: the channel's copy here is short of this event until it is
+		// applied, and something on this server is wrong.
+		s.count(func(stats *Stats) { stats.ApplyFailed++ })
+		s.log.Error("link: an event could not be applied; it is kept and tried again", "stream", st.ID, "origin", env.Origin, "n", env.N,
+			"type", o.in.Type, "failures", failures, "next_try_in", time.Until(until).Round(time.Second))
+		s.auditRejected(ctx, st, env.Origin, rej.reason, map[string]any{"n": env.N, "type": o.in.Type, "kept": true, "failures": failures})
+	} else {
+		s.count(func(stats *Stats) { stats.Held++ })
+		s.log.Debug("link: an event is held", "stream", st.ID, "origin", env.Origin, "n", env.N, "type", o.in.Type, "message", rej.missing, "why", rej.reason, "history", history)
+	}
 	for len(h.events) > holdMax {
-		if e := h.events[0]; e.history {
+		if e := h.events[0]; e.history || e.failures > 0 {
 			s.shedHeld(rt, e)
 		} else {
 			s.giveUp(ctx, rt, e)
@@ -247,8 +304,17 @@ func (s *Service) park(ctx context.Context, rt *streamRT, st store.Stream, peer 
 func (s *Service) shedHeld(rt *streamRT, e *heldEvent) {
 	h := rt.hold
 	h.unpark(e)
-	if low, ok := h.shed[e.env.Origin]; !ok || e.env.N < low {
-		h.shed[e.env.Origin] = e.env.N
+	shed := h.shed
+	if e.failures > 0 {
+		// Kept because it could not be applied: asked for again when it
+		// would have been tried again, history or not.
+		shed = h.failShed
+		if h.failShedAt.IsZero() || e.until.Before(h.failShedAt) {
+			h.failShedAt = e.until
+		}
+	}
+	if low, ok := shed[e.env.Origin]; !ok || e.env.N < low {
+		shed[e.env.Origin] = e.env.N
 	}
 	s.count(func(stats *Stats) { stats.HeldShed++ })
 }
@@ -264,16 +330,7 @@ func (s *Service) historyHere(ctx context.Context, rt *streamRT) {
 	}
 	until := time.Now().Add(time.Duration(holdWait.Load()))
 	shed := len(h.shed) > 0
-	for origin, low := range h.shed {
-		// Everything of the origin from there on comes again from the log.
-		for _, e := range append([]*heldEvent(nil), h.events...) {
-			if e.env.Origin == origin && e.env.N >= low {
-				h.unpark(e)
-			}
-		}
-		h.seen[origin] = low - 1
-		delete(h.shed, origin)
-	}
+	h.again(h.shed)
 	for _, e := range h.events {
 		if e.history {
 			e.history, e.until = false, until
@@ -287,6 +344,21 @@ func (s *Service) historyHere(ctx context.Context, rt *streamRT) {
 	}
 }
 
+// again forgets, of each origin in shed, every event held from the counter
+// shed names on: all of it comes again from the log, which the caller asks
+// for with catch_up.
+func (h *holdState) again(shed map[string]int64) {
+	for origin, low := range shed {
+		for _, e := range append([]*heldEvent(nil), h.events...) {
+			if e.env.Origin == origin && e.env.N >= low {
+				h.unpark(e)
+			}
+		}
+		h.seen[origin] = low - 1
+		delete(shed, origin)
+	}
+}
+
 // armHold sets the stream's timer for the event that has waited longest.
 func (s *Service) armHold(rt *streamRT) {
 	h := rt.hold
@@ -294,10 +366,13 @@ func (s *Service) armHold(rt *streamRT) {
 		h.timer.Stop()
 		h.timer = nil
 	}
-	if len(h.events) == 0 {
+	if len(h.events) == 0 && len(h.failShed) == 0 {
 		return
 	}
-	first := h.events[0].until
+	first := farOff
+	if len(h.failShed) > 0 {
+		first = h.failShedAt
+	}
 	for _, e := range h.events {
 		if e.until.Before(first) {
 			first = e.until
@@ -318,17 +393,49 @@ func (s *Service) armHold(rt *streamRT) {
 	})
 }
 
-// expireHeld rejects what has been held for as long as anything is.
+// expireHeld rejects what has been held for as long as anything is, and
+// tries again what was kept because it could not be applied.
 func (s *Service) expireHeld(ctx context.Context, rt *streamRT) {
 	h := rt.hold
 	if h == nil {
 		return
 	}
 	now := time.Now()
+	applied := false
 	for _, e := range append([]*heldEvent(nil), h.events...) {
-		if !e.until.After(now) {
-			s.giveUp(ctx, rt, e)
+		if e.until.After(now) {
+			continue
 		}
+		if e.failures == 0 {
+			s.giveUp(ctx, rt, e)
+			continue
+		}
+		h.unpark(e)
+		st, err := s.store.Streams().Get(ctx, model.StreamID(e.env.StreamID))
+		if err != nil {
+			// Not even the stream can be read: wait again.
+			e.failures++
+			e.until = now.Add(failRetryWait(e.failures))
+			h.events = append(h.events, e)
+			continue
+		}
+		if st.State != store.StreamActive || st.PeerID != e.peer {
+			continue // the stream is over here, or has changed hands
+		}
+		if s.settleDelivered(ctx, rt, st, e.peer, e.env, e.o, e) {
+			applied = true
+			s.log.Info("link: an event that could not be applied has been", "stream", st.ID, "origin", e.env.Origin, "n", e.env.N, "type", e.o.in.Type, "failures", e.failures)
+		}
+	}
+	if len(h.failShed) > 0 && !h.failShedAt.After(now) {
+		h.again(h.failShed)
+		h.failShedAt = time.Time{}
+		if st, err := s.store.Streams().Get(ctx, rt.id); err == nil && st.State == store.StreamActive {
+			s.catchUp(ctx, st, true)
+		}
+	}
+	if applied {
+		s.retryHeld(ctx, rt, false) // what waited for it
 	}
 	s.armHold(rt)
 }
@@ -397,7 +504,7 @@ func (s *Service) retryHeld(ctx context.Context, rt *streamRT, history bool) {
 				// yet): opened again, now that a record may have put it there.
 				e.o = s.open(ctx, st, e.env, true)
 			}
-			if s.settleDelivered(ctx, rt, st, e.peer, e.env, e.o, true, e.until) {
+			if s.settleDelivered(ctx, rt, st, e.peer, e.env, e.o, e) {
 				progress = true
 			}
 		}
