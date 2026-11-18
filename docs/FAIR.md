@@ -204,14 +204,17 @@ before it is sent. A post that takes chance (a module's command through
 with `invalid_value`.
 
 **The window and the tracker.** The server draws only if `t` is within
-10 seconds of its own clock, either way, and the pair `(t, nonce)` has not
-been taken; otherwise it draws nothing. Outside the window the post is
+10 seconds of its own clock, either way, and the nonce has not drawn under
+any second the server still keeps; otherwise it draws nothing. Outside the window the post is
 refused with `clock` and `server_time`, the server's time, and the client
 corrects its clock by it and sends again with a new second and the same
-`client_id`. A pair taken for another post is refused with `conflict`.
-The server keeps the pairs it has taken in memory, per second, and lets a
-second's set go once that second has left the window: nothing else is
-kept. After a start nothing is held, so for the 10 seconds after it a draw
+`client_id` (a refused post drew nothing, so its nonce is still free). A
+nonce is unique across the whole window: one that has drawn under any
+second still kept is refused with `conflict`, whatever `t` it now comes
+with, unless it is the same post again with the same pair. The server keeps
+the pairs it has taken in memory, per second, and lets a second's set go
+once that second has left the window, and its nonces with it: nothing else
+is kept. After a start nothing is held, so for the 10 seconds after it a draw
 for a second no later than the start's is refused with `clock`: a pair
 taken just before a restart cannot be taken again.
 

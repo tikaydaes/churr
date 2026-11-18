@@ -166,6 +166,8 @@ func TestADrawsInputIsTakenOnce(t *testing.T) {
 	sam.Refused(409, model.CodeConflict, "POST", cmds, body)
 	owner.Refused(409, model.CodeConflict, "POST", convPath(other)+"/commands", body)
 	owner.Refused(409, model.CodeConflict, "POST", convPath(other)+"/messages", map[string]any{"text": "[[3d20]]", "client_id": id, "draw_t": now})
+	// A client_id draws once in the whole window, under any second.
+	owner.Refused(409, model.CodeConflict, "POST", convPath(other)+"/commands", map[string]any{"name": "roll", "text": "3d20", "client_id": id, "draw_t": now + 1})
 	// The clock.
 	for _, off := range []int64{-11 - 2, 11 + 2} {
 		e := owner.Refused(409, model.CodeClock, "POST", cmds, map[string]any{"name": "roll", "text": "d6", "client_id": model.NewID[string](), "draw_t": time.Now().Unix() + off})

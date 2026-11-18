@@ -134,8 +134,12 @@ func TestTheDrawerTakesAPairOnce(t *testing.T) {
 	if _, err := d.Draw(atSecs+1, id, "bob"); !errors.Is(err, model.ErrConflict) {
 		t.Fatalf("someone else's use of the pair: %v", err)
 	}
-	if _, err := d.Draw(atSecs+2, id, "bob"); err != nil {
-		t.Fatalf("the nonce for another second: %v", err)
+	// The nonce is taken for the whole window, under any second.
+	if _, err := d.Draw(atSecs+2, id, "ann"); !errors.Is(err, model.ErrConflict) {
+		t.Fatalf("the nonce again with another second: %v", err)
+	}
+	if _, err := d.Draw(atSecs+2, id, "bob"); !errors.Is(err, model.ErrConflict) {
+		t.Fatalf("the nonce for another second by someone else: %v", err)
 	}
 	// Outside the window, either way.
 	clock = atSecs + 30
@@ -144,8 +148,9 @@ func TestTheDrawerTakesAPairOnce(t *testing.T) {
 			t.Fatalf("a second %d from the clock: %v", secs-clock, err)
 		}
 	}
-	// The window has moved on: the early seconds' pairs are gone.
-	if _, err := d.Draw(clock, id, "ann"); err != nil {
+	// The window has moved on: the early seconds' pairs are gone, and the
+	// nonce draws again, under another second, for anyone.
+	if _, err := d.Draw(clock, id, "bob"); err != nil {
 		t.Fatal(err)
 	}
 	if n := d.pairs(); n != 1 {

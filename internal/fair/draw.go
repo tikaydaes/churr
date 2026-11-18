@@ -8,8 +8,8 @@ import (
 )
 
 // Drawer makes a server's draws: the one place the VRF key is applied, and
-// only to an input of the one shape (Alpha) whose pair of second and nonce it
-// has not proved before. It keeps the pairs it has taken, in memory, for the
+// only to an input of the one shape (Alpha) whose nonce it has not proved
+// under any second still inside the window. It keeps the pairs it has taken, in memory, for the
 // seconds inside the window of its clock, and lets each second's go once the
 // second has left the window: a pair outside the window is refused anyway.
 //
@@ -53,8 +53,9 @@ func clockErr(now time.Time, why string) error {
 // (the same who for the same request made again): the block the message
 // carries. It refuses, drawing nothing, a second outside the window of the
 // clock (model.ErrClock, with the server's time), one it cannot vouch for
-// just after a start (the same), and a pair already taken for another
-// request (model.ErrConflict).
+// just after a start (the same), and a nonce already taken under any second
+// it still keeps, by another request or with another second
+// (model.ErrConflict).
 func (d *Drawer) Draw(t int64, nonce, who string) (model.FairBlock, error) {
 	if !Canonical(nonce) {
 		return model.FairBlock{}, model.Invalid("client_id", "A draw's client_id is a UUID in lowercase, hyphenated, and nothing else.")
@@ -74,14 +75,19 @@ func (d *Drawer) Draw(t int64, nonce, who string) (model.FairBlock, error) {
 		d.mu.Unlock()
 		return model.FairBlock{}, clockErr(now, "The server has just started and cannot draw for a second before it did. Send again with the current second.")
 	}
+	// A nonce draws once in the whole window: taken under any second still
+	// kept, it is refused whatever second it now comes with, but for the
+	// same request made again with the same second.
+	for s, set := range d.used {
+		if had, taken := set[nonce]; taken && (s != t || had != who) {
+			d.mu.Unlock()
+			return model.FairBlock{}, model.ErrConflict.With("That client_id has drawn already. Make a new one for a new message; send the same one again, with the same draw_t, only to retry the same message.")
+		}
+	}
 	set := d.used[t]
 	if set == nil {
 		set = map[string]string{}
 		d.used[t] = set
-	}
-	if had, taken := set[nonce]; taken && had != who {
-		d.mu.Unlock()
-		return model.FairBlock{}, model.ErrConflict.With("That client_id has drawn for this second already. Make a new one for a new message; send the same one again only to retry the same message.")
 	}
 	set[nonce] = who
 	d.mu.Unlock()
