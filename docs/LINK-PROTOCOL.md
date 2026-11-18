@@ -239,20 +239,51 @@ so nothing here needs cgo.
 
 ## 3. Server identity
 
-At first start a server makes two key pairs and writes the private
+At first start a server makes three key pairs and writes the private
 halves to `keys/` in the data directory:
 
-| Key        | Type    | Used for                                        |
-|------------|---------|-------------------------------------------------|
-| `sign_key` | Ed25519 | Proving who it is; signing envelopes and direct messages |
-| `box_key`  | X25519  | Receiving stream keys and direct messages       |
+| Key        | Type      | Used for                                        |
+|------------|-----------|-------------------------------------------------|
+| `sign_key` | Ed25519   | Proving who it is; signing envelopes and direct messages |
+| `box_key`  | X25519    | Receiving stream keys and direct messages       |
+| VRF key    | secp256k1 | Proving chance outcomes (ECVRF-SECP256K1-SHA256-TAI, `DESIGN-FAIR.md`) |
 
-A hub makes the same two. It is sealed the direct messages that ask it
+A hub makes the same three. It is sealed the direct messages that ask it
 for the key of a channel it is the home of (section 10).
 
-There is no key change in this protocol. A server that loses its keys is
-a new server to everyone it was linked with: its peers remove the old
-link and link again.
+There is no change of `sign_key` or `box_key` in this protocol. A server
+that loses them is a new server to everyone it was linked with: its
+peers remove the old link and link again.
+
+### The VRF key
+
+The VRF key is published as a history: every VRF key the server has
+had, oldest first, each with the moment it began. The last is the one
+in use. It is made once and never replaced while the server runs; an
+operator who loses it starts a new one, which is appended (the old ones
+stay, so a proof made under them can still be checked against the time
+it was made). Each entry is
+
+| Field   | Meaning                                                    |
+|---------|------------------------------------------------------------|
+| `key`   | The secp256k1 public key, 33 bytes, SEC1 compressed         |
+| `began` | When the server began to use it                             |
+| `sig`   | Ed25519 by `sign_key` over `"churr-vrf-key-v1" 0x00 \|\| lp(name) \|\| key \|\| i64(began)`, `began` in milliseconds since the Unix epoch |
+
+A history is sound when it has at least one entry, each `key` is 33
+bytes beginning `0x02` or `0x03`, each `sig` verifies, and the start
+times rise strictly. A later history *extends* an earlier one when it
+holds the earlier one's entries, byte for byte and in order, followed
+by nothing or by more.
+
+The history travels in the `hello` (`vrf_keys`), in
+`/.well-known/churr`, in a hub's rosters (`RosterServer.vrf_keys`) and
+in a hub channel's record (`ChannelRecord.vrf_keys`, section 23a).
+Whoever has seen a history keeps it and takes a later one only when it
+extends it: the peer on a direct link (section 5), the hub of a server,
+the hub and holder of a channel's record, and each client (the web chat
+in its browser, the app on its device, both from getServer). A history
+that does not extend the kept one is refused, never taken.
 
 ### `/.well-known/churr`
 
@@ -274,7 +305,8 @@ are spoken at all; the invitation by a person, who pastes it.
   "sign_key": "mJ0nQ3lH1n3vJmUqkW0oZ8m6mUu0b0mXvVQyqg0dT1I",
   "box_key": "pX8Qw2s8mX0q7nJm2c1t3nVh2mZk8o1yQeXv5b0aL2c",
   "box_key_sig": "…86 characters…",
-  "link": {"versions": [3], "url": "wss://chat.example.org/link/v1"}
+  "link": {"versions": [3], "url": "wss://chat.example.org/link/v1"},
+  "vrf_keys": [{"key": "…44 characters…", "began": "2026-11-18T08:43:10.031Z", "sig": "…86 characters…"}]
 }
 ```
 
@@ -288,9 +320,12 @@ are spoken at all; the invitation by a person, who pastes it.
 | `box_key_sig`   | Ed25519 signature by `sign_key` over `"churr-box-key-v1" 0x00 \|\| lp(name) \|\| box_key` |
 | `link.versions` | Link protocol versions spoken                        |
 | `link.url`      | Where to dial                                        |
+| `vrf_keys`      | The VRF key history (The VRF key, above)             |
 
 The signature ties the encryption key to the signing key, so pinning
-the signing key pins both.
+the signing key pins both. The same holds for each VRF key. A hub
+serves the same document, with its own VRF key history: anyone can
+check a proof of a chance outcome against it without an account.
 
 ### Fingerprints
 
@@ -396,6 +431,7 @@ between the first and the last, ends the connection.
   "sign_key": "…",
   "box_key": "…",
   "box_key_sig": "…",
+  "vrf_keys": [{"key": "…", "began": "…", "sig": "…"}],
   "nonce": "…32 random bytes…",
   "software": "churr/1.0.0",
   "limits": {"max_frame_bytes": 1048576, "max_envelope_bytes": 262144,
@@ -469,20 +505,30 @@ from one connection is useless on another.
 2. First connection: the fingerprint of `sign_key` equals the
    invitation's `fp`. Later connections: `sign_key` equals the pinned
    key.
-3. `box_key_sig` is valid (not for a hub).
-4. The listener's `sig` is valid.
+3. `box_key_sig` is valid, and `vrf_keys` is a sound history.
+4. Later connections to a server: `vrf_keys` extends the pinned
+   history (The VRF key, section 3). A history that grew is pinned
+   again and audited (`link.vrf_key_added`); one that does not extend
+   it is refused with `key_mismatch` and audited
+   (`link.vrf_key_mismatch`).
+5. The listener's `sig` is valid.
 
 Only then does it reveal anything derived from the invitation secret.
 
 **What the listener checks** on the dialler's `auth`:
 
-1. `box_key_sig` and `sig` are valid.
+1. `box_key_sig` and `sig` are valid, and `vrf_keys` is a sound
+   history.
 2. If `name` is a peer in state `active`: `sign_key` and `box_key`
-   equal the pinned keys.
+   equal the pinned keys, and `vrf_keys` extends the pinned history,
+   as the dialler checks it.
 3. Otherwise: `invite_proof` matches an invitation that is unused and
    not expired, and the invitation's `for`, if set, equals `name`. The
-   invitation is then used up, the keys are pinned, and the peer
-   becomes `active` on both sides.
+   invitation is then used up, the keys and the VRF key history are
+   pinned (a name pinned before must show a history that extends its
+   old one), and the peer becomes `active` on both sides. A hub does
+   the same for its servers, and keeps each server's history for good,
+   after the server is removed too.
 4. `name` is not already pinned with different keys, and is not
    blocked.
 
@@ -736,9 +782,13 @@ followed by `cluster`.
              "at": "2026-11-13T09:30:00.000Z",
              "servers": [{"name": "a.example", "sign_key": "…",
                           "box_key": "…", "box_key_sig": "…",
-                          "joined_at": "…"}, …]}
+                          "joined_at": "…", "vrf_keys": […]}, …]}
 
-- `version` grows by one with each change. A server ignores a roster
+- `version` grows by one with each change. A server's `vrf_keys` is its
+  VRF key history as the hub keeps it (section 3); it grows the roster's
+  version when it grows. In `hub_servers` it is how the other hubs of a
+  cluster learn the histories of this hub's servers, which they keep for
+  the records of channels those servers are in. A server ignores a roster
   that is not newer than the one it has.
 - A server pins the keys of each name the first time it sees it, in
   `servers` and `peer_servers`. A later roster that gives a pinned
@@ -3311,9 +3361,10 @@ A signed block from the hub (section 6):
 | `history_days` | How many days of history a joining instance is given, 0 to 90 |
 | `closed` | The channel is over for every instance |
 | `prepared` | Held for a move from a direct link that is not committed yet (section 21a) |
+| `vrf_keys` | Per name, the VRF key history (section 3) of every instance the record has named and of the hub that signs it, as the hub keeps them. An instance that leaves or is removed stays here for good, so a chance outcome it proved can still be checked. A history in one version is extended, never replaced, in the next |
 
 An instance that leaves or is removed takes its accounts off both
-lists.
+lists. It keeps its entry in `vrf_keys`.
 
 Beside the block, unsigned, the hub adds `have` (per origin, the
 last counter in its log at that moment) and `home_hub`, as it does

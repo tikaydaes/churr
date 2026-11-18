@@ -1819,6 +1819,11 @@ words. Only `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` and
 `/tarot` need anything new of the server: it draws their result, as a
 `chance`. `/roll` and `/dice` are not built-ins but the dice module's,
 run with `runCommand` (12.4).
+Each instance and hub has a VRF key for proving chance results
+(`DESIGN-FAIR.md`), published with its history at `/.well-known/churr`
+and in getServer, pinned by linked servers, hubs and clients; the web
+chat and the app warn when a server shows another. Results are not yet
+proved with it.
 Arriving live, a result plays once and never again on a press
 (`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
 total; cards and tiles lie face down and are turned over one after

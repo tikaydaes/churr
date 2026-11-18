@@ -131,7 +131,11 @@ admins who must not learn of either (PERMISSIONS sections 8.2 and
 Other Churr servers this one has met, through a direct link or a hub.
 `name` is the host name. `sign_key` and `box_key` are the pinned
 public keys. `blocked_at` set means this server accepts nothing from
-it.
+it. `vrf_keys` (added by migration 0025) is the server's VRF key
+history as pinned on a direct link, the JSON list the link carries
+(`[{key, began, sig}]`, `LINK-PROTOCOL.md` section 3), or null until a
+direct link pins it. It is replaced only by a history that extends it
+(`DESIGN-FAIR.md` section 1).
 
 Rows are kept for as long as any remote account, stream or emoji
 refers to them, which in practice is for good.
@@ -1552,7 +1556,7 @@ file store, on both backends.
   `stream_channels.managers`, `moderators` and `private`;
   `0015_approvals` adds `approvals` and `approvers`;
   `0020_first_contact` adds `chat_requests.level` and `override` and
-  `channel_offers`.
+  `channel_offers`; `0025_vrf_pins` adds `servers.vrf_keys`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

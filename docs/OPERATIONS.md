@@ -413,6 +413,8 @@ uses the Tikaydaes relay and runs nothing.
         seal.key         AES-256 key that seals secrets stored in the database
         sign.key         the server's Ed25519 signing key
         box.key          the server's X25519 encryption key
+        vrf.key          the server's secp256k1 VRF key: proves dice and other chance results
+        vrf.history      every VRF key the server has had and when each began (public)
       certs/             the certificate and the ACME account, when Churr fetches its own
       tmp/               uploads in progress; emptied at start
 
@@ -429,6 +431,20 @@ uses the Tikaydaes relay and runs nothing.
     object storage credentials, and the keys of shared channels.
   - Without `sign.key` and `box.key` the server has a new identity,
     and every linked server and hub must be linked again.
+  - `vrf.key` is made once and never replaced while the server runs.
+    Keep it with `vrf.history`, from the same backup. Without it the
+    server refuses to start, and says so: it never makes a second key
+    by itself, because a key nobody saw it begin with would let it prove
+    chance results it chose. A `vrf.key` that is not the key
+    `vrf.history` ends with is refused the same way. Losing it for good
+    means a new VRF key, appended to the history with the time it
+    began: an operator's decision. The old keys stay published, so
+    results proved under them can still be checked; linked servers,
+    hubs and clients take the longer history, and warn of or refuse
+    any other. The history is public: it is served at
+    `/.well-known/churr` (`LINK-PROTOCOL.md` section 3).
+  - A hub keeps the same two files in its own `keys/`, under the same
+    rules.
 - `certs/` can be lost without harm. A new certificate is fetched.
 - With object storage on, new uploads are not in `files/` (section
   10).

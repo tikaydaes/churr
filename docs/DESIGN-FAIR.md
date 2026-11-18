@@ -1,7 +1,8 @@
 # Provably fair chance: every outcome from an ECVRF
 
-A design, not yet built. Parts marked [proposed] are not confirmed by the
-owner.
+A design, partly built. Parts marked [proposed] are not confirmed by the
+owner. Built: the library in three languages (section 9) and the key
+(section 1). Nothing is yet proved with it.
 
 ## What the owner decided (R110)
 
@@ -21,19 +22,30 @@ Chance outcomes only: dice, flip, pick, shuffle, draw, tarot, mahjongg,
 later games. Never secrets (keys, tokens, identifiers, nonces): those stay
 on the operating system's randomness.
 
-## 1. The key [proposed]
+## 1. The key [built]
 
-- Made at first start, kept with the server's other keys, never rotated
-  by design. Losing it means a new key; the old one stays in the history.
-- Published three ways, so it outlives the server:
-  - in the server's signed identity statement (its existing signing key
-    signs the VRF key and the time it began);
-  - in every hub channel's record, as a history of keys per server that
-    the hub keeps for good, including servers that left;
-  - pinned by each peer on a direct link, and by each client on first
-    sight (a later change is shown as a warning).
+- Made at first start, `keys/vrf.key` beside the server's other key
+  files, with `keys/vrf.history`: every VRF key the server has had and
+  when each began. Never replaced while the server runs: a history whose
+  key file is missing or different is refused at start. Losing it means
+  a new key appended to the history, an operator's act (the command is
+  not built); the old one stays in the history. Instance and hub alike.
+- Published, so it outlives the server (`LINK-PROTOCOL.md` section 3):
+  - in the server's signed identity: each entry of the history signed by
+    its signing key, carried in the hello and at `/.well-known/churr`,
+    unauthenticated, on the instance and on the hub;
+  - in every hub channel's record (`vrf_keys`), a history per server
+    that the hub keeps for good, including servers that left, and the
+    hub's own; carried in rosters across a cluster;
+  - pinned by each peer on a direct link (`servers.vrf_keys`) and by the
+    hub for each of its servers: a later history must be the pinned one
+    with keys added, or it is refused and audited;
+  - given to clients in getServer; the web chat and the app pin it on
+    first sight and warn when a later one is not the pinned one with
+    keys added.
 - A message's `pk` must be the key the record or the pin held for that
-  server at that time. A server cannot use a second key.
+  server at that time. A server cannot use a second key. [proposed: the
+  check of a message's `pk` comes with the `fair` block]
 
 ## 2. The chain: what alpha is [proposed]
 
@@ -135,8 +147,12 @@ learns only that a draw happened.
   outcome a module makes is provable by construction.
 - The old chance code (flip, pick, shuffle, draw, tarot, mahjongg) moves
   to the stream as it moves into modules.
-- The ecvrf Go, TypeScript and Dart sources are vendored (the owner's
-  own code); the web chat gets compiled plain modules.
+- The ecvrf sources are vendored (the owner's own code) [built]: Go in
+  `internal/ecvrf` with the secp256k1 library it is written on; the web
+  chat's verifier in `internal/web/static/shared/fair/ecvrf.js`, a plain
+  port to BigInt and the browser's SHA-256 (verify and proof-to-hash
+  only, no third-party code); the app's in `app/lib/core/fair/`. All
+  three run the library's vectors, `testdata/ecvrf/vectors.json`.
 - Each kind's value records nothing extra: the proof is the message's.
 
 ## 10. A general service: modules, manifests, bots, integrations, games
@@ -210,7 +226,7 @@ A closed list, stated in the proof block so readers know who knew what:
 ## Order of work
 
 1. Keys: made at first start, in the identity statement, the hub record
-   and the pins.
+   and the pins. [built]
 2. The derivation and its vectors in three languages.
 3. The chain, the `fair` block, `Host.Random()`, dice on it; clients
    verify and show "verified".
