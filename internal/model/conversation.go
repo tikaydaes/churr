@@ -328,6 +328,28 @@ type Shared struct {
 	OwnerServer  string   `json:"owner_server"`
 	Servers      []string `json:"servers"`
 	MaxBlobBytes int64    `json:"max_blob_bytes,omitempty"`
+	// VRFKeys is the VRF key history of every server whose draws the
+	// conversation may hold, from sources that outlive those servers: a hub
+	// channel's record (every server it ever named, kept by the hub for
+	// good), or this server's pin of each server of a direct link, a server
+	// that left included. A client checks another server's draws against it
+	// with no server reachable (docs/FAIR.md section 9).
+	VRFKeys []ServerVRFKeys `json:"vrf_keys,omitempty"`
+}
+
+// VRFKey is one entry of a server's VRF key history (schema VrfKey): the
+// key, when it began, and the server's signature over both.
+type VRFKey struct {
+	Key   Bytes `json:"key"`
+	Began Time  `json:"began"`
+	Sig   Bytes `json:"sig"`
+}
+
+// ServerVRFKeys is a server's VRF key history, oldest first, by its name
+// (schema ServerVrfKeys).
+type ServerVRFKeys struct {
+	Server string   `json:"server"`
+	Keys   []VRFKey `json:"keys"`
 }
 
 // Membership is the caller's own place in a conversation, with the settings

@@ -1692,6 +1692,15 @@ message ConversationShared {
   optional string owner_server = 4;
   repeated string servers = 5;
   optional int64 max_blob_bytes = 6;
+  repeated ServerVrfKeys vrf_keys = 7;
+}
+
+// A server's VRF key history, by the server's name (FAIR.md section 9).
+message ServerVrfKeys {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string server = 3;
+  repeated VrfKey keys = 4;
 }
 
 // A call in a conversation. A conversation has one at most. CALLS.md describes it in full.

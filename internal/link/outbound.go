@@ -807,7 +807,59 @@ func (s *Service) Shared(ctx context.Context, conv model.Conversation) *model.Sh
 	if names == nil {
 		names = []string{}
 	}
-	return &model.Shared{StreamID: st.ID, OwnerServer: owner.Name, Servers: names, MaxBlobBytes: st.MaxBlobBytes}
+	return &model.Shared{StreamID: st.ID, OwnerServer: owner.Name, Servers: names, MaxBlobBytes: st.MaxBlobBytes,
+		VRFKeys: s.vrfKeysOf(ctx, st)}
+}
+
+// vrfKeysOf is the VRF key history of every server whose draws a stream may
+// hold, by name, for clients to check them with (docs/FAIR.md section 9): in
+// a hub channel, the record's (every server it has named, one that left
+// included, and the hub's own); otherwise this server's own and its pin of
+// each server the stream has had, whatever its state now.
+func (s *Service) vrfKeysOf(ctx context.Context, st store.Stream) []model.ServerVRFKeys {
+	byName := map[string][]wire.VRFKey{}
+	if hubOwned(st) {
+		rec, err := s.channelOf(ctx, s.store, st.ID)
+		if err != nil {
+			return nil
+		}
+		for name, keys := range rec.VRFKeys {
+			byName[name] = keys
+		}
+	} else {
+		byName[s.id.Name] = s.id.VRFKeys()
+		all, err := s.store.Streams().Servers(ctx, st.ID)
+		if err != nil {
+			return nil
+		}
+		for _, ss := range all {
+			if _, have := byName[ss.Name]; have {
+				continue
+			}
+			sv, err := s.store.Peers().Server(ctx, ss.ServerID)
+			var keys []wire.VRFKey
+			if err != nil || len(sv.VRFKeys) == 0 || json.Unmarshal(sv.VRFKeys, &keys) != nil {
+				continue
+			}
+			byName[ss.Name] = keys
+		}
+	}
+	names := make([]string, 0, len(byName))
+	for name, keys := range byName {
+		if len(keys) > 0 {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	out := make([]model.ServerVRFKeys, len(names))
+	for i, name := range names {
+		keys := byName[name]
+		out[i] = model.ServerVRFKeys{Server: name, Keys: make([]model.VRFKey, len(keys))}
+		for j, k := range keys {
+			out[i].Keys[j] = model.VRFKey{Key: model.Bytes(k.Key), Began: k.Began, Sig: model.Bytes(k.Sig)}
+		}
+	}
+	return out
 }
 
 // ------------------------------------------------------- local to wire

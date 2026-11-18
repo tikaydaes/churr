@@ -124,3 +124,96 @@ func TestARollInAHubChannelKeepsItsProof(t *testing.T) {
 		t.Fatalf("an honest roll was dropped: %v", audit)
 	}
 }
+
+// convKeys is the VRF key history the conversation gives a client for each
+// server, by name (docs/FAIR.md section 9), as fair.Keys.
+func convKeys(t *testing.T, c *testkit.Client, conv string) map[string][]fair.Key {
+	t.Helper()
+	raw, _ := json.Marshal(c.Must(200, "GET", "/api/v1/conversations/"+conv, nil)["conversation"])
+	var got model.Conversation
+	if err := json.Unmarshal(raw, &got); err != nil || got.Shared == nil {
+		t.Fatalf("the conversation %s: %v %s", conv, err, raw)
+	}
+	out := map[string][]fair.Key{}
+	for _, s := range got.Shared.VRFKeys {
+		for _, k := range s.Keys {
+			out[s.Server] = append(out[s.Server], fair.Key{Key: k.Key, Began: k.Began})
+		}
+	}
+	return out
+}
+
+// sameKeys says whether a history a conversation gives is the one the
+// server publishes.
+func sameKeys(got []fair.Key, ts *testkit.TestServer) bool {
+	want := ts.Server.Link.Identity().VRFKeys()
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if string(got[i].Key) != string(want[i].Key) || got[i].Began != want[i].Began {
+			return false
+		}
+	}
+	return true
+}
+
+// checksUnder checks a message's draw as a client does, under the history a
+// conversation gave, against the chain named.
+func checksUnder(t *testing.T, m map[string]any, chain string, keys map[string][]fair.Key) error {
+	t.Helper()
+	raw, _ := json.Marshal(m)
+	var msg model.Message
+	if err := json.Unmarshal(raw, &msg); err != nil || msg.Fair == nil {
+		t.Fatalf("a message with no draw: %v %s", err, raw)
+	}
+	return fair.CheckBlock(msg.Fair, msg.Fair.Owner, chain, msg.CreatedAt, keys[msg.Fair.Owner])
+}
+
+// A hub channel's conversation gives its clients the key history of every
+// server its record has named, from the record the hub keeps for good: a
+// roll made by an instance that has since left can still be checked by an
+// instance that joined after it went, with nothing asked of the one gone.
+func TestTheConversationGivesTheKeysOfAServerThatLeft(t *testing.T) {
+	l := testkit.NewLinked(t, 3, true)
+	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
+	ch := a.Owner.Channel("dicehall", false)
+	stream, local := l.Share(0, ch, "dicehall", map[string]any{"listing": "open", "history_days": 30}, 1)
+	roll := b.Owner.Must(200, "POST", "/api/v1/conversations/"+local[1]+"/commands", map[string]any{"name": "roll", "text": "3d6"})["message"].(map[string]any)
+	a.Owner.HasMessage(ch, roll["text"].(string))
+	b.Owner.Must(204, "DELETE", "/api/v1/admin/streams/"+stream, nil)
+	testkit.Eventually(t, "the hub has taken b out", func() bool { return names(hubChannel(a.Owner, stream)["servers"]) == "a.localhost" })
+	convC := joinListed(l, 2, stream, "dicehall-c")
+	l.Joined(2, stream)
+	got := c.Owner.HasMessage(convC, roll["text"].(string))
+	keys := convKeys(t, c.Owner, convC)
+	for _, ts := range []*testkit.TestServer{a, b, c} {
+		if !sameKeys(keys[ts.Server.Link.Identity().Name], ts) {
+			t.Fatalf("the conversation on c gives %v for %s", keys, ts.Server.Link.Identity().Name)
+		}
+	}
+	if len(keys[l.Hub.Name]) == 0 {
+		t.Fatalf("the conversation gives no history for the hub: %v", keys)
+	}
+	if err := checksUnder(t, got, stream, keys); err != nil {
+		t.Fatalf("b's roll does not check under the history c was given: %v", err)
+	}
+}
+
+// A conversation shared over a direct link gives its clients this server's
+// pin of the other server's key history, beside its own.
+func TestADirectLinkGivesThePinnedKeys(t *testing.T) {
+	l := testkit.NewLinked(t, 2, false)
+	a, b := l.Servers[0], l.Servers[1]
+	ch := a.Owner.Channel("parlour", false)
+	stream, local := l.Share(0, ch, "parlour-here", map[string]any{"history_days": 30}, 1)
+	roll := a.Owner.Must(200, "POST", "/api/v1/conversations/"+ch+"/commands", map[string]any{"name": "roll", "text": "d20"})["message"].(map[string]any)
+	got := b.Owner.HasMessage(local[1], roll["text"].(string))
+	keys := convKeys(t, b.Owner, local[1])
+	if !sameKeys(keys["a.localhost"], a) || !sameKeys(keys["b.localhost"], b) || len(keys) != 2 {
+		t.Fatalf("the conversation on b gives %v", keys)
+	}
+	if err := checksUnder(t, got, stream, keys); err != nil {
+		t.Fatalf("a's roll does not check under the history b was given: %v", err)
+	}
+}

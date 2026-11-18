@@ -2155,7 +2155,8 @@
    "max_blob_bytes": 6,
    "owner_server": 4,
    "servers": 5,
-   "stream_id": 3
+   "stream_id": 3,
+   "vrf_keys": 7
   },
   "ConversationUnarchivedFrame": {
    "by_id": 4,
@@ -4143,6 +4144,10 @@
    "second_factor": 5
   },
   "ServerUpdatedFrame": {
+   "server": 3
+  },
+  "ServerVrfKeys": {
+   "keys": 4,
    "server": 3
   },
   "Session": {

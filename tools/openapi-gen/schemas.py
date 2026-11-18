@@ -71,6 +71,10 @@ S('VrfKey', "One key of a server's VRF key history: what chance outcomes are pro
    'sig': ('b64', "The server's Ed25519 signature over the key and its start, by the layout of LINK-PROTOCOL.md "
                   'section 3.')})
 
+S('ServerVrfKeys', "A server's VRF key history, by the server's name (FAIR.md section 9).", {
+   'server': ('str', "The server's name."),
+   'keys': ('[#VrfKey]', 'Its history, oldest first, each entry signed by that server.')})
+
 S('SsoProviderSummary', 'A company sign-in provider as shown on the sign-in page.', {'id': 'uuid', 'kind': 'enum:oidc|saml', 'name': ('str', 'Shown on the sign-in button.')})
 
 S('WellKnown', 'The document at `/.well-known/churr`, exactly as `docs/LINK-PROTOCOL.md` defines it. A hub serves the same document with `kind` `hub` and no box key.', {
@@ -469,7 +473,13 @@ S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'invited_ids?': ('[uuid]', 'Who has been invited and has not yet joined (ruling R103): people included in a group chat, or invited to a named channel, who have not answered. They are not members and get nothing from the conversation. Shown to members only.'),
    'moved_from_message_id?': ('uuid', 'The message whose thread this channel was made from.'),
    'ticket_number?': 'int',
-   'shared?': ({'stream_id': 'uuid', 'owner_server': 'str', 'servers': '[str]', 'max_blob_bytes?': 'int'},
+   'shared?': ({'stream_id': 'uuid', 'owner_server': 'str', 'servers': '[str]', 'max_blob_bytes?': 'int',
+                'vrf_keys?': ('[#ServerVrfKeys]',
+                              'The VRF key history of every server whose draws the conversation may hold, from sources '
+                              "that outlive those servers: a hub channel's record (every server it ever named, one that "
+                              "left included, and the hub's own), or this server's pin of each server of a direct link. "
+                              'A client pins each by server name and checks those servers\' draws with it (FAIR.md '
+                              'section 9).')},
                'Present when the conversation is shared with other servers.'),
    'read_only?': ('bool',
                   'Nothing can be posted: a conversation with people on another server that is no longer linked, a '

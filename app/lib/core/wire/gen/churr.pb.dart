@@ -20783,6 +20783,7 @@ class ConversationShared extends $pb.GeneratedMessage {
     $core.String? ownerServer,
     $core.Iterable<$core.String>? servers,
     $fixnum.Int64? maxBlobBytes,
+    $core.Iterable<ServerVrfKeys>? vrfKeys,
   }) {
     final result = ConversationShared._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -20791,6 +20792,7 @@ class ConversationShared extends $pb.GeneratedMessage {
     if (ownerServer != null) result.ownerServer = ownerServer;
     if (servers != null) result.servers.addAll(servers);
     if (maxBlobBytes != null) result.maxBlobBytes = maxBlobBytes;
+    if (vrfKeys != null) result.vrfKeys.addAll(vrfKeys);
     return result;
   }
 
@@ -20814,6 +20816,8 @@ class ConversationShared extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'ownerServer')
     ..pPS(5, _omitFieldNames ? '' : 'servers')
     ..aInt64(6, _omitFieldNames ? '' : 'maxBlobBytes')
+    ..pPM<ServerVrfKeys>(7, _omitFieldNames ? '' : 'vrfKeys',
+        subBuilder: ServerVrfKeys.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -20873,6 +20877,86 @@ class ConversationShared extends $pb.GeneratedMessage {
   $core.bool hasMaxBlobBytes() => $_has(5);
   @$pb.TagNumber(6)
   void clearMaxBlobBytes() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $pb.PbList<ServerVrfKeys> get vrfKeys => $_getList(6);
+}
+
+/// A server's VRF key history, by the server's name (FAIR.md section 9).
+class ServerVrfKeys extends $pb.GeneratedMessage {
+  factory ServerVrfKeys({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? server,
+    $core.Iterable<VrfKey>? keys,
+  }) {
+    final result = ServerVrfKeys._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (server != null) result.server = server;
+    if (keys != null) result.keys.addAll(keys);
+    return result;
+  }
+
+  ServerVrfKeys._();
+
+  factory ServerVrfKeys.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ServerVrfKeys()..mergeFromBuffer(data, registry);
+  factory ServerVrfKeys.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ServerVrfKeys()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ServerVrfKeys',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ServerVrfKeys.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'server')
+    ..pPM<VrfKey>(4, _omitFieldNames ? '' : 'keys',
+        subBuilder: VrfKey.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ServerVrfKeys clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ServerVrfKeys copyWith(void Function(ServerVrfKeys) updates) =>
+      super.copyWith((message) => updates(message as ServerVrfKeys))
+          as ServerVrfKeys;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ServerVrfKeys() / ServerVrfKeys.new instead')
+  static ServerVrfKeys create() => ServerVrfKeys._();
+  static $pb.GeneratedMessage $_createMessage() => ServerVrfKeys._();
+  @$core.override
+  ServerVrfKeys createEmptyInstance() => ServerVrfKeys._();
+  @$core.pragma('dart2js:noInline')
+  static ServerVrfKeys getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerVrfKeys>(
+          ServerVrfKeys.$_createMessage);
+  static ServerVrfKeys? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get server => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set server($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasServer() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearServer() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<VrfKey> get keys => $_getList(3);
 }
 
 /// A call in a conversation. A conversation has one at most. CALLS.md describes it in full.
