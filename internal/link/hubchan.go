@@ -480,8 +480,14 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 	}
 	id := model.StreamID(rec.StreamID)
 	// A key that came ahead of this record from the home it names is taken
-	// once the record is (after the lock below is let go).
-	defer s.takeEarlyKeys(ctx, id)
+	// once the record is (after the lock below is let go), and what waited
+	// for a record (an origin it lets in, a moderator it names) is tried
+	// again.
+	defer func() {
+		s.takeEarlyKeys(ctx, id)
+		rt := s.rt(id)
+		s.onJobs(rt, func() { s.retryHeld(s.ctx, rt, true) })
+	}()
 	// One record at a time per channel: two that arrive together must not
 	// both find the older one held.
 	rt := s.rt(id)

@@ -282,7 +282,9 @@ func (h *Hub) sendRecord(c channel, f wire.Frame, to []string) {
 func (h *Hub) audienceOf(c channel) []string {
 	to := audience(c)
 	if len(c.signed) == 0 && !c.rec.Prepared {
-		to = append(to, h.id.Name)
+		// First: a server the record lets in may speak the moment it has
+		// it, and the holder must know it is in the channel by then.
+		to = append([]string{h.id.Name}, to...)
 	}
 	return to
 }

@@ -635,6 +635,41 @@ func TestServerAdmittedWhileAway(t *testing.T) {
 	c.Owner.HasMessage(convC, "and hears what follows")
 }
 
+// The same, on a machine slow enough that the snapshot comes after what the
+// log delivers: what a returning server is delivered from people it has not
+// met waits for the snapshot that names them, and is not lost.
+func TestServerAdmittedWhileAwayWithTheHistoryLate(t *testing.T) {
+	defer link.SetFirstHistoryWait(300 * time.Millisecond)()
+	defer link.SetHistoryWaitMax(100 * time.Millisecond)()
+	l := testkit.NewLinked(t, 3, true)
+	a, c := l.Servers[0], l.Servers[2]
+	ann := a.Member("ann")
+	ch := a.Owner.Channel("committee", false, ann)
+	stream, _ := l.Share(0, ch, "committee", map[string]any{"listing": "request", "history_days": 30}, 1)
+	ann.Post(ch, "said before c asked")
+	convC := joinListed(l, 2, stream, "committee-c")
+	testkit.Eventually(t, "the moderator sees the request", func() bool { return names(hubChannel(a.Owner, stream)["requests"]) == "c.localhost" })
+	path := "/api/v1/admin/peers/" + l.Peers[2]
+	c.Owner.Must(200, "PATCH", path, map[string]any{"state": "paused"})
+	testkit.Eventually(t, "c is off the hub", func() bool { return !c.Server.Link.TestConnected(model.PeerID(l.Peers[2])) })
+	moderate(a.Owner, stream, map[string]any{"action": "approve", "server": "c.localhost"})
+	ann.Post(ch, "said while c was away")
+	testkit.Eventually(t, "the hub holds it", func() bool {
+		_, held := heldMessages(t, l.Hub, stream)
+		_, ok := held["said while c was away"]
+		return ok
+	})
+	// Every snapshot is answered a while after it is asked for.
+	defer link.SetHistoryAnswerDelay(time.Second)()
+	c.Owner.Must(200, "PATCH", path, map[string]any{"state": "active"})
+	l.Joined(2, stream)
+	c.Owner.HasMessage(convC, "said before c asked")
+	c.Owner.HasMessage(convC, "said while c was away")
+	if r := c.Server.Link.StatsNow().Rejected; r["unknown_account"] != 0 || r["not_a_member"] != 0 {
+		t.Fatalf("c rejected %v", r)
+	}
+}
+
 // A named channel on a hub is the hub's: no server offers one as its own
 // over a hub, and one that does is refused and leaves nothing behind.
 func TestChannelOfferOverAHubIsRefused(t *testing.T) {

@@ -162,7 +162,17 @@ func (s *Service) mayHold(ctx context.Context, a store.Areas, st store.Stream, r
 	if awaitsHistory(rej) && hubOwned(st) && s.historyPending(ctx, a, st.ID) {
 		return true, true
 	}
-	return rej.missing != "", false
+	return rej.missing != "" || (hubOwned(st) && awaitsRecord(rej)), false
+}
+
+// awaitsRecord reports whether a rejection in a hub-owned channel is one the
+// channel's next record may undo: an origin the record that lets it in has
+// not reached this server yet (each server is sent the record in turn, and
+// over a trunk by another way than the envelope), or a moderator the record
+// that names them has not. Such an event waits as one about a missing
+// message does, and is tried again whenever a record is taken.
+func awaitsRecord(rej *rejection) bool {
+	return rej.reason == "origin_not_in_stream" || rej.reason == "not_moderator"
 }
 
 // awaitsHistory reports whether a rejection is one the channel's earlier
@@ -371,7 +381,7 @@ func (s *Service) retryHeld(ctx context.Context, rt *streamRT, history bool) {
 		for _, e := range append([]*heldEvent(nil), h.events...) {
 			if e.target == "" || (history && e.history) {
 				if !history {
-					continue // it waits for an account, which only history brings
+					continue // it waits for an account or a record, which only history or a record brings
 				}
 			} else if _, err := s.store.Messages().Get(ctx, e.target); err != nil {
 				continue
@@ -382,6 +392,11 @@ func (s *Service) retryHeld(ctx context.Context, rt *streamRT, history bool) {
 				continue
 			}
 			h.unpark(e)
+			if e.o.rej != nil {
+				// Refused before it was opened (its origin not on the list
+				// yet): opened again, now that a record may have put it there.
+				e.o = s.open(ctx, st, e.env, true)
+			}
 			if s.settleDelivered(ctx, rt, st, e.peer, e.env, e.o, true, e.until) {
 				progress = true
 			}

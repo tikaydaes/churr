@@ -1919,7 +1919,18 @@ the server sends `catch_up` and is delivered it again. After a restart
 the history still owed is known from the database (the instance's
 `link.history_pending`, the holder's list), so what the log delivers
 again waits again. A message of the channel is never lost for arriving
-before the history that names its author. On a direct link there are two
+before the history that names its author.
+
+**Waiting for a record.** In a channel a hub owns, an event from an
+origin that is not on the server list this server holds
+(`origin_not_in_stream`), or a deletion or removal by an account the
+record it holds does not name a moderator or manager
+(`not_moderator`), is held as one about a missing message is, for at
+most 60 seconds, and tried again whenever this server takes a record of
+the channel: the hub sends a record to each server in turn, and over a
+trunk by another way than the envelopes, so a server let in, or a
+moderator named, may speak before the record that says so reaches
+everyone. The home hub sends each record to its own holder first. On a direct link there are two
 servers and one log, and nothing is held. A hub's log holds nothing
 either; the home hub's holder, which applies a channel's envelopes as
 an instance does (section 23a), holds events as an instance holds
