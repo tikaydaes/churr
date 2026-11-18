@@ -18,7 +18,8 @@ const (
 )
 
 // Identity is who this program is on the link: its name, its kind and its
-// keys. A hub has keys too but never publishes or uses the box key.
+// keys. A server and a hub alike publish a box key: a hub is sealed the
+// direct messages that ask it for a channel's key (section 7).
 type Identity struct {
 	Name string
 	Kind string
@@ -69,10 +70,8 @@ func VerifyBoxKey(name string, signKey, boxKey, sig []byte) bool {
 func (id Identity) WellKnown() WellKnown {
 	w := WellKnown{Churr: 1, Kind: id.Kind, Name: id.Name, SignKey: Bytes(id.Keys.SignPublic()),
 		Link: WellKnownLink{Versions: []int{Version}, URL: id.URL}}
-	if id.Kind == KindServer {
-		w.BoxKey = id.Keys.BoxPublic()
-		w.BoxKeySig = id.BoxKeySig()
-	}
+	w.BoxKey = id.Keys.BoxPublic()
+	w.BoxKeySig = id.BoxKeySig()
 	return w
 }
 
@@ -85,7 +84,7 @@ func (w WellKnown) Check(host string) error {
 		return fmt.Errorf("wire: the document names %q, not the host it came from", w.Name)
 	case len(w.SignKey) != 32:
 		return errors.New("wire: the signing key is not 32 bytes")
-	case w.Kind == KindServer && !VerifyBoxKey(w.Name, w.SignKey, w.BoxKey, w.BoxKeySig):
+	case !VerifyBoxKey(w.Name, w.SignKey, w.BoxKey, w.BoxKeySig):
 		return errors.New("wire: the box key signature does not verify")
 	case w.Kind != KindServer && w.Kind != KindHub:
 		return errors.New("wire: unknown kind")

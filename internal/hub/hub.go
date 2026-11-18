@@ -7,9 +7,11 @@
 // which the hub can refuse and cannot change. It forwards sealed direct
 // messages between servers without being able to open them.
 //
-// It has no accounts, no channels and no search, and it never holds a stream
-// key or a server's private key: everything it stores is names of servers,
-// public keys, stream identifiers, and ciphertext.
+// It has no accounts, no messages and no search. It owns the channels shared
+// through it (channels.go): it keeps their records and, as the home hub of a
+// channel, makes and keeps every key epoch's stream key, sealed at rest
+// (keys.go). It never holds a server's private key, and it does not open the
+// envelopes it carries.
 package hub
 
 import (
@@ -89,11 +91,15 @@ CREATE TABLE IF NOT EXISTS channels (
   stream_id TEXT PRIMARY KEY, record BLOB NOT NULL,          -- the channel record at its newest version: a ChannelRecord message
   creator TEXT NOT NULL,                                     -- the server that shared it to the hub
   inviters TEXT NOT NULL DEFAULT '{}',                       -- invited server -> the home server of the manager who invited it
-  maker_deadline INTEGER NOT NULL DEFAULT 0,                 -- when the named key-maker must have used the new epoch; 0 = nothing awaited
   told INTEGER NOT NULL DEFAULT 1, also TEXT NOT NULL DEFAULT '[]', -- 0: the record has yet to be sent; also: servers outside it to tell
   move_id TEXT NOT NULL DEFAULT '',                          -- for a channel brought from a direct link: the move that brought it
   declined TEXT NOT NULL DEFAULT '[]',                       -- servers to tell, when they next connect, that their request to join was declined
   joined_have TEXT NOT NULL DEFAULT '{}'                     -- member server -> what the log held of each origin when it was admitted: where it starts from
+);
+CREATE TABLE IF NOT EXISTS stream_keys (                     -- for a channel this hub is the home of: every key epoch's key, sealed at rest
+  stream_id TEXT NOT NULL, epoch INTEGER NOT NULL, sealed BLOB NOT NULL,
+  servers TEXT NOT NULL,                                     -- the server list the epoch began for, as JSON: who may be given its key
+  created_at INTEGER NOT NULL, PRIMARY KEY (stream_id, epoch)
 );
 CREATE TABLE IF NOT EXISTS clocks (
   name TEXT PRIMARY KEY, clock TEXT NOT NULL                 -- what the hub last measured of each server's clock, as JSON; kept while it is away
@@ -240,6 +246,9 @@ type Hub struct {
 	// the database also holds it.
 	commits committer
 	clocks  sync.Map
+	// seenDirect are the direct messages addressed to the hub itself in the
+	// last ten minutes (keys.go).
+	seenDirect directSeen
 }
 
 // TestTap shows fn the bytes of every frame the hub receives from a server,
@@ -638,6 +647,7 @@ func (h *Hub) Sweep() int64 {
 	h.db.Exec(`DELETE FROM origins WHERE stream_id IN (SELECT id FROM streams WHERE state = 'closed' AND closed_at < ?)`, before)
 	h.db.Exec(`DELETE FROM away WHERE to_at < ?`, int64(h.now().Add(-awayLife)))
 	h.db.Exec(`DELETE FROM channels WHERE stream_id IN (SELECT id FROM streams WHERE state = 'closed' AND closed_at < ?)`, before)
+	h.db.Exec(`DELETE FROM stream_keys WHERE stream_id IN (SELECT id FROM streams WHERE state = 'closed' AND closed_at < ?)`, before)
 	h.db.Exec(`DELETE FROM stream_ctl WHERE stream_id IN (SELECT id FROM streams WHERE state = 'closed' AND closed_at < ?)`, before)
 	h.db.Exec(`DELETE FROM streams WHERE state = 'closed' AND closed_at < ?`, before)
 	h.db.Exec(`DELETE FROM invites WHERE expires_at < ?`, int64(h.now()))

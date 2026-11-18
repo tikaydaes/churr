@@ -148,14 +148,14 @@ func TestOperatorCommands(t *testing.T) {
 	}
 }
 
-// A hub publishes its name and signing key, and no box key: nothing is ever
-// encrypted to a hub.
+// A hub publishes its name, its signing key and its box key, which a server
+// seals the direct messages it sends the hub to.
 func TestHubWellKnown(t *testing.T) {
 	h := newHub(t)
 	rec := httptest.NewRecorder()
 	h.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/.well-known/churr", nil))
 	body := rec.Body.String()
-	if rec.Code != 200 || !strings.Contains(body, `"kind":"hub"`) || strings.Contains(body, "box_key") || rec.Header().Get("Cache-Control") != "max-age=3600" {
+	if rec.Code != 200 || !strings.Contains(body, `"kind":"hub"`) || !strings.Contains(body, "box_key_sig") || rec.Header().Get("Cache-Control") != "max-age=3600" {
 		t.Fatalf("%d %s", rec.Code, body)
 	}
 }

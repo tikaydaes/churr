@@ -198,11 +198,7 @@ type streamState struct {
 	st      stream
 	err     error
 	origins map[string]*originState
-	// rec is the channel's record, for a channel a hub owns; read when an
-	// envelope names a key epoch the stream has not reached.
-	rec       *wire.ChannelRecord
-	recLoaded bool
-	dirty     bool
+	dirty   bool
 }
 
 // writeLocked is the transaction of writeGroup. The caller holds the lock of
@@ -293,29 +289,19 @@ func (h *Hub) writeLocked(jobs []*submitJob) error {
 				h.refused.Note("envelopes", name, e.RetryAfter)
 				return e, nil
 			}
-			// The key epoch is its maker's to start. The hub holds no key and
-			// reads no event; it sees the epoch each envelope names, and takes
-			// one party's word, and only that party's, for a new one: the
-			// owner server of a stream a server owns, and for a channel a hub
-			// owns the member server its home hub named to make that epoch's
-			// key, as the record this hub holds says.
+			// The key epoch. In a channel a hub owns, the home hub begins
+			// every epoch itself, with a key it made, when it signs the record
+			// that calls for it; a hub that carries the channel for another
+			// knows it from that record. Nothing comes under a later epoch
+			// than that. In a stream a server owns, the owner begins an epoch
+			// with an envelope under it, and the hub takes that word from the
+			// owner and nobody else.
 			if env.KeyEpoch < st.epoch {
 				return wire.Errf(wire.EStaleEpoch, "Key epoch %d has ended; the stream is at %d.", env.KeyEpoch, st.epoch), nil
 			}
-			if env.KeyEpoch > st.epoch {
-				starts := name == st.owner
-				if st.owner == h.id.Name || (st.homeHub != "" && st.owner == st.homeHub) {
-					if !ss.recLoaded {
-						ss.recLoaded = true
-						if c, err := loadChannel(tx, st.id); err == nil {
-							ss.rec = &c.rec
-						}
-					}
-					starts = ss.rec != nil && ss.rec.KeyMaker == name && ss.rec.Epoch == env.KeyEpoch
-				}
-				if !starts {
-					return wire.Errf(wire.EEarlyEpoch, "Key epoch %d has not started; the stream is at %d.", env.KeyEpoch, st.epoch), nil
-				}
+			hubChannel := st.owner == h.id.Name || (st.homeHub != "" && st.owner == st.homeHub)
+			if env.KeyEpoch > st.epoch && (hubChannel || name != st.owner) {
+				return wire.Errf(wire.EBadFrame, "Key epoch %d has not begun; the stream is at %d.", env.KeyEpoch, st.epoch), nil
 			}
 			// The stream's time reference is its home hub: this hub, or
 			// another of the cluster, whose clock this hub reads through the

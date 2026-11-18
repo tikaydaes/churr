@@ -1,6 +1,7 @@
 package link_test
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -253,7 +254,7 @@ func (f *moveFix) onHub(id string) {
 	for _, c := range list {
 		if c.ID == f.stream {
 			found = true
-			if strings.Join(c.Servers, ",") != "a.localhost,b.localhost" || c.KeyMaker != "a.localhost" || c.Name != "launch" || c.Listing != wire.ListingUnlisted {
+			if strings.Join(c.Servers, ",") != "a.localhost,b.localhost" || c.Epoch < 2 || c.Name != "launch" || c.Listing != wire.ListingUnlisted {
 				f.t.Fatalf("the hub's record: %+v", c)
 			}
 		}
@@ -413,11 +414,16 @@ func TestMoveOntoHub(t *testing.T) {
 		t.Fatalf("only %d messages were posted while the move ran", len(f.posted))
 	}
 
-	// A new key epoch, made by the former owner server as the hub's first
-	// key-maker; the hub activated the channel.
+	// A new key epoch, the hub's first, begun with its own key when it
+	// activated the channel.
 	testkit.Eventually(t, "a new key epoch on both", func() bool {
 		return f.StreamOn(0, f.stream)["key_epoch"].(float64) == epoch+1 && f.StreamOn(1, f.stream)["key_epoch"].(float64) == epoch+1
 	})
+	for i := 0; i < 2; i++ {
+		if !bytes.Equal(f.lk(i).TestKeys(model.StreamID(f.stream))[int64(epoch)+1], f.Hub.Hub.TestStreamKeys(f.stream)[int64(epoch)+1]) {
+			t.Fatalf("%s does not hold the hub's key of the first epoch on the hub", testkit.ServerName(i))
+		}
+	}
 	// The moderators are every manager of the channel on either server at
 	// the commit: both owners (admins who are members), ann and bea; not
 	// amy or bo, who are plain members.
@@ -470,7 +476,7 @@ func TestMoveOntoHub(t *testing.T) {
 		st := f.StreamOn(2, f.stream)
 		return st != nil && st["state"] == "active" && st["key_epoch"].(float64) == epoch+2
 	})
-	if rec := hubChannel(a.Owner, f.stream); names(rec["servers"]) != "a.localhost,b.localhost,c.localhost" || rec["key_maker"] != "b.localhost" {
+	if rec := hubChannel(a.Owner, f.stream); names(rec["servers"]) != "a.localhost,b.localhost,c.localhost" {
 		t.Fatalf("after c joined: %v", rec)
 	}
 	f.say(f.amy, f.conv[0], "three a 000")
@@ -909,7 +915,7 @@ func (f *moveFix) diagnose() {
 		}
 	}
 	if rec, _, _, ok := f.lk(0).TestChannel(sid); ok {
-		f.t.Logf("a's record: v%d prepared %v epoch %d maker %s", rec.Version, rec.Prepared, rec.Epoch, rec.KeyMaker)
+		f.t.Logf("a's record: v%d prepared %v epoch %d", rec.Version, rec.Prepared, rec.Epoch)
 	}
 	f.t.Logf("the hub's log holds %d envelopes", len(f.Hub.Hub.TestLog(f.stream)))
 }

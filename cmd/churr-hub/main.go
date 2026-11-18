@@ -232,8 +232,9 @@ func run(command string, args []string) error {
 			if c.Private {
 				listing += " (private)"
 			}
-			fmt.Printf("%s  %q  %s  home %s  servers %s  managers %s  moderators %s  invited %s  asking %s  key-maker %s  carried %d\n    %s\n", c.ID, c.Name, listing, c.Home,
-				strings.Join(c.Servers, ","), hub.Accounts(c.Managers), hub.Accounts(c.Moderators), strings.Join(c.Invited, ","), strings.Join(c.Requests, ","), c.KeyMaker, c.Cursor, c.Description)
+			fmt.Printf("%s  %q  %s  home %s  servers %s  managers %s  moderators %s  invited %s  asking %s  key epoch %d  carried %d\n    %s\n", c.ID, c.Name, listing, c.Home,
+				strings.Join(c.Servers, ","), hub.Accounts(c.Managers), hub.Accounts(c.Moderators), strings.Join(c.Invited, ","), strings.Join(c.Requests, ","), c.Epoch,
+				c.Cursor, c.Description)
 		}
 	case "appoint":
 		if len(positional) != 3 {

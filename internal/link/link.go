@@ -202,16 +202,11 @@ type Service struct {
 	// frameWaits are requests to a hub waiting for the frame that answers
 	// them, by peer and frame id (hubchan.go).
 	frameWaits map[string]chan wire.Frame
-	// testNoKeys makes this server a key-maker that makes no keys, and
-	// testKeyMade is told every key it does make (hubchan.go). testStep,
-	// when set, is asked before each step of a move and stops the move
-	// there when it says so (move.go).
-	// testDeaf makes this server lose every answer to its submits, as a
-	// link that drops them would.
-	testDeaf    atomic.Bool
-	testNoKeys  atomic.Bool
-	testKeyMade atomic.Pointer[func(stream model.StreamID, epoch int64, key []byte)]
-	testStep    atomic.Pointer[func(step string) bool]
+	// testStep, when set, is asked before each step of a move and stops the
+	// move there when it says so (move.go). testDeaf makes this server lose
+	// every answer to its submits, as a link that drops them would.
+	testDeaf atomic.Bool
+	testStep atomic.Pointer[func(step string) bool]
 
 	// snapshotSpread is the time presence snapshots are spread over after
 	// a reconnection, in nanoseconds: zero for the documented time, below
@@ -592,9 +587,15 @@ type streamRT struct {
 	// been told has joined.
 	announcing bool
 	// keyArrived is closed and replaced whenever a key for the stream
-	// arrives. keyAsked are the epochs whose key this server has asked for.
+	// arrives. keyAsked are the epochs whose key this server has asked for;
+	// hubAsked, in a hub-owned channel, when it last asked the home hub for
+	// each (hubchan.go).
 	keyArrived chan struct{}
 	keyAsked   map[int64]bool
+	hubAsked   map[int64]time.Time
+	// joinedHave is, in a hub-owned channel, what the hub's log held of
+	// each origin when it last let a server in (hubchan.go).
+	joinedHave map[string]int64
 	// history is how a server that has just joined waits, before applying
 	// anything after the event that let it in, for the snapshot that tells
 	// it who the members are: historyHere is set when the last part has
@@ -626,7 +627,7 @@ func (s *Service) rt(id model.StreamID) *streamRT {
 	defer s.mu.Unlock()
 	r := s.rts[id]
 	if r == nil {
-		r = &streamRT{id: id, watchers: map[string]chan struct{}{}, keyArrived: make(chan struct{}), keyAsked: map[int64]bool{}, firstAsked: map[string]bool{}, forged: map[string]int{},
+		r = &streamRT{id: id, watchers: map[string]chan struct{}{}, keyArrived: make(chan struct{}), keyAsked: map[int64]bool{}, hubAsked: map[int64]time.Time{}, firstAsked: map[string]bool{}, forged: map[string]int{},
 			jobs: make(chan func(), 4096)}
 		s.rts[id] = r
 		s.wg.Add(1)

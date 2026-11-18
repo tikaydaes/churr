@@ -1529,7 +1529,6 @@ S('HubChannel', "A hub's record of a channel it owns, as the hub last signed it.
    'invited': ('[str]', 'Instances invited and not yet in. Empty for a caller who is neither a manager, a moderator nor '
                         'the owner.'),
    'requests': ('[str]', 'Instances asking to join. Empty for a caller who is neither a manager, a moderator nor the owner.'),
-   'key_maker': ('str', 'The instance the hub named to make the current stream key. The hub never holds a key.'),
    'closed': 'bool',
    'private': ('bool', 'Private for good: never listed, joined by instances a manager invites, and its people on every '
                        'instance admitted by its moderators and managers.'),

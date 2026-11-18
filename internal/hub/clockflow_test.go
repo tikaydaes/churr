@@ -122,7 +122,7 @@ func TestClockComposition(t *testing.T) {
 		testkit.Eventually(t, "the epoch its joining called for has begun", func() bool {
 			e := fresh.seal(id, int64(model.Now())+shift, "")
 			out = fresh.submit(e)
-			if out.Code == wire.EEarlyEpoch || out.Code == wire.EStaleEpoch {
+			if out.Code == wire.EStaleEpoch {
 				fresh.mu.Lock()
 				fresh.n[id]--
 				fresh.lastAt[id] = 0

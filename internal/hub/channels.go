@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -22,41 +20,22 @@ import (
 // is the only party that signs a change to it. Servers ask for changes: a
 // manager's action signed by the manager's home server, a server's own
 // wish to join or leave. The hub checks who asks, changes the record, signs
-// it whole and sends it to the channel's servers. It never holds a stream
-// key: on every change to the server list it names one member server to make
-// the next one.
-
-// makerWait is how long a named key-maker has to use the new epoch before
-// the hub names the next server in line. Tests shorten it.
-var makerWait atomic.Int64
-
-func init() { makerWait.Store(int64(30 * time.Second)) }
-
-// SetMakerWait changes how long a named key-maker is given, and returns a
-// function that puts the old wait back. It is for tests.
-func SetMakerWait(d time.Duration) func() {
-	old := makerWait.Swap(int64(d))
-	return func() { makerWait.Store(old) }
-}
-
-// makersKept is how many key epochs back a record says who made the key.
-const makersKept = 32
+// it whole and sends it to the channel's servers. On every change to the
+// server list it begins a new key epoch: it makes the epoch's key, keeps it
+// sealed at rest beside every earlier one (keys.go), and sends it to every
+// server in the list.
 
 // channel is a row of channels.
 type channel struct {
 	rec      wire.ChannelRecord
 	creator  string
 	inviters map[string]string
-	deadline int64
 	// moveID is, for a channel brought here from a direct link, the move
 	// that brought it (section 21a).
 	moveID string
 	// declined are servers whose request to join was declined while they
 	// were not connected: each is told when it next connects.
 	declined []string
-	// started reports whether the key epoch the record calls for has
-	// begun: the hub has taken an envelope under it from its maker.
-	started bool
 	// joinedHave is, per member server, what the log held of each origin
 	// at the moment the hub admitted it. A server starts from there, and
 	// may hear that it was admitted only later, when the log holds more.
@@ -91,11 +70,9 @@ func loadChannel(q querier, id string) (channel, error) {
 	var c channel
 	var rec []byte
 	var inviters, declined, joinedHave, handovers string
-	var epoch int64
-	err := q.QueryRow(`SELECT c.record, c.creator, c.inviters, c.maker_deadline, c.move_id, c.declined, c.joined_have, COALESCE(s.epoch, 0),
-			c.signed, c.sig, c.handovers, c.rehome
-		FROM channels c LEFT JOIN streams s ON s.id = c.stream_id WHERE c.stream_id = ?`, id).
-		Scan(&rec, &c.creator, &inviters, &c.deadline, &c.moveID, &declined, &joinedHave, &epoch, &c.signed, &c.sig, &handovers, &c.rehome)
+	err := q.QueryRow(`SELECT record, creator, inviters, move_id, declined, joined_have, signed, sig, handovers, rehome
+		FROM channels WHERE stream_id = ?`, id).
+		Scan(&rec, &c.creator, &inviters, &c.moveID, &declined, &joinedHave, &c.signed, &c.sig, &handovers, &c.rehome)
 	if errors.Is(err, sql.ErrNoRows) {
 		return c, wire.Errf(wire.EUnknownStream, "No such channel here.")
 	}
@@ -111,7 +88,6 @@ func loadChannel(q querier, id string) (channel, error) {
 	c.joinedHave = map[string]map[string]int64{}
 	json.Unmarshal([]byte(joinedHave), &c.joinedHave)
 	json.Unmarshal([]byte(handovers), &c.handovers)
-	c.started = epoch >= c.rec.Epoch
 	return c, nil
 }
 
@@ -142,18 +118,6 @@ func (h *Hub) saveChannel(tx *sql.Tx, c *channel, also []string) error {
 	if c.rec.Moderators == nil {
 		c.rec.Moderators = []wire.ChannelAccount{}
 	}
-	// Who was named to make each of the last few keys.
-	if c.rec.Makers == nil {
-		c.rec.Makers = map[string]string{}
-	}
-	if c.rec.KeyMaker != "" {
-		c.rec.Makers[strconv.FormatInt(c.rec.Epoch, 10)] = c.rec.KeyMaker
-	}
-	for epoch := range c.rec.Makers {
-		if n, err := strconv.ParseInt(epoch, 10, 64); err != nil || n <= c.rec.Epoch-makersKept {
-			delete(c.rec.Makers, epoch)
-		}
-	}
 	state, closedAt := "open", any(nil)
 	switch {
 	case c.rec.Closed:
@@ -181,61 +145,42 @@ func (h *Hub) saveChannel(tx *sql.Tx, c *channel, also []string) error {
 		also = append(old, also...)
 	}
 	_, err := tx.Exec(`
-		INSERT INTO channels (stream_id, record, creator, inviters, maker_deadline, told, also, move_id, declined, joined_have, handovers)
-		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
+		INSERT INTO channels (stream_id, record, creator, inviters, told, also, move_id, declined, joined_have, handovers)
+		VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
 		ON CONFLICT (stream_id) DO UPDATE SET record = excluded.record, inviters = excluded.inviters,
-			maker_deadline = excluded.maker_deadline, told = 0, also = excluded.also, declined = excluded.declined,
+			told = 0, also = excluded.also, declined = excluded.declined,
 			joined_have = excluded.joined_have, creator = excluded.creator, handovers = excluded.handovers, signed = NULL, sig = NULL`,
-		c.rec.StreamID, mustMessage("ChannelRecord", c.rec), c.creator, string(mustJSON(c.inviters)), c.deadline, string(mustJSON(append([]string{}, also...))),
+		c.rec.StreamID, mustMessage("ChannelRecord", c.rec), c.creator, string(mustJSON(c.inviters)), string(mustJSON(append([]string{}, also...))),
 		c.moveID, string(mustJSON(append([]string{}, c.declined...))), string(mustJSON(c.joinedHave)), string(mustJSON(append([]handover{}, c.handovers...))))
-	if err == nil {
-		h.forgetRoute(c.rec.StreamID)
+	if err != nil {
+		return err
 	}
-	return err
+	h.forgetRoute(c.rec.StreamID)
+	// The epoch the record calls for begins here: the hub makes its key in
+	// the transaction that signs the record, and from this moment takes
+	// nothing under an older one. The record that hands the channel to
+	// another hub begins nothing: the hub that takes it begins its own.
+	if c.homeTo == "" && !c.rec.Prepared && !c.rec.Closed && c.rec.Epoch > 0 {
+		return h.beginEpoch(tx, c.rec)
+	}
+	return nil
 }
 
-// relist is a change to the server list: a new epoch, a key-maker, and what
-// the change was. prefer is the server the rule names (the home server of
-// the manager who approved or invited); when it is not a member, or for an
-// open join, the longest-standing member makes the key.
-//
-// If the epoch the record called for never began, what that change was is
-// carried into this one: the maker of the new epoch owes history to every
-// server that has joined since the last epoch that did begin.
-func (h *Hub) relist(c *channel, joined, left []string, prefer string) {
-	if !c.started {
-		for _, n := range c.rec.Joined {
-			if c.rec.Has(n) && !has(joined, n) {
-				joined = append(joined, n)
-			}
-		}
-		for _, n := range c.rec.Left {
-			if !c.rec.Has(n) && !has(left, n) {
-				left = append(left, n)
-			}
-		}
-	}
+// relist is a change to the server list: a new key epoch, which the hub
+// begins when it saves the record (saveChannel), and what the change was.
+func (h *Hub) relist(c *channel, joined, left []string) {
 	c.rec.Epoch++
-	c.started = false
-	c.rec.Joined, c.rec.Left = joined, left
-	c.rec.KeyMaker = ""
-	if c.rec.Has(prefer) {
-		c.rec.KeyMaker = prefer
-	} else if len(c.rec.Servers) > 0 {
-		// The longest-standing member; of those this hub can reach now, if
-		// the cluster is split (section 23b).
-		c.rec.KeyMaker = c.rec.Servers[0]
-		for _, n := range c.rec.Servers {
-			if h.reachable(n) {
-				c.rec.KeyMaker = n
-				break
-			}
-		}
-	}
-	c.deadline = int64(h.now()) + makerWait.Load()/int64(time.Millisecond)
+	c.rec.Joined, c.rec.Left = orEmpty(joined), orEmpty(left)
 	if len(c.rec.Servers) == 0 {
-		c.rec.Closed, c.deadline = true, 0
+		c.rec.Closed = true
 	}
+}
+
+func orEmpty(l []string) []string {
+	if l == nil {
+		return []string{}
+	}
+	return l
 }
 
 func without(list []string, v string) []string {
@@ -324,8 +269,7 @@ func (h *Hub) sendRecord(c channel, f wire.Frame, to []string) {
 
 // audience is who a record is sent to: while it is only prepared, the server
 // that brought it and nobody else; otherwise the servers that have just
-// joined first (the key their key-maker sends follows on its heels), the
-// channel's other servers, and the servers invited to it.
+// joined first, the channel's other servers, and the servers invited to it.
 func audience(c channel) []string {
 	if c.rec.Prepared {
 		return []string{c.creator}
@@ -373,6 +317,9 @@ func (h *Hub) tellChannels() {
 						to = append(to, n)
 					}
 				}
+				// The key of the epoch the record calls for goes ahead of the
+				// record, to every server in it, here or on another hub.
+				h.sendKeys(c, to)
 				h.sendRecord(c, f, to)
 				// And to the hubs whose servers it concerns.
 				h.sendRecordToTrunks(c, f, extra)
@@ -412,73 +359,10 @@ func (h *Hub) resendChannels(sc *serverConn) {
 		}
 		if err == nil && !c.rec.Closed && has(audience(c), sc.name) {
 			if f, err := h.recordFrame(c); err == nil {
+				h.sendKeys(c, []string{sc.name})
 				h.sendRecord(c, f, []string{sc.name})
 			}
 		}
-		m.Unlock()
-	}
-}
-
-// checkMakers names the next key-maker for each channel whose named one let
-// its time pass without starting the new epoch. The hub sees which epoch an
-// envelope is under, and nothing else of it.
-func (h *Hub) checkMakers() {
-	now := int64(h.now())
-	rows, err := h.db.Query(`SELECT stream_id FROM channels WHERE maker_deadline > 0 AND maker_deadline <= ? AND signed IS NULL`, now)
-	if err != nil {
-		return
-	}
-	var ids []string
-	for rows.Next() {
-		var id string
-		if rows.Scan(&id) == nil {
-			ids = append(ids, id)
-		}
-	}
-	rows.Close()
-	for _, id := range ids {
-		m := h.lock(id)
-		h.tx(func(tx *sql.Tx) error {
-			c, err := loadChannel(tx, id)
-			if err != nil || c.rec.Closed || c.rec.Prepared {
-				return err
-			}
-			if _, moving := offerOf(tx, id); moving {
-				return nil // its home is on offer; the next key-maker is named when that is settled
-			}
-			if c.started || len(c.rec.Servers) < 2 {
-				// Done; or there is nobody else to ask, and the one server
-				// left makes its key whenever it returns.
-				_, err := tx.Exec(`UPDATE channels SET maker_deadline = 0 WHERE stream_id = ?`, id)
-				return err
-			}
-			// The next in line: the server after the one that did not, in
-			// the order they joined, going round. A server that has only
-			// just joined is passed over while there is another to ask: it
-			// holds nothing of the channel yet, and is itself owed its
-			// history by whoever makes the key.
-			at := 0
-			for i, n := range c.rec.Servers {
-				if n == c.rec.KeyMaker {
-					at = i
-				}
-			}
-			next := c.rec.Servers[(at+1)%len(c.rec.Servers)]
-			for step := 1; step < len(c.rec.Servers); step++ {
-				// So is a server this hub cannot reach while the cluster is
-				// split.
-				if n := c.rec.Servers[(at+step)%len(c.rec.Servers)]; !has(c.rec.Joined, n) && h.reachable(n) {
-					next = n
-					break
-				}
-			}
-			// A new number, so that a key the first maker made late can
-			// never be taken for this one. What the change was stays.
-			c.rec.Epoch++
-			c.rec.KeyMaker = next
-			c.deadline = now + makerWait.Load()/int64(time.Millisecond)
-			return h.saveChannel(tx, &c, nil)
-		})
 		m.Unlock()
 	}
 }
@@ -517,6 +401,9 @@ func (h *Hub) channelCreate(sc *serverConn, f wire.Frame) error {
 	if cc.Private && cc.Listing != wire.ListingUnlisted {
 		// A private channel is never listed (ruling R94).
 		return wire.Errf(wire.EBadFrame, "A private channel is shared unlisted, and stays so.")
+	}
+	if cc.HistoryDays < 0 || cc.HistoryDays > 90 {
+		return wire.Errf(wire.EBadFrame, "A channel gives a joining server 0 to 90 days of history.")
 	}
 	servers, mods, epoch := []string{sc.name}, []wire.ChannelAccount{cc.Creator}, int64(1)
 	moved := cc.MoveID != ""
@@ -572,7 +459,7 @@ func (h *Hub) channelCreate(sc *serverConn, f wire.Frame) error {
 		if theirs != len(acc.Managers) {
 			return wire.Errf(wire.EForbidden, "Every manager %s named stays a manager.", other)
 		}
-		// The sender first: it is named to make the first key here.
+		// The sender first: the longest-standing member.
 		servers, mods, epoch = []string{sc.name, other}, append([]wire.ChannelAccount{}, cc.Managers...), cc.Epoch
 	}
 	lim, err := h.Limits(sc.name)
@@ -613,14 +500,17 @@ func (h *Hub) channelCreate(sc *serverConn, f wire.Frame) error {
 		}
 		// The hub is the channel's owner, its home, and its time reference.
 		// A moved channel's stream stands at the epoch before the one the
-		// record calls for, as a channel made here stands at 0 before 1.
+		// record calls for, as a channel made here stands at 0 before 1. A
+		// channel made here begins epoch 1 as it is saved, with the hub's
+		// key; a moved one begins its first epoch here when it is
+		// activated.
 		if _, err := tx.Exec(`INSERT INTO streams (id, owner, version, next_seq, state, created_at, home_hub, epoch) VALUES (?, ?, 0, 1, 'open', ?, ?, ?)`,
 			cc.StreamID, h.id.Name, now, h.id.Name, epoch-1); err != nil {
 			return err
 		}
 		c := channel{creator: sc.name, moveID: cc.MoveID, inviters: map[string]string{}, rec: wire.ChannelRecord{StreamID: cc.StreamID, Name: cc.Name,
-			Description: cc.Description, Listing: cc.Listing, Servers: servers, Managers: mods, Epoch: epoch, KeyMaker: sc.name,
-			Joined: []string{}, Prepared: moved, Private: cc.Private}}
+			Description: cc.Description, Listing: cc.Listing, Servers: servers, Managers: mods, Epoch: epoch,
+			HistoryDays: cc.HistoryDays, Joined: []string{}, Prepared: moved, Private: cc.Private}}
 		return h.saveChannel(tx, &c, nil)
 	})
 	m.Unlock()
@@ -717,9 +607,10 @@ func (h *Hub) channelCommitAs(sender string, f wire.Frame) error {
 		}
 		c.rec.Managers = mods
 		c.rec.Prepared = false
-		c.rec.Epoch, c.rec.KeyMaker = mc.Epoch+1, c.creator
+		// The first epoch of the channel's life on the hub, with the hub's
+		// own key: the one after the last of its direct life.
+		c.rec.Epoch = mc.Epoch + 1
 		c.rec.Joined, c.rec.Left = []string{}, []string{}
-		c.deadline = int64(h.now()) + makerWait.Load()/int64(time.Millisecond)
 		return h.saveChannel(tx, &c, nil)
 	})
 	m.Unlock()
@@ -754,12 +645,15 @@ func (h *Hub) restorePrepared(tx *sql.Tx, sender string, f wire.Frame, mc wire.M
 	if tx.QueryRow(`SELECT 1 FROM streams WHERE id = ?`, mc.StreamID).Scan(&one) == nil {
 		return wire.Errf(wire.EConflict, "That stream is already here.")
 	}
-	creator := rec.KeyMaker
 	switch {
 	case rec.StreamID != mc.StreamID || rec.Hub != h.id.Name || !bytes.Equal(rec.HubKey, h.keys.SignPublic()) || !rec.Prepared || rec.Closed:
 		return wire.Errf(wire.EForbidden, "The record brought with the commit is not this hub's prepared record of that channel.")
-	case len(rec.Servers) != 2 || !rec.Has(sender) || !rec.Has(creator) || rec.Epoch < 2 || !wire.ValidID(mc.MoveID):
+	case len(rec.Servers) != 2 || !rec.Has(sender) || rec.Epoch < 2 || !wire.ValidID(mc.MoveID):
 		return wire.Errf(wire.EBadFrame, "A prepared channel has its two servers, one of which prepared it.")
+	}
+	// The server that prepared it is named first.
+	creator := rec.Servers[0]
+	switch {
 	case mc.Owner != creator || mc.Hub != h.id.Name:
 		return wire.Errf(wire.EForbidden, "That is not the commit of this channel's move.")
 	case rec.At.Before(h.now().Add(-time.Duration(h.cfg.KeepDays) * 24 * time.Hour)):
@@ -783,8 +677,8 @@ func (h *Hub) restorePrepared(tx *sql.Tx, sender string, f wire.Frame, mc wire.M
 		return err
 	}
 	c := channel{creator: creator, moveID: mc.MoveID, inviters: map[string]string{}, rec: wire.ChannelRecord{StreamID: rec.StreamID, Name: rec.Name,
-		Description: rec.Description, Listing: rec.Listing, Servers: rec.Servers, Managers: rec.Managers, Epoch: rec.Epoch, KeyMaker: creator,
-		Joined: []string{}, Prepared: true, Private: rec.Private}}
+		Description: rec.Description, Listing: rec.Listing, Servers: rec.Servers, Managers: rec.Managers, Epoch: rec.Epoch,
+		HistoryDays: rec.HistoryDays, Joined: []string{}, Prepared: true, Private: rec.Private}}
 	h.log.Warn("a moved channel this hub had prepared and no longer held was prepared again from its own record and the move's commit",
 		"stream", rec.StreamID, "by", sender, "move", mc.MoveID)
 	return h.saveChannel(tx, &c, nil)
@@ -836,7 +730,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			// brought it may take it away again, and nothing else is done
 			// to it.
 			if f.Frame == wire.FChannelAction && a.Action == wire.ActClose && c.creator == sc.name {
-				c.rec.Closed, c.deadline = true, 0
+				c.rec.Closed = true
 				return h.saveChannel(tx, &c, nil)
 			}
 			return wire.Errf(wire.EUnknownStream, "No such channel here.")
@@ -864,7 +758,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			}
 			if has(c.rec.Requests, a.Server) {
 				// It had asked already: inviting it is approving it.
-				return h.admit(tx, &c, a.Server, sc.name)
+				return h.admit(tx, &c, a.Server)
 			}
 			c.rec.Invited = append(c.rec.Invited, a.Server)
 			c.inviters[a.Server] = sc.name
@@ -872,7 +766,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			if !has(c.rec.Requests, a.Server) {
 				return wire.Errf(wire.ENotFound, "%s has not asked to join.", a.Server)
 			}
-			return h.admit(tx, &c, a.Server, sc.name)
+			return h.admit(tx, &c, a.Server)
 		case wire.ActDecline:
 			if !has(c.rec.Requests, a.Server) {
 				return wire.Errf(wire.ENotFound, "%s has not asked to join.", a.Server)
@@ -886,7 +780,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			switch {
 			case c.rec.Has(a.Server):
 				dropServer(&c, a.Server)
-				h.relist(&c, []string{}, []string{a.Server}, sc.name)
+				h.relist(&c, nil, []string{a.Server})
 				also = []string{a.Server}
 			case has(c.rec.Invited, a.Server):
 				dropServer(&c, a.Server) // the invitation is withdrawn
@@ -939,7 +833,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 			}
 			*list = dropAccount(*list, a.Account.AccountID, a.Account.Server)
 		case wire.ActClose:
-			c.rec.Closed, c.deadline = true, 0
+			c.rec.Closed = true
 		default:
 			return wire.Errf(wire.EBadFrame, "Unknown action %q.", a.Action)
 		}
@@ -965,8 +859,9 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 	return nil
 }
 
-// admit adds a server to a channel and names who makes the next key.
-func (h *Hub) admit(tx *sql.Tx, c *channel, name, maker string) error {
+// admit adds a server to a channel and begins a new key epoch for the list
+// it is now in.
+func (h *Hub) admit(tx *sql.Tx, c *channel, name string) error {
 	if len(c.rec.Servers) >= maxStreamServers {
 		return wire.Errf(wire.ETooLarge, "A stream has at most %d servers.", maxStreamServers)
 	}
@@ -980,7 +875,7 @@ func (h *Hub) admit(tx *sql.Tx, c *channel, name, maker string) error {
 	}
 	c.joinedHave[name] = haveIn(tx, c.rec.StreamID)
 	c.rec.Servers = append(c.rec.Servers, name)
-	h.relist(c, []string{name}, []string{}, maker)
+	h.relist(c, []string{name}, nil)
 	return h.saveChannel(tx, c, nil)
 }
 
@@ -993,12 +888,8 @@ func (h *Hub) join(tx *sql.Tx, c *channel, name string) error {
 		// In it already; the record goes to it again.
 		_, err := tx.Exec(`UPDATE channels SET told = 0 WHERE stream_id = ?`, c.rec.StreamID)
 		return err
-	case has(c.rec.Invited, name):
-		// The home server of the manager who invited it makes the key.
-		return h.admit(tx, c, name, c.inviters[name])
-	case c.rec.Listing == wire.ListingOpen:
-		// The longest-standing member server makes the key.
-		return h.admit(tx, c, name, "")
+	case has(c.rec.Invited, name), c.rec.Listing == wire.ListingOpen:
+		return h.admit(tx, c, name)
 	case c.rec.Listing == wire.ListingRequest:
 		if has(c.rec.Requests, name) {
 			return nil
@@ -1024,7 +915,7 @@ func (h *Hub) channelLeave(name, stream string) error {
 		}
 		dropServer(&c, name)
 		if member {
-			h.relist(&c, []string{}, []string{name}, "")
+			h.relist(&c, nil, []string{name})
 		}
 		return h.saveChannel(tx, &c, []string{name})
 	})
@@ -1073,7 +964,6 @@ type ChannelInfo struct {
 	ID, Name, Description, Listing string
 	Servers, Invited, Requests     []string
 	Managers, Moderators           []wire.ChannelAccount
-	KeyMaker                       string
 	Epoch, Version                 int64
 	// Cursor is the last position written to the channel's log: a count
 	// of what the hub has carried in it, and no more.
@@ -1123,7 +1013,7 @@ func (h *Hub) Channels() ([]ChannelInfo, error) {
 			return nil, err
 		}
 		out = append(out, ChannelInfo{ID: r.id, Name: c.rec.Name, Description: c.rec.Description, Listing: c.rec.Listing, Servers: c.rec.Servers,
-			Invited: c.rec.Invited, Requests: c.rec.Requests, Managers: c.rec.Managers, Moderators: c.rec.Moderators, KeyMaker: c.rec.KeyMaker, Epoch: c.rec.Epoch,
+			Invited: c.rec.Invited, Requests: c.rec.Requests, Managers: c.rec.Managers, Moderators: c.rec.Moderators, Epoch: c.rec.Epoch,
 			Version: c.rec.Version, Cursor: r.next - 1, Home: c.rec.HomeHub, Private: c.rec.Private})
 	}
 	return out, nil
@@ -1199,7 +1089,7 @@ func (h *Hub) Expel(stream, server string) error {
 		member := c.rec.Has(server)
 		dropServer(c, server)
 		if member {
-			h.relist(c, []string{}, []string{server}, "")
+			h.relist(c, nil, []string{server})
 		}
 		return []string{server}, nil
 	})
@@ -1233,7 +1123,7 @@ func (h *Hub) removeFromChannels(tx *sql.Tx, name string) error {
 		}
 		dropServer(&c, name)
 		if member {
-			h.relist(&c, []string{}, []string{name}, "")
+			h.relist(&c, nil, []string{name})
 		}
 		if err := h.saveChannel(tx, &c, nil); err != nil {
 			return err

@@ -205,13 +205,14 @@ M('ChannelAccount', [('account_id', 'uuid'), ('server', 'str'), ('username', 'st
 M('ChannelRecord', [('stream_id', 'uuid'), ('hub', 'str'), ('hub_key', 'bytes'), ('home_hub', 'str'), ('version', 'int'),
                     ('name', 'str'), ('description', 'str'), ('listing', 'str'), ('servers', '[str]'),
                     ('managers', '[#ChannelAccount]'), ('invited', '[str]'), ('requests', '[str]'), ('epoch', 'int'),
-                    ('key_maker', 'str'), ('joined', '[str]'), ('left', '[str]'), ('makers', '{str}'), ('closed', 'bool'),
-                    ('prepared', 'bool'), ('at', 'time'), ('private', 'bool'), ('moderators', '[#ChannelAccount]')],
+                    ('joined', '[str]'), ('left', '[str]'), ('closed', 'bool'),
+                    ('prepared', 'bool'), ('at', 'time'), ('private', 'bool'), ('moderators', '[#ChannelAccount]'),
+                    ('history_days', 'int')],
   'Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a).')
 M('ChannelCreate', [('stream_id', 'uuid'), ('name', 'str'), ('description', 'str'), ('listing', 'str'),
                     ('creator', '#ChannelAccount'), ('move_id', 'uuid'), ('servers', '[str]'), ('managers', '[#ChannelAccount]'),
                     ('epoch', 'int'), ('accept', 'bytes'), ('accept_sig', 'bytes'), ('at', 'time'),
-                    ('private', 'bool')],
+                    ('private', 'bool'), ('history_days', 'int')],
   'A server shares a channel to a hub, signed by that server.')
 M('MoveAccept', [('move_id', 'uuid'), ('stream_id', 'uuid'), ('hub', 'str'), ('hub_key', 'bytes'), ('owner', 'str'),
                  ('server', 'str'), ('managers', '[#ChannelAccount]'), ('expires_at', 'time'), ('at', 'time')],
@@ -227,7 +228,7 @@ M('DirectoryEntry', [('stream_id', 'uuid'), ('name', 'str'), ('description', 'st
 M('Directory', [('hub', 'str'), ('hub_key', 'bytes'), ('at', 'time'), ('channels', '[#DirectoryEntry]')],
   'A hub\'s listed channels, signed by the hub.')
 M('ClusterMember', [('cluster', 'bytes'), ('hub', 'str'), ('sign_key', 'bytes'), ('url', 'str'), ('via', 'str'),
-                    ('joined_at', 'time')],
+                    ('joined_at', 'time'), ('box_key', 'bytes')],
   'One hub\'s admission to a cluster, signed by that hub and countersigned by the member that let it in.')
 M('ClusterGone', [('cluster', 'bytes'), ('hub', 'str'), ('joined_at', 'time'), ('by', 'str'), ('at', 'time')],
   'An admission is over.')
@@ -315,7 +316,7 @@ def D(kinds, fields, doc=''):
 
 D('blob_chunk', 'stream_id blob_id index last data')
 D('blob_request', 'stream_id blob_id from_index')
-D('key', 'stream_id epoch key version history_days')
+D('key', 'stream_id epoch key version')
 D('key_request', 'stream_id epoch')
 D('history', 'stream_id part last conversation accounts member_ids messages blobs')
 D('history_request', 'stream_id after_at through_at first')

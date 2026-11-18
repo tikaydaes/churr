@@ -100,9 +100,6 @@ type ChannelRecord struct {
 	HomeHub  string
 	Record   []byte // the signed bytes
 	Sig      []byte
-	// Makers is, as JSON, key epoch to the server the hub named to make
-	// that epoch's key.
-	Makers []byte
 	// Managers and Moderators are the accounts of this server on the
 	// record's manager and moderator lists. The link package works them out
 	// when it stores a record it has verified; internal/perm reads them.

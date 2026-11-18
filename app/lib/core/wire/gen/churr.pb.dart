@@ -51529,7 +51529,6 @@ class HubChannel extends $pb.GeneratedMessage {
     $core.Iterable<HubAccount>? moderators,
     $core.Iterable<$core.String>? invited,
     $core.Iterable<$core.String>? requests,
-    $core.String? keyMaker,
     $core.bool? closed,
     $fixnum.Int64? updatedAt,
     $core.bool? private,
@@ -51548,7 +51547,6 @@ class HubChannel extends $pb.GeneratedMessage {
     if (moderators != null) result.moderators.addAll(moderators);
     if (invited != null) result.invited.addAll(invited);
     if (requests != null) result.requests.addAll(requests);
-    if (keyMaker != null) result.keyMaker = keyMaker;
     if (closed != null) result.closed = closed;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (private != null) result.private = private;
@@ -51584,7 +51582,6 @@ class HubChannel extends $pb.GeneratedMessage {
         subBuilder: HubAccount.$_createMessage)
     ..pPS(11, _omitFieldNames ? '' : 'invited')
     ..pPS(12, _omitFieldNames ? '' : 'requests')
-    ..aOS(13, _omitFieldNames ? '' : 'keyMaker')
     ..aOB(14, _omitFieldNames ? '' : 'closed')
     ..aInt64(15, _omitFieldNames ? '' : 'updatedAt')
     ..aOB(16, _omitFieldNames ? '' : 'private')
@@ -51684,44 +51681,35 @@ class HubChannel extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   $pb.PbList<$core.String> get requests => $_getList(11);
 
-  @$pb.TagNumber(13)
-  $core.String get keyMaker => $_getSZ(12);
-  @$pb.TagNumber(13)
-  set keyMaker($core.String value) => $_setString(12, value);
-  @$pb.TagNumber(13)
-  $core.bool hasKeyMaker() => $_has(12);
-  @$pb.TagNumber(13)
-  void clearKeyMaker() => $_clearField(13);
-
   @$pb.TagNumber(14)
-  $core.bool get closed => $_getBF(13);
+  $core.bool get closed => $_getBF(12);
   @$pb.TagNumber(14)
-  set closed($core.bool value) => $_setBool(13, value);
+  set closed($core.bool value) => $_setBool(12, value);
   @$pb.TagNumber(14)
-  $core.bool hasClosed() => $_has(13);
+  $core.bool hasClosed() => $_has(12);
   @$pb.TagNumber(14)
   void clearClosed() => $_clearField(14);
 
   @$pb.TagNumber(15)
-  $fixnum.Int64 get updatedAt => $_getI64(14);
+  $fixnum.Int64 get updatedAt => $_getI64(13);
   @$pb.TagNumber(15)
-  set updatedAt($fixnum.Int64 value) => $_setInt64(14, value);
+  set updatedAt($fixnum.Int64 value) => $_setInt64(13, value);
   @$pb.TagNumber(15)
-  $core.bool hasUpdatedAt() => $_has(14);
+  $core.bool hasUpdatedAt() => $_has(13);
   @$pb.TagNumber(15)
   void clearUpdatedAt() => $_clearField(15);
 
   @$pb.TagNumber(16)
-  $core.bool get private => $_getBF(15);
+  $core.bool get private => $_getBF(14);
   @$pb.TagNumber(16)
-  set private($core.bool value) => $_setBool(15, value);
+  set private($core.bool value) => $_setBool(14, value);
   @$pb.TagNumber(16)
-  $core.bool hasPrivate() => $_has(15);
+  $core.bool hasPrivate() => $_has(14);
   @$pb.TagNumber(16)
   void clearPrivate() => $_clearField(16);
 
   @$pb.TagNumber(17)
-  $pb.PbList<HubAccount> get managers => $_getList(16);
+  $pb.PbList<HubAccount> get managers => $_getList(15);
 }
 
 class ModerateHubChannelRequest extends $pb.GeneratedMessage {

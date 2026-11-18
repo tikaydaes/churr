@@ -542,6 +542,7 @@ message ChannelAccount {
 
 // Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a).
 message ChannelRecord {
+  reserved 14, 17;
   optional bytes stream_id = 1; // identifier
   optional string hub = 2;
   optional bytes hub_key = 3;
@@ -555,15 +556,14 @@ message ChannelRecord {
   repeated string invited = 11;
   repeated string requests = 12;
   optional int64 epoch = 13;
-  optional string key_maker = 14;
   repeated string joined = 15;
   repeated string left = 16;
-  map<string, string> makers = 17;
   optional bool closed = 18;
   optional bool prepared = 19;
   optional int64 at = 20; // time
   optional bool private = 21;
   repeated ChannelAccount managers = 22;
+  optional int64 history_days = 24;
 }
 
 // A server shares a channel to a hub, signed by that server.
@@ -582,6 +582,7 @@ message ChannelCreate {
   optional int64 at = 12; // time
   optional bool private = 13;
   repeated ChannelAccount managers = 14;
+  optional int64 history_days = 15;
 }
 
 // The other server of a direct link agrees to move a stream onto a hub (section 21a).
@@ -652,6 +653,7 @@ message ClusterMember {
   optional string url = 4;
   optional string via = 5;
   optional int64 joined_at = 6; // time
+  optional bytes box_key = 7;
 }
 
 // An admission is over.
@@ -821,7 +823,6 @@ message KeyDirect {
   optional int64 epoch = 5;
   optional bytes key = 6;
   optional int64 version = 7;
-  optional int64 history_days = 8;
 }
 
 message KeyRequestDirect {

@@ -858,7 +858,7 @@ func (s *Service) takeSubmitted(ctx context.Context, pc *peerConn, env wire.Enve
 	case env.KeyEpoch < st.KeyEpoch:
 		return refuse(wire.Errf(wire.EStaleEpoch, "Key epoch %d has ended; the stream is at %d.", env.KeyEpoch, st.KeyEpoch))
 	case env.KeyEpoch > st.KeyEpoch:
-		return refuse(wire.Errf(wire.EEarlyEpoch, "Key epoch %d has not started; the stream is at %d.", env.KeyEpoch, st.KeyEpoch))
+		return refuse(wire.Errf(wire.EBadFrame, "Key epoch %d has not begun; the stream is at %d.", env.KeyEpoch, st.KeyEpoch))
 	}
 	if e := s.checkStamp(ctx, pc.peer.ID, env); e != nil {
 		return refuse(e)

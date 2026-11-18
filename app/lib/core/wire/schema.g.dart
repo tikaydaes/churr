@@ -2744,7 +2744,6 @@ final List<WireMessage> wireMessages = [
     WireField('moderators', 10, WireKind.msg, WireCard.list, 491),
     WireField('invited', 11, WireKind.string, WireCard.list, 0),
     WireField('requests', 12, WireKind.string, WireCard.list, 0),
-    WireField('key_maker', 13, WireKind.string, WireCard.one, 0),
     WireField('closed', 14, WireKind.bool_, WireCard.one, 0),
     WireField('private', 16, WireKind.bool_, WireCard.one, 0),
     WireField('updated_at', 15, WireKind.time, WireCard.one, 0),

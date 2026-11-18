@@ -108,7 +108,6 @@ const (
 	EClockUnknown = "clock_unknown" // the reference has not measured the origin's clock yet
 	ENotMonotonic = "not_monotonic" // `at` or `n` is not above the origin's last accepted one
 	EStaleEpoch   = "stale_epoch"   // encrypted under a key epoch that has ended
-	EEarlyEpoch   = "early_epoch"   // encrypted under a key epoch the owner has not started yet
 )
 
 // Restamp reports whether a refusal code is one an origin answers by giving
@@ -404,18 +403,15 @@ type ChannelRecord struct {
 	Moderators []ChannelAccount `json:"moderators,omitempty"`
 	Invited    []string         `json:"invited"`
 	Requests   []string         `json:"requests"`
-	// Epoch is the key epoch the server list calls for, KeyMaker the member
-	// server the hub names to make its key, and Joined and Left what the
-	// list change that began the epoch was.
-	Epoch    int64    `json:"epoch"`
-	KeyMaker string   `json:"key_maker"`
-	Joined   []string `json:"joined"`
-	Left     []string `json:"left"`
-	// Makers is, for the last few key epochs the hub named a maker for,
-	// the epoch (as a decimal string) and that server: whom to ask for the
-	// key of an epoch that began while the asker was away.
-	Makers map[string]string `json:"makers,omitempty"`
-	Closed bool              `json:"closed,omitempty"`
+	// Epoch is the key epoch the home hub has begun for the server list,
+	// and Joined and Left what the list change that began it was. The hub
+	// makes the epoch's key and sends it to every instance in the list.
+	Epoch  int64    `json:"epoch"`
+	Joined []string `json:"joined"`
+	Left   []string `json:"left"`
+	// HistoryDays is how many days of history a joining instance is given.
+	HistoryDays int  `json:"history_days,omitempty"`
+	Closed      bool `json:"closed,omitempty"`
 	// Prepared: the hub holds the channel for a move from a direct link
 	// that has not been committed yet (section 21a). It carries nothing
 	// and tells nobody but the server that brought it until it is
@@ -489,6 +485,9 @@ type ChannelCreate struct {
 	At          model.Time       `json:"at"`
 	// Private: the channel shared is private, and so it stays on the hub.
 	Private bool `json:"private,omitempty"`
+	// HistoryDays is how many days of history the channel gives a joining
+	// instance, 0 to 90.
+	HistoryDays int `json:"history_days,omitempty"`
 }
 
 // MoveAccept is the signed content of a move_accept block: the other server

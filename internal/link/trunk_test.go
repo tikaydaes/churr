@@ -219,9 +219,12 @@ func TestTrunkSplit(t *testing.T) {
 	}
 }
 
-// No hub of a cluster holds a stream key or a word of content: not in its
-// files, and not in any frame it was sent by a server or by another hub.
-func TestClusterHubsCannotRead(t *testing.T) {
+// The channel's home hub holds every key epoch's key, sealed at rest, and the
+// other hubs of the cluster hold none. No hub holds a key in the clear or a
+// word of content: not in its files, and not in any frame it was sent by a
+// server or by another hub (the keys the home hub sends travel sealed to
+// each server).
+func TestClusterHubsHoldNoContentAndOnlyTheHomeHoldsKeys(t *testing.T) {
 	l := testkit.NewClusterLinked(t, "line", 3, []int{0, 1, 2})
 	var mu sync.Mutex
 	var seen []byte
@@ -238,15 +241,7 @@ func TestClusterHubsCannotRead(t *testing.T) {
 			mu.Unlock()
 		})
 	}
-	// Every key any server makes for the channel, as it is made.
 	var keys [][]byte
-	for _, ts := range l.Servers {
-		ts.Server.Link.TestKeyMade(func(_ model.StreamID, _ int64, key []byte) {
-			mu.Lock()
-			keys = append(keys, append([]byte{}, key...))
-			mu.Unlock()
-		})
-	}
 	ann := l.Servers[0].Member("zebediah")
 	ch := l.Servers[0].Owner.Channel("vault", false, ann)
 	stream, local := l.Share(0, ch, "vault", map[string]any{"history_days": 30}, 1, 2)
@@ -260,15 +255,31 @@ func TestClusterHubsCannotRead(t *testing.T) {
 	ann.Post(ch, "said on the home side: GNUSTO-REZROV")
 	l.Cluster.Restore(1, 2)
 	sameOrder(t, l, local, 5)
+	home := l.Cluster.Hubs[0].Hub.TestStreamKeys(stream)
+	// A server on another hub asks the home hub for a key: its own hub
+	// carries the request there, and the answer back, unopened.
+	cur, _ := l.Servers[2].Server.Link.TestStream(model.StreamID(stream))
+	if key, err := l.Servers[2].Server.Link.TestAskHubKey(model.StreamID(stream), cur.KeyEpoch); err != nil || !bytes.Equal(key, home[cur.KeyEpoch]) {
+		t.Fatalf("server 2 asked the home hub two trunks away for the key of epoch %d: %v", cur.KeyEpoch, err)
+	}
 
 	mu.Lock()
 	defer mu.Unlock()
-	for epoch, key := range l.Servers[0].Server.Link.TestKeys(model.StreamID(stream)) {
-		_ = epoch
-		keys = append(keys, key)
+	for i, ts := range l.Servers {
+		for epoch, key := range ts.Server.Link.TestKeys(model.StreamID(stream)) {
+			if !bytes.Equal(home[epoch], key) {
+				t.Errorf("server %d holds a key for epoch %d that is not the home hub's", i, epoch)
+			}
+			keys = append(keys, key)
+		}
 	}
-	if len(keys) < 2 {
-		t.Fatalf("the test knows %d stream keys; it should know every epoch's", len(keys))
+	if len(keys) < 2 || len(home) < 2 {
+		t.Fatalf("the test knows %d stream keys and the home hub %d; there should be every epoch's", len(keys), len(home))
+	}
+	for i, h := range l.Cluster.Hubs[1:] {
+		if held := h.Hub.TestStreamKeys(stream); len(held) != 0 {
+			t.Errorf("hub %d, which only carries the channel, holds %d of its keys", i+1, len(held))
+		}
 	}
 	for i, h := range l.Cluster.Hubs {
 		stored := readDir(t, h.Dir)
@@ -331,7 +342,7 @@ func TestServerRefusesForgedRosterAndRecord(t *testing.T) {
 
 	// The server's own hub now sends a roster that lists the forger, "let
 	// in" by hub a but countersigned by hub c: refused whole.
-	forged, _ := wire.SignMember(wire.ClusterMember{Cluster: first.Cluster, Hub: "evil.localhost", SignKey: wire.Bytes(evil.SignPublic()),
+	forged, _ := wire.SignMember(wire.ClusterMember{Cluster: first.Cluster, Hub: "evil.localhost", SignKey: wire.Bytes(evil.SignPublic()), BoxKey: evil.BoxPublic(),
 		Via: testkit.HubName(0), JoinedAt: model.Now()}, evil)
 	forged = wire.Countersign(forged, hubC.Hub.TestKeys())
 	hubC.Hub.TestSendCluster(append(append([]wire.ClusterEntry{}, entries...), forged))
@@ -410,6 +421,24 @@ func TestTrunkRehome(t *testing.T) {
 		}
 		return true
 	})
+	// The new home began a key epoch of its own when it took the channel:
+	// every server is on it, under the new home's key, and the old home,
+	// now only a hub that carries the channel, holds none of its keys.
+	newKeys := l.Cluster.Hubs[2].Hub.TestStreamKeys(stream)
+	rec, _, _, _ := l.Servers[0].Server.Link.TestChannel(model.StreamID(stream))
+	if len(newKeys) != 1 || newKeys[rec.Epoch] == nil {
+		t.Fatalf("the new home holds keys of epochs %v; the record calls for %d", newKeys, rec.Epoch)
+	}
+	for i, ts := range l.Servers {
+		ts := ts
+		testkit.Eventually(t, fmt.Sprintf("server %d is on the new home's epoch", i), func() bool {
+			st, _ := ts.Server.Link.TestStream(model.StreamID(stream))
+			return st.KeyEpoch == rec.Epoch && bytes.Equal(ts.Server.Link.TestKeys(model.StreamID(stream))[rec.Epoch], newKeys[rec.Epoch])
+		})
+	}
+	if held := home.Hub.TestStreamKeys(stream); len(held) != 0 {
+		t.Fatalf("the old home still holds %d of the channel's keys", len(held))
+	}
 }
 
 // A channel's home hub goes away and comes back, with real servers.

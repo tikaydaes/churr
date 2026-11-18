@@ -75,8 +75,8 @@ func TestWellKnownAndFingerprint(t *testing.T) {
 		t.Error("a changed box key was accepted")
 	}
 	hub := ident(t, "hub.example", KindHub).WellKnown()
-	if hub.BoxKey != nil || hub.BoxKeySig != nil {
-		t.Error("a hub published a box key")
+	if err := hub.Check("hub.example"); err != nil || len(hub.BoxKey) != 32 {
+		t.Errorf("a hub's document does not carry a box key its signing key vouches for: %v", err)
 	}
 	fp := KeyFingerprint(id.Keys.SignPublic())
 	if !regexp.MustCompile(`^([A-Z2-7]{4}-){7}[A-Z2-7]{4}$`).MatchString(fp) {

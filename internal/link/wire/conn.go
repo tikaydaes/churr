@@ -298,27 +298,19 @@ func (id Identity) hello() Frame {
 	lim := DefaultLimits()
 	f := Frame{Frame: FHello, Kind: id.Kind, Name: id.Name, SignKey: Bytes(id.Keys.SignPublic()), Nonce: nonce,
 		Software: id.Software, Limits: &lim}
-	if id.Kind == KindServer {
-		f.BoxKey = id.Keys.BoxPublic()
-		f.BoxKeySig = id.BoxKeySig()
-	}
+	f.BoxKey = id.Keys.BoxPublic()
+	f.BoxKeySig = id.BoxKeySig()
 	return f
 }
 
 // helloSound checks what both sides check of the other's hello before
-// anything else: a name, a kind, a signing key, and for a server a box key
-// its signing key vouches for.
+// anything else: a name, a kind, a signing key, and a box key its signing
+// key vouches for.
 func helloSound(h Frame) bool {
 	if h.Frame != FHello || h.Name == "" || len(h.SignKey) != 32 || len(h.Nonce) != 32 {
 		return false
 	}
-	switch h.Kind {
-	case KindServer:
-		return VerifyBoxKey(h.Name, h.SignKey, h.BoxKey, h.BoxKeySig)
-	case KindHub:
-		return len(h.BoxKey) == 0
-	}
-	return false
+	return (h.Kind == KindServer || h.Kind == KindHub) && VerifyBoxKey(h.Name, h.SignKey, h.BoxKey, h.BoxKeySig)
 }
 
 // DialOptions is what the dialling side brings to a handshake.

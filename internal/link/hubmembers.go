@@ -77,7 +77,7 @@ func (s *Service) hubPrivate(ctx context.Context, a store.Areas, st store.Stream
 	if !hubOwned(st) {
 		return false
 	}
-	rec, _, err := s.channelOf(ctx, a, st.ID)
+	rec, err := s.channelOf(ctx, a, st.ID)
 	return err == nil && rec.Private
 }
 
@@ -289,7 +289,7 @@ func (s *Service) asKeeper(ctx context.Context, by model.Account, id model.Strea
 	if err != nil {
 		return st, conv, err
 	}
-	rec, _, err := s.channelOf(ctx, s.store, id)
+	rec, err := s.channelOf(ctx, s.store, id)
 	if err != nil {
 		return st, conv, model.ErrNotFound
 	}
@@ -384,7 +384,7 @@ func (s *Service) AdmitCandidates(ctx context.Context, by model.Account, id mode
 	if err != nil {
 		return nil, err
 	}
-	rec, _, err := s.channelOf(ctx, s.store, id)
+	rec, err := s.channelOf(ctx, s.store, id)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func (s *Service) MemberAction(ctx context.Context, by model.Account, id model.S
 	typ := ""
 	switch action {
 	case "admit":
-		rec, _, err := s.channelOf(ctx, s.store, id)
+		rec, err := s.channelOf(ctx, s.store, id)
 		if err != nil {
 			return err
 		}

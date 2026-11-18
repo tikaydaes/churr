@@ -461,13 +461,26 @@ func (h *Hub) ephemeral(sc *serverConn, f wire.Frame) error {
 
 // direct passes a sealed direct message on unchanged. The hub checks who it
 // is from and that the signature is theirs; it sees the two names and the
-// size, and cannot open the body. It never holds one for later.
+// size, and cannot open the body. It never holds one for later. One
+// addressed to the hub itself it opens (keys.go); one addressed to another
+// hub of the cluster is carried there in `ask`.
 func (h *Hub) direct(sc *serverConn, f wire.Frame, raw []byte) error {
 	if f.From != sc.name {
 		return wire.Errf(wire.EBadFrame, "A direct message is sent by the server it is from.")
 	}
 	if !wire.VerifyDirect(f, sc.key) {
 		return wire.Errf(wire.EBadSignature, "The direct message's signature does not verify.")
+	}
+	if f.To == h.id.Name {
+		if r := h.limits(sc.name).direct.Take(sc.name); !r.OK {
+			e := wire.Errf(wire.ERateLimited, "Too many direct messages.")
+			e.RetryAfter = max(r.RetryAfterSeconds(), 1)
+			return e
+		}
+		return h.ownDirect(sc.name, sc.key, f)
+	}
+	if _, member := h.topology().cluster.Members[f.To]; member {
+		return h.askHome(sc.name, f.To, raw)
 	}
 	there := h.hubOf(f.To)
 	if there == "" {

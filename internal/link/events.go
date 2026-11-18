@@ -1021,28 +1021,23 @@ func (a *apply) serversChanged(isOwner bool) (*rejection, error) {
 		return rej, nil
 	}
 	s, st := a.s, a.st
-	hub := hubOwned(st)
 	// From the owner; the next version (or the one its control frame
 	// already brought); a higher epoch; encrypted under that epoch. In a
-	// channel a hub owns there is no owner server: the event comes from the
-	// server the hub named to make this epoch's key, and it starts the
-	// epoch and nothing else. The server list is the hub's record's.
+	// channel a hub owns no server sends it: the home hub begins every
+	// epoch itself, and the server list is its record's.
 	switch {
-	case hub && s.keyMakerOf(a.ctx, a.tx, st.ID, b.Epoch) != a.origin.Name:
-		return &rejection{reason: "not_key_maker", detail: map[string]any{"epoch": b.Epoch, "origin": a.origin.Name}}, nil
-	case !hub && !isOwner:
+	case hubOwned(st):
+		return reject("hub_channel"), nil
+	case !isOwner:
 		return reject("not_owner"), nil
-	case !hub && b.Version != st.ServersVersion && b.Version != st.ServersVersion+1:
+	case b.Version != st.ServersVersion && b.Version != st.ServersVersion+1:
 		return reject("version_out_of_step"), nil
 	case b.Epoch <= st.KeyEpoch && !(st.KeyEpoch == 1 && b.Epoch == 1 && st.ServersVersion <= 1):
 		return reject("epoch_not_higher"), nil
 	case a.env.KeyEpoch != b.Epoch:
 		return reject("wrong_epoch"), nil
 	}
-	if hub {
-		// Who left is the record's to say; applyRecord has seen to them.
-		b.Left = nil
-	} else if !s.isSelf(a.origin.ServerID) {
+	if !s.isSelf(a.origin.ServerID) {
 		// The list is the owner's to say, by version: the newer one
 		// stands, whichever road it arrived by first.
 		if err := s.putList(a.ctx, a.tx, st.ID, b.Servers, b.Version); err != nil {

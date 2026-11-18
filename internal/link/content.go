@@ -259,11 +259,10 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 			return // an owner takes history only as the answer to its own request
 		}
 	} else if hubOwned(st) {
-		// From a server the hub named as a key-maker of this channel (it
-		// owes a joining server its history), or as the answer to this
-		// server's own request.
-		if m.Re == "" && !s.namedMaker(ctx, st, m.from.Name) {
-			s.count(func(stats *Stats) { stats.Dropped["history_not_from_maker"]++ })
+		// Only as the answer to this server's own request: nobody sends a
+		// hub-owned channel's history unasked.
+		if m.Re == "" {
+			s.count(func(stats *Stats) { stats.Dropped["history_unasked"]++ })
 			return
 		}
 	} else if st.OwnerServerID != m.from.ID {
@@ -394,7 +393,7 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 		ThroughAt int64          `json:"through_at"`
 		// First asks for the snapshot a joining server is sent, members
 		// and all: a server that joined a hub-owned channel and was not
-		// connected when its key-maker sent it.
+		// connected when the history sender sent it.
 		First bool `json:"first"`
 	}
 	if json.Unmarshal(m.raw, &b) != nil {
@@ -418,7 +417,25 @@ func (s *Service) onHistoryRequest(ctx context.Context, m directMessage) {
 		return
 	}
 	if b.First && hubOwned(st) {
-		s.sendHistoryAs(ctx, st, m.from, m.MsgID)
+		// Cut once this server holds what the hub's log held when it let
+		// the asker in, off the connection's reader.
+		rt := s.rt(st.ID)
+		rt.mu.Lock()
+		have := rt.joinedHave
+		rt.mu.Unlock()
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			s.awaitHave(s.ctx, st.ID, have, 10*time.Second)
+			select {
+			case <-s.ctx.Done():
+			case rt.jobs <- func() {
+				if cur, err := s.store.Streams().Get(s.ctx, st.ID); err == nil && cur.State == store.StreamActive {
+					s.sendHistoryAs(s.ctx, cur, m.from, m.MsgID)
+				}
+			}:
+			}
+		}()
 		return
 	}
 	s.sendHistoryRange(ctx, st, m.from, b.AfterAt, b.ThroughAt, 0, true, false, m.MsgID)

@@ -149,6 +149,19 @@ func (s *Service) clusterHubKey(peer store.Peer, hub string) []byte {
 	return s.cluster.clusters[peer.ID].Key(hub)
 }
 
+// clusterHubBox returns the box key of a hub of the cluster a hub peer is
+// in, as the roster it sent lists it under that hub's own signature: what a
+// direct message to that hub is sealed to. Nil until the roster has come.
+func (s *Service) clusterHubBox(peer store.Peer, hub string) []byte {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m, ok := s.cluster.clusters[peer.ID].Members[hub]
+	if !ok || (hub == peer.HubName && !bytes.Equal(m.SignKey, peer.HubSignKey)) {
+		return nil
+	}
+	return m.BoxKey
+}
+
 // hubRow returns the row that stands in `servers` for a hub of a peer's
 // cluster: the owner of the channels that hub is the home of.
 func (s *Service) hubRow(ctx context.Context, a store.Areas, peer store.Peer, hub string) (store.Server, error) {

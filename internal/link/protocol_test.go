@@ -589,10 +589,10 @@ func TestWhoMaySayWhat(t *testing.T) {
 			if hub {
 				// A channel on a hub has no owner server. Removing a message
 				// for everyone is a moderator's, and b's owner is not one;
-				// an epoch is started by the server the hub named, and
-				// nobody was named for epoch 99; the rest is nobody's.
+				// an epoch is begun by the hub, by no server; the rest is
+				// nobody's.
 				each("not_moderator", 1)
-				each("not_key_maker", 1)
+				each("hub_channel", 1)
 				each("not_owner", 4)
 			} else {
 				each("not_owner", 6)
@@ -709,18 +709,18 @@ func TestEpochsAndRemoval(t *testing.T) {
 	a, b, c := s.Servers[0], s.Servers[1], s.Servers[2]
 	s.settle("all three")
 	before, _ := s.link(0).TestStream(s.stream)
-	// 40: b may ask for the current epoch; a server never in the stream
-	// (b, for a stream of a's it was not offered) may not.
-	if err := s.link(1).TestAsk(model.PeerID(s.Peers[1]), "a.localhost", "key_request", map[string]any{"stream_id": s.stream, "epoch": before.KeyEpoch}); err != nil {
+	// 40: b may ask the hub, which made every key, for the current epoch's;
+	// a server never in the stream (b, for a stream of a's it was not
+	// offered) may not, nor b for an epoch from before it joined.
+	if key, err := s.link(1).TestAskHubKey(s.stream, before.KeyEpoch); err != nil || len(key) != 32 {
 		t.Fatalf("b was refused a key it is entitled to: %v", err)
 	}
 	other := a.Owner.Channel("other", false)
 	only, _ := s.Share(0, other, "other", nil, 2)
-	err := s.link(1).TestAsk(model.PeerID(s.Peers[1]), "a.localhost", "key_request", map[string]any{"stream_id": only, "epoch": 1})
-	if wire.AsError(err).Code != wire.EForbidden {
+	if _, err := s.link(1).TestAskHubKey(model.StreamID(only), 1, model.PeerID(s.Peers[1])); wire.AsError(err).Code != wire.EForbidden {
 		t.Fatalf("a server never in the stream asked for its key: %v", err)
 	}
-	if err := s.link(1).TestAsk(model.PeerID(s.Peers[1]), "a.localhost", "key_request", map[string]any{"stream_id": s.stream, "epoch": 1}); wire.AsError(err).Code != wire.EForbidden {
+	if _, err := s.link(1).TestAskHubKey(s.stream, 1); wire.AsError(err).Code != wire.EForbidden {
 		t.Fatalf("b asked for an epoch from before it joined: %v", err)
 	}
 
@@ -743,8 +743,8 @@ func TestEpochsAndRemoval(t *testing.T) {
 		st, _ := s.link(1).TestStream(s.stream)
 		return st.KeyEpoch == int64(out["key_epoch"].(float64))
 	})
-	// The hub holds no key, but it sees the epoch each envelope names and
-	// has seen the owner use a newer one: it refuses the old.
+	// The hub began the new epoch when it signed the record that took c
+	// out: it refuses the old.
 	if answer, err := s.link(1).TestSubmit(s.stream, stale); err != nil || answer.Code != wire.EStaleEpoch || link.Took(answer, stale) {
 		t.Fatalf("an envelope under an epoch that has ended: %+v %v", answer, err)
 	}

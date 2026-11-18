@@ -101,10 +101,6 @@ func (h *Hub) Reconcile() {
 			}
 		}
 	}
-	// A key-maker that let its time pass is replaced first, so that the
-	// record naming the next one leaves in this same pass: its own time
-	// runs from now.
-	h.checkMakers()
 	h.doRehomes()
 	h.tellChannels()
 	// A stream the removed server owned has nobody to run it: the hub

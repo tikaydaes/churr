@@ -476,11 +476,11 @@ func testStreamMoves(t *testing.T, s store.Store, st store.Stream, peer store.Pe
 	wantErr(t, err, model.ErrNotFound)
 	must(t, s.Streams().PutChannel(ctx, store.ChannelRecord{StreamID: st.ID, Version: 1, HomeHub: "hub.example", Record: []byte("one"), Sig: []byte("s1")}))
 	must(t, s.Streams().PutChannel(ctx, store.ChannelRecord{StreamID: st.ID, Version: 2, HomeHub: "hub.example", Record: []byte("two"), Sig: []byte("s2"),
-		Makers: []byte(`{"2":"a.example"}`), Managers: []model.AccountID{owner}, Private: true}))
+		Managers: []model.AccountID{owner}, Private: true}))
 	ch, err := s.Streams().Channel(ctx, st.ID)
 	must(t, err)
 	eq(t, "a channel record is replaced in place", ch.Version == 2 && string(ch.Record) == "two" && string(ch.Sig) == "s2" && ch.Private &&
-		string(ch.Makers) == `{"2":"a.example"}` && ch.HomeHub == "hub.example" && len(ch.Managers) == 1 && ch.Managers[0] == owner, true)
+		ch.HomeHub == "hub.example" && len(ch.Managers) == 1 && ch.Managers[0] == owner, true)
 	must(t, s.Streams().PutChannel(ctx, store.ChannelRecord{StreamID: st.ID, Version: 3, HomeHub: "hub.example", Record: []byte("three"), Sig: []byte("s3")}))
 	ch, _ = s.Streams().Channel(ctx, st.ID)
 	eq(t, "and its local moderators with it", ch.Version == 3 && len(ch.Managers) == 0 && !ch.Private, true)

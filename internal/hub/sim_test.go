@@ -17,7 +17,7 @@ import (
 
 // sim is a server as a hub sees one: it joins a hub with an invitation,
 // answers pings, shares and joins channels, and submits envelopes it seals
-// with a key the hub never sees. It is no Churr server: it stores nothing
+// with a key of its own: it takes no notice of the keys the hub sends. It is no Churr server: it stores nothing
 // and shows nobody anything. The tests of the hubs by themselves, and the
 // load measurement, drive hubs with these.
 type sim struct {
@@ -41,14 +41,12 @@ type sim struct {
 	n       map[string]int64
 	lastAt  map[string]int64
 	epoch   map[string]int64
-	started map[string]int64 // the epoch this sim has begun, by stream
+	started map[string]int64 // the epoch the hub's last record calls for, by stream
 	// stopped is, by stream, the reason of an unsigned stream_close the hub
 	// sent: the stream is over for this sim, and its hub says why.
 	stopped map[string]string
 	// onDeliver, if set, is called for every envelope delivered.
 	onDeliver func(env wire.Envelope)
-	// quiet stops the sim from starting key epochs it is named for.
-	quiet bool
 	// light stops the sim from keeping what it is delivered: the load
 	// measurement counts and times deliveries and has no use for them.
 	light bool
@@ -174,16 +172,12 @@ func (s *sim) read(conn *wire.Conn) {
 			if rec.Version > s.records[rec.StreamID].Version {
 				s.records[rec.StreamID] = rec
 			}
-			begin := !s.quiet && rec.KeyMaker == s.name && rec.Has(s.name) && rec.Epoch > s.started[rec.StreamID] && !rec.Closed
-			if begin {
+			// The home hub began the epoch the record calls for when it
+			// signed it.
+			if rec.Has(s.name) && rec.Epoch > s.started[rec.StreamID] {
 				s.started[rec.StreamID] = rec.Epoch
 			}
 			s.mu.Unlock()
-			if begin {
-				// Named to make the key: the first envelope under the new
-				// epoch tells the hub the epoch has begun.
-				go s.post(rec.StreamID)
-			}
 		case wire.FDeliver:
 			envs := f.Envelopes
 			if f.Envelope != nil {
@@ -317,8 +311,8 @@ func (s *sim) join(stream string) string {
 	return ""
 }
 
-// in waits until the sim is in a channel and the epoch that began when it
-// joined has started.
+// in waits until the sim is in a channel: the epoch that began when it
+// joined began with the record that says so.
 func (s *sim) in(stream string) {
 	s.t.Helper()
 	testkit.Eventually(s.t, s.name+" is in the channel", func() bool { return s.record(stream).Has(s.name) })
@@ -410,21 +404,14 @@ func (s *sim) post(stream string) string {
 func (s *sim) say(stream, text string) string {
 	for try := 0; ; try++ {
 		r := s.submit(s.seal(stream, 0, text))
-		if r.Code == wire.EEarlyEpoch && try < 200 {
-			// The key-maker has not begun the epoch yet.
-			s.mu.Lock()
-			s.n[stream]-- // the counter was not used
-			s.epoch[stream] = 0
-			s.mu.Unlock()
-			time.Sleep(20 * time.Millisecond)
-			continue
-		}
 		if r.Code == wire.EStaleEpoch && try < 200 {
-			// A newer epoch has begun: this one is sealed under it.
+			// A newer epoch has begun, and its record is on its way: this
+			// one is sealed under it.
 			s.mu.Lock()
 			s.n[stream]--
 			s.epoch[stream] = s.records[stream].Epoch
 			s.mu.Unlock()
+			time.Sleep(20 * time.Millisecond)
 			continue
 		}
 		return r.Code

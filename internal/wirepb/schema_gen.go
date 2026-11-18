@@ -2741,7 +2741,6 @@ var messages = []message{
 		{"moderators", 10, kindMsg, cardList, 491, ""},
 		{"invited", 11, kindString, cardList, 0, ""},
 		{"requests", 12, kindString, cardList, 0, ""},
-		{"key_maker", 13, kindString, cardOne, 0, ""},
 		{"closed", 14, kindBool, cardOne, 0, ""},
 		{"private", 16, kindBool, cardOne, 0, ""},
 		{"updated_at", 15, kindTime, cardOne, 0, ""},

@@ -111,9 +111,6 @@ func (st streams) Detach(ctx context.Context, stream model.StreamID) error {
 }
 
 func (st streams) PutChannel(ctx context.Context, c store.ChannelRecord) error {
-	if len(c.Makers) == 0 {
-		c.Makers = []byte("{}")
-	}
 	managers, err := json.Marshal(append([]model.AccountID{}, c.Managers...))
 	if err != nil {
 		return err
@@ -123,22 +120,21 @@ func (st streams) PutChannel(ctx context.Context, c store.ChannelRecord) error {
 		return err
 	}
 	_, err = st.wr.ExecContext(ctx, `
-		INSERT INTO stream_channels (stream_id, version, home_hub, record, sig, makers, managers, moderators, private) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO stream_channels (stream_id, version, home_hub, record, sig, managers, moderators, private) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (stream_id) DO UPDATE SET version = excluded.version, home_hub = excluded.home_hub, record = excluded.record,
-			sig = excluded.sig, makers = excluded.makers, managers = excluded.managers, moderators = excluded.moderators, private = excluded.private`,
-		string(c.StreamID), c.Version, c.HomeHub, c.Record, c.Sig, string(c.Makers), string(managers), string(mods), c.Private)
+			sig = excluded.sig, managers = excluded.managers, moderators = excluded.moderators, private = excluded.private`,
+		string(c.StreamID), c.Version, c.HomeHub, c.Record, c.Sig, string(managers), string(mods), c.Private)
 	return st.mapErr(err)
 }
 
 func (st streams) Channel(ctx context.Context, stream model.StreamID) (store.ChannelRecord, error) {
 	var c store.ChannelRecord
-	var makers, managers, mods string
-	err := st.rd.QueryRowContext(ctx, `SELECT stream_id, version, home_hub, record, sig, makers, managers, moderators, private FROM stream_channels WHERE stream_id = ?`,
-		string(stream)).Scan(str(&c.StreamID), &c.Version, &c.HomeHub, blob(&c.Record), blob(&c.Sig), &makers, &managers, &mods, flag(&c.Private))
+	var managers, mods string
+	err := st.rd.QueryRowContext(ctx, `SELECT stream_id, version, home_hub, record, sig, managers, moderators, private FROM stream_channels WHERE stream_id = ?`,
+		string(stream)).Scan(str(&c.StreamID), &c.Version, &c.HomeHub, blob(&c.Record), blob(&c.Sig), &managers, &mods, flag(&c.Private))
 	if err != nil {
 		return c, st.mapErr(err)
 	}
-	c.Makers = []byte(makers)
 	if err := json.Unmarshal([]byte(managers), &c.Managers); err != nil {
 		return c, err
 	}

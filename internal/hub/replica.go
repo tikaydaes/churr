@@ -289,9 +289,17 @@ func (h *Hub) putReplica(tx *sql.Tx, c *channel, also []string) error {
 	if rec.Closed {
 		state, closedAt = "closed", int64(h.now())
 	}
-	if _, err := tx.Exec(`INSERT INTO streams (id, owner, version, next_seq, state, closed_at, created_at, home_hub, epoch) VALUES (?, ?, ?, 1, ?, ?, ?, ?, 0)
+	// The epoch the record calls for has begun at its home, which made its
+	// key: from here this hub takes nothing under an older one either.
+	if _, err := tx.Exec(`INSERT INTO streams (id, owner, version, next_seq, state, closed_at, created_at, home_hub, epoch) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET owner = excluded.owner, version = excluded.version, state = excluded.state, closed_at = excluded.closed_at,
-			home_hub = excluded.home_hub, told = 1`, rec.StreamID, rec.HomeHub, rec.Version, state, closedAt, int64(h.now()), rec.HomeHub); err != nil {
+			home_hub = excluded.home_hub, told = 1, epoch = max(streams.epoch, excluded.epoch)`,
+		rec.StreamID, rec.HomeHub, rec.Version, state, closedAt, int64(h.now()), rec.HomeHub, rec.Epoch); err != nil {
+		return err
+	}
+	// A hub that is not a channel's home holds none of its keys: one that
+	// has just handed the channel on lets go of what it held.
+	if _, err := tx.Exec(`DELETE FROM stream_keys WHERE stream_id = ?`, rec.StreamID); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(`DELETE FROM stream_servers WHERE stream_id = ?`, rec.StreamID); err != nil {
@@ -310,10 +318,10 @@ func (h *Hub) putReplica(tx *sql.Tx, c *channel, also []string) error {
 		also = append(old, also...)
 	}
 	_, err := tx.Exec(`
-		INSERT INTO channels (stream_id, record, creator, inviters, maker_deadline, told, also, move_id, declined, joined_have, signed, sig, handovers)
-		VALUES (?, ?, ?, '{}', 0, 0, ?, '', '[]', ?, ?, ?, ?)
+		INSERT INTO channels (stream_id, record, creator, inviters, told, also, move_id, declined, joined_have, signed, sig, handovers)
+		VALUES (?, ?, ?, '{}', 0, ?, '', '[]', ?, ?, ?, ?)
 		ON CONFLICT (stream_id) DO UPDATE SET record = excluded.record, told = 0, also = excluded.also, joined_have = excluded.joined_have,
-			signed = excluded.signed, sig = excluded.sig, handovers = excluded.handovers, maker_deadline = 0`,
+			signed = excluded.signed, sig = excluded.sig, handovers = excluded.handovers`,
 		rec.StreamID, mustMessage("ChannelRecord", rec), c.creator, string(mustJSON(append([]string{}, also...))), string(mustJSON(c.joinedHave)),
 		c.signed, c.sig, string(mustJSON(append([]handover{}, c.handovers...))))
 	return err
@@ -338,9 +346,10 @@ func (h *Hub) takeOver(tx *sql.Tx, c *channel, state *handoff) error {
 		return err
 	}
 	c.signed, c.sig, c.homeTo = nil, nil, ""
-	c.started = s.Epoch >= c.rec.Epoch
-	if !c.started && len(c.rec.Servers) > 0 {
-		c.deadline = int64(h.now()) + makerWait.Load()/int64(time.Millisecond)
+	// A new key epoch, with this hub's key: the old home keeps none, and this
+	// hub was given none of its keys.
+	if !c.rec.Closed && len(c.rec.Servers) > 0 {
+		h.relist(c, nil, nil)
 	}
 	h.log.Info("this hub is now a channel's home", "stream", c.rec.StreamID, "from", c.rec.Hub)
 	return h.saveChannel(tx, c, nil)
@@ -730,7 +739,7 @@ func (h *Hub) stepDown(f wire.Frame) {
 		if len(c.handovers) > 4 {
 			c.handovers = c.handovers[len(c.handovers)-4:]
 		}
-		c.rec, c.signed, c.sig, c.deadline = rec, f.Signed, f.Sig, 0
+		c.rec, c.signed, c.sig = rec, f.Signed, f.Sig
 		if err := h.putReplica(tx, &c, nil); err != nil {
 			return err
 		}

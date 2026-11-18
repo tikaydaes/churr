@@ -195,6 +195,36 @@ func (s *Service) TestKeys(stream model.StreamID) map[int64][]byte {
 	return out
 }
 
+// TestAskHubKey asks a hub-owned channel's home hub for one epoch's key and
+// returns the key it answers with, or the error it answers. For a stream
+// this server holds nothing of, peer names the hub to ask.
+func (s *Service) TestAskHubKey(stream model.StreamID, epoch int64, peer ...model.PeerID) ([]byte, error) {
+	st, err := s.store.Streams().Get(s.ctx, stream)
+	if err != nil && len(peer) == 1 {
+		p, perr := s.store.Peers().Get(s.ctx, peer[0])
+		if perr != nil {
+			return nil, perr
+		}
+		st, err = store.Stream{ID: stream, PeerID: p.ID, HomeHub: p.HubName}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	hub, ok := s.homeHub(s.ctx, st)
+	if !ok {
+		return nil, model.ErrNotFound
+	}
+	m, err := s.ask(s.ctx, st.PeerID, hub, kKeyRequest, map[string]any{"stream_id": stream, "epoch": epoch}, 5*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	var b struct {
+		Key wire.Bytes `json:"key"`
+	}
+	json.Unmarshal(m.raw, &b)
+	return b.Key, nil
+}
+
 // TestStream returns a stream's row.
 func (s *Service) TestStream(stream model.StreamID) (store.Stream, error) {
 	return s.store.Streams().Get(s.ctx, stream)

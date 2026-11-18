@@ -84,8 +84,9 @@ The module is `github.com/tikaydaes/churr`.
           static/                   plain HTML, CSS, JavaScript (CLIENTS.md 21)
         server/                     builds a running server out of the packages above
         hub/                        the hub: envelope log, ordering checks, the channels it
-                                    owns and their directory, trunks and clusters
-                                    (cluster.go, trunk.go, ship.go, replica.go)
+                                    owns and their directory and stream keys (keys.go),
+                                    trunks and clusters (cluster.go, trunk.go, ship.go,
+                                    replica.go)
         themes/                     colour themes: an account's own, the library, defaults
           palette/                  derived colours and the contrast rules (ruling R61)
         broadcast/                  the server broadcast: an admin's notice to every connection (R74)
@@ -521,8 +522,10 @@ start whole servers with it.
 **`hub`** — the `churr-hub` program: `New(cfg config.Hub)`, an
 envelope log in its own small SQLite file, the shared-clock checks on
 what it forwards, the record of every channel it owns with its
-managers and moderators and the directory it serves, trunks to other hubs and the
-cluster roster, the status page.
+managers and moderators and the directory it serves, the stream keys of
+the channels it is the home of (made by the hub, sealed at rest, and
+sent to their instances), trunks to other hubs and the cluster roster,
+the status page.
 
 **`approvals`** — the instance's approvals queue (`FEATURES.md` section
 31): a registry of kinds (registrations, channel requests, webhook
@@ -593,7 +596,7 @@ Further rules:
 | No package calls `store` to answer an access question itself | `perm` is the only authority |
 | Packages in layer 7 do not import each other | A feature that needs another declares a small interface, and `server` connects them. `calls.Passes` is implemented by `link`; `chat.Outbound` by `link`; `bots` reaches `forms` through `chat` |
 | `web` imports `version` and nothing else of ours | The pages talk to the API like any client |
-| `hub` imports `link`, `secret`, `config`, `ratelimit`, `acme`, `version`, `model` | A hub must not be able to do what a server does. (`link/wire` imports `wirepb` for the client schema's messages inside events; a hub never reads an event, and links that code without calling it) |
+| `hub` imports `link`, `secret`, `config`, `ratelimit`, `acme`, `version`, `model` | A hub must not be able to do what a server does. (`link/wire` imports `wirepb` for the client schema's messages inside events; a hub does not open an event in this version, and links that code without calling it) |
 | `relay` imports `config`, `ratelimit`, `acme`, `version` | A relay has no store, no model and no link code |
 | Only `preview`, `push`, `blob`, `auth`, `link`, `acme`, `importer` and `relay` make outbound connections | These are the rows of the outside-connections table. A test checks that nothing else dials |
 | Only `calls` imports Pion; only `auth` imports the WebAuthn, OIDC and SAML libraries; only `blob` imports the object-store client | Each large dependency has one owner |

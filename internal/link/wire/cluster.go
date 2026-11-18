@@ -32,6 +32,9 @@ type ClusterMember struct {
 	// founder.
 	Via      string     `json:"via,omitempty"`
 	JoinedAt model.Time `json:"joined_at"`
+	// BoxKey is the hub's X25519 key: what a server seals a direct message
+	// to that hub with (section 7).
+	BoxKey Bytes `json:"box_key,omitempty"`
 }
 
 // ClusterGone is the signed content of a cluster_gone block: the admission
@@ -144,7 +147,7 @@ func VerifyCluster(entries []ClusterEntry) (Cluster, error) {
 		if err := VerifyBytes(BClusterMember, e.Signed, e.Sig, peekKey(e.Signed), &m); err != nil {
 			return bad("an entry is not signed by the key it names.")
 		}
-		if m.Hub == "" || len(m.SignKey) != 32 || len(m.Cluster) == 0 || m.Hub == m.Via {
+		if m.Hub == "" || len(m.SignKey) != 32 || len(m.BoxKey) != 32 || len(m.Cluster) == 0 || m.Hub == m.Via {
 			return bad("an entry is malformed.")
 		}
 		rows = append(rows, row{m: m, e: e})

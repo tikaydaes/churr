@@ -327,15 +327,14 @@ var pbMessages = []pbMessage{
 		{"invited", 11, pbStr, pbList, 0, ""},
 		{"requests", 12, pbStr, pbList, 0, ""},
 		{"epoch", 13, pbInt, pbOne, 0, ""},
-		{"key_maker", 14, pbStr, pbOne, 0, ""},
 		{"joined", 15, pbStr, pbList, 0, ""},
 		{"left", 16, pbStr, pbList, 0, ""},
-		{"makers", 17, pbStr, pbMap, 0, ""},
 		{"closed", 18, pbBool, pbOne, 0, ""},
 		{"prepared", 19, pbBool, pbOne, 0, ""},
 		{"at", 20, pbTime, pbOne, 0, ""},
 		{"private", 21, pbBool, pbOne, 0, ""},
 		{"managers", 22, pbMsg, pbList, 53, ""},
+		{"history_days", 24, pbInt, pbOne, 0, ""},
 	}},
 	{name: "ChannelCreate", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
@@ -351,6 +350,7 @@ var pbMessages = []pbMessage{
 		{"at", 12, pbTime, pbOne, 0, ""},
 		{"private", 13, pbBool, pbOne, 0, ""},
 		{"managers", 14, pbMsg, pbList, 53, ""},
+		{"history_days", 15, pbInt, pbOne, 0, ""},
 	}},
 	{name: "MoveAccept", wrap: false, base: "", fields: []pbField{
 		{"move_id", 1, pbUuid, pbOne, 0, ""},
@@ -408,6 +408,7 @@ var pbMessages = []pbMessage{
 		{"url", 4, pbStr, pbOne, 0, ""},
 		{"via", 5, pbStr, pbOne, 0, ""},
 		{"joined_at", 6, pbTime, pbOne, 0, ""},
+		{"box_key", 7, pbBytes, pbOne, 0, ""},
 	}},
 	{name: "ClusterGone", wrap: false, base: "", fields: []pbField{
 		{"cluster", 1, pbBytes, pbOne, 0, ""},
@@ -547,7 +548,6 @@ var pbMessages = []pbMessage{
 		{"epoch", 5, pbInt, pbOne, 0, ""},
 		{"key", 6, pbBytes, pbOne, 0, ""},
 		{"version", 7, pbInt, pbOne, 0, ""},
-		{"history_days", 8, pbInt, pbOne, 0, ""},
 	}},
 	{name: "KeyRequestDirect", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},

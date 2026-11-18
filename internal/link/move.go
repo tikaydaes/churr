@@ -723,7 +723,7 @@ func (s *Service) runMove(ctx context.Context, id string) {
 // prepareMove has the hub prepare the channel and returns the record the
 // hub signed. The hub checks the other server's signed agreement itself.
 func (s *Service) prepareMove(ctx context.Context, mv store.StreamMove) (wire.ChannelRecord, error) {
-	if rec, _, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared && !rec.Closed {
+	if rec, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared && !rec.Closed {
 		return rec, nil // prepared already, before a failure or a restart
 	}
 	st, err := s.store.Streams().Get(ctx, mv.StreamID)
@@ -752,7 +752,7 @@ func (s *Service) prepareMove(ctx context.Context, mv store.StreamMove) (wire.Ch
 	}
 	cc := wire.ChannelCreate{StreamID: string(mv.StreamID), Name: conv.Name, Description: conv.Topic, Listing: wire.ListingUnlisted, Creator: creator,
 		MoveID: mv.ID, Servers: []string{s.id.Name, other.Name}, Managers: append(mine, acc.Managers...), Epoch: st.KeyEpoch + 1,
-		Accept: mv.Accept, AcceptSig: mv.AcceptSig, At: s.now(), Private: conv.Private}
+		Accept: mv.Accept, AcceptSig: mv.AcceptSig, At: s.now(), Private: conv.Private, HistoryDays: min(max(st.HistoryDays, 0), 90)}
 	f, err := wire.SignBlock(wire.FChannelCreate, cc, s.keys)
 	if err != nil {
 		return wire.ChannelRecord{}, err
@@ -760,7 +760,7 @@ func (s *Service) prepareMove(ctx context.Context, mv store.StreamMove) (wire.Ch
 	if err := s.sendAndAwaitRecord(ctx, mv.HubPeerID, mv.StreamID, f, 0); err != nil {
 		return wire.ChannelRecord{}, err
 	}
-	rec, _, err := s.channelOf(ctx, s.store, mv.StreamID)
+	rec, err := s.channelOf(ctx, s.store, mv.StreamID)
 	if err == nil && (!rec.Prepared || rec.Closed) {
 		err = model.ErrUnavailable.With("The hub's record of the channel is not the one this move prepared.")
 	}
@@ -906,7 +906,7 @@ func (s *Service) finishMove(ctx context.Context, mv store.StreamMove) {
 	if s.step("activate") {
 		return
 	}
-	if rec, _, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared {
+	if rec, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared {
 		s.sendCommit(ctx, mv)
 	}
 }
@@ -968,7 +968,7 @@ func (s *Service) movedAcked(ctx context.Context, mv store.StreamMove, cursor in
 	if mv.State != store.MoveCommitted || cursor < mv.CommitSeq {
 		return
 	}
-	if rec, _, err := s.channelOf(ctx, s.store, mv.StreamID); err != nil || rec.Prepared {
+	if rec, err := s.channelOf(ctx, s.store, mv.StreamID); err != nil || rec.Prepared {
 		return
 	}
 	done, err := s.setMove(ctx, mv.ID, func(x *store.StreamMove) error {
@@ -1008,7 +1008,7 @@ func (s *Service) abandonMove(ctx context.Context, mv store.StreamMove, reason s
 // closePrepared takes back from the hub a channel it prepared for a move
 // that was abandoned. It is asked again until the hub says it is closed.
 func (s *Service) closePrepared(ctx context.Context, mv store.StreamMove) {
-	rec, _, err := s.channelOf(ctx, s.store, mv.StreamID)
+	rec, err := s.channelOf(ctx, s.store, mv.StreamID)
 	if err != nil {
 		return
 	}
@@ -1248,7 +1248,7 @@ func (s *Service) resendMoves(ctx context.Context, peer store.Peer) {
 		case mv.HubPeerID == peer.ID && outgoing(mv) && (mv.State == store.MoveAccepted || mv.State == store.MoveCommitted):
 			s.runMoveSoon(mv.ID)
 		case mv.HubPeerID == peer.ID && mv.State == store.MoveDone && mv.UpdatedAt.After(recent):
-			if rec, _, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared {
+			if rec, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared {
 				s.sendCommit(ctx, mv)
 			}
 		case mv.HubPeerID == peer.ID && outgoing(mv) && mv.State == store.MoveAbandoned && mv.UpdatedAt.After(recent):
@@ -1290,7 +1290,7 @@ func (s *Service) tickMoves(ctx context.Context, n int) {
 		case !outgoing(mv) && mv.State == store.MoveAccepted && n%30 == 0:
 			s.sendAccept(ctx, mv)
 		case mv.State == store.MoveDone && mv.UpdatedAt.After(recent) && n%3 == 0:
-			if rec, _, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared {
+			if rec, err := s.channelOf(ctx, s.store, mv.StreamID); err == nil && rec.Prepared {
 				s.sendCommit(ctx, mv)
 			}
 		case outgoing(mv) && mv.State == store.MoveAbandoned && mv.UpdatedAt.After(recent) && n%3 == 0:

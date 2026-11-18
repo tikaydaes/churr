@@ -327,7 +327,7 @@ func (s *Service) askOpen(ctx context.Context, st store.Stream, env wire.Envelop
 	clean.Cursor, clean.Prev = 0, 0
 	fields := map[string]any{"stream_id": st.ID, "envelope": clean}
 	tried := 0
-	for _, holder := range s.keyHolders(ctx, st, env.KeyEpoch) {
+	for _, holder := range s.openers(ctx, st, env.KeyEpoch) {
 		if tried++; tried > 3 {
 			break
 		}

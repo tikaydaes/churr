@@ -270,9 +270,11 @@ does:
   (`LINK-PROTOCOL.md` section 23). They work only on the channel's
   home hub.
 
-A hub's data directory holds its keys and thirty days of envelopes it
-cannot read. Losing it loses the hub's identity; the servers would
-have to join again.
+A hub's data directory holds its keys, thirty days of envelopes, and
+the stream keys of every channel it is the home of, sealed under the
+key file in `keys/`. With both, the envelopes can be read: the hub owns
+those channels, and its operator can read them. Losing the directory
+loses the hub's identity; the servers would have to join again.
 
 #### Several hubs: a cluster
 

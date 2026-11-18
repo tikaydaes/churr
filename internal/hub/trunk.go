@@ -681,7 +681,7 @@ func (h *Hub) askToJoin(tc *trunkConn, theirs []wire.ClusterEntry) error {
 	if at <= via.JoinedAt {
 		at = via.JoinedAt + 1
 	}
-	e, err := wire.SignMember(wire.ClusterMember{Cluster: c.ID, Hub: h.id.Name, SignKey: wire.Bytes(h.keys.SignPublic()), URL: h.id.URL, Via: tc.name, JoinedAt: at}, h.keys)
+	e, err := wire.SignMember(wire.ClusterMember{Cluster: c.ID, Hub: h.id.Name, SignKey: wire.Bytes(h.keys.SignPublic()), BoxKey: h.keys.BoxPublic(), URL: h.id.URL, Via: tc.name, JoinedAt: at}, h.keys)
 	if err != nil {
 		return err
 	}
@@ -1020,6 +1020,10 @@ func (h *Hub) onAsk(tc *trunkConn, f wire.Frame) error {
 		err = h.controlAs(f.Server, key, inner, f.Inner)
 	case wire.FChannelCommit:
 		err = h.channelCommitAs(f.Server, inner)
+	case wire.FDirect:
+		// A direct message for this hub from a server of another: a key
+		// asked of a channel's home.
+		err = h.ownDirect(f.Server, key, inner)
 	default:
 		err = wire.Errf(wire.EBadFrame, "%s is not asked of a home hub.", inner.Frame)
 	}

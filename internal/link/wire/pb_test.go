@@ -454,13 +454,13 @@ func TestSignedBytesAreCarriedNotRewritten(t *testing.T) {
 	rec := ChannelRecord{StreamID: id(), Hub: "hub.example", HubKey: Bytes(k.SignPublic()), HomeHub: "hub.example", Version: 4,
 		Name: "general", Description: "", Listing: ListingOpen, Servers: []string{"a.example", "b.example"},
 		Managers: []ChannelAccount{{AccountID: id(), Server: "a.example", Username: "sam"}}, Invited: []string{}, Requests: nil,
-		Epoch: 2, KeyMaker: "a.example", Makers: map[string]string{"2": "a.example", "1": "b.example"}, At: model.Now()}
+		Epoch: 2, HistoryDays: 30, At: model.Now()}
 	f, err := SignBlock(FChannel, rec, k)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var got ChannelRecord
-	if err := VerifyBlock(f, k.SignPublic(), &got); err != nil || got.Name != "general" || got.Makers["1"] != "b.example" || got.Version != 4 {
+	if err := VerifyBlock(f, k.SignPublic(), &got); err != nil || got.Name != "general" || got.HistoryDays != 30 || got.Version != 4 {
 		t.Fatalf("a fresh block: %v %+v", err, got)
 	}
 	// Through three carriers, each reading the frame and writing it again,
@@ -645,7 +645,7 @@ func TestDirectAndEventPlaintext(t *testing.T) {
 		{"Direct", map[string]any{"kind": "blob_chunk", "msg_id": msg, "at": model.Time(1_794_557_400_120), "re": id(),
 			"stream_id": stream, "blob_id": id(), "index": 3, "last": true, "data": Bytes(data)}},
 		{"Direct", map[string]any{"kind": "key", "msg_id": msg, "at": model.Time(1_794_557_400_120), "re": nil,
-			"stream_id": stream, "epoch": 2, "key": Bytes(data[:32]), "version": 0, "history_days": 30}},
+			"stream_id": stream, "epoch": 2, "key": Bytes(data[:32]), "version": 0}},
 		{"Direct", map[string]any{"kind": "history_request", "msg_id": msg, "at": model.Time(1_794_557_400_120),
 			"stream_id": stream, "after_at": int64(1_794_557_400_120), "through_at": 0}},
 		{"Direct", map[string]any{"kind": "call_signal", "msg_id": msg, "at": model.Time(1_794_557_400_120), "stream_id": stream,

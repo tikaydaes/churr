@@ -217,6 +217,7 @@
    "creator": 5,
    "description": 3,
    "epoch": 9,
+   "history_days": 15,
    "listing": 4,
    "managers": 14,
    "moderators": 8,
@@ -231,6 +232,7 @@
    "closed": 18,
    "description": 7,
    "epoch": 13,
+   "history_days": 24,
    "home_hub": 4,
    "hub": 2,
    "hub_key": 3,
@@ -279,6 +281,7 @@
    "joined_at": 3
   },
   "ClusterMember": {
+   "box_key": 7,
    "cluster": 1,
    "hub": 2,
    "joined_at": 6,

@@ -145,7 +145,8 @@ func (h *Hub) TestForgetStream(id string) {
 	defer m.Unlock()
 	h.tx(func(tx *sql.Tx) error {
 		for _, q := range []string{`DELETE FROM stream_servers WHERE stream_id = ?`, `DELETE FROM channels WHERE stream_id = ?`,
-			`DELETE FROM origins WHERE stream_id = ?`, `DELETE FROM log WHERE stream_id = ?`, `DELETE FROM streams WHERE id = ?`} {
+			`DELETE FROM origins WHERE stream_id = ?`, `DELETE FROM log WHERE stream_id = ?`, `DELETE FROM stream_keys WHERE stream_id = ?`,
+			`DELETE FROM streams WHERE id = ?`} {
 			if _, err := tx.Exec(q, id); err != nil {
 				return err
 			}

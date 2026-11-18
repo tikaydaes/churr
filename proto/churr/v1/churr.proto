@@ -4199,6 +4199,7 @@ message GetHubChannelResponse {
 message HubChannel {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
+  reserved 13;
   optional bytes stream_id = 3; // identifier
   optional string hub = 4;
   optional int64 version = 5;
@@ -4210,7 +4211,6 @@ message HubChannel {
   repeated HubAccount moderators = 10;
   repeated string invited = 11;
   repeated string requests = 12;
-  optional string key_maker = 13;
   optional bool closed = 14;
   optional bool private = 16;
   optional int64 updated_at = 15; // time

@@ -3,7 +3,6 @@ package link
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"strconv"
 	"sync/atomic"
@@ -12,7 +11,6 @@ import (
 	"github.com/tikaydaes/churr/internal/chat"
 	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
-	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -21,9 +19,11 @@ import (
 // belongs to the hub: the hub keeps its record (name, description, listing
 // mode, member servers, managers) and is the only party whose signature
 // changes it. A server holds the newest record it has been sent, takes the
-// server list, the managers and the key-makers from it and from nowhere
+// server list and the managers from it and from nowhere
 // else, and asks the hub for changes in the name of a manager who is one
-// of its own accounts.
+// of its own accounts. The home hub makes every key epoch's stream key and
+// begins the epoch itself: a server takes such a channel's key from the
+// home hub and from nobody else (ruling R109).
 //
 // Ad-hoc channels and sealed chats that cross a hub are not channels in this
 // sense (R59). They keep the owner-server frames of section 6 and the hub
@@ -86,29 +86,15 @@ func (s *Service) verifyHubBlock(peer store.Peer, name string, signed, sig []byt
 	return wire.Errf(wire.EBadSignature, "%s is not signed by a hub this server accepts on that link.", name)
 }
 
-// channelOf returns the record held for a hub-owned channel and, by key
-// epoch, the server the hub named to make each key.
-func (s *Service) channelOf(ctx context.Context, a store.Areas, id model.StreamID) (wire.ChannelRecord, map[string]string, error) {
+// channelOf returns the record held for a hub-owned channel.
+func (s *Service) channelOf(ctx context.Context, a store.Areas, id model.StreamID) (wire.ChannelRecord, error) {
 	var rec wire.ChannelRecord
-	makers := map[string]string{}
 	row, err := a.Streams().Channel(ctx, id)
 	if err != nil {
-		return rec, makers, err
+		return rec, err
 	}
-	if err := wire.PeekBytes(wire.FChannel, row.Record, &rec); err != nil {
-		return rec, makers, err
-	}
-	json.Unmarshal(row.Makers, &makers)
-	return rec, makers, nil
-}
-
-// keyMakerOf is the server the hub named to make an epoch's key, or "".
-func (s *Service) keyMakerOf(ctx context.Context, a store.Areas, id model.StreamID, epoch int64) string {
-	_, makers, err := s.channelOf(ctx, a, id)
-	if err != nil {
-		return ""
-	}
-	return makers[strconv.FormatInt(epoch, 10)]
+	err = wire.PeekBytes(wire.FChannel, row.Record, &rec)
+	return rec, err
 }
 
 // manages reports whether an account of a named instance is on the
@@ -117,7 +103,7 @@ func (s *Service) manages(ctx context.Context, a store.Areas, st store.Stream, a
 	if !hubOwned(st) || account == "" {
 		return false
 	}
-	rec, _, err := s.channelOf(ctx, a, st.ID)
+	rec, err := s.channelOf(ctx, a, st.ID)
 	return err == nil && rec.Manages(string(account), server)
 }
 
@@ -128,21 +114,14 @@ func (s *Service) keeps(ctx context.Context, a store.Areas, st store.Stream, acc
 	if !hubOwned(st) || account == "" {
 		return false
 	}
-	rec, _, err := s.channelOf(ctx, a, st.ID)
+	rec, err := s.channelOf(ctx, a, st.ID)
 	return err == nil && rec.Keeps(string(account), server)
 }
 
-// storeChannel keeps a record that has been verified: the signed bytes, the
-// key-makers it names, and which of its managers and moderators are
-// accounts of this server (internal/perm reads those).
+// storeChannel keeps a record that has been verified: the signed bytes, and
+// which of its managers and moderators are accounts of this server
+// (internal/perm reads those).
 func (s *Service) storeChannel(ctx context.Context, a store.Areas, signed, sig []byte, rec wire.ChannelRecord) error {
-	_, makers, _ := s.channelOf(ctx, a, model.StreamID(rec.StreamID))
-	for epoch, name := range rec.Makers {
-		makers[epoch] = name
-	}
-	if rec.KeyMaker != "" {
-		makers[strconv.FormatInt(rec.Epoch, 10)] = rec.KeyMaker
-	}
 	mine := func(list []wire.ChannelAccount) []model.AccountID {
 		var out []model.AccountID
 		for _, m := range list {
@@ -153,7 +132,7 @@ func (s *Service) storeChannel(ctx context.Context, a store.Areas, signed, sig [
 		return out
 	}
 	return a.Streams().PutChannel(ctx, store.ChannelRecord{StreamID: model.StreamID(rec.StreamID), Version: rec.Version, HomeHub: rec.HomeHub,
-		Record: signed, Sig: sig, Makers: mustJSON(makers), Managers: mine(rec.Managers), Moderators: mine(rec.Moderators), Private: rec.Private})
+		Record: signed, Sig: sig, Managers: mine(rec.Managers), Moderators: mine(rec.Moderators), Private: rec.Private})
 }
 
 // HubChannel is a hub-owned channel as the API shows it (schema HubChannel).
@@ -169,7 +148,6 @@ type HubChannel struct {
 	Moderators  []wire.ChannelAccount `json:"moderators"`
 	Invited     []string              `json:"invited"`
 	Requests    []string              `json:"requests"`
-	KeyMaker    string                `json:"key_maker"`
 	Closed      bool                  `json:"closed"`
 	// Private: private for good, never listed, and its people admitted by
 	// its moderators (ruling R94).
@@ -180,7 +158,7 @@ type HubChannel struct {
 func channelView(rec wire.ChannelRecord) HubChannel {
 	v := HubChannel{StreamID: model.StreamID(rec.StreamID), Hub: rec.Hub, Version: rec.Version, Name: rec.Name,
 		Description: rec.Description, Listing: rec.Listing, Servers: rec.Servers, Managers: rec.Managers, Moderators: rec.Moderators, Invited: rec.Invited,
-		Requests: rec.Requests, KeyMaker: rec.KeyMaker, Closed: rec.Closed, Private: rec.Private, UpdatedAt: rec.At}
+		Requests: rec.Requests, Closed: rec.Closed, Private: rec.Private, UpdatedAt: rec.At}
 	for _, l := range []*[]string{&v.Servers, &v.Invited, &v.Requests} {
 		if *l == nil {
 			*l = []string{}
@@ -217,7 +195,7 @@ func (s *Service) Channel(ctx context.Context, by model.Account, id model.Stream
 	if err != nil || !hubOwned(st) {
 		return HubChannel{}, model.ErrNotFound
 	}
-	rec, _, err := s.channelOf(ctx, s.store, id)
+	rec, err := s.channelOf(ctx, s.store, id)
 	if err != nil {
 		return HubChannel{}, model.ErrNotFound
 	}
@@ -303,7 +281,7 @@ func (s *Service) Moderate(ctx context.Context, by model.Account, id model.Strea
 	if err != nil || !hubOwned(st) {
 		return HubChannel{}, model.ErrNotFound
 	}
-	rec, _, err := s.channelOf(ctx, s.store, id)
+	rec, err := s.channelOf(ctx, s.store, id)
 	if err != nil {
 		return HubChannel{}, model.ErrNotFound
 	}
@@ -360,7 +338,7 @@ func (s *Service) Moderate(ctx context.Context, by model.Account, id model.Strea
 		return HubChannel{}, err
 	}
 	s.audit(ctx, s.store, by.ID, "link.channel_moderated", "stream", string(id), map[string]any{"action": in.Action, "server": in.Server})
-	if rec, _, err = s.channelOf(ctx, s.store, id); err != nil {
+	if rec, err = s.channelOf(ctx, s.store, id); err != nil {
 		return HubChannel{}, err
 	}
 	return channelView(rec), nil
@@ -421,18 +399,16 @@ func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.P
 		return store.Stream{}, err
 	}
 	now := s.now()
+	// No key epoch has begun: the hub makes the key of the first and sends it
+	// ahead of the record that answers channel_create.
 	st := store.Stream{ID: model.NewID[model.StreamID](), PeerID: peer.ID, ConversationID: conv.ID, OwnerServerID: hub.ID, Sequencer: store.SequencerHub,
-		Kind: store.StreamChannel, State: store.StreamActive, KeyEpoch: 1, MaxBlobBytes: in.MaxBlobBytes, HistoryDays: in.HistoryDays,
+		Kind: store.StreamChannel, State: store.StreamActive, MaxBlobBytes: in.MaxBlobBytes, HistoryDays: in.HistoryDays,
 		HomeHub: peer.HubName, CreatedAt: now}
 	err = s.store.Tx(ctx, func(tx store.Tx) error {
 		if err := tx.Streams().Create(ctx, &st); err != nil {
 			return err
 		}
-		if err := tx.Streams().PutServer(ctx, store.StreamServer{StreamID: st.ID, ServerID: s.self.ID, State: store.StreamServerActive, JoinedAt: now}); err != nil {
-			return err
-		}
-		// The sharer's server is the first key-maker: epoch 1 is its own.
-		return s.putKey(ctx, tx, st.ID, 1, secret.RandomBytes(32), 0)
+		return tx.Streams().PutServer(ctx, store.StreamServer{StreamID: st.ID, ServerID: s.self.ID, State: store.StreamServerActive, JoinedAt: now})
 	})
 	if err != nil {
 		return st, err
@@ -451,7 +427,7 @@ func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.P
 		return fail(err)
 	}
 	cc := wire.ChannelCreate{StreamID: string(st.ID), Name: conv.Name, Description: conv.Topic, Listing: in.Listing, Creator: me, At: now,
-		Private: conv.Private, Managers: managers}
+		Private: conv.Private, Managers: managers, HistoryDays: in.HistoryDays}
 	f, err := wire.SignBlock(wire.FChannelCreate, cc, s.keys)
 	if err != nil {
 		return fail(err)
@@ -466,7 +442,7 @@ func (s *Service) shareToHub(ctx context.Context, by model.Account, peer store.P
 		return fail(err)
 	}
 	for _, sv := range invited {
-		rec, _, err := s.channelOf(ctx, s.store, st.ID)
+		rec, err := s.channelOf(ctx, s.store, st.ID)
 		if err != nil {
 			return st, err
 		}
@@ -582,10 +558,10 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 		return wire.Errf(wire.EForbidden, "That channel is private, and stays so.")
 	}
 	if err == nil && have.Version >= rec.Version {
-		// Nothing new. A key this server was named to make and has not
-		// made is made now all the same: the first try may have failed.
-		if member && rec.KeyMaker == self && have.Version == rec.Version && st.State == store.StreamActive {
-			s.makeKeySoon(id)
+		// Nothing new. The key of the epoch it calls for, if this server
+		// lacks it, is asked of the home hub all the same.
+		if member && have.Version == rec.Version && st.State == store.StreamActive {
+			s.adoptEpoch(ctx, id)
 		}
 		return nil
 	}
@@ -594,12 +570,20 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 		s.sendLeave(pc.peer.ID, id)
 		return nil
 	}
-	wasPrepared := false
-	if old, _, err := s.channelOf(ctx, s.store, id); err == nil {
-		wasPrepared = old.Prepared
+	wasPrepared, oldEpoch := false, int64(0)
+	if old, err := s.channelOf(ctx, s.store, id); err == nil {
+		wasPrepared, oldEpoch = old.Prepared, old.Epoch
 	}
 	if err := s.storeChannel(ctx, s.store, f.Signed, f.Sig, rec); err != nil {
 		return err
+	}
+	if st.HistoryDays != rec.HistoryDays && rec.HistoryDays >= 0 && rec.HistoryDays <= 90 {
+		// How much history the channel gives a joining server is the
+		// hub's record's to say.
+		s.store.Streams().Update(ctx, id, func(x *store.Stream) error {
+			x.HistoryDays = rec.HistoryDays
+			return nil
+		})
 	}
 	if st.ConversationID != "" && member && !rec.Prepared {
 		s.syncManagers(ctx, st.ConversationID, rec)
@@ -647,10 +631,135 @@ func (s *Service) onChannel(ctx context.Context, pc *peerConn, f wire.Frame) err
 	if st.ConversationID != "" {
 		s.chat.TellLocal(ctx, st.ConversationID, EventChannelChanged, map[string]any{"stream_id": id, "channel": memberView(rec)})
 	}
-	if member && rec.KeyMaker == self {
-		s.makeKeySoon(id)
+	if member && !rec.Prepared && !rec.Closed {
+		// The epoch the record calls for begins here once this server holds
+		// its key, which the hub sent ahead of the record.
+		s.adoptEpoch(ctx, id)
+		if rec.Epoch > oldEpoch && len(rec.Joined) > 0 {
+			s.joinedEpoch(id, rec, f.Have)
+		}
 	}
 	return nil
+}
+
+// adoptEpoch makes the key epoch a hub-owned channel's record calls for this
+// server's current one, once it holds both the record and that epoch's key:
+// from then on it encrypts under it. The home hub began the epoch when it
+// signed the record, and takes nothing under an older one. A key this server
+// lacks it asks the home hub for.
+func (s *Service) adoptEpoch(ctx context.Context, id model.StreamID) {
+	st, err := s.store.Streams().Get(ctx, id)
+	if err != nil || !hubOwned(st) || st.State != store.StreamActive {
+		return
+	}
+	rec, err := s.channelOf(ctx, s.store, id)
+	if err != nil || rec.Prepared || rec.Closed || !rec.Has(s.id.Name) || rec.Epoch <= st.KeyEpoch {
+		return
+	}
+	if _, err := s.keyOf(ctx, s.store, id, rec.Epoch); err != nil {
+		s.askHubKey(ctx, st, rec.Epoch)
+		return
+	}
+	raised := false
+	if _, err := s.store.Streams().Update(ctx, id, func(x *store.Stream) error {
+		if x.KeyEpoch < rec.Epoch {
+			x.KeyEpoch, raised = rec.Epoch, true
+		}
+		return nil
+	}); err != nil || !raised {
+		return
+	}
+	// What waited for the epoch to begin here, or was refused for an
+	// epoch that has ended, goes now.
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.kickStream(s.ctx, id, true)
+	}()
+}
+
+// askHubKey asks a hub-owned channel's home hub for one epoch's key, at most
+// once every two seconds per epoch.
+func (s *Service) askHubKey(ctx context.Context, st store.Stream, epoch int64) {
+	rt := s.rt(st.ID)
+	now := time.Now()
+	rt.mu.Lock()
+	if now.Sub(rt.hubAsked[epoch]) < 2*time.Second {
+		rt.mu.Unlock()
+		return
+	}
+	rt.hubAsked[epoch] = now
+	rt.mu.Unlock()
+	if hub, ok := s.homeHub(ctx, st); ok {
+		s.sendDirect(ctx, st.PeerID, hub, kKeyRequest, "", map[string]any{"stream_id": st.ID, "epoch": epoch})
+	}
+}
+
+// homeHub returns the row that stands for a hub-owned channel's home hub,
+// with the box key the cluster roster gives it: what a direct message to the
+// hub is sealed to.
+func (s *Service) homeHub(ctx context.Context, st store.Stream) (store.Server, bool) {
+	peer, err := s.store.Peers().Get(ctx, st.PeerID)
+	if err != nil || peer.Kind != wire.KindHub {
+		return store.Server{}, false
+	}
+	sv, err := s.hubRow(ctx, s.store, peer, st.HomeHub)
+	if err != nil {
+		return store.Server{}, false
+	}
+	box := s.clusterHubBox(peer, sv.Name)
+	if len(box) != 32 {
+		return store.Server{}, false
+	}
+	sv.BoxKey = box
+	return sv, true
+}
+
+// joinedEpoch is what follows, on every server in the channel, a record that
+// let servers in: each tells them what of its own it has blocked and who of
+// its own is online. It also notes what the hub's log held of each origin
+// when it signed the record (`have`, beside it): a server that is asked for
+// the snapshot a joining server is owed cuts it only once it holds that much
+// (onHistoryRequest), since from that moment the hub took nothing under an
+// older epoch, which the joining server cannot read.
+func (s *Service) joinedEpoch(id model.StreamID, rec wire.ChannelRecord, have map[string]int64) {
+	names := append([]string{}, rec.Joined...)
+	rt := s.rt(id)
+	rt.mu.Lock()
+	rt.joinedHave = have
+	rt.mu.Unlock()
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.deafEarsOnJoin(s.ctx, id, names)
+		s.sendSnapshot(s.ctx, id)
+	}()
+}
+
+// awaitHave waits, for at most a while, until this server holds every
+// origin's events up to the counters given.
+func (s *Service) awaitHave(ctx context.Context, id model.StreamID, have map[string]int64, most time.Duration) {
+	deadline := time.Now().Add(most)
+	for time.Now().Before(deadline) {
+		servers, err := s.store.Streams().Servers(ctx, id)
+		if err != nil {
+			return
+		}
+		behind := false
+		for _, ss := range servers {
+			if !s.isSelf(ss.ServerID) && have[ss.Name] > ss.LastN {
+				behind = true
+			}
+		}
+		if !behind {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
 }
 
 // memberView is the record as every local member of the channel is told it:
@@ -733,7 +842,7 @@ func (s *Service) reapplyRecords(ctx context.Context, peer model.PeerID) {
 		if st.PeerID != peer || !hubOwned(st) {
 			continue
 		}
-		if rec, _, err := s.channelOf(ctx, s.store, st.ID); err == nil && rec.Has(s.id.Name) {
+		if rec, err := s.channelOf(ctx, s.store, st.ID); err == nil && rec.Has(s.id.Name) {
 			s.store.Tx(ctx, func(tx store.Tx) error { return s.putList(ctx, tx, st.ID, rec.Servers, rec.Version) })
 		}
 	}
@@ -742,8 +851,15 @@ func (s *Service) reapplyRecords(ctx context.Context, peer model.PeerID) {
 // joinedHub is the moment this server is in a channel it asked to join or
 // was invited to. The hub said beside the record what its log held of each
 // origin then: this server starts from there, since what came before reaches
-// it as history from the key-maker and not from the log.
+// it as history from the history sender and not from the log.
 func (s *Service) joinedHub(ctx context.Context, st store.Stream, rec wire.ChannelRecord, have map[string]int64) error {
+	// What is delivered waits for the history that says who is here.
+	rt := s.rt(st.ID)
+	rt.mu.Lock()
+	if !rt.historyHere && rt.historyWait == nil {
+		rt.historyWait = make(chan struct{})
+	}
+	rt.mu.Unlock()
 	s.holdForAnnouncements(st.ID, true)
 	err := s.store.Tx(ctx, func(tx store.Tx) error {
 		if err := s.putList(ctx, tx, st.ID, rec.Servers, rec.Version); err != nil {
@@ -792,11 +908,11 @@ var firstHistoryWait atomic.Int64
 
 func init() { firstHistoryWait.Store(int64(5 * time.Second)) }
 
-// askFirstHistory is what a server does that joined a hub-owned channel and
-// was not sent the snapshot a joining server is owed: it was not connected
-// when its key-maker sent it, or the hub named a key-maker that did not.
-// After a wait it asks the channel's servers for it, one after another, the
-// current key-maker first. Without it this server would know none of the
+// askFirstHistory is how a server that has joined a hub-owned channel gets
+// the snapshot a joining server is owed: it asks the channel's servers for
+// it, one after another, longest-standing first and those that have just
+// joined with it last, and again after a wait while none has answered. No
+// server sends it unasked. Without it this server would know none of the
 // channel's members, and would take nothing they say.
 func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 	rt := s.rt(id)
@@ -806,20 +922,30 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 		return rt.historyHere
 	}
 	for try := 0; try < 6; try++ {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(time.Duration(firstHistoryWait.Load())):
+		if try > 0 {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Duration(firstHistoryWait.Load())):
+			}
 		}
 		st, err := s.store.Streams().Get(ctx, id)
 		if here() || err != nil || st.State != store.StreamActive {
 			return
 		}
-		rec, _, err := s.channelOf(ctx, s.store, id)
+		rec, err := s.channelOf(ctx, s.store, id)
 		if err != nil {
 			return
 		}
-		names := append([]string{rec.KeyMaker}, rec.Servers...)
+		var names, fresh []string
+		for _, n := range rec.Servers {
+			if has(rec.Joined, n) {
+				fresh = append(fresh, n)
+			} else {
+				names = append(names, n)
+			}
+		}
+		names = append(names, fresh...)
 		asked := map[string]bool{s.id.Name: true}
 		for _, name := range names {
 			if asked[name] || !rec.Has(name) {
@@ -856,171 +982,47 @@ func (s *Service) askFirstHistory(ctx context.Context, id model.StreamID) {
 	}
 }
 
-// makeKeySoon makes the key this server was named to make, off the
-// connection's reader.
-func (s *Service) makeKeySoon(id model.StreamID) {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		if err := s.makeKey(s.ctx, id); err != nil {
-			s.log.Warn("link: the key this server was named to make could not be made", "stream", id, "err", err)
+// keyHolders are the servers to ask for an epoch's key: on a direct link or
+// in an ad-hoc or sealed stream the owner; in a hub-owned channel its home
+// hub, which made every key of it, and nobody else.
+func (s *Service) keyHolders(ctx context.Context, st store.Stream, epoch int64) []store.Server {
+	if hubOwned(st) {
+		if hub, ok := s.homeHub(ctx, st); ok {
+			return []store.Server{hub}
 		}
-	}()
+		return nil
+	}
+	if st.Owned() {
+		return nil
+	}
+	if owner, err := s.ownerOf(ctx, st); err == nil {
+		return []store.Server{owner}
+	}
+	return nil
 }
 
-// makeKey is what the server a hub names as key-maker does: it makes the
-// stream key of the epoch the record calls for, seals it to every server in
-// the hub-signed list and to nobody else, starts the epoch with
-// stream.servers_changed, and sends the servers that have just joined their
-// history. The hub never sees the key: it travels in direct messages sealed
-// to each server (section 7).
-func (s *Service) makeKey(ctx context.Context, id model.StreamID) error {
-	rt := s.rt(id)
-	rt.work.Lock()
-	defer rt.work.Unlock()
-	st, err := s.store.Streams().Get(ctx, id)
-	if err != nil || !hubOwned(st) || st.State != store.StreamActive {
+// openers are the servers to ask to open an envelope this server cannot
+// read (section 13): those that may hold its key. In a hub-owned channel the
+// channel's other servers, longest-standing first; elsewhere whoever holds
+// the key.
+func (s *Service) openers(ctx context.Context, st store.Stream, epoch int64) []store.Server {
+	if !hubOwned(st) {
+		return s.keyHolders(ctx, st, epoch)
+	}
+	rec, err := s.channelOf(ctx, s.store, st.ID)
+	if err != nil {
 		return nil
 	}
-	rec, _, err := s.channelOf(ctx, s.store, id)
-	if err != nil || rec.KeyMaker != s.id.Name || !rec.Has(s.id.Name) || rec.Closed || rec.Prepared || st.KeyEpoch >= rec.Epoch {
-		return nil
-	}
-	if s.testNoKeys.Load() {
-		return nil // a test is playing a key-maker that does nothing
-	}
-	var key []byte
-	if k, err := s.keyOf(ctx, s.store, id, rec.Epoch); err == nil {
-		key = k.key // made before; the epoch was never started
-	} else {
-		key = secret.RandomBytes(32)
-		if err := s.putKey(ctx, s.store, id, rec.Epoch, key, 0); err != nil {
-			return err
-		}
-	}
-	if hook := s.testKeyMade.Load(); hook != nil {
-		(*hook)(id, rec.Epoch, key)
-	}
+	var out []store.Server
 	for _, name := range rec.Servers {
 		if name == s.id.Name {
 			continue
 		}
 		if sv, err := s.store.Peers().ServerByName(ctx, name); err == nil {
-			s.sendKey(ctx, st, sv.ID, rec.Epoch, key, "")
-		}
-	}
-	eventID := newID()
-	err = s.emitOwnID(ctx, st, eventID, evServersChanged, map[string]any{"version": rec.Version, "servers": rec.Servers, "joined": orNone(rec.Joined),
-		"left": orNone(rec.Left), "epoch": rec.Epoch}, rec.Epoch, true)
-	if err != nil && !errors.Is(err, model.ErrUnavailable) {
-		return err
-	}
-	// The snapshot for a server that has just joined is cut once the hub
-	// has taken the event above (from then on it takes nothing under an
-	// older epoch), and on the stream's own queue, behind whatever was
-	// delivered here before that.
-	var joined []store.Server
-	for _, name := range rec.Joined {
-		if name == s.id.Name || !rec.Has(name) {
-			continue
-		}
-		if sv, err := s.store.Peers().ServerByName(ctx, name); err == nil {
-			joined = append(joined, sv)
-		}
-	}
-	if len(joined) == 0 {
-		return nil
-	}
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		for try := 0; try < 1500; try++ {
-			if _, err := s.store.Streams().GetOutbox(s.ctx, eventID); errors.Is(err, model.ErrNotFound) {
-				break // acknowledged
-			}
-			select {
-			case <-s.ctx.Done():
-				return
-			case <-time.After(200 * time.Millisecond):
-			}
-		}
-		rt.jobs <- func() {
-			if cur, err := s.store.Streams().Get(s.ctx, id); err == nil && cur.State == store.StreamActive {
-				for _, sv := range joined {
-					s.sendHistory(s.ctx, cur, sv)
-				}
-			}
-		}
-	}()
-	return nil
-}
-
-func orNone(l []string) []string {
-	if l == nil {
-		return []string{}
-	}
-	return l
-}
-
-// keyHolders are the servers to ask for an epoch's key, in order: on a
-// direct link or in an ad-hoc or sealed stream the owner; in a hub-owned
-// channel the server the hub named to make that key, and after it the
-// channel's other servers, any of which may hold it.
-func (s *Service) keyHolders(ctx context.Context, st store.Stream, epoch int64) []store.Server {
-	if !hubOwned(st) {
-		if st.Owned() {
-			return nil
-		}
-		if owner, err := s.ownerOf(ctx, st); err == nil {
-			return []store.Server{owner}
-		}
-		return nil
-	}
-	rec, makers, err := s.channelOf(ctx, s.store, st.ID)
-	if err != nil {
-		return nil
-	}
-	var out []store.Server
-	add := func(name string) {
-		if name == "" || name == s.id.Name || !rec.Has(name) {
-			return
-		}
-		for _, sv := range out {
-			if sv.Name == name {
-				return
-			}
-		}
-		if sv, err := s.store.Peers().ServerByName(ctx, name); err == nil {
 			out = append(out, sv)
 		}
 	}
-	add(makers[strconv.FormatInt(epoch, 10)])
-	for _, name := range rec.Servers {
-		add(name)
-	}
 	return out
-}
-
-// keyFrom reports whether a key for an epoch of a hub-owned channel may be
-// taken from a server: from the maker the hub named for that epoch always;
-// from another server of the channel only as the answer to this server's
-// own request, and only for an epoch that is already over, so that nobody
-// but its maker can put a key in place for an epoch that has yet to begin.
-func (s *Service) keyFrom(ctx context.Context, st store.Stream, from store.Server, epoch int64, answer bool) bool {
-	rec, makers, err := s.channelOf(ctx, s.store, st.ID)
-	if err != nil || !rec.Has(from.Name) {
-		return false
-	}
-	if makers[strconv.FormatInt(epoch, 10)] == from.Name {
-		return true
-	}
-	if !answer || epoch >= rec.Epoch {
-		return false
-	}
-	rt := s.rt(st.ID)
-	rt.mu.Lock()
-	defer rt.mu.Unlock()
-	return rt.keyAsked[epoch]
 }
 
 // DirectoryEntry is a channel in a hub's directory as the API shows it
@@ -1203,47 +1205,25 @@ func (s *Service) hubNames(ctx context.Context) map[string]bool {
 	return out
 }
 
-// TestNoKeys makes this server a key-maker that never makes the key it is
-// named to make, or with false puts it back. It is for tests.
-func (s *Service) TestNoKeys(on bool) { s.testNoKeys.Store(on) }
-
-// TestKeyMade has fn told every stream key this server makes for a
-// hub-owned channel. It is for tests that look for a key where it must
-// never be.
-func (s *Service) TestKeyMade(fn func(stream model.StreamID, epoch int64, key []byte)) {
-	if fn == nil {
-		s.testKeyMade.Store(nil)
-		return
-	}
-	s.testKeyMade.Store(&fn)
-}
-
-// namedMaker reports whether the hub has named a server as the maker of any
-// key epoch of a channel this server holds the record of, and it is still
-// in the channel.
-func (s *Service) namedMaker(ctx context.Context, st store.Stream, name string) bool {
-	rec, makers, err := s.channelOf(ctx, s.store, st.ID)
-	if err != nil || !rec.Has(name) {
-		return false
-	}
-	for _, maker := range makers {
-		if maker == name {
-			return true
-		}
-	}
-	return false
-}
-
 // IsManager reports whether an account of this server is one of a
 // hub-owned channel's managers.
 func (s *Service) IsManager(ctx context.Context, by model.Account, id model.StreamID) bool {
-	rec, _, err := s.channelOf(ctx, s.store, id)
+	rec, err := s.channelOf(ctx, s.store, id)
 	return err == nil && s.isManager(by, rec)
 }
 
 // IsModerator reports whether an account of this server is one of a
 // hub-owned channel's moderators (not its managers, unless named on both lists).
 func (s *Service) IsModerator(ctx context.Context, by model.Account, id model.StreamID) bool {
-	rec, _, err := s.channelOf(ctx, s.store, id)
+	rec, err := s.channelOf(ctx, s.store, id)
 	return err == nil && by.Active() && by.Local() && rec.Moderates(string(by.ID), s.id.Name)
+}
+
+func has(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }

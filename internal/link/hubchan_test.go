@@ -2,12 +2,9 @@ package link_test
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -280,11 +277,11 @@ func TestListingModesAndJoining(t *testing.T) {
 		}
 	}
 
-	// Open: b joins without anyone's leave. The longest-standing member
-	// server makes the key, and b gets the history the channel gives.
+	// Open: b joins without anyone's leave. The hub makes the new epoch's
+	// key, and b gets the history the channel gives.
 	openB := joinListed(l, 1, open, "square")
 	l.Joined(1, open)
-	if rec := hubChannel(a.Owner, open); names(rec["servers"]) != "a.localhost,b.localhost" || rec["key_maker"] != "a.localhost" {
+	if rec := hubChannel(a.Owner, open); names(rec["servers"]) != "a.localhost,b.localhost" {
 		t.Fatalf("after an open join: %v", rec)
 	}
 	b.Owner.HasMessage(openB, "said before anyone joined")
@@ -311,9 +308,9 @@ func TestListingModesAndJoining(t *testing.T) {
 		t.Fatal("b's request does not show in its directory")
 	}
 	b.Owner.Refused(409, model.CodeConflict, "POST", "/api/v1/admin/peers/"+l.Peers[1]+"/directory/join", map[string]any{"stream_id": ask, "name": "again"})
-	// Approved: the approving moderator's home server makes the key.
+	// Approved: b is in, under a new epoch the hub begins.
 	rec := moderate(a.Owner, ask, map[string]any{"action": "approve", "server": "b.localhost"})
-	if names(rec["servers"]) != "a.localhost,b.localhost" || names(rec["requests"]) != "c.localhost" || rec["key_maker"] != "a.localhost" {
+	if names(rec["servers"]) != "a.localhost,b.localhost" || names(rec["requests"]) != "c.localhost" {
 		t.Fatalf("after approving b: %v", rec)
 	}
 	l.Joined(1, ask)
@@ -420,11 +417,10 @@ func TestManagersChangeTheRecord(t *testing.T) {
 	b.Owner.Refused(409, model.CodeConflict, "POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "remove_manager", "account_id": b.Owner.ID})
 
 	// A moderator has a server removed. It gets nothing further, a new key
-	// epoch starts (made by the moderator's home server), and its people
-	// have left for the others.
+	// epoch starts (the hub's), and its people have left for the others.
 	epoch := s.StreamOn(1, stream)["key_epoch"].(float64)
 	rec := moderate(b.Owner, stream, map[string]any{"action": "remove_server", "server": "c.localhost"})
-	if names(rec["servers"]) != "a.localhost,b.localhost" || rec["key_maker"] != "b.localhost" {
+	if names(rec["servers"]) != "a.localhost,b.localhost" {
 		t.Fatalf("after removing c: %v", rec)
 	}
 	testkit.Eventually(t, "c is out", func() bool { return streamState(s.Linked, 2, stream) == "removed" })
@@ -513,194 +509,6 @@ func TestManagerDeletesForEveryone(t *testing.T) {
 	})
 	mo.Refused(403, model.CodeForbidden, "DELETE", "/api/v1/messages/"+another["id"].(string), nil)
 	_ = a
-}
-
-// The hub never holds a stream key and never sees content: nothing it
-// stores and nothing it is sent contains a key or a message, in any of the
-// encodings the protocol uses.
-func TestKeyAndContentNeverReachTheHub(t *testing.T) {
-	l := testkit.NewLinked(t, 3, true)
-	var mu sync.Mutex
-	var received []byte
-	frames := map[string]int{}
-	l.Hub.Hub.TestTap(func(server string, raw []byte) {
-		f, _ := wire.DecodeFrame(raw)
-		mu.Lock()
-		received = append(append(received, raw...), '\n')
-		frames[f.Frame]++
-		mu.Unlock()
-	})
-	keys := map[string][]byte{}
-	for i, ts := range l.Servers {
-		i := i
-		ts.Server.Link.TestKeyMade(func(stream model.StreamID, epoch int64, key []byte) {
-			mu.Lock()
-			keys[fmt.Sprintf("%s epoch %d", testkit.ServerName(i), epoch)] = append([]byte(nil), key...)
-			mu.Unlock()
-		})
-	}
-	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
-	ch := a.Owner.Channel("vault", false)
-	stream, local := l.Share(0, ch, "vault", map[string]any{"listing": "open", "history_days": 30}, 1)
-	sid := model.StreamID(stream)
-	a.Owner.Post(ch, "PLAINTEXT-ALPHA from a")
-	b.Owner.Post(local[1], "PLAINTEXT-BRAVO from b")
-	a.Owner.HasMessage(ch, "PLAINTEXT-BRAVO from b")
-	// c joins (a third key), posts, and is removed (a fourth).
-	convC := joinListed(l, 2, stream, "vault-c")
-	l.Joined(2, stream)
-	c.Owner.HasMessage(convC, "PLAINTEXT-ALPHA from a") // history, which travels sealed
-	c.Owner.Post(convC, "PLAINTEXT-CHARLIE from c")
-	b.Owner.HasMessage(local[1], "PLAINTEXT-CHARLIE from c")
-	before := a.Server.Link.TestStream
-	st, _ := before(sid)
-	moderate(a.Owner, stream, map[string]any{"action": "remove_server", "server": "c.localhost"})
-	testkit.Eventually(t, "a new epoch after the removal", func() bool { cur, _ := before(sid); return cur.KeyEpoch > st.KeyEpoch })
-	a.Owner.Post(ch, "PLAINTEXT-DELTA after the removal")
-	b.Owner.HasMessage(local[1], "PLAINTEXT-DELTA after the removal")
-
-	// Every key any server holds for the stream, and every key a maker
-	// made: epoch 1 was made at sharing, the rest as key-maker.
-	for i, ts := range l.Servers {
-		for epoch, key := range ts.Server.Link.TestKeys(sid) {
-			keys[fmt.Sprintf("%s holds epoch %d", testkit.ServerName(i), epoch)] = key
-		}
-	}
-	mu.Lock()
-	defer mu.Unlock()
-	if len(keys) < 6 {
-		t.Fatalf("only %d keys were gathered: the test would prove little", len(keys))
-	}
-	// The hub was in the middle of all of it.
-	if frames[wire.FDirect] < 4 || frames[wire.FSubmit] < 6 || frames[wire.FChannelCreate] != 1 || frames[wire.FJoin] < 2 || frames[wire.FChannelAction] < 2 {
-		t.Fatalf("the hub received %v", frames)
-	}
-	stored := readDir(t, l.Hub.Dir)
-	if len(stored) < 1000 || len(received) < 1000 {
-		t.Fatalf("the hub stored %d bytes and received %d", len(stored), len(received))
-	}
-	everything := map[string][]byte{"storage": stored, "frames received": received}
-	for where, hay := range everything {
-		for what, key := range keys {
-			if len(key) != 32 {
-				t.Fatalf("%s is %d bytes", what, len(key))
-			}
-			for enc, needle := range map[string][]byte{
-				"raw":       key,
-				"base64url": []byte(base64.RawURLEncoding.EncodeToString(key)),
-				"base64":    []byte(base64.StdEncoding.EncodeToString(key)),
-				"hex":       []byte(hex.EncodeToString(key)),
-			} {
-				if bytes.Contains(hay, needle) {
-					t.Errorf("the hub's %s contains the key %s (%s)", where, what, enc)
-				}
-			}
-		}
-		for _, text := range []string{"PLAINTEXT-ALPHA", "PLAINTEXT-BRAVO", "PLAINTEXT-CHARLIE", "PLAINTEXT-DELTA", "message.created", "stream.servers_changed", "author_id"} {
-			if bytes.Contains(hay, []byte(text)) {
-				t.Errorf("the hub's %s contains %q", where, text)
-			}
-		}
-	}
-	// What it does hold is what it is said to hold: the channel's record.
-	if !bytes.Contains(stored, []byte("vault")) || !bytes.Contains(stored, []byte(stream)) {
-		t.Error("the hub's storage does not hold the channel's name and identifier")
-	}
-}
-
-// The server the hub names makes the key; if it does not in time, the hub
-// names the next in line, and the channel goes on with that server's key.
-func TestKeyMakerFallback(t *testing.T) {
-	defer hub.SetMakerWait(400 * time.Millisecond)()
-	l := testkit.NewLinked(t, 3, true)
-	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
-	ch := a.Owner.Channel("relay", false)
-	stream, local := l.Share(0, ch, "relay", map[string]any{"listing": "open", "history_days": 30}, 1)
-	sid := model.StreamID(stream)
-	a.Owner.Post(ch, "before c")
-	b.Owner.HasMessage(local[1], "before c")
-	made := map[string]int64{}
-	var mu sync.Mutex
-	for i, ts := range l.Servers {
-		i := i
-		ts.Server.Link.TestKeyMade(func(_ model.StreamID, epoch int64, _ []byte) {
-			mu.Lock()
-			made[testkit.ServerName(i)] = epoch
-			mu.Unlock()
-		})
-	}
-	// a stops making keys. c joins the open channel: the hub names a, the
-	// longest-standing member, and a does nothing.
-	a.Server.Link.TestNoKeys(true)
-	stA, _ := a.Server.Link.TestStream(sid)
-	convC := joinListed(l, 2, stream, "relay-c")
-	testkit.Eventually(t, "the hub names a first", func() bool {
-		rec := hubChannel(a.Owner, stream)
-		return names(rec["servers"]) == "a.localhost,b.localhost,c.localhost"
-	})
-	defer func() {
-		if t.Failed() {
-			for i, ts := range l.Servers {
-				cur, _ := ts.Server.Link.TestStream(sid)
-				rec, _, _, _ := ts.Server.Link.TestChannel(sid)
-				t.Logf("%s: state %s epoch %d keys %d record v%d epoch %d maker %s makers %v rejected %v dropped %v outbox %d last %+v", testkit.ServerName(i), cur.State, cur.KeyEpoch,
-					len(ts.Server.Link.TestKeys(sid)), rec.Version, rec.Epoch, rec.KeyMaker, rec.Makers, ts.Server.Link.StatsNow().Rejected, ts.Server.Link.StatsNow().Dropped,
-					ts.Server.Link.TestOutbox(sid), ts.Server.Link.TestLastError().Code)
-			}
-		}
-	}()
-	// Then b, with a new epoch number; b makes the key for all three.
-	testkit.Eventually(t, "the hub names b", func() bool { return hubChannel(a.Owner, stream)["key_maker"] == "b.localhost" })
-	l.Joined(2, stream)
-	testkit.Eventually(t, "every server is on b's epoch", func() bool {
-		mu.Lock()
-		epoch := made["b.localhost"]
-		mu.Unlock()
-		for _, ts := range l.Servers {
-			cur, _ := ts.Server.Link.TestStream(sid)
-			if epoch == 0 || cur.KeyEpoch != epoch {
-				return false
-			}
-		}
-		return true
-	})
-	mu.Lock()
-	if made["a.localhost"] != 0 || made["b.localhost"] != stA.KeyEpoch+2 {
-		t.Fatalf("keys were made by %v; a stood at epoch %d", made, stA.KeyEpoch)
-	}
-	epoch := made["b.localhost"]
-	mu.Unlock()
-	// One key, b's, on all three; and the hub never had it to hand on.
-	keyB := b.Server.Link.TestKeys(sid)[epoch]
-	for i, ts := range l.Servers {
-		if !bytes.Equal(ts.Server.Link.TestKeys(sid)[epoch], keyB) || len(keyB) != 32 {
-			t.Fatalf("%s does not hold b's key for epoch %d", testkit.ServerName(i), epoch)
-		}
-		if _, skipped := ts.Server.Link.TestKeys(sid)[epoch-1]; skipped {
-			t.Fatalf("%s holds a key for the epoch nobody made", testkit.ServerName(i))
-		}
-	}
-	// The channel works, the newcomer has its history from b, and a's
-	// people are known to c.
-	c.Owner.HasMessage(convC, "before c")
-	c.Owner.Post(convC, "c is in")
-	a.Owner.HasMessage(ch, "c is in")
-	b.Owner.HasMessage(local[1], "c is in")
-	a.Owner.Post(ch, "a still talks")
-	c.Owner.HasMessage(convC, "a still talks")
-	// a comes back to its duties: a key it makes now, for the epoch it was
-	// named for and let pass, is taken by nobody.
-	a.Server.Link.TestNoKeys(false)
-	if _, err := a.Server.Link.TestDirect(model.PeerID(l.Peers[0]), "c.localhost", "key", map[string]any{"stream_id": stream, "epoch": epoch + 1,
-		"key": wire.Bytes(bytes.Repeat([]byte{9}, 32))}, model.Now(), nil); err != nil {
-		t.Fatal(err)
-	}
-	testkit.Eventually(t, "c drops a key from a server the hub did not name", func() bool {
-		return c.Server.Link.StatsNow().Dropped["key_not_from_owner"] >= 1
-	})
-	if _, held := c.Server.Link.TestKeys(sid)[epoch+1]; held {
-		t.Fatal("c took a key for an epoch from a server the hub had not named for it")
-	}
 }
 
 // The hub's status page gives counts and no names (ruling R59); names are

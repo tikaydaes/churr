@@ -147,7 +147,7 @@ func (h *Hub) openCluster() error {
 
 // found makes this hub the founder and only member of a new cluster.
 func (h *Hub) found(tx *sql.Tx) error {
-	m := wire.ClusterMember{Cluster: wire.ClusterID(h.keys.SignPublic()), Hub: h.id.Name, SignKey: wire.Bytes(h.keys.SignPublic()), URL: h.id.URL, JoinedAt: h.now()}
+	m := wire.ClusterMember{Cluster: wire.ClusterID(h.keys.SignPublic()), Hub: h.id.Name, SignKey: wire.Bytes(h.keys.SignPublic()), BoxKey: h.keys.BoxPublic(), URL: h.id.URL, JoinedAt: h.now()}
 	e, err := wire.SignMember(m, h.keys)
 	if err != nil {
 		return err

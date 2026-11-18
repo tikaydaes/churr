@@ -570,7 +570,7 @@ func (s *Service) Accept(ctx context.Context, by model.Account, id model.StreamI
 	// none (ruling R94).
 	level, hubPrivate := model.LevelManager, false
 	if hubOwned(st) {
-		rec, _, err := s.channelOf(ctx, s.store, st.ID)
+		rec, err := s.channelOf(ctx, s.store, st.ID)
 		if err == nil && !s.isManager(by, rec) {
 			level = model.LevelMember
 		}
@@ -812,14 +812,14 @@ func (s *Service) asModerator(ctx context.Context, by model.AccountID, id model.
 	if err != nil {
 		return Stream{}, true, err
 	}
-	// The hub names the manager's home server to make the key of the
-	// epoch a change to the server list begins. That is this server, and
-	// the answer waits a moment for it, so that it shows the new epoch as
-	// the answer of an owner server's own operation does.
-	for wait := 0; wait < 150 && rec.KeyMaker == s.id.Name && !rec.Closed; wait++ {
-		cur, held, err := s.channelOf(ctx, s.store, id)
+	// A change to the server list begins a new key epoch at the hub, whose
+	// key it sends ahead of the record. The answer waits a moment for this
+	// server to take it, so that it shows the new epoch as the answer of an
+	// owner server's own operation does.
+	for wait := 0; wait < 150 && !rec.Closed; wait++ {
+		cur, err := s.channelOf(ctx, s.store, id)
 		now, err2 := s.store.Streams().Get(ctx, id)
-		if err != nil || err2 != nil || now.State != store.StreamActive || now.KeyEpoch >= cur.Epoch || len(held) == 0 {
+		if err != nil || err2 != nil || now.State != store.StreamActive || now.KeyEpoch >= cur.Epoch {
 			break
 		}
 		select {

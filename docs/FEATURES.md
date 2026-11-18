@@ -2793,9 +2793,11 @@ A private channel can be shared through a hub, or moved onto one from
 a direct link (ruling R94). The hub owns it, as it owns every channel
 shared through it, and is trusted as its owner. The instances the hub
 joins and approves are trusted to keep the channel's contents from
-people who are not allowed to see them. A private channel is still not
-encrypted: for that, use a sealed chat. Being private keeps out, as
-well as it can, the people nobody invited.
+people who are not allowed to see them. Nothing is kept from the hub:
+it makes and keeps the keys of every channel it owns, so its operator
+can read the channel. A private channel is still not encrypted against
+the hub or its instances: for that, use a sealed chat. Being private
+keeps out, as well as it can, the people nobody invited.
 
 - **Who runs it.** The hub's record names its **managers**, who hold
   it as an owner would (which instances are in it, its name and

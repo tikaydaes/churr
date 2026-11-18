@@ -26,7 +26,7 @@ func newRosterHub(t *testing.T, name string) rosterHub {
 
 func (h rosterHub) entry(t *testing.T, cluster Bytes, via *rosterHub, at model.Time) ClusterEntry {
 	t.Helper()
-	m := ClusterMember{Cluster: cluster, Hub: h.name, SignKey: Bytes(h.keys.SignPublic()), JoinedAt: at}
+	m := ClusterMember{Cluster: cluster, Hub: h.name, SignKey: Bytes(h.keys.SignPublic()), BoxKey: h.keys.BoxPublic(), JoinedAt: at}
 	if via != nil {
 		m.Via = via.name
 	}

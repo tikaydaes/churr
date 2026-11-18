@@ -42,15 +42,14 @@ its name and keys. Admin operations are described in words;
 | Peer        | A lasting, mutually accepted link between this server and one other server (a direct link) or one hub. Made by the owner. |
 | Stream      | One conversation shared over one peer. Has a UUIDv7, the `stream_id`. |
 | Owner server | The server that shared the conversation over a direct link, or that started an ad-hoc channel or sealed chat. It decides which servers are in the stream and holds the power to remove any message. A channel on a hub has no owner server: the hub owns it. |
-| Hub-owned channel | A stream of kind `channel` on a hub. The hub keeps its record and is the only party that signs a change to it (section 23a). |
+| Hub-owned channel | A stream of kind `channel` on a hub. The hub keeps its record, is the only party that signs a change to it (section 23a), and makes every key epoch's stream key (section 10). |
 | Manager (of a hub-owned channel) | An account, named with its home instance in a hub-owned channel's record, that holds the channel as an owner would: its instances, name, description, listing, managers and moderators, closing it (section 23a). |
 | Moderator   | An account, named with its home instance in a hub-owned channel's record, that keeps the peace in the channel on every instance in it: it removes messages and people, and admits people to a private one. A manager may do all a moderator may. |
-| Key-maker   | The member server a hub names to make a hub-owned channel's next stream key. The hub never holds one. |
 | Time reference | The party whose clock a stream's events are timed by, and which keeps the stream's log: the stream's home hub when the peer is a hub, otherwise the owner server. It orders nothing (section 13). |
-| Home hub    | The hub a stream was opened on, or for a channel the hub its operator last moved it to. It owns the channel, signs its record and is its time reference. |
+| Home hub    | The hub a stream was opened on, or for a channel the hub its operator last moved it to. It owns the channel, signs its record, makes and keeps its stream keys and is its time reference. |
 | Cluster     | Hubs joined by trunks, in a tree. A hub that is joined to no other is a cluster of one (section 23b). |
 | Trunk       | A lasting, mutually authenticated link connection between two hubs of a cluster. |
-| Edge hub    | For a server and a channel whose home is another hub: the hub the server is connected to, which is its relay. |
+| Edge hub    | For a server and a channel whose home is another hub: the hub the server is connected to, which is its relay. It holds none of the channel's keys. |
 | Stamp       | What an origin puts on every event it makes, under its signature: `at`, `n` and `offset` (section 9). |
 | Envelope    | One signed, encrypted event in a stream.                    |
 | Origin      | The server that made an envelope.                           |
@@ -248,7 +247,8 @@ halves to `keys/` in the data directory:
 | `sign_key` | Ed25519 | Proving who it is; signing envelopes and direct messages |
 | `box_key`  | X25519  | Receiving stream keys and direct messages       |
 
-A hub makes only a `sign_key`. Nothing is ever encrypted to a hub.
+A hub makes the same two. It is sealed the direct messages that ask it
+for the key of a channel it is the home of (section 10).
 
 There is no key change in this protocol. A server that loses its keys is
 a new server to everyone it was linked with: its peers remove the old
@@ -284,8 +284,8 @@ are spoken at all; the invitation by a person, who pastes it.
 | `kind`          | `server` or `hub`                                    |
 | `name`          | The server's name. Must equal the host the document was fetched from. |
 | `sign_key`      | The Ed25519 public key, 32 bytes                     |
-| `box_key`       | The X25519 public key, 32 bytes. Absent for a hub.   |
-| `box_key_sig`   | Ed25519 signature by `sign_key` over `"churr-box-key-v1" 0x00 \|\| lp(name) \|\| box_key`. Absent for a hub. |
+| `box_key`       | The X25519 public key, 32 bytes                      |
+| `box_key_sig`   | Ed25519 signature by `sign_key` over `"churr-box-key-v1" 0x00 \|\| lp(name) \|\| box_key` |
 | `link.versions` | Link protocol versions spoken                        |
 | `link.url`      | Where to dial                                        |
 
@@ -834,8 +834,9 @@ The reference, for each envelope of a `submit`:
    that were delivered it and at another on its own.)
 6. Checks the origin's rate limit.
 7. Checks the key epoch (section 10): `stale_epoch` if it is below
-   the stream's current one, `early_epoch` if it is above it and the
-   origin is not the owner.
+   the stream's current one; `bad_frame` if it is above it, unless the
+   origin is the owner server of a stream a server owns, whose
+   envelope under a new epoch begins it.
 8. Checks the stamp (section 13): `clock_unknown`, `clock_offset`,
    `clock_ahead`, `clock_behind`. Only the stream's time reference
    does this.
@@ -941,9 +942,8 @@ Section 7.
 | `clock_unknown`       | The reference has not measured the origin's clock yet |
 | `not_monotonic`       | An envelope's `at` or `n` is not above the origin's last |
 | `stale_epoch`         | An envelope is under a key epoch that has ended |
-| `early_epoch`         | An envelope is under a key epoch the owner has not started |
 
-The last seven are refusals of a submitted envelope and come in
+The last six are refusals of a submitted envelope and come in
 `accepted`, not in an `error` frame.
 
 ## 7. Direct messages
@@ -952,7 +952,9 @@ Some things pass between two servers and belong in no stream's log:
 an offer to share, a stream key, a file, a call pass. Through a hub
 these cross a party that must not read them, so every one is sealed to
 the receiving server and signed by the sending server. The same form
-is used on a direct link, so there is one code path.
+is used on a direct link, so there is one code path. A hub sends and
+is sent direct messages of its own in the same form: the keys of the
+channels it is the home of, and the requests for them.
 
     {"frame": "direct", "id": 17, "from": "a.example", "to": "b.example",
      "body": <bytes>, "sig": <bytes>}
@@ -983,7 +985,11 @@ another server's.
 
 A hub checks that `from` is the server on the connection, that `sig`
 verifies, and that `to` is on its roster and connected, then passes
-the frame on unchanged. It answers the sender with `error`,
+the frame on unchanged. A message whose `to` is the hub itself it
+opens; one whose `to` is another hub of its cluster it carries there in
+`ask` (section 23b). A server takes a direct message from a hub only
+over its link to that hub's cluster, under the key the roster gives the
+hub, and only of kind `key` or `error`. It answers the sender with `error`,
 `unavailable`, if `to` is not connected; it never holds a direct
 message for later. It sees the two names and the size.
 
@@ -1019,9 +1025,9 @@ of section 6 plus `forbidden`, `not_found` and `feature_off`.
 | `offer`                | Owner → invited server | Section 8               |
 | `accept`               | Invited → owner     | `stream_id`                |
 | `decline`              | Invited → owner     | `stream_id`, `reason`: `declined`, `not_allowed`, `blocked` or `feature_off` |
-| `key`                  | Owner → server; in a hub-owned channel, key-maker → server | `stream_id`, `epoch`, `key` (32 bytes), `version` (the server list version the epoch belongs to), `history_days` (in a hub-owned channel: how much history the channel gives a joining server, so that a server named key-maker later gives the same) |
-| `key_request`          | Server → owner; in a hub-owned channel, server → key-maker, then the other servers | `stream_id`, `epoch`       |
-| `history`              | Owner → server; in a hub-owned channel, key-maker → joining server | Section 13 |
+| `key`                  | Owner → server; in a hub-owned channel, home hub → server | `stream_id`, `epoch`, `key` (32 bytes), `version` (the server list version, or in a hub-owned channel the record version, the epoch belongs to) |
+| `key_request`          | Server → owner; in a hub-owned channel, server → home hub | `stream_id`, `epoch`       |
+| `history`              | Owner → server; in a hub-owned channel, a member server → a joining server that asked | Section 13 |
 | `history_request`      | Server → owner      | `stream_id`, `after_at`, `through_at` (times of the stream's reference clock, in milliseconds; `through_at` 0 for "to now"). In a hub-owned channel, to any of its servers; and with `first: true` in place of the times, a request for the snapshot a joining server is owed (section 23a) |
 | `open_request`         | Server → a server that holds the key | `stream_id`, `envelope`: an envelope of the stream, as delivered, under a key epoch from before the asker joined (section 13) |
 | `opened`               | That server → the asker | `stream_id`, `plain`: what the envelope says, as the bytes that were sealed in it (an `Event`), `re` the request |
@@ -1289,14 +1295,15 @@ come back: a reference does not deliver an origin its own envelopes.
 
 ## 10. Stream keys and epochs
 
-- A stream key is 32 random bytes. The owner server makes it.
+- A stream key is 32 random bytes. The owner server makes it; in a
+  channel a hub owns, the home hub does.
 - Keys are numbered by **epoch**, from 1. Each server keeps every
   epoch's key it was given (`stream_keys`, sealed at rest), so it can
   read what it already holds.
 - The owner sends a key to a server in a `key` direct message, which
   is sealed to that server's `box_key` and signed by the owner
-  (section 7). A hub never holds a stream key. A `key` message is
-  accepted only from the stream's owner.
+  (section 7). A `key` message is accepted only from the stream's
+  owner.
 - A server that is delivered an envelope under an epoch it has no key
   for asks the owner with `key_request`. The owner answers with `key`
   if the asker was in the server list for that epoch, and with an
@@ -1317,11 +1324,10 @@ and are not ordered by the clock.
 A stream's **current epoch** is, for each party, the highest one
 whose `stream.servers_changed` it has seen: for the owner the one it
 made last; for any other server the one it applied last; for a
-reference, the one it took into its log last. A hub holds no key and
-reads no event, but it sees the `key_epoch` each envelope names, and
-it takes the owner's word, and only the owner's, for a new one: its
-current epoch is the highest `key_epoch` on an envelope it has taken
-from the stream's owner.
+reference, the one it took into its log last. A hub sees the
+`key_epoch` each envelope names, and takes the owner's word, and only
+the owner's, for a new one: its current epoch is the highest
+`key_epoch` on an envelope it has taken from the stream's owner.
 
 - Servers encrypt under the stream's current epoch as they know it.
   A server that has been given the key of an epoch that has not
@@ -1332,28 +1338,35 @@ from the stream's owner.
   same stamp, once it has applied the `stream.servers_changed` it was
   missing, and submits it again.
 - A reference refuses an envelope under an epoch above the current
-  one, from anyone but the owner, with `early_epoch`. The origin
-  tries again shortly.
+  one, from anyone but the owner, with `bad_frame`: no server that
+  keeps this section sends one.
 - So in a reference's log nothing under an older epoch follows the
   event that started a newer one, and a server that reads the log in
   order never meets an epoch before its start.
 
-**In a channel a hub owns** nobody owns the epochs but the hub, which
-cannot make a key. On every change to the server list the hub's
-record calls for the next epoch and names one member server, the
-**key-maker**, to make its key (section 23a). What this section says
-of the owner is then true of that server, for that epoch only: it
-sends `key` to every server in the hub-signed list, and makes the
-`stream.servers_changed` that starts the epoch. A `key` for an epoch
-is accepted only from the server the hub's record names for that
-epoch, and so is the event that starts it, by every server and by the
-hub (which takes an envelope under a new epoch from that server and
-from no other). `key_request` goes to that server, and if it is gone
-or silent to the channel's other servers, any of which may hold the
-key and answers under the same rule as an owner; a key from one of
-them is taken only as the answer to the asker's own request, and only
-for an epoch that is already over, so nobody but its maker can put a
-key in place for an epoch that has yet to begin.
+**In a channel a hub owns** the home hub owns the epochs and makes
+every key (ruling R109). On every change to the server list it signs
+a record that calls for the next epoch (section 23a), and in the
+transaction that signs it the hub makes the epoch's key, keeps it
+sealed at rest beside every earlier one with the server list it was
+made for, and makes the epoch the stream's current one: from that
+moment it takes nothing under an older epoch (`stale_epoch`) and
+nothing under a later one (`bad_frame`). There is no
+`stream.servers_changed` in such a channel; an instance rejects one. The
+hub sends `key` to every instance in the list, sealed to each, ahead of
+the record, again with the record to an instance that reconnects, and
+over a trunk in `forward` to an instance on another hub of the cluster.
+An instance takes such a channel's key from its home hub, under the key
+the cluster roster gives that hub, and from nobody else. Its current
+epoch is the one the newest record it holds calls for, once it holds
+that epoch's key; until then it goes on under the one before, and
+what the hub refuses as `stale_epoch` waits for the key. An instance
+that holds a record without its epoch's key, or meets an envelope
+under an epoch it has no key for, asks the home hub with
+`key_request`. The hub answers an instance in the channel now that was
+in the list the epoch was made for, and refuses any other with
+`forbidden`. An edge hub holds none of a channel's keys (section
+23b).
 
 A removed server is not sent the new key, and the reference stops
 delivering to it. Envelopes sent under the old epoch between the
@@ -1502,9 +1515,9 @@ Section 19 explains them.
 | `stream.closed`          |                                            |
 | `stream.moved`           | `move_id`, `hub`, `record` and `record_sig` (the hub's signed record of the channel), `commit` and `commit_sig` (the owner server's signed commit). The owner server's last event in the direct log of a stream it has moved onto a hub (section 21a) |
 
-In a hub-owned channel `stream.servers_changed` starts a key epoch
-and does nothing else: `version`, `servers` and `left` are not taken
-from it, since the server list is the hub's record's.
+`stream.servers_changed` is not used in a hub-owned channel: the
+home hub begins every epoch there itself (section 10), and the server
+list is its record's. A server rejects one there (`hub_channel`).
 
 On `stream.servers_changed`, a server marks every account of each
 server in `left` as having left the conversation. Those
@@ -1610,7 +1623,7 @@ home never changes.
 | `conversation.updated`   | The owner server                             | `channel` streams only                       |
 | `call.started`           | Home of `started_by_id`, which must equal `host` | No call is live in the conversation         |
 | `call.participant_joined`, `call.participant_left`, `call.ended` | The call's `host` | The call is live              |
-| `stream.servers_changed` | The owner server. In a hub-owned channel: the server the hub's record names as key-maker for `epoch` | `version` is the next one; `epoch` is higher than the last; it is encrypted under `epoch`; it agrees with the `server_joined` and `server_left` frames received. In a hub-owned channel only the two conditions on `epoch` apply |
+| `stream.servers_changed` | The owner server. In a hub-owned channel: nobody (`hub_channel`) | `version` is the next one; `epoch` is higher than the last; it is encrypted under `epoch`; it agrees with the `server_joined` and `server_left` frames received |
 | `stream.moved`           | The owner server                             | This server has agreed to the move named; the hub's record verifies under an accepted key of the hub agreed to and lists exactly the two servers; the commit is signed by the owner server (section 21a) |
 | `stream.owner_changed`   | The owner server (the old one)               | `new_owner` is in the server list            |
 | `stream.limits_changed`, `stream.closed` | The owner server             |                                              |
@@ -1625,7 +1638,7 @@ and the audit log gets a line. Particular cases:
 | Failure                                         | Also                               |
 |-------------------------------------------------|------------------------------------|
 | An event names an account of another server (forged authorship) | The audit line names both servers. After 100 such rejections from one origin in an hour, the stream's page in the admin console shows a warning. The server does not leave by itself: through a hub it cannot tell whether the origin or the hub is at fault. |
-| `stream.servers_changed` or a `key` not from the owner | The server list and the epoch stay as they were |
+| `stream.servers_changed` or a `key` not from the owner (in a hub-owned channel, a `key` not from its home hub) | The server list and the epoch stay as they were |
 | `message.removed` not from the owner, or in a hub-owned channel by an account that is not on the manager or moderator list as the origin's | The message stays |
 | A `member.joined` with no matching invitation in an `adhoc` stream | The account is not added; its later messages fail the membership check and are rejected too |
 | An event about a message this server does not hold (it was before this server's history) | Rejected quietly, with no audit line |
@@ -1871,7 +1884,8 @@ While something of an origin is held, the server knows in memory how
 far that origin's deliveries have reached, and a later delivery whose
 `prev` is covered by that is not a gap. On a direct link there are two
 servers and one log, and nothing is held. A hub holds nothing either:
-it reads no event, and cannot tell what one refers to.
+it does not open the envelopes it carries, and cannot tell what one
+refers to.
 
 ### An envelope under a key from before a server joined
 
@@ -1886,8 +1900,8 @@ server that holds the old key applies it, and the new server cannot
 read it.
 
 The new server does not reject it and move on. It sends the envelope,
-as delivered, to a server that holds that epoch's key: the one named
-to make it, then the stream's other servers, up to three of them:
+as delivered, to a server that holds that epoch's key: the stream's
+other servers, longest-standing first, up to three of them:
 
     {"kind": "open_request", "msg_id": "…", "at": "…",
      "stream_id": "…", "envelope": { … }}
@@ -1918,13 +1932,19 @@ whoever is added to an ad-hoc channel sees its whole history. Sealed
 streams send nothing; the devices handle their own history.
 
 In a channel a hub owns there is no owner to send it. The person who
-shares the channel chooses the number of days, each server learns it
-with its first key, and the snapshot is sent by the key-maker of the
-epoch a server joins at (section 23a), once the hub has taken the
-event that starts that epoch. A server takes an unasked snapshot only
-from a server the hub's records have named as a key-maker of the
-channel. Wherever this section says "the owner" of history, read that
-server.
+shares the channel chooses the number of days, and the hub's record
+says it to every instance (`history_days`). An instance that has been let
+in asks for its snapshot at once, with `history_request` carrying
+`first: true`, of the channel's instances one after another,
+longest-standing first and those let in with it last, until one
+answers, and asks again after 5 seconds while none has. The instance
+asked answers an instance in the hub-signed list. It cuts the snapshot
+once it holds every origin's events up to the `have` the hub sent
+beside the record that let the asker in (or after 10 seconds): from
+that moment the hub took nothing under an older epoch. Nobody sends a
+hub-owned channel's history unasked, and an instance takes none that it
+did not ask for. Wherever this section says "the owner" of history,
+read the instance that answered.
 
 History is a snapshot, not a replay. The owner sends one or more
 `history` direct messages, each at most 262,144 bytes before sealing:
@@ -2240,8 +2260,8 @@ logged, never stored, and lost for a server that is not connected.
   stream: there is no frame that carries one account's presence for
   every channel two servers share, because a hub would then see that
   they share them.
-- **A hub may drop ephemeral frames, and only those.** It cannot read
-  them, so it cannot merge them; under pressure it drops them, in two
+- **A hub may drop ephemeral frames, and only those.** It does not
+  open them, so it cannot merge them; under pressure it drops them, in two
   places (section 23). Envelopes in `submit` and `deliver`, control
   frames and direct messages are never dropped this way.
 - A receiver keeps the newest value per account by `at`, ignores one
@@ -2533,8 +2553,8 @@ connection, refuses it from then on, and sends everyone a new
   marks it closed and tells its servers with an unsigned
   `stream_close` naming the reason `owner_gone`; they detach.
 - From each channel the hub owns it takes the server out itself, in
-  the same step: a new record, a new key epoch and a key-maker for
-  the servers that remain (section 23a). The removed instance's
+  the same step: a new record and a new key epoch, with a key of the
+  hub's, for the servers that remain (section 23a). The removed instance's
   accounts stop being managers and moderators.
 
 ### What each server keeps
@@ -2560,7 +2580,7 @@ then the owner server's, the other server knows it by name and key
 from the roster its own hub sent, and reaches it through its own hub. The move hands over four things at once: the channel's
 **ownership** (owner server → hub), its **time reference** (owner
 server → hub), its **relay and log** (direct link → hub), and its
-**key epoch** (a new one, made by the hub's first key-maker). The
+**key epoch** (a new one, the hub's first, with a key it makes). The
 stream keeps its `stream_id`, each server keeps its one local channel
 with everything in it, and the direct link stays for the two servers'
 other streams. It is all or nothing.
@@ -2673,10 +2693,10 @@ direct log.
    checks O's signature and that it is the commit of the move it
    prepared, sets each origin's last counter and time from `have`
    and `have_at`, sets the channel's managers to P's managers (as
-   signed in step 2) and O's (as signed in the commit), makes the
-   stream stand at `epoch`, and signs the record anew: no longer
-   prepared, calling for key epoch `epoch` plus one, O its
-   key-maker. From here H delivers and logs. **Either server may
+   signed in step 2) and O's (as signed in the commit), and signs the
+   record anew: no longer prepared, calling for key epoch `epoch` plus
+   one, which H begins in the same transaction with a key it makes
+   (section 10). From here H delivers and logs. **Either server may
    hand H the block**: P does so when it switches (step 6), so the
    channel does not wait on a server that committed and then went
    away. A second `channel_commit` changes nothing. A server on
@@ -2691,8 +2711,8 @@ direct log.
    it in the same transaction. It does so only for a prepared record
    under its own present signature, of this stream, no more than 30
    days old, whose two servers are both still on the hub or its
-   cluster, with a commit signed by the server the record names as
-   its key-maker. Without this the two servers would hold a committed
+   cluster, with a commit signed by the server the record names
+   first. Without this the two servers would hold a committed
    move, bound to the hub for good, with nowhere to send it. A hub
    that has lost its key, or its list of servers, is a new hub: its
    servers must join it again, and this does not help them.
@@ -2722,12 +2742,12 @@ direct log.
    `stream.moved` fails on P, it does not count as held: P asks for
    it again.
 
-7. **The new key epoch.** H's activated record names O key-maker
-   for the next epoch. O makes the key, sends it to P sealed
-   (through H or the direct link, section 7), and starts the epoch
-   with `stream.servers_changed`, as section 23a describes for any
-   hub-owned channel. Until then both servers go on under the last
-   key of the stream's direct life, which both hold.
+7. **The new key epoch.** H sends both servers the key of the epoch
+   its activated record calls for, ahead of the record. A server that
+   switches after the key came (P, whose stream still ran over the
+   direct link) asks H for it with `key_request` when it takes the
+   record. Until each holds it, what it sends under the last key of
+   the stream's direct life is refused (`stale_epoch`) and waits.
 
 O marks the move `done` when H's activated record has reached it and
 P has acknowledged the direct log up to `stream.moved` (P answers a
@@ -2809,9 +2829,9 @@ begin: the two logs join without overlap or gap.
 
 After the move further servers join through the hub in the ordinary
 way (section 23a): by a manager's invitation, or from the directory
-if a manager lists the channel (a private channel is never listed). A server that joins is sent the
-history the channel gives by its key-maker, and that includes what
-the channel held in its direct days.
+if a manager lists the channel (a private channel is never listed). A server that joins asks for the
+history the channel gives, and that includes what the channel held in
+its direct days.
 
 ### What is refused while a move is in progress
 
@@ -2835,9 +2855,10 @@ the hub after it, and wait as unsent in between.
 
 What it learns of any channel it owns (section 23a): the stream's
 identifier, its name and description, its two servers, its
-managers, and whether it is private. It is given no key and reads no event: `stream.moved`
-is an envelope like any other and stays in the direct log, which the
-hub never sees.
+managers, and whether it is private; and from the activation on it
+makes and keeps the channel's keys. `stream.moved` is an envelope like
+any other and stays in the direct log, which the hub never sees, nor
+the keys of the channel's direct life.
 
 ## 22. Purge and retention
 
@@ -2878,7 +2899,8 @@ to honour it and cannot be forced to.
 ## 23. The hub
 
 `churr-hub` is the link package with a log and a clock, and the
-owner of the channels shared through it (section 23a). It has no
+owner of the channels shared through it (section 23a), whose stream
+keys it makes and keeps (section 10). It has no
 accounts, no messages, no search and no API beyond `/link/v1`,
 `/.well-known/churr` and a status page. Ad-hoc channels and sealed
 chats that cross it are not its own: they stay under the servers
@@ -2898,11 +2920,12 @@ In one data directory:
 
 | Thing              | Contents                                        | Kept          |
 |--------------------|-------------------------------------------------|---------------|
-| Its signing key    | `keys/`                                         | For good      |
+| Its keys           | `keys/`: the signing key and the box key        | For good      |
 | Servers            | Name, keys, when joined, state, limits          | Until removed |
 | Invitations        | Hash of the secret, expiry, the name it is for  | Until used or expired |
 | Streams            | `stream_id`, owner (a server, or the hub itself for a channel it owns), home hub, server list and its version, the highest key epoch begun, the next log position, state (`open`, `prepared`, `closed`) | While open, then 30 days |
-| Channels           | For each channel the hub owns: its record as last signed (name, description, listing mode, whether it is private, servers, managers, moderators, invitations, requests, key epoch and key-maker), the server that brought it, who invited whom, when the named key-maker's time runs out, and for a moved channel the move's identifier | While the stream is |
+| Channels           | For each channel the hub owns: its record as last signed (name, description, listing mode, whether it is private, servers, managers, moderators, invitations, requests, key epoch, days of history), the server that brought it, who invited whom, and for a moved channel the move's identifier | While the stream is |
+| Stream keys        | For each channel it is the home of: every key epoch's key, sealed at rest under the hub's key file, with the server list the epoch began for | While the stream is |
 | The envelope log   | Per stream: the position, the envelope (an `Envelope` message, as it will be delivered), its origin and `n`, the `n` of the same origin's envelope before it, the time | 30 days |
 | Origins            | Per stream and origin: the `n` and `at` of the last envelope taken | While the stream is |
 | Clocks             | Per server: the figures of section 5, as last measured | Until removed |
@@ -2926,10 +2949,10 @@ be removed and made again.
 
 | It sees                                              | It cannot see                           |
 |------------------------------------------------------|-----------------------------------------|
-| Each server's name, keys and network address         | Any message or file; the name of any person who is not a manager or moderator of a channel it owns |
+| Each server's name, keys and network address         | Any file; any message of a stream it does not own; the name of any person who is not a manager or moderator of a channel it owns |
 | Which servers are in which stream                    | The kind of a stream it does not own, or what conversation it is |
-| Of each channel it owns: name, description, listing mode, whether it is private, servers, managers and moderators (account identifier, username, home instance), which servers are invited or asking | Anything said in it, who its members are, who asks to join a private one, each server's own name for it, levels, pins, or any stream key |
-| For each envelope: stream, origin, size, its stamp (`at`, `n`, `offset`), its key epoch | Who posted, or what kind of event it is |
+| Of each channel it owns: name, description, listing mode, whether it is private, servers, managers and moderators (account identifier, username, home instance), which servers are invited or asking, and every key epoch's key | Each server's own name for it, levels, pins |
+| For each envelope: stream, origin, size, its stamp (`at`, `n`, `offset`), its key epoch; in a channel it owns, all it says, since it holds the key | In a stream it does not own: who posted, or what kind of event it is |
 | Each server's clock offset, and the latency and jitter of its path, each direction by itself | |
 | For each direct message: from, to, size, time        | What kind it is: an offer, a key, a file chunk and a call pass look alike |
 | That ephemeral traffic is flowing in a stream        | Who is typing or online                 |
@@ -2938,10 +2961,15 @@ It can refuse, delay and drop what it carries, deliver it in any
 order, and close a stream. It cannot change where an event stands.
 Over the channels it owns its operator can do more, by ruling R56:
 admit and remove instances and appoint and dismiss managers. The hub
-owns the channel and is trusted as its owner. It still cannot read
-content. An instance that joins is given the key of every epoch from
-then on by the channel's key-maker, and every instance in the channel
-sees the server list change.
+owns the channel and is trusted as its owner, and nothing in it is
+kept from the hub: it makes and keeps every key of the channel, so
+**the operator of a hub can read every message of every channel the
+hub owns**, as it passes and for as long as the log keeps it. In this
+version the hub does not open the envelopes it carries, and it holds
+no file. An instance that joins is given the key of every epoch from
+then on by the hub, and every instance in the channel sees the server
+list change. Ad-hoc channels and sealed chats it carries stay closed
+to it (ruling R59).
 
 ### Operator commands
 
@@ -2955,7 +2983,7 @@ sees the server list change.
 | `churr-hub servers`                      | Lists servers: name, fingerprint, connected or not, streams, traffic, and each server's clock as the hub last measured it: offset and uncertainty, round trip and jitter, each direction's one-way time and jitter, and any asymmetry estimate |
 | `churr-hub remove NAME`                  | Removes a server (section 21)        |
 | `churr-hub streams`                      | Lists streams: identifier, owner, home hub, servers, log position, log size |
-| `churr-hub channels`                     | Lists the channels the hub owns: identifier, name, description, listing mode (with "(private)" for a private one), servers, managers, moderators, servers invited and asking, key-maker, envelopes carried |
+| `churr-hub channels`                     | Lists the channels the hub owns: identifier, name, description, listing mode (with "(private)" for a private one), servers, managers, moderators, servers invited and asking, key epoch, envelopes carried |
 | `churr-hub appoint STREAM ACCOUNT-ID USERNAME@SERVER` | Makes an account a manager of a channel. The instance must be in the channel. The last resort when a channel has no manager who will act |
 | `churr-hub dismiss STREAM ACCOUNT-ID`    | Takes an account off a channel's managers |
 | `churr-hub expel STREAM SERVER`          | Removes a server from one channel, leaving it on the hub |
@@ -3046,15 +3074,15 @@ for listed channels. An operator can turn it off.
 A named channel shared through a hub belongs to the hub (ruling R56).
 The hub keeps one **record** per channel and is the only party whose
 signature changes it. Instances ask for changes; the hub decides,
-signs the record whole at the next version, and sends it. Message
-content, files and everything inside envelopes stay unreadable to the
-hub, and it never holds a stream key.
+signs the record whole at the next version, and sends it. It makes
+and keeps every key epoch's stream key of the channel (section 10).
 
-**Trust.** The hub owns the channel and is trusted as its owner. The
-instances it joins and approves are trusted to keep the channel's
-contents from people who are not allowed to see them; even a private
-channel is not encrypted against them, and sealed chats are for that
-(`SEALED.md`).
+**Trust.** The hub owns the channel and is trusted as its owner, and
+nothing in the channel is kept from it (ruling R109). The instances it
+joins and approves are trusted to keep the channel's contents from
+people who are not allowed to see them; even a private channel is not
+encrypted against them or against the hub, and sealed chats are for
+that (`SEALED.md`).
 
 ### The record: `channel`
 
@@ -3070,10 +3098,8 @@ A signed block from the hub (section 6):
              "moderators": [{"account_id": "…", "server": "b.example",
                              "username": "bea"}, …],
              "invited": ["d.example"], "requests": [],
-             "epoch": 4, "key_maker": "a.example",
-             "joined": ["c.example"], "left": [],
-             "makers": {"3": "a.example", "4": "a.example"},
-             "at": "2026-11-14T09:30:00.000Z"}
+             "epoch": 4, "joined": ["c.example"], "left": [],
+             "history_days": 30, "at": "2026-11-14T09:30:00.000Z"}
 
 | Field | Meaning |
 |-------|---------|
@@ -3087,9 +3113,9 @@ A signed block from the hub (section 6):
 | `managers` | Accounts (`ChannelAccount`: `account_id`, `server`, `username`) that hold the channel as an owner would. At least one |
 | `moderators` | Accounts that keep the peace in the channel on every instance in it |
 | `invited`, `requests` | Instances a manager has invited, and instances asking to join |
-| `epoch`, `key_maker` | The key epoch the server list calls for, and the member instance named to make its key |
-| `joined`, `left` | What the list change that began the epoch was. If that epoch never began, the changes are carried into the next |
-| `makers` | For the last 32 key epochs, who was named to make each key |
+| `epoch` | The key epoch the hub began for this server list, with a key it made (section 10) |
+| `joined`, `left` | What the list change that began the epoch was |
+| `history_days` | How many days of history a joining instance is given, 0 to 90 |
 | `closed` | The channel is over for every instance |
 | `prepared` | Held for a move from a direct link that is not committed yet (section 21a) |
 
@@ -3114,11 +3140,12 @@ private not private is refused with `forbidden`, goes to the audit
 log, and changes nothing. From a record it accepts, and from nothing
 else, an instance takes the channel's server list, its managers and
 moderators, its listing mode, name and description, whether it is
-private, and who makes which key. No frame or event from an instance
-changes any of them.
+private, its key epoch and its days of history. No frame or event
+from an instance changes any of them.
 
 The hub sends a record to the channel's instances (those that have
-just joined first) and to the instances invited to it; to an instance
+just joined first), each preceded by the key of the epoch it calls
+for, and to the instances invited to it; to an instance
 that was removed, once; and to an instance that reconnects, for each
 channel it is in or invited to. An instance that is only asking is
 sent nothing but, in the end, the answer.
@@ -3128,7 +3155,7 @@ sent nothing but, in the end, the answer.
 The Owner of instance A opens a channel and shares it over A's link
 to the hub, choosing the listing mode (`unlisted` unless they say),
 instances to invite if any, and how much history a joining instance
-is given. A makes the `stream_id` and the key of epoch 1, and sends
+is given. A makes the `stream_id` and sends
 
     signed: {"stream_id": "…", "name": "launch",
              "description": "Getting 2.0 out", "listing": "unlisted",
@@ -3136,19 +3163,21 @@ is given. A makes the `stream_id` and the key of epoch 1, and sends
                          "username": "sam"},
              "managers": [{"account_id": "…", "server": "a.example",
                            "username": "kim"}, …],
-             "private": false, "at": "…"}
+             "private": false, "history_days": 30, "at": "…"}
 
 signed by A. `managers` are every manager of the channel on A: each
 active person's account whose level is manager, as for a move
 (section 21a). An Owner or an Admin is one only as anyone is. The hub checks the signature,
 that `creator.server` is the sender, that every manager is an account
 of the sender, the name (1 to 64 characters, no control characters),
-the description (at most 1,000), and A's limit on channels. A
+the description (at most 1,000), the days of history (0 to 90), and
+A's limit on channels. A
 `channel_create` with `private` true and a listing other than
 `unlisted` is refused with `bad_frame`. The hub then owns the
 channel: record version 1, A its only instance, the person who shared
-it and every manager named its **managers**, key epoch 1, A its
-key-maker. On A the stream's owner is the hub from the start. An
+it and every manager named its **managers**, key epoch 1, begun with
+the hub's key, which it sends A ahead of the record. On A the stream's
+owner is the hub from the start. An
 instance's own row for a hub in `servers` stands for it there, so
 every rule that asks "is this the owner server" answers no for every
 instance.
@@ -3219,8 +3248,8 @@ instance's manager, and an account cannot act through an instance
 that is not its home. An action the hub accepts becomes the next
 record. `join` (below) uses the same signed block.
 
-**Deleting a message for everyone** cannot go through the hub, which
-reads no event. The manager or moderator deletes the message on their
+**Deleting a message for everyone** does not go through the hub, which
+does not open the envelopes it carries in this version. The manager or moderator deletes the message on their
 own instance as any member deletes one. Their instance lets them,
 whatever their role and level there (`PERMISSIONS.md` section 14.1),
 and submits `message.removed` naming them, with their profile.
@@ -3271,9 +3300,9 @@ sends `join`:
 
 | The instance | The hub |
 |------------|---------|
-| is invited | Admits it. The key-maker is the home instance of the manager who invited it |
-| is not, and the channel is `open` | Admits it. The key-maker is the longest-standing member instance |
-| is not, and the channel is `request` | Records the request; the managers see it in the record. On approval admits it; the key-maker is the home instance of the manager who approved |
+| is invited | Admits it |
+| is not, and the channel is `open` | Admits it |
+| is not, and the channel is `request` | Records the request; the managers see it in the record. On approval admits it |
 | is not, and the channel is `unlisted` | Refuses: `forbidden` |
 
 An instance that asked is told `forbidden` when a manager declines
@@ -3286,25 +3315,23 @@ manager only if the hub's manager list names them. In a private
 channel the copy starts with nobody, not even that Owner (below).
 
 **Admitting** an instance is one change to the record: it joins
-`servers`, `epoch` goes up by one, and a key-maker is named. The
-hub delivers the stream to it from that moment, and notes what its
-log held of each origin at that moment. Whenever the hub sends that
-instance the record, then or when it next connects, the `have` beside
-it is that note: the instance starts from there, and learns what came
-before as history (section 13) from the key-maker.
+`servers`, and `epoch` goes up by one, begun with a new key of the
+hub's. The hub delivers the stream to it from that moment, and notes
+what its log held of each origin at that moment. Whenever the hub
+sends that instance the record, then or when it next connects, the
+`have` beside it is that note: the instance starts from there, and
+asks for what came before as history (section 13).
 
-**An instance that was away when it was admitted** was sent neither
-its key nor its history: both are direct messages, and nobody keeps
-one for an instance that is not connected. When it returns it is sent
-the record and is in the channel. It asks for the key of the first
-epoch it meets with `key_request` (section 10), at once. If its
-history has not come within 5 seconds it asks for it, with
-`history_request` carrying `first: true`, of the current key-maker
-and then of the channel's other instances in turn, until one answers;
-whoever is asked answers an instance in the hub-signed list with the
-snapshot a joining instance is owed, members included. Until it has
-that, it knows none of the channel's members and takes nothing they
-say.
+**An instance that was away when it was admitted** was sent nothing:
+a key is a direct message, and nobody keeps one for an instance that
+is not connected. When it returns it is sent the key and the record,
+and is in the channel; a key it still lacks it asks the hub for with
+`key_request` (section 10). It asks for its history as any instance
+let in does, with `history_request` carrying `first: true`, of the
+channel's other instances in turn, until one answers; whoever is asked
+answers an instance in the hub-signed list with the snapshot a joining
+instance is owed, members included. Until it has that, it knows none
+of the channel's members and takes nothing they say.
 
 ### Who is in a channel
 
@@ -3368,39 +3395,17 @@ apply on each instance to its own members (`PERMISSIONS.md` section
 4.4). `member.removed` takes a person out on every instance, as in any
 channel a hub owns.
 
-### Keys: the key-maker, and what happens if it does nothing
+### Keys
 
-The hub never sees a key (section 10). On every change to the server
-list it names one current member server to make the new stream key:
-the home instance of the manager who approved or invited, or who
-had an instance removed; for an open join, a server that leaves, or an
-operator's removal, the longest-standing member server.
-
-The server named, when the record reaches it:
-
-1. makes the key of `epoch` and sends `key` to every server in the
-   hub-signed list, each sealed to that server (section 7);
-2. makes `stream.servers_changed` under that epoch and submits it.
-   The hub takes an envelope under a new epoch only from the server
-   it named for that epoch; from then on it takes nothing under an
-   older one;
-3. once the hub has taken that event, sends each server in `joined`
-   its history.
-
-**Fallback.** The named server has 30 seconds. If the hub has taken
-no envelope under `epoch` from it by then, the hub signs the record
-again with `epoch` one higher and the **next server in line** as
-key-maker: the one after it in `servers`, going round. The number
-goes up so that a key the first one makes late can never be taken
-for the new one: servers accept a key, and the event that starts an
-epoch, only from the server the record names for that epoch number.
-`joined` and `left` are kept, so whoever does make the key knows who
-is owed history. A server that has only just joined is passed over
-as next in line while there is another to name: it holds nothing of
-the channel yet. A start-of-epoch event a server made for an epoch
-that has been passed over is refused by the hub (`early_epoch`) and
-the server drops it. With one server in a channel there is nobody
-else to ask, and it makes its key whenever it returns.
+The home hub makes every key (section 10). On every change to the
+server list (an instance admitted, leaving, removed by a manager or by
+the operator, or the hub's first epoch for a channel moved onto it or
+handed to it) it signs the record at the next epoch and, in the same
+transaction, makes that epoch's key and begins the epoch. It sends the
+key to every instance in the list ahead of the record. Nothing waits
+on any instance: an instance that is away asks for its key when it
+returns, and the channel goes on without it. An instance is never
+given the key of an epoch from before it joined or after it left.
 
 ### What stays each server's own
 
@@ -3455,7 +3460,8 @@ The **roster** is a set of entries, one per admission of a hub. An
 entry is two signed blocks at most and three signatures:
 
     member:  {"cluster": "<20 bytes>", "hub": "hub-b.example",
-              "sign_key": "…", "url": "wss://hub-b.example/link/v1",
+              "sign_key": "…", "box_key": "…",
+              "url": "wss://hub-b.example/link/v1",
               "via": "hub-a.example", "joined_at": "…"}
     sig      by the hub named, over the block as `cluster_member`
     via_sig  by the hub named in `via`, over the same bytes as
@@ -3473,8 +3479,9 @@ is let in over one trunk, to one member, and has no other.
 A roster is checked whole, by hubs and by servers alike, and refused
 whole (`bad_signature`) if any of this fails:
 
-1. Every entry names the same cluster. Exactly one has no `via`: the
-   founder, and the fingerprint of its key is the cluster's name.
+1. Every entry names the same cluster and carries a signing key and a
+   box key. Exactly one has no `via`: the founder, and the fingerprint
+   of its key is the cluster's name.
 2. Every entry is signed by the key it names.
 3. Every other entry is countersigned by the hub it names as `via`,
    under the key of an entry of that hub with an earlier `joined_at`.
@@ -3506,7 +3513,7 @@ comes up and whenever it changes.
 
 **A trunk is the link's own connection** (section 5): the same
 `/link/v1`, the same five handshake frames, with `kind` `hub` on both
-sides and no box key. Both ends prove their signing keys over the
+sides. Both ends prove their signing keys over the
 transcript, so the authentication is mutual; the invited hub dials and
 reconnects, as a server does; the keys are pinned at the first
 handshake, the dialler's against the invitation's fingerprint and the
@@ -3579,8 +3586,9 @@ refused whole, the one held before stays in force, and the audit log
 gets `link.cluster_refused`. **The keys of the roster's members are
 the hub keys the server accepts on that peer** (section 23a): a
 record is taken if it names one of those hubs with that hub's key
-and the key signed it. A server keeps the roster in memory; it is
-sent again on every connection.
+and the key signed it; the box keys are what a server seals a direct
+message to a hub of the cluster with. A server keeps the roster in
+memory; it is sent again on every connection.
 
 The `roster` frame (section 6) lists, in a cluster, the servers of
 every hub. Each hub signs the list of its own servers (`hub_servers`,
@@ -3597,7 +3605,8 @@ that dials a second hub of the cluster is refused (`key_mismatch`).
 Every hub-owned channel has one **home hub**: the hub it was shared
 to. The home hub owns the channel. It alone signs the record (`hub`
 and `hub_key` name it, and `home_hub` equals `hub`), it is the
-channel's time reference, it names the key-makers, and its operator
+channel's time reference, it makes and keeps the channel's keys
+(section 10), and its operator
 has the last-resort powers of section 23. **A server connected to
 another hub of the cluster uses that hub as its relay**: it submits
 to it, is delivered to by it and catches up from it, with the frames
@@ -3628,16 +3637,17 @@ of section 6.
   comes back to the server as the `error` frame it would have had,
   with the same `re`. **If the next trunk on the way to the home is
   down, the hub that finds it so answers `unavailable` at once.**
-- **Direct messages** to a server of another hub, and any frame for
-  one server (a refusal, the word that a request was declined), travel
+- **Direct messages** to a server of another hub (the home hub's keys
+  among them), and any frame for one server (a refusal, the word that a request was declined), travel
   in `{"frame": "forward", "server": "…", "inner": {…}}`. A direct
   message for a server that is not connected is not kept, and its
   sender is told `unavailable` (section 7); anything else for a server
   that is not connected is kept by its own hub, at most 100 a server,
   and sent when it connects.
-- **Key-makers.** The home names them as before. While part of the
-  cluster cannot be reached it names only servers it can reach, so
-  that an epoch is not left waiting on the far side of a split.
+- **Keys.** The home hub makes them and sends them in `forward`. A
+  server asks the home hub for one with a `direct` addressed to that
+  hub, which its own hub carries there in `ask`. An edge hub holds
+  none of a channel's keys.
 
 ### The clock, composed
 
@@ -3902,19 +3912,21 @@ transaction on the new one.
 
    From then until the offer is settled the old home is still the
    home and **signs nothing for the channel**: a manager's action,
-   a join or a leave is answered `unavailable`, and no key-maker is
-   named.
+   a join or a leave is answered `unavailable`, and no key epoch
+   begins.
 3. **Take.** The other hub, on an offer it has not seen settled,
    checks the old home's signature and the clocks as in step 1, and
    in one transaction takes the channel: it stores the handover, owns
-   the channel, and signs the next version itself. From that
-   transaction it is the home in every way. It answers `step`
+   the channel, and signs the next version itself, at a new key epoch
+   it begins with its own key: it was given none of the old home's.
+   From that transaction it is the home in every way. It answers `step`
    `taken` with that record. An offer it will not take it refuses
    (`step` `refused`) and remembers as dead.
 4. **Step down.** The old home, on a record of the channel later
    than its offer under the other hub's signature (in the answer, or
-   arriving as any record does), stores it and carries the channel
-   from then as any hub does. The new home sends the handover before
+   arriving as any record does), stores it, lets go of every key it
+   held of the channel, and carries the channel from then as any hub
+   does. The new home sends the handover before
    its own record to every hub and server the channel concerns, so
    each follows the chain: a server takes the handover because the
    old home signed it, and from then takes records only from the new
@@ -4003,9 +4015,9 @@ through, until it has been sent.
 
 A hub of a cluster sees, of a channel homed elsewhere, exactly what
 section 23 says a hub sees, and only for the channels it carries or
-lists. It holds no stream key and no plaintext, and is never sealed
-anything: keys and history pass through it as direct messages it
-cannot open.
+lists. It holds no key of it and no plaintext: keys and history pass
+through it as direct messages it cannot open. The home hub alone
+holds the channel's keys.
 
 ## 24. Threats
 
@@ -4018,15 +4030,15 @@ cannot open.
 |                       | Ignore deletes, purges and retention          | Nothing stops this.        |
 |                       | Send a file that differs from the one described | Stopped by the hash in the signed event. |
 |                       | Flood                                         | Rate and size limits per peer; the owner can remove it. |
-| A malicious hub       | Read content                                  | Stopped. It never holds a stream key or a server's private key. |
+| A malicious hub       | Read content                                  | Not stopped for the channels it owns: it holds their keys. That is the trust placed in a hub as a channel's owner (ruling R109). Stopped for ad-hoc channels and sealed chats it carries, and for channels homed on another hub of its cluster: it holds none of their keys, nor any server's private key. |
 |                       | Alter or forge an envelope or direct message  | Stopped by the origin's signature. |
 |                       | Drop, delay or withhold from some servers     | Not stopped. A server that is delivered one of an origin's envelopes without the one before it sees it from `prev` and asks again (section 13); a hub that lies about `prev` as well simply withholds, and nothing repairs that. |
 |                       | Give its own keys in the roster in place of a server's, and sit in the middle | Stopped where that server's `/.well-known/churr` can be fetched, or where the two owners compare fingerprints. If neither happens, nothing stops it. |
 |                       | Learn who talks to whom                       | Not stopped at the level of servers: it sees which servers exchange how much and when. It does not see accounts. |
 |                       | Close streams or remove servers               | Not stopped. That is the operator's power. Each server keeps its copy. |
-|                       | Admit an instance to a channel it owns | The hub's place as the channel's owner (ruling R56). The key-maker gives the new instance the key of the new epoch and later ones, never earlier ones; it is sent history as any joining instance is. Every member instance sees the server list change in the record. |
+|                       | Admit an instance to a channel it owns | The hub's place as the channel's owner (ruling R56). It gives the new instance the key of the new epoch and later ones; it is sent history as any joining instance is. Every member instance sees the server list change in the record. |
 |                       | Appoint a manager of its choosing | The operator's last resort (`churr-hub appoint`). The manager must be an account of an instance in the channel, and its actions must be signed by that instance. Every instance sees the manager list change. |
-|                       | Name a key-maker that will leak the key, or name none | A key-maker is always a member server, which holds the key anyway. If the hub names nobody, or keeps renaming, no new epoch begins and servers go on under the old key; the hub can stop a channel in simpler ways. |
+|                       | Leak a key, or give one to an instance outside the channel | Not stopped. The hub owns the channel and holds its keys; its operator is trusted with it. Every member instance sees in the record which instances the channel is in. |
 | A forged hub record   | A server, or anyone on the path, sends a `channel` record it made | Stopped. A record is taken only over the link to the hub, only if it names an accepted hub key, and only if that key signed it. |
 | A hub of a cluster    | Sign a record for a channel whose home is another hub | Stopped for every server and hub that holds the channel: a record is taken only from the channel's home as the last record named it. Not stopped for a server or hub that has never held the channel: it takes the first record it is shown from any member. |
 |                       | Add a hub nobody admitted to the roster, or give a member another key | Stopped. Every entry must be signed by its own key and countersigned by the member it joined through, back to the founder whose key names the cluster; a roster with one bad entry is refused whole. |
@@ -4194,7 +4206,7 @@ drives them over loopback. Each case names what must be proved.
     change is refused by the time reference (`stale_epoch`), and its
     origin's resubmission under the new epoch, with the same stamp,
     is taken once. An envelope under an epoch the owner has not
-    started is refused (`early_epoch`) and taken once it has.
+    started is refused (`bad_frame`) and taken once it has.
 40. A server that missed its `key` message gets it by `key_request`;
     a server that was never in the stream gets an error.
 41. A direct message opened by a server other than `to` fails, and
@@ -4314,13 +4326,22 @@ drives them over loopback. Each case names what must be proved.
 73. The directory shows name, description, mode, managers and the
     number of servers of listed channels, and each asking server's
     own place.
-74. Every stream key made, in every encoding the protocol uses, and
-    every message text, searched for in everything the hub stores
-    and everything it is sent: none is there.
-75. A key-maker that does nothing is passed over after its time: the
-    hub names the next server in line with the next epoch number,
-    that server's key reaches all, and a key from a server the hub
-    did not name for an epoch is taken by nobody.
+74. The hub makes every key of a channel it owns: every server holds
+    the hub's key of each epoch it was in and no other, none from
+    before it joined or after it was removed; and every key, in every
+    encoding the protocol uses, and every message text, searched for
+    in everything the hub stores and everything it is sent, is not
+    there in the clear.
+75. A key a member server sends for a hub-owned channel is taken by
+    nobody. The hub answers `key_request` for an epoch the asker was
+    in, and refuses one from before it joined, or for a channel it was
+    never in.
+75a. An instance leaves a hub-owned channel for good; an instance that
+    joins afterwards is given everything its people wrote, with their
+    profiles, as history from an instance that remains.
+75b. A channel handed to another hub of a cluster goes on under a key
+    epoch the new home began with its own key; the old home holds no
+    key of it any more.
 76. A moderator deletes another instance's message and it is deleted
     on every instance; an Owner or Admin on neither list deletes no
     one else's message in the copy.
@@ -4589,14 +4610,17 @@ rest was chosen.
     server; each server's figures are an operator command's.
 26. A refused stamp voids every stamp its server gave after it in
     that stream, and they are all given again in order.
-27. A hub learns a stream's current key epoch from the envelopes of
-    the stream's owner, and from nobody else's.
+27. A hub learns the current key epoch of a stream a server owns from
+    the envelopes of the stream's owner, and from nobody else's; that
+    of a channel it is the home of it begins itself, and an edge hub
+    learns it from the home hub's record.
 28. The envelope and frame layouts changed with ruling R57 and again
     with R55 and R56, and the protocol version is 2. A side speaks
     one version; a mismatch is refused at the handshake.
 29. A hub-owned channel's record is one signed block, whole, at a
     version. Servers take the server list, managers, moderators, listing,
-    name, description and key-makers from it and from nothing else.
+    name, description, key epoch and days of history from it and from
+    nothing else.
 30. On a server, the hub has a row in `servers` and is the owner of
     the streams it owns, so every owner-server rule refuses every
     server without a second set of rules.
@@ -4604,8 +4628,10 @@ rest was chosen.
     event in the stream that every server checks against the
     hub-signed manager and moderator lists; the hub cannot check what it cannot
     read.
-32. The hub counts key epochs and names a maker for each. A maker
-    that is passed over is passed over with a new epoch number.
+32. The home hub makes every key of a channel it owns and begins each
+    epoch itself, in the transaction that signs the record calling for
+    it (ruling R109). No instance makes a key of such a channel, and
+    nothing waits on one that is away.
 33. Channel name and description live in the hub's record; each
     server's name for its copy stays local.
 34. A server that asks to join a `request` channel is sent nothing
@@ -4715,11 +4741,13 @@ Still open:
   server role (an admin made or unmade) between its agreement and the
   commit is not reflected in the managers it signed for. Levels in
   the channel are held; roles are not the link's to hold.
-- When every other server of a hub-owned channel is silent, the hub
-  ends by naming a server that has only just joined as key-maker. It
-  makes the key and the channel goes on, but nobody has sent it its
-  history: it gets it when one of the others returns and answers its
-  request.
+- The history of a hub-owned channel comes from its member
+  instances: a joining instance is given it only while another
+  instance of the channel is connected. If every other instance is
+  away, it gets its history when one returns and answers its request.
+  Files are fetched from their author's home instance (section 15), so
+  a file whose home instance has left the channel can no longer be
+  fetched by an instance that does not hold it already.
 
 Trunks between hubs (R58) are section 23b. Still to verify there:
 that 60 seconds is a sound bound on how long a hub may hold what it

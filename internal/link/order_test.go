@@ -783,10 +783,10 @@ func TestEnvelopeAheadOfItsEpochWaitsForIt(t *testing.T) {
 	if err != nil || early.KeyEpoch != epoch {
 		t.Fatal(early.KeyEpoch, err)
 	}
-	if answer, err := s.link(1).TestSubmit(s.stream, early); err != nil || answer.Code != wire.EEarlyEpoch || link.Took(answer, early) {
+	if answer, err := s.link(1).TestSubmit(s.stream, early); err != nil || answer.Code != wire.EBadFrame || link.Took(answer, early) {
 		t.Fatalf("an envelope ahead of its epoch: %+v %v", answer, err)
 	}
-	if s.link(0).StatsNow().Refused[wire.EEarlyEpoch] < 1 {
+	if s.link(0).StatsNow().Refused[wire.EBadFrame] < 1 {
 		t.Fatal("the refusal was not counted")
 	}
 	absent(t, a.Owner, s.conv[0], "ahead of its epoch")

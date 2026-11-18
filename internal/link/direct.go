@@ -1,6 +1,7 @@
 package link
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
@@ -187,16 +188,30 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 	if f.To != s.id.Name {
 		return wire.Errf(wire.EUnknownServer, "%s is not on this link.", f.To)
 	}
-	from, err := s.store.Peers().ServerByName(ctx, f.From)
-	if err != nil {
-		return drop("unknown_sender")
+	// A hub of the cluster at the other end of a hub link sends the keys of
+	// the channels it is the home of, and answers for them; it is known by
+	// the key the roster gives it.
+	var from store.Server
+	fromHub := false
+	if key := s.clusterHubKey(pc.peer, f.From); pc.peer.Kind == wire.KindHub && len(key) > 0 {
+		row, err := s.hubRow(ctx, s.store, pc.peer, f.From)
+		if err != nil || !bytes.Equal(row.SignKey, key) {
+			return drop("unknown_sender")
+		}
+		from, fromHub = row, true
+	} else {
+		row, err := s.store.Peers().ServerByName(ctx, f.From)
+		if err != nil {
+			return drop("unknown_sender")
+		}
+		from = row
 	}
 	if from.Blocked() {
 		return drop("blocked")
 	}
-	if !s.reaches(ctx, pc.peer, from.ID) {
+	if !fromHub && !s.reaches(ctx, pc.peer, from.ID) {
 		// A direct link carries its two servers' messages and nobody
-		// else's; a hub only those of servers on its roster.
+		// else's; a hub only those of servers on its roster, and its own.
 		return drop("not_on_this_link")
 	}
 	plain, err := wire.OpenDirect(s.keys, s.id.Name, f, from.SignKey)
@@ -213,6 +228,9 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 		return drop("malformed")
 	}
 	m.raw, m.from, m.peer = plain, from, pc.peer.ID
+	if fromHub && m.Kind != kKey && m.Kind != kError {
+		return drop("not_from_a_hub") // a hub sends keys and answers, and nothing else
+	}
 	s.hear(from.Name)
 	// File chunks have their own limit, by bytes.
 	if m.Kind != kBlobChunk {
@@ -362,10 +380,11 @@ func (s *Service) keysOf(ctx context.Context, a store.Areas, stream model.Stream
 }
 
 // sealingKey is the key this server encrypts under: that of the stream's
-// current epoch as this server knows it, which is the newest one whose
-// stream.servers_changed it has applied (section 10). A key it has been
-// given for an epoch that has not started yet is not used until it has: the
-// time reference would refuse the envelope as ahead of its epoch.
+// current epoch as this server knows it (section 10). That is the newest one
+// whose stream.servers_changed it has applied; in a hub-owned channel the one
+// the hub's record calls for, once this server holds its key (adoptEpoch). A
+// key it has been given for an epoch that has not begun yet is not used
+// until it has: the time reference would refuse the envelope.
 func (s *Service) sealingKey(ctx context.Context, a store.Areas, st store.Stream) (streamKey, error) {
 	notYet := model.ErrUnavailable.With("This server has not been given the channel's key yet.")
 	if st.KeyEpoch <= 0 {
@@ -414,7 +433,7 @@ func (s *Service) sendKey(ctx context.Context, st store.Stream, to model.ServerI
 		return
 	}
 	s.sendDirect(ctx, st.PeerID, sv, kKey, re, map[string]any{"stream_id": st.ID, "epoch": epoch, "key": wire.Bytes(key),
-		"version": st.ServersVersion, "history_days": st.HistoryDays})
+		"version": st.ServersVersion})
 }
 
 // ownerOf returns the stream's owner server; for a stream this server owns,
@@ -427,23 +446,22 @@ func (s *Service) ownerOf(ctx context.Context, st store.Stream) (store.Server, e
 }
 
 // onKey stores a stream key. A key is accepted only from the stream's owner
-// (section 10), and in a channel a hub owns only from the server the hub
-// named to make that epoch's key (section 23a); from anyone else it changes
+// (section 10): in a channel a hub owns, from its home hub, whose row stands
+// as the owner, and from no member server; from anyone else it changes
 // nothing.
 func (s *Service) onKey(ctx context.Context, m directMessage) {
 	var body struct {
-		StreamID    model.StreamID `json:"stream_id"`
-		Epoch       int64          `json:"epoch"`
-		Key         wire.Bytes     `json:"key"`
-		HistoryDays int            `json:"history_days"`
+		StreamID model.StreamID `json:"stream_id"`
+		Epoch    int64          `json:"epoch"`
+		Key      wire.Bytes     `json:"key"`
 	}
 	if json.Unmarshal(m.raw, &body) != nil || len(body.Key) != 32 || body.Epoch < 1 {
 		return
 	}
 	st, err := s.store.Streams().Get(ctx, body.StreamID)
 	from := err == nil && !st.Owned() && st.OwnerServerID == m.from.ID
-	if err == nil && hubOwned(st) {
-		from = s.keyFrom(ctx, st, m.from, body.Epoch, m.Re != "")
+	if err == nil && hubOwned(st) && m.from.Name != st.HomeHub {
+		from = false
 	}
 	if err != nil || !from || st.PeerID != m.peer {
 		s.count(func(stats *Stats) { stats.Dropped["key_not_from_owner"]++ })
@@ -462,13 +480,9 @@ func (s *Service) onKey(ctx context.Context, m directMessage) {
 		s.log.Warn("link: a stream key could not be stored", "err", err)
 		return
 	}
-	if hubOwned(st) && st.HistoryDays == 0 && body.HistoryDays > 0 && body.HistoryDays <= 90 {
-		// How much history the channel gives a server that joins: this
-		// server may be named key-maker one day and owe it to another.
-		s.store.Streams().Update(ctx, st.ID, func(x *store.Stream) error {
-			x.HistoryDays = body.HistoryDays
-			return nil
-		})
+	if hubOwned(st) {
+		// The epoch begins here if the record that calls for it is held.
+		s.adoptEpoch(ctx, st.ID)
 	}
 	rt := s.rt(st.ID)
 	rt.mu.Lock()
@@ -495,9 +509,9 @@ func (s *Service) onKeyRequest(ctx context.Context, m directMessage) {
 		return
 	}
 	st, err := s.store.Streams().Get(ctx, body.StreamID)
-	// The owner answers; in a channel a hub owns, any server that holds
-	// the key does, under the same rule.
-	if err != nil || !(st.Owned() || hubOwned(st)) || st.PeerID != m.peer || st.State != store.StreamActive {
+	// The owner answers. In a channel a hub owns the home hub does, and no
+	// member server.
+	if err != nil || !st.Owned() || st.PeerID != m.peer || st.State != store.StreamActive {
 		s.replyError(ctx, m, wire.EUnknownStream, "No such stream here.")
 		return
 	}

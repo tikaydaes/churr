@@ -230,7 +230,7 @@ func TestForgedRosterEntryAndLoopRefused(t *testing.T) {
 	}
 	entries := b.Hub.TestClusterEntries()
 	first, _ := entries[0].Member()
-	forged, err := wire.SignMember(wire.ClusterMember{Cluster: first.Cluster, Hub: "evil.localhost", SignKey: wire.Bytes(evil.SignPublic()),
+	forged, err := wire.SignMember(wire.ClusterMember{Cluster: first.Cluster, Hub: "evil.localhost", SignKey: wire.Bytes(evil.SignPublic()), BoxKey: evil.BoxPublic(),
 		Via: a.Name, JoinedAt: model.Now()}, evil)
 	if err != nil {
 		t.Fatal(err)
@@ -247,7 +247,7 @@ func TestForgedRosterEntryAndLoopRefused(t *testing.T) {
 		}
 	}
 	// An entry that names a real member under another key is no better.
-	stolen, _ := wire.SignMember(wire.ClusterMember{Cluster: first.Cluster, Hub: cc.Name, SignKey: wire.Bytes(evil.SignPublic()), Via: b.Name, JoinedAt: model.Now()}, evil)
+	stolen, _ := wire.SignMember(wire.ClusterMember{Cluster: first.Cluster, Hub: cc.Name, SignKey: wire.Bytes(evil.SignPublic()), BoxKey: evil.BoxPublic(), Via: b.Name, JoinedAt: model.Now()}, evil)
 	stolen = wire.Countersign(stolen, b.Hub.TestKeys())
 	b.Hub.TestSendCluster(append(append([]wire.ClusterEntry{}, entries...), stolen))
 	time.Sleep(300 * time.Millisecond)

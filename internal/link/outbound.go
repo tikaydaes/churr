@@ -334,25 +334,6 @@ func (s *Service) refused(ctx context.Context, pc *peerConn, f wire.Frame) bool 
 		return false
 	}
 	s.log.Debug("link: an event was refused", "peer", pc.name, "stream", st.ID, "type", rec.Type, "code", f.Code, "message", f.Message)
-	if hubOwned(st) && rec.Type == evServersChanged && rec.Epoch != 0 && (f.Code == wire.EEarlyEpoch || f.Code == wire.EStaleEpoch) {
-		// The start of a key epoch this server was named to make, refused
-		// because the hub has since called for a later epoch or named
-		// another maker. It will never be taken, and nothing may wait
-		// behind it: it is dropped. Nobody else ever saw it.
-		if cur, _, err := s.channelOf(ctx, s.store, st.ID); err == nil && (cur.Epoch > rec.Epoch || cur.KeyMaker != s.id.Name) {
-			if gone, _ := s.store.Streams().DeleteOutbox(ctx, row.ID); gone {
-				rt := s.rt(st.ID)
-				rt.mu.Lock()
-				ch := rt.watchers[row.ID]
-				delete(rt.watchers, row.ID)
-				rt.mu.Unlock()
-				if ch != nil {
-					close(ch)
-				}
-			}
-			return true
-		}
-	}
 	wait := outboxFirstWait
 	for i := 0; i < row.Attempts && wait < outboxMaxWait; i++ {
 		wait *= 2
@@ -437,15 +418,27 @@ func (s *Service) refused(ctx context.Context, pc *peerConn, f wire.Frame) bool 
 		return true
 	case f.Code == wire.EStaleEpoch:
 		// The epoch moved on while the event waited. It goes again under
-		// the current one as soon as this server has caught up with it.
+		// the current one as soon as this server has caught up with it. In
+		// a hub-owned channel that is when it holds the new epoch's key,
+		// which the hub sent ahead of the record that began it: if it
+		// does not, it asks, and the event goes when the key arrives.
+		if hubOwned(st) {
+			if cur, err := s.channelOf(ctx, s.store, st.ID); err == nil && cur.Epoch > st.KeyEpoch {
+				s.adoptEpoch(ctx, st.ID)
+				if row.Attempts < 6 {
+					wait = 200 * time.Millisecond << row.Attempts
+				}
+				return later()
+			}
+		}
 		if row.Attempts >= 5 || rec.Epoch != 0 {
 			return later()
 		}
 		s.store.Streams().OutboxTried(ctx, row.ID, row.Attempts+1, s.now())
 		return true
-	case f.Code == wire.EEarlyEpoch || f.Code == wire.EClockUnknown:
-		// The owner's word that the epoch has started, or the reference's
-		// first measurement of this server's clock, is a moment away.
+	case f.Code == wire.EClockUnknown:
+		// The reference's first measurement of this server's clock is a
+		// moment away.
 		if row.Attempts < 6 {
 			wait = 200 * time.Millisecond << row.Attempts
 		}

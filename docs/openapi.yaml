@@ -26772,7 +26772,6 @@ components:
       - moderators
       - invited
       - requests
-      - key_maker
       - closed
       - private
       - updated_at
@@ -26826,9 +26825,6 @@ components:
             type: string
           description: Instances asking to join. Empty for a caller who is neither a manager, a moderator nor the
             owner.
-        key_maker:
-          type: string
-          description: The instance the hub named to make the current stream key. The hub never holds a key.
         closed:
           type: boolean
         private:

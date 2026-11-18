@@ -103,13 +103,14 @@ The channel keeps its managers, permissions and members. A private channel
 stays private on a hub and can never be listed or opened. Built
 (`docs/FEATURES.md` section 21.5b).
 
-**Still to change: the hub reads its own channels.** As built, a hub never
-holds a channel's key: a member instance makes each key, and the hub cannot
-read the content of the channels it owns (`docs/LINK-PROTOCOL.md` sections
-10 and 23a). The owner decided on 2026-11-17 that this is a defect: the hub
-is trusted as the owner and nothing is kept from it. The hub will make and
-hold the keys of its channels, so it can read, check and act in them.
-`docs/DESIGN-MODULES.md` section 8 says what changes and what it replaces.
+The home hub makes and keeps every key of the channels it owns
+(`docs/LINK-PROTOCOL.md` sections 10 and 23a).
+
+**Still to change: the hub reads and holds its own channels.** The hub does
+not yet open the envelopes it carries, keep the channel's contents, send the
+history a joining instance is given, or hold the channel's files; history
+and files still come from member instances. `docs/DESIGN-MODULES.md`
+section 8 says what changes.
 
 ## 5a. Modules, types and bots
 
