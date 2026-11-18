@@ -243,9 +243,11 @@ func (s *Service) sendHistoryRangeShort(ctx context.Context, st store.Stream, to
 					continue
 				}
 				if m.Deleted() {
-					if m.ParentID == "" && m.ReplyCount > 0 {
+					// A deleted message that used a draw goes too, with its
+					// proof, so that the chain stays whole (docs/FAIR.md).
+					if m.ParentID == "" && (m.ReplyCount > 0 || m.Fair != nil) {
 						authors[m.AuthorID] = true
-						held = append(held, historyMessage{Order: m.Order, Message: wireMessage{ID: m.ID, AuthorID: m.AuthorID, CreatedAt: m.CreatedAt},
+						held = append(held, historyMessage{Order: m.Order, Message: wireMessage{ID: m.ID, AuthorID: m.AuthorID, CreatedAt: m.CreatedAt, Fair: m.Fair},
 							Deleted: &historyDeleted{At: m.DeletedAt, ByID: m.DeletedByID}})
 					}
 					continue
@@ -479,7 +481,9 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 				}
 				if hm.Deleted != nil {
 					if !existed && model.ValidID(string(hm.Message.ID)) && !hm.Message.CreatedAt.IsZero() {
-						if err := s.importDeleted(ctx, tx, rec, conv, st, hm); err != nil {
+						// Its proof is kept when it checks out.
+						kept, _ := a.fairOf(hm.Message)
+						if err := s.importDeleted(ctx, tx, rec, conv, st, hm, kept); err != nil {
 							return err
 						}
 					}
@@ -624,8 +628,8 @@ func (s *Service) importCounts(a *apply, m model.Message, hf historyForm) error 
 // importDeleted stores, from a snapshot, a message deleted for everyone that
 // has replies: a bare marker of who deleted it and when, so that its thread
 // has a parent.
-func (s *Service) importDeleted(ctx context.Context, tx store.Tx, rec *chat.Recorder, conv model.Conversation, st store.Stream, hm historyMessage) error {
-	m := model.Message{ID: hm.Message.ID, AuthorID: hm.Message.AuthorID, CreatedAt: hm.Message.CreatedAt, Order: hm.Order}
+func (s *Service) importDeleted(ctx context.Context, tx store.Tx, rec *chat.Recorder, conv model.Conversation, st store.Stream, hm historyMessage, kept *model.FairBlock) error {
+	m := model.Message{ID: hm.Message.ID, AuthorID: hm.Message.AuthorID, CreatedAt: hm.Message.CreatedAt, Order: hm.Order, Fair: kept}
 	if err := s.chat.ImportMessage(ctx, tx, rec, conv, chat.RemoteMessage{Message: m}); err != nil {
 		return err
 	}

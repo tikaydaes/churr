@@ -53,6 +53,8 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 		return a.Owner.Must(200, "POST", "/api/v1/conversations/"+ch+"/commands", map[string]any{"name": "roll", "text": text})["message"].(map[string]any)
 	}
 	before := roll("2d6")
+	gone := roll("d4")
+	a.Owner.Must(200, "DELETE", "/api/v1/messages/"+gone["id"].(string), nil)
 	stream, local := l.Share(0, ch, "tavern-here", map[string]any{"history_days": 30}, 1)
 
 	honest := roll("4d6kh3")
@@ -66,6 +68,17 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 		if string(a1) != string(b1) {
 			t.Fatalf("the proof changed on the way: %s, sent %s", b1, a1)
 		}
+	}
+	// A deleted roll came in the history as its marker, with its proof.
+	b.Owner.HasMessage(local[1], honest["text"].(string))
+	var marker map[string]any
+	for _, m := range b.Owner.Messages(local[1]) {
+		if m["id"] == gone["id"] {
+			marker = m
+		}
+	}
+	if marker == nil || marker["deleted_at"] == nil || marker["fair"] == nil {
+		t.Fatalf("the deleted roll on b: %v", marker)
 	}
 	var hb model.FairBlock
 	raw, _ := json.Marshal(honest["fair"])
