@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -198,4 +199,41 @@ func noDraw() modhost.Draws { return fair.NewObjects(make([]byte, 32)) }
 // the module gave it, and what was typed after it.
 type ModuleCommand struct {
 	Name, Text string
+}
+
+// mayDraw reports whether a text holds the opening of something a module
+// resolves with chance (inline dice): a post that may draw is checked in full
+// before it draws.
+func (s *Service) mayDraw(text string) bool {
+	for _, c := range s.modules.Claims() {
+		if c.Open != "" && strings.Contains(text, c.Open) {
+			return true
+		}
+	}
+	return false
+}
+
+// filesFree checks the files a post names as Attach will: each an upload to
+// this conversation by this author on no message yet, none named twice.
+func (s *Service) filesFree(ctx context.Context, conv model.ConversationID, uploader model.AccountID, ids []model.FileID) error {
+	seen := map[model.FileID]bool{}
+	for _, id := range ids {
+		if seen[id] {
+			return model.ErrNotFound
+		}
+		seen[id] = true
+	}
+	files, err := s.store.Files().GetMany(ctx, ids)
+	if err != nil {
+		return err
+	}
+	if len(files) != len(ids) {
+		return model.ErrNotFound
+	}
+	for _, f := range files {
+		if f.ConversationID != conv || f.UploaderID != uploader || f.MessageID != "" {
+			return model.ErrNotFound
+		}
+	}
+	return nil
 }

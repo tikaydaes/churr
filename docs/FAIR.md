@@ -316,6 +316,18 @@ and notes it on the device. A refusal's `server_time` is learnt for later
 posts only. When the request took longer than the window to be answered,
 which the client measures, the client says it was the network instead.
 
+**Nothing after the draw refuses the post for its outcome.** Every check a
+post can fail that does not need the module's answer is made before
+anything is drawn: permission, a sealed chat, slow mode, the thread, parent
+and quote, files and cards, the form, the length of what was typed and its
+checklist, and the word filter, which sees what the person typed (a
+command's arguments, or the text with its inline dice as written) and never
+the text a built-in module wrote. A module's own caps keep its text within
+a message's length (each module's tests hold its longest). What can still
+fail after the draw is the server's own machinery (its database, a module
+that panics or does not answer in time), the same whatever the outcome;
+sent again with the same pair, the post draws the same result.
+
 **What remains.** A server can still decline a draw after working it out:
 it holds the key, so it can compute the result as the request arrives and
 refuse the post when it does not like it. The person sees the refusal (and

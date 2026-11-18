@@ -312,3 +312,26 @@ func TestValidateIsServedWithNoAccount(t *testing.T) {
 		t.Fatalf("the published keys: %d %v", r.StatusCode, r.Header)
 	}
 }
+
+// Nothing that depends on an outcome refuses a post after its draw: the word
+// filter sees what the person typed, before anything is drawn, and never the
+// text a built-in module wrote. A filter on a tarot card's words never
+// refuses a reading; one on a /pick option refuses the pick that names it,
+// every time, up front.
+func TestAFilterDoesNotRefuseAnOutcome(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	room := owner.Channel("readings", false)
+	cmds := convPath(room) + "/commands"
+	wf := "/api/v1/admin/word-filters"
+	owner.Must(201, "POST", wf, map[string]any{"pattern": "tarot", "action": "block"})
+	owner.Must(201, "POST", wf, map[string]any{"pattern": "Fool", "action": "block"})
+	owner.Must(201, "POST", wf, map[string]any{"pattern": "pizza", "action": "block"})
+	for i := 0; i < 5; i++ {
+		owner.Must(200, "POST", cmds, map[string]any{"name": "tarot", "text": "celtic"})
+	}
+	for i := 0; i < 3; i++ {
+		owner.Refused(422, model.CodeBlockedByFilter, "POST", cmds, map[string]any{"name": "pick", "text": "Pizza | Sushi"})
+	}
+	owner.Must(200, "POST", cmds, map[string]any{"name": "pick", "text": "Sushi | Tacos"})
+}

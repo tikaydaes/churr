@@ -208,14 +208,16 @@ func (s *Service) readWith(ctx context.Context, a store.Areas, st perm.State, te
 	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone, hints: inst.Objects, origin: s.origin, claims: inst.Claims, modules: s.modules, draws: inst.Draws,
 		overBroad: s.broadLimit.left(st.Actor, st.Settings.BroadPerHour) == 0}
 	doc := markdown.Parse(text)
-	out.entities = withHints(text, doc, markdown.Resolve(doc, r), inst.Hints)
+	// Checked before the objects are resolved, which may draw (inline
+	// dice): nothing after a draw refuses the post for the text it typed.
 	out.tasks = markdown.Tasks(doc)
+	if len(out.tasks) > model.MaxChecklistItems {
+		return out, model.Invalid("text", "A message holds at most 100 checklist items.")
+	}
+	out.entities = withHints(text, doc, markdown.Resolve(doc, r), inst.Hints)
 	out.broadRefused = r.refused
 	if r.err != nil {
 		return out, r.err
-	}
-	if len(out.tasks) > model.MaxChecklistItems {
-		return out, model.Invalid("text", "A message holds at most 100 checklist items.")
 	}
 
 	// Most messages mention nobody, and then nobody's membership matters:

@@ -251,16 +251,22 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	if posted, found, err := s.sentBefore(ctx, actor, st, in); found || err != nil {
 		return posted, err
 	}
-	// The message's one draw, made when something in it first asks for
-	// chance (fair.go).
+	// Every check that does not need the module's answer is made before
+	// anything is drawn: after the draw nothing may refuse the post for a
+	// reason that could depend on its outcome, or a server (or a filter)
+	// could refuse the outcomes it does not like and the person roll again
+	// unseen (docs/FAIR.md section 6). The word filter sees what the person
+	// typed: a command's arguments, or the text.
 	orig := in
 	draws := s.newDrawer(ctx, actor, conv.ID, in)
+	typed := in.Text
 	if in.Command != nil {
-		made, err := s.modules.Command(ctx, actor, conv.ID, in.Command.Name, in.Command.Text, draws)
-		if err != nil {
-			return Posted{}, err
+		typed = in.Command.Text
+		// A module's answer is a message of its own: its words and its
+		// view, nothing else (checkMarks, after the draw, cannot fail).
+		if in.Action || len(in.FileIDs) > 0 || len(in.Cards) > 0 || in.Form != nil || in.View != nil {
+			return Posted{}, model.Invalid("view", "A module's answer is a message of its own: its words and its view.")
 		}
-		in.Text, in.View, in.Command = made.Text, made.View, nil
 	}
 	var form *store.Form
 	var fallback string
@@ -291,11 +297,13 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			}
 		}
 	}
-	if err := checkMarks(in); err != nil {
-		return Posted{}, err
-	}
-	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && !(in.Reminder && in.Quote != nil) {
-		return Posted{}, model.BadRequest("A message needs text, a file or a card.")
+	if in.Command == nil {
+		if err := checkMarks(in); err != nil {
+			return Posted{}, err
+		}
+		if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && !(in.Reminder && in.Quote != nil) {
+			return Posted{}, model.BadRequest("A message needs text, a file or a card.")
+		}
 	}
 	// A reply names any message of the thread; its parent is the thread's
 	// top-level message either way (docs/FEATURES.md section 1.1).
@@ -338,9 +346,27 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		}
 	}
 	if s.mod != nil {
-		if err := s.mod.Check(ctx, st, in.Text); err != nil {
+		if err := s.mod.Check(ctx, st, typed); err != nil {
 			return Posted{}, err
 		}
+	}
+	if len(in.FileIDs) > 0 && (in.Command != nil || s.mayDraw(in.Text)) {
+		// The files are checked now, as Attach will hold them, so that
+		// a post that draws is not refused for them after its draw.
+		if err := s.filesFree(ctx, conv.ID, actor.ID, in.FileIDs); err != nil {
+			return Posted{}, err
+		}
+	}
+	// The message's one draw, made when something in it first asks for
+	// chance (fair.go). A built-in module's text needs no check after it:
+	// the arguments were filtered as typed, and each module's own caps keep
+	// its text within a message's length (its tests hold the longest).
+	if in.Command != nil {
+		made, err := s.modules.Command(ctx, actor, conv.ID, in.Command.Name, in.Command.Text, draws)
+		if err != nil {
+			return Posted{}, err
+		}
+		in.Text, in.View, in.Command = made.Text, made.View, nil
 	}
 
 	inst := in.Instants
