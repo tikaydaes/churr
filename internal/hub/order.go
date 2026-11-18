@@ -223,6 +223,12 @@ func (h *Hub) catchUp(sc *serverConn, f wire.Frame) error {
 		if origin == sc.name {
 			continue // its own: it submits again whatever was not acknowledged
 		}
+		if _, known := f.Have[origin]; !known && !st.has(origin) && !sc.holder {
+			// An origin that left the stream before the asker knew it: what
+			// it said reached the asker as history, and the asker would take
+			// none of it from the log.
+			continue
+		}
 		var oldest sql.NullInt64
 		h.db.QueryRow(`SELECT prev_n FROM log WHERE stream_id = ? AND origin = ? ORDER BY seq LIMIT 1`, st.id, origin).Scan(&oldest)
 		if oldest.Valid {

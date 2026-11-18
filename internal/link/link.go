@@ -175,6 +175,9 @@ type Service struct {
 	tallyFold time.Duration
 	// lastNames is the name and topic last sent for each owned stream.
 	lastNames map[model.StreamID][2]string
+	// profileVersions is the version last given each of this server's own
+	// accounts' profiles (profileOf).
+	profileVersions map[model.AccountID]int64
 	// submitted says which stream each unanswered submit frame was for.
 	submitted map[submitKey]model.StreamID
 	// told is what each peer, as a time reference, last told this server
@@ -288,7 +291,8 @@ func New(d Deps) (*Service, error) {
 		offers: map[model.StreamID]offer{}, opened: map[model.StreamID]string{}, audited: map[string]model.Time{},
 		heard: map[string]time.Time{}, presenceSent: map[string]model.Time{}, presenceSeen: map[model.AccountID]RemotePresence{},
 		fetching: map[model.FileID]bool{}, fetches: map[model.FileID]*fetchState{}, lastNames: map[model.StreamID][2]string{},
-		told: map[model.PeerID]model.PeerClock{}, measured: map[model.PeerID]model.PeerClock{},
+		profileVersions: map[model.AccountID]int64{},
+		told:            map[model.PeerID]model.PeerClock{}, measured: map[model.PeerID]model.PeerClock{},
 		submitted: map[submitKey]model.StreamID{}, frameWaits: map[string]chan wire.Frame{},
 		callStarts: map[model.ConversationID]callStart{}, callRivals: map[model.ConversationID]callStart{},
 		stats: Stats{Rejected: map[string]int64{}, Delivered: map[model.StreamID]int64{}, Ephemeral: map[model.StreamID]int64{},

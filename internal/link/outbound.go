@@ -831,10 +831,20 @@ func (s *Service) serverNameOf(ctx context.Context, a store.Areas, id model.Acco
 }
 
 // profileOf builds the profile of one of this server's own accounts as it
-// travels. Its version is this server's clock, which only grows.
+// travels. Its version is this server's clock, which only grows, and is
+// above every version built before it for the account: two changes made in
+// one millisecond (a picture and then a name) must not carry one version,
+// or a receiver would keep the first and ignore the second.
 func (s *Service) profileOf(ctx context.Context, a store.Areas, acc model.Account) (wireProfile, []wireBlob) {
+	version := int64(s.now())
+	s.mu.Lock()
+	if last := s.profileVersions[acc.ID]; version <= last {
+		version = last + 1
+	}
+	s.profileVersions[acc.ID] = version
+	s.mu.Unlock()
 	p := wireProfile{ID: acc.ID, Server: s.id.Name, Username: acc.Username, DisplayName: acc.DisplayName, Title: acc.Title,
-		Pronouns: acc.Pronouns, TimeZone: acc.TimeZone, Bot: acc.Role == model.RoleBot, Version: int64(s.now()), Removed: acc.Removed()}
+		Pronouns: acc.Pronouns, TimeZone: acc.TimeZone, Bot: acc.Role == model.RoleBot, Version: version, Removed: acc.Removed()}
 	var blobs []wireBlob
 	if acc.AvatarFileID != "" {
 		if f, err := a.Files().Get(ctx, acc.AvatarFileID); err == nil && f.BlobKey != "" {

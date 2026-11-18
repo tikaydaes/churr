@@ -267,3 +267,94 @@ func TestHandingAChannelOverMovesItsContents(t *testing.T) {
 		t.Fatalf("the new home holds %d messages after the old home let go", len(held))
 	}
 }
+
+// The closing case of "the hub holds the whole channel": an instance drops
+// off for good, every other instance goes offline, and an instance that
+// joins afterwards is given, by the hub alone, the whole history, the names
+// and pictures of the people of the instance that is gone, and their files.
+func TestTheHubAloneGivesAJoinerEverything(t *testing.T) {
+	l := testkit.NewLinked(t, 4, true)
+	a, b, c, d := l.Servers[0], l.Servers[1], l.Servers[2], l.Servers[3]
+	ch := a.Owner.Channel("commons", false)
+	a.Owner.Post(ch, "from a, before the channel was shared")
+	stream, local := l.Share(0, ch, "commons", map[string]any{"listing": "open", "history_days": 90}, 1)
+	local[2] = joinListed(l, 2, stream, "commons-c")
+	l.Joined(2, stream)
+
+	// b's people: its owner, with a picture and an emoji of b's, and bea.
+	if status, out := b.Owner.SendForm("PUT", "/api/v1/me/avatar", "file", "me.png", pngBytes(t)); status != 200 {
+		t.Fatalf("b's owner's picture: %d %v", status, out)
+	}
+	b.Owner.Must(200, "PATCH", "/api/v1/me", map[string]any{"display_name": "Bo Owner"})
+	bea := b.Member("bea")
+	bea.Must(200, "PATCH", "/api/v1/me", map[string]any{"display_name": "Bea Departed"})
+	bea.Must(200, "POST", "/api/v1/conversations/"+local[1]+"/join", nil)
+	status, made := b.Owner.Form("POST", "/api/v1/emoji", testkit.Part{Field: "name", Content: []byte("wave")},
+		testkit.Part{Field: "file", FileName: "wave.png", Content: pngBytes(t)})
+	if status != 201 {
+		t.Fatalf("making the emoji: %d %v", status, made)
+	}
+	emojiID := made["emoji"].(map[string]any)["id"].(string)
+	b.Owner.Post(local[1], "goodbye from b :wave:")
+	fromBea := bea.Post(local[1], "bea was here")
+	content := bytes.Repeat([]byte("a file whose instance is gone for good. "), 10000)
+	up := b.Owner.Upload(local[1], "left.bin", content)
+	b.Owner.Must(201, "POST", "/api/v1/conversations/"+local[1]+"/messages", map[string]any{"text": "a file left behind", "file_ids": []any{up["id"]}})
+	a.Owner.Post(ch, "from a, on the hub")
+	c.Owner.Post(local[2], "from c, on the hub")
+	me := b.Owner.Must(200, "GET", "/api/v1/me", nil)["account"].(map[string]any)
+	avatar := me["avatar_file_id"].(string)
+	held := l.Hub.Hub.HolderStore()
+	texts := []string{"from a, before the channel was shared", "goodbye from b :wave:", "bea was here", "a file left behind",
+		"from a, on the hub", "from c, on the hub"}
+	testkit.Eventually(t, "the hub holds everything", func() bool {
+		_, msgs := heldMessages(t, l.Hub, stream)
+		for _, text := range texts {
+			if _, ok := msgs[text]; !ok {
+				return false
+			}
+		}
+		// b's people's names as they set them, which their profiles carry
+		// in account.updated, made a moment after each change.
+		for id, name := range map[model.AccountID]string{b.Owner.ID: "Bo Owner", model.AccountID(fromBea["author_id"].(string)): "Bea Departed"} {
+			if acc, err := held.Accounts().Get(context.Background(), id); err != nil || acc.DisplayName != name {
+				return false
+			}
+		}
+		return ready(held, up["id"].(string)) && ready(held, emojiID) && ready(held, avatar)
+	})
+
+	// b drops off for good: switched off, and removed from the hub.
+	b.Stop()
+	if err := l.Hub.Hub.Remove("b.localhost"); err != nil {
+		t.Fatal(err)
+	}
+	l.Hub.Hub.Reconcile()
+	testkit.Eventually(t, "the hub has taken b out of the channel", func() bool {
+		return names(hubChannel(a.Owner, stream)["servers"]) == "a.localhost,c.localhost"
+	})
+	// Every other instance goes offline.
+	a.Stop()
+	c.Stop()
+
+	convD := joinListed(l, 3, stream, "commons-d")
+	l.Joined(3, stream)
+	for _, text := range texts {
+		d.Owner.HasMessage(convD, text)
+	}
+	if _, got := fileOn(t, d.Owner, convD, "a file left behind"); !bytes.Equal(got, content) {
+		t.Fatalf("d was given %d bytes of b's file, not the %d posted", len(got), len(content))
+	}
+	for id, want := range map[string][2]string{string(b.Owner.ID): {"owner", "Bo Owner"}, fromBea["author_id"].(string): {"bea", "Bea Departed"}} {
+		acc := d.Owner.Must(200, "GET", "/api/v1/accounts/"+id, nil)["account"].(map[string]any)
+		if acc["username"] != want[0] || acc["display_name"] != want[1] || acc["server_name"] != "b.localhost" {
+			t.Fatalf("d shows b's person %s as %v", id, acc)
+		}
+	}
+	testkit.Eventually(t, "d holds b's owner's picture and b's emoji, from the hub", func() bool {
+		return ready(d.Server.Store, avatar) && ready(d.Server.Store, emojiID)
+	})
+	if r := d.Server.Link.StatsNow().Rejected; len(r) != 0 {
+		t.Fatalf("d rejected %v", r)
+	}
+}

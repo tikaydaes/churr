@@ -1835,7 +1835,10 @@ server sends `catch_up` for each active stream whose log someone
 else keeps, saying for each origin the highest `n` it holds
 everything up to; the reference sends what its log has above that,
 and says in `caught_up` what its log holds and how far back it
-reaches (section 6). The server, for its part, submits again
+reaches (section 6). Of an origin the request does not name and that
+is no longer in the stream's list, a hub sends nothing: it left before
+the asker knew it, and what it said reaches the asker as history (a
+hub's own holder is sent everything). The server, for its part, submits again
 everything in its outbox: the reference takes what it has not got
 and acknowledges the rest again.
 
@@ -2053,8 +2056,9 @@ translation.
 }
 ```
 
-- `version` grows by one each time the home server changes the
-  profile. A receiver keeps the newest it has applied in
+- `version` is the home server's clock when it built the profile, and
+  above every version it gave that account's profile before, so two
+  changes made in one millisecond carry two versions. A receiver keeps the newest it has applied in
   `accounts.profile_version`.
 - A shadow account is created or updated by `member.joined`, by
   `account.updated`, and by the `accounts` of a history snapshot or
@@ -4428,6 +4432,11 @@ drives them over loopback. Each case names what must be proved.
     searched byte for byte, contains no message text or username,
     and no key in the clear; its holder's database holds every
     message of a channel it owns, and who said it.
+63a. An instance of a hub-owned channel drops off for good (switched
+    off and removed from the hub), every other instance goes offline,
+    and an instance that joins afterwards is given by the hub alone the
+    whole history, the names and pictures of the departed instance's
+    people, their custom emoji and their files, and rejects nothing.
 64. A server over the hub's submit limit gets `rate_limited` with
     `retry_after_seconds`, and an oversized envelope gets
     `too_large`.
