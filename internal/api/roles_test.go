@@ -314,6 +314,9 @@ func TestAdminPowers(t *testing.T) {
 	if m := obj(admin.Must(200, "PUT", ac+priv+"/members/"+string(cat.ID), nil), "member"); m["level"] != "member" {
 		t.Fatalf("an admin's override: %v", m)
 	}
+	// Nobody is placed unasked (ruling R103): the notice is posted when
+	// cat accepts.
+	cat.AcceptInvitation(priv)
 	notice := annStream.ExpectWhere("message.created", func(f map[string]any) bool {
 		sys, _ := obj(f, "message")["system"].(map[string]any)
 		return sys != nil && sys["kind"] == "owner_override"
@@ -349,6 +352,8 @@ func TestAdminPowers(t *testing.T) {
 	room := ann.Channel("room", false, bob)
 	owner.Must(200, "PUT", ac+room+"/managers/"+string(owner.ID), nil)
 	owner.Must(200, "PUT", ac+room+"/managers/"+string(other.ID), nil)
+	owner.AcceptInvitation(room)
+	other.AcceptInvitation(room)
 	admin.Refused(403, model.CodeForbidden, "DELETE", ac+room+"/managers/"+string(owner.ID), nil)
 	admin.Refused(403, model.CodeForbidden, "DELETE", ac+room+"/managers/"+string(other.ID), nil)
 	owner.Must(200, "DELETE", ac+room+"/managers/"+string(other.ID), nil)
