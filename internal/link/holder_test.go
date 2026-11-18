@@ -461,3 +461,65 @@ func TestAHandoverTheOldHomeMissedIsLearnedWhenItReturns(t *testing.T) {
 		t.Fatal("the old home still holds the channel it handed over")
 	}
 }
+
+// What everyone in a channel sees of a poll and of a thread is held by the
+// hub and given to an instance that joins with every other switched off: the
+// poll with its counts, who voted for what and that it is closed, and a
+// thread whose first message was deleted for everyone, with its replies.
+func TestAJoinerIsGivenPollsAndThreadsAsTheyStand(t *testing.T) {
+	l := testkit.NewLinked(t, 3, true)
+	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
+	a.Server.Link.TestTallyFold(50 * time.Millisecond)
+	ch := a.Owner.Channel("council", false)
+	stream, local := l.Share(0, ch, "council", map[string]any{"listing": "open", "history_days": 30}, 1)
+	msgs := "/api/v1/conversations/" + ch + "/messages"
+	poll := a.Owner.Must(201, "POST", msgs, pollBody("a vote", nil))["message"].(map[string]any)["id"].(string)
+	b.Owner.HasMessage(local[1], "a vote")
+	answer(b.Owner, poll, "y")
+	answer(a.Owner, poll, "n")
+	testkit.Eventually(t, "b sees both answers counted", func() bool {
+		f := formOf(b.Owner, poll)
+		return count(f, "y") == 1 && count(f, "n") == 1
+	})
+	a.Owner.Must(200, "POST", "/api/v1/messages/"+poll+"/form/close", nil)
+	testkit.Eventually(t, "b sees the poll closed", func() bool { return formOf(b.Owner, poll)["closed_at"] != nil })
+	root := a.Owner.Post(ch, "a thread that goes")["id"].(string)
+	b.Owner.HasMessage(local[1], "a thread that goes")
+	reply := b.Owner.Must(201, "POST", "/api/v1/conversations/"+local[1]+"/messages", map[string]any{"text": "a reply that stays", "parent_id": root})["message"].(map[string]any)["id"].(string)
+	testkit.Eventually(t, "a holds the reply", func() bool {
+		status, _, _ := a.Owner.Get("/api/v1/messages/"+reply, nil)
+		return status == 200
+	})
+	a.Owner.Must(200, "DELETE", "/api/v1/messages/"+root, nil)
+	ctx := context.Background()
+	held := l.Hub.Hub.HolderStore()
+	testkit.Eventually(t, "the hub holds the poll as it stands and the thread", func() bool {
+		f, found, err := held.Forms().ByMessage(ctx, model.MessageID(poll))
+		if err != nil || !found || f.AnswerCount != 2 || f.ClosedAt.IsZero() {
+			return false
+		}
+		r, err := held.Messages().Get(ctx, model.MessageID(reply))
+		gone, err2 := held.Messages().Get(ctx, model.MessageID(root))
+		return err == nil && err2 == nil && r.ParentID == model.MessageID(root) && gone.Deleted()
+	})
+
+	a.Stop()
+	b.Stop()
+	convC := joinListed(l, 2, stream, "council-c")
+	l.Joined(2, stream)
+	c.Owner.HasMessage(convC, "a vote")
+	f := formOf(c.Owner, poll)
+	if count(f, "y") != 1 || count(f, "n") != 1 || f["answer_count"] != float64(2) || f["closed_at"] == nil {
+		t.Fatalf("c is shown the poll as %v", f)
+	}
+	if voters := fmt.Sprint(f["voters"]); voters != fmt.Sprint(map[string]any{"q": map[string]any{"n": []any{string(a.Owner.ID)}, "y": []any{string(b.Owner.ID)}}}) {
+		t.Fatalf("c is shown the voters as %v", voters)
+	}
+	got := c.Owner.Must(200, "GET", "/api/v1/messages/"+reply, nil)["message"].(map[string]any)
+	if got["text"] != "a reply that stays" || got["parent_id"] != root {
+		t.Fatalf("c holds the reply as %v", got)
+	}
+	if gone := c.Owner.Must(200, "GET", "/api/v1/messages/"+root, nil)["message"].(map[string]any); gone["deleted_at"] == nil || (gone["text"] != nil && gone["text"] != "") {
+		t.Fatalf("c holds the deleted first message as %v", gone)
+	}
+}

@@ -775,11 +775,28 @@ message HistoryReaction {
   repeated bytes account_ids = 2; // identifier
 }
 
+// A poll's counts as the sender of a history snapshot holds them, and whether it is closed (section 13).
+message HistoryForm {
+  optional int64 answer_count = 1;
+  map<string, .churr.v1.FormTallyValue> tally = 2;
+  map<string, .churr.v1.FormVotersValueOuter> voters = 3;
+  optional int64 closed_at = 4; // time
+  optional bytes closed_by_id = 5; // identifier
+}
+
+// A message deleted for everyone that has replies, sent in history as a bare marker (section 13).
+message HistoryDeleted {
+  optional int64 at = 1; // time
+  optional bytes by_id = 2; // identifier
+}
+
 message HistoryMessage {
   optional string order = 1;
   Message message = 2;
   repeated HistoryReaction reactions = 3;
   repeated .churr.v1.Task tasks = 4;
+  HistoryForm form = 5;
+  HistoryDeleted deleted = 6;
 }
 
 message AddedOption {

@@ -54,6 +54,25 @@ type historyMessage struct {
 		AccountIDs []model.AccountID `json:"account_ids"`
 	} `json:"reactions,omitempty"`
 	Tasks []model.Task `json:"tasks,omitempty"`
+	// Form is a poll's counts as the sender holds them, and whether it is
+	// closed: what form.tallied and form.closed said to every server.
+	Form *historyForm `json:"form,omitempty"`
+	// Deleted marks a message deleted for everyone that has replies: sent
+	// with nothing of its content, so that its thread has a parent.
+	Deleted *historyDeleted `json:"deleted,omitempty"`
+}
+
+type historyForm struct {
+	AnswerCount int                                     `json:"answer_count"`
+	Tally       map[string]map[string]int               `json:"tally"`
+	Voters      map[string]map[string][]model.AccountID `json:"voters,omitempty"`
+	ClosedAt    model.Time                              `json:"closed_at,omitempty"`
+	ClosedByID  model.AccountID                         `json:"closed_by_id,omitempty"`
+}
+
+type historyDeleted struct {
+	At   model.Time      `json:"at"`
+	ByID model.AccountID `json:"by_id,omitempty"`
 }
 
 // historyPartBytes is how much one part holds before sealing.
@@ -179,8 +198,17 @@ func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to stor
 					continue
 				}
 				// Deleted messages, earlier versions and tick histories
-				// are not sent.
-				if m.Deleted() || m.CreatedAt.Before(since) {
+				// are not sent; a deleted message that has replies goes as
+				// a bare marker, so that the thread keeps its parent.
+				if m.CreatedAt.Before(since) {
+					continue
+				}
+				if m.Deleted() {
+					if m.ParentID == "" && m.ReplyCount > 0 {
+						authors[m.AuthorID] = true
+						held = append(held, historyMessage{Order: m.Order, Message: wireMessage{ID: m.ID, AuthorID: m.AuthorID, CreatedAt: m.CreatedAt},
+							Deleted: &historyDeleted{At: m.DeletedAt, ByID: m.DeletedByID}})
+					}
 					continue
 				}
 				shown, err := s.chat.Neutral(ctx, s.store, conv, m)
@@ -192,6 +220,20 @@ func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to stor
 					return
 				}
 				hm := historyMessage{Order: m.Order, Message: w, Tasks: shown.Tasks}
+				if shown.Form != nil {
+					if hm.Form, err = s.historyFormOf(ctx, m.ID); err != nil {
+						return
+					}
+					if hm.Form != nil {
+						for _, byOption := range hm.Form.Voters {
+							for _, ids := range byOption {
+								for _, id := range ids {
+									authors[id] = true // whoever voted is named, so is known
+								}
+							}
+						}
+					}
+				}
 				reactions, err := s.store.Reactions().List(ctx, m.ID, "")
 				if err != nil {
 					return
@@ -352,6 +394,19 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 					continue
 				}
 				a.origin = store.StreamServer{ServerID: s.homeOf(author), Name: author.ServerName}
+				_, err = tx.Messages().Get(ctx, hm.Message.ID)
+				existed := err == nil
+				if err != nil && !errors.Is(err, model.ErrNotFound) {
+					return err
+				}
+				if hm.Deleted != nil {
+					if !existed && model.ValidID(string(hm.Message.ID)) && !hm.Message.CreatedAt.IsZero() {
+						if err := s.importDeleted(ctx, tx, rec, conv, st, hm); err != nil {
+							return err
+						}
+					}
+					continue
+				}
 				rm, rej, err := a.toMessage(hm.Message, h.Blobs)
 				if err != nil {
 					return err
@@ -378,6 +433,11 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 								return err
 							}
 						}
+					}
+				}
+				if hm.Form != nil && !existed {
+					if err := s.importCounts(a, rm.Message, *hm.Form); err != nil {
+						return err
 					}
 				}
 				for _, t := range hm.Tasks {
@@ -423,6 +483,72 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 		rt.mu.Unlock()
 	}
 	go s.fetchArriving(s.ctx)
+}
+
+// historyFormOf is a poll's counts and closing as this server holds them,
+// for a snapshot; nil for a message whose form is not a poll.
+func (s *Service) historyFormOf(ctx context.Context, msg model.MessageID) (*historyForm, error) {
+	f, found, err := s.store.Forms().ByMessage(ctx, msg)
+	if err != nil || !found || f.Action.Type != model.FormTally {
+		return nil, err
+	}
+	fields, err := s.counts(ctx, s.store, f)
+	if err != nil {
+		return nil, err
+	}
+	out := &historyForm{AnswerCount: f.AnswerCount, ClosedAt: f.ClosedAt, ClosedByID: f.ClosedBy}
+	out.Tally, _ = fields["tally"].(map[string]map[string]int)
+	out.Voters, _ = fields["voters"].(map[string]map[string][]model.AccountID)
+	return out, nil
+}
+
+// importCounts takes a poll's counts and closing from a snapshot, for a
+// poll this server does not keep the answers of: as form.tallied and
+// form.closed would have left them.
+func (s *Service) importCounts(a *apply, m model.Message, hf historyForm) error {
+	ctx, tx := a.ctx, a.tx
+	f, found, err := tx.Forms().ByMessage(ctx, m.ID)
+	if err != nil || !found || f.Action.Type != model.FormTally {
+		return err
+	}
+	if _, home, err := s.formHome(ctx, tx, m); err != nil || home {
+		return err
+	}
+	if err := s.adoptCounts(a, f, formBody{AnswerCount: hf.AnswerCount, Tally: hf.Tally, Voters: hf.Voters}); err != nil {
+		return err
+	}
+	if !hf.ClosedAt.IsZero() {
+		by := hf.ClosedByID
+		if _, err := tx.Accounts().Get(ctx, by); err != nil {
+			by = m.AuthorID
+		}
+		if _, err := tx.Forms().Close(ctx, f.ID, by, hf.ClosedAt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// importDeleted stores, from a snapshot, a message deleted for everyone that
+// has replies: a bare marker of who deleted it and when, so that its thread
+// has a parent.
+func (s *Service) importDeleted(ctx context.Context, tx store.Tx, rec *chat.Recorder, conv model.Conversation, st store.Stream, hm historyMessage) error {
+	m := model.Message{ID: hm.Message.ID, AuthorID: hm.Message.AuthorID, CreatedAt: hm.Message.CreatedAt, Order: hm.Order}
+	if err := s.chat.ImportMessage(ctx, tx, rec, conv, chat.RemoteMessage{Message: m}); err != nil {
+		return err
+	}
+	by := hm.Deleted.ByID
+	if _, err := tx.Accounts().Get(ctx, by); err != nil {
+		by = m.AuthorID
+	}
+	at := hm.Deleted.At
+	if at.IsZero() {
+		at = m.CreatedAt
+	}
+	if _, err := tx.Messages().Delete(ctx, m.ID, by, at); err != nil {
+		return err
+	}
+	return tx.Streams().RaiseTop(ctx, st.ID, hm.Order)
 }
 
 // isHomeHub reports whether a server is the home hub of a hub-owned channel:

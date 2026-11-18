@@ -2002,7 +2002,7 @@ History is a snapshot, not a replay. The owner sends one or more
      "tasks": [{"id": "t1", "checked": true, "checked_by_id": "…",
                 "checked_at": "…"}],
      "form": {"answer_count": 7, "tally": {…}, "voters": {…},
-              "closed_at": null}}
+              "closed_at": null, "closed_by_id": null}}
   ],
   "blobs": [ … ]
 }
@@ -2016,7 +2016,17 @@ History is a snapshot, not a replay. The owner sends one or more
   or the emoji is of, and the receiver fetches them from the sender
   (section 15).
 - Messages are in `order` across parts, in their current state.
-  Deleted messages, earlier versions and tick histories are not sent.
+  Earlier versions and tick histories are not sent, nor are deleted
+  messages, but for a deleted message with replies: it goes as a bare
+  marker, `{"order", "message": {"id", "author_id", "created_at"},
+  "deleted": {"at", "by_id"}}`, so that its thread keeps its parent,
+  and the receiver stores it deleted.
+- A poll's `form` is its counts as the sender holds them (`answer_count`,
+  `tally`, and for a named poll `voters`, whose accounts are among
+  `accounts`) and `closed_at` with `closed_by_id` once it is closed:
+  what `form.tallied` and `form.closed` said to every server. A
+  receiver that is not the poll's home server takes them for a message
+  it did not hold before; later `form.tallied` events replace them.
 - `order` is the message's order string on the server that sends the
   snapshot. The receiver keeps it as it is and gives each message its
   own next `seq`, so every server shows the history in one order:

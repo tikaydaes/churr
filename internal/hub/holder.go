@@ -15,6 +15,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/blob"
 	"github.com/tikaydaes/churr/internal/chat"
+	"github.com/tikaydaes/churr/internal/forms"
 	"github.com/tikaydaes/churr/internal/link"
 	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
@@ -103,8 +104,15 @@ func (h *Hub) startHolder(ctx context.Context) error {
 	}}}
 	pm := perm.New(st)
 	c := chat.New(chat.Deps{Store: st, Perm: pm, Hub: quietHub{}, Blobs: blobs, Log: h.log})
+	// Polls: without the forms package a message's poll is neither shown
+	// in the snapshot the hub gives nor kept up with form.tallied and
+	// form.closed.
+	c.SetForms(forms.New(forms.Deps{Store: st, Perm: pm, Chat: c, Log: h.log}))
 	l, err := link.New(link.Deps{Store: st, Keys: h.keys, Chat: c, Perm: pm, Blobs: blobs, Log: h.log.With("part", "holder"),
 		Name: h.id.Name, HTTPClient: client, TmpDir: tmp, Now: h.now, Holder: true})
+	if err == nil {
+		l.SetForms(forms.Shared{})
+	}
 	if err == nil {
 		err = l.Start(ctx)
 	}

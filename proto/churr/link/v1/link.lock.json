@@ -384,7 +384,20 @@
    "name": 1,
    "topic": 2
   },
+  "HistoryDeleted": {
+   "at": 1,
+   "by_id": 2
+  },
+  "HistoryForm": {
+   "answer_count": 1,
+   "closed_at": 4,
+   "closed_by_id": 5,
+   "tally": 2,
+   "voters": 3
+  },
   "HistoryMessage": {
+   "deleted": 6,
+   "form": 5,
    "message": 2,
    "order": 1,
    "reactions": 3,

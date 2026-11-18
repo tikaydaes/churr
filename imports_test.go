@@ -45,7 +45,7 @@ var mayAlso = map[string][]string{
 var onlyThese = map[string][]string{
 	"perm":  {"model", "store"},
 	"web":   {"version"},
-	"hub":   {"link", "secret", "config", "ratelimit", "acme", "version", "model", "store", "chat", "perm", "blob"},
+	"hub":   {"link", "secret", "config", "ratelimit", "acme", "version", "model", "store", "chat", "perm", "blob", "forms"},
 	"relay": {"config", "ratelimit", "acme", "version"},
 }
 

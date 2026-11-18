@@ -270,7 +270,13 @@ M('Presence', [('account_id', 'uuid'), ('presence', 'str'), ('in_call', 'bool'),
                ('availability', 'value')])
 M('HistoryConversation', [('name', 'str'), ('topic', 'str')])
 M('HistoryReaction', [('emoji', 'str'), ('account_ids', '[uuid]')])
-M('HistoryMessage', [('order', 'str'), ('message', '#Message'), ('reactions', '[#HistoryReaction]'), ('tasks', '[client:Task]')])
+M('HistoryForm', [('answer_count', 'int'), ('tally', '{client:FormTallyValue}'), ('voters', '{client:FormVotersValueOuter}'),
+                  ('closed_at', 'time'), ('closed_by_id', 'uuid')],
+  'A poll\'s counts as the sender of a history snapshot holds them, and whether it is closed (section 13).')
+M('HistoryDeleted', [('at', 'time'), ('by_id', 'uuid')],
+  'A message deleted for everyone that has replies, sent in history as a bare marker (section 13).')
+M('HistoryMessage', [('order', 'str'), ('message', '#Message'), ('reactions', '[#HistoryReaction]'), ('tasks', '[client:Task]'),
+                     ('form', '#HistoryForm'), ('deleted', '#HistoryDeleted')])
 M('AddedOption', [('field_id', 'str'), ('id', 'str'), ('label', 'str')])
 M('FormAnswer', [('button_id', 'str'), ('answers', 'value'), ('added_options', '[#AddedOption]')],
   'An answer to a form, sealed to the form\'s home server inside form.answered (section 19).')
