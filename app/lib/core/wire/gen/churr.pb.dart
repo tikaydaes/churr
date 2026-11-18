@@ -11848,6 +11848,7 @@ class Message extends $pb.GeneratedMessage {
     $core.bool? action,
     Chance? chance,
     ValueEnvelope? view,
+    FairBlock? fair,
   }) {
     final result = Message._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -11885,6 +11886,7 @@ class Message extends $pb.GeneratedMessage {
     if (action != null) result.action = action;
     if (chance != null) result.chance = chance;
     if (view != null) result.view = view;
+    if (fair != null) result.fair = fair;
     return result;
   }
 
@@ -11955,6 +11957,8 @@ class Message extends $pb.GeneratedMessage {
         subBuilder: Chance.$_createMessage)
     ..aOM<ValueEnvelope>(35, _omitFieldNames ? '' : 'view',
         subBuilder: ValueEnvelope.$_createMessage)
+    ..aOM<FairBlock>(36, _omitFieldNames ? '' : 'fair',
+        subBuilder: FairBlock.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -12265,6 +12269,17 @@ class Message extends $pb.GeneratedMessage {
   void clearView() => $_clearField(35);
   @$pb.TagNumber(35)
   ValueEnvelope ensureView() => $_ensure(34);
+
+  @$pb.TagNumber(36)
+  FairBlock get fair => $_getN(35);
+  @$pb.TagNumber(36)
+  set fair(FairBlock value) => $_setField(36, value);
+  @$pb.TagNumber(36)
+  $core.bool hasFair() => $_has(35);
+  @$pb.TagNumber(36)
+  void clearFair() => $_clearField(36);
+  @$pb.TagNumber(36)
+  FairBlock ensureFair() => $_ensure(35);
 }
 
 /// What a reply quotes. No range means the whole message.
@@ -12703,6 +12718,7 @@ class ValueEnvelope extends $pb.GeneratedMessage {
     $core.String? by,
     $core.String? source,
     $core.bool? removed,
+    ValueDraw? draw,
   }) {
     final result = ValueEnvelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -12713,6 +12729,7 @@ class ValueEnvelope extends $pb.GeneratedMessage {
     if (by != null) result.by = by;
     if (source != null) result.source = source;
     if (removed != null) result.removed = removed;
+    if (draw != null) result.draw = draw;
     return result;
   }
 
@@ -12739,6 +12756,8 @@ class ValueEnvelope extends $pb.GeneratedMessage {
     ..aOS(7, _omitFieldNames ? '' : 'by')
     ..aOS(8, _omitFieldNames ? '' : 'source')
     ..aOB(9, _omitFieldNames ? '' : 'removed')
+    ..aOM<ValueDraw>(10, _omitFieldNames ? '' : 'draw',
+        subBuilder: ValueDraw.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -12830,6 +12849,510 @@ class ValueEnvelope extends $pb.GeneratedMessage {
   $core.bool hasRemoved() => $_has(7);
   @$pb.TagNumber(9)
   void clearRemoved() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  ValueDraw get draw => $_getN(8);
+  @$pb.TagNumber(10)
+  set draw(ValueDraw value) => $_setField(10, value);
+  @$pb.TagNumber(10)
+  $core.bool hasDraw() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearDraw() => $_clearField(10);
+  @$pb.TagNumber(10)
+  ValueDraw ensureDraw() => $_ensure(8);
+}
+
+/// How a value took its chance from the message's draw (FAIR.md section 3): its object index, and the declared outcomes it asked for, if any. A value of a kind with its own derivation, such as `dice_roll`, lists none: its data says what was derived.
+class ValueDraw extends $pb.GeneratedMessage {
+  factory ValueDraw({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? i,
+    $core.Iterable<FairPrimitive>? primitives,
+  }) {
+    final result = ValueDraw._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (i != null) result.i = i;
+    if (primitives != null) result.primitives.addAll(primitives);
+    return result;
+  }
+
+  ValueDraw._();
+
+  factory ValueDraw.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ValueDraw()..mergeFromBuffer(data, registry);
+  factory ValueDraw.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ValueDraw()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ValueDraw',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ValueDraw.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'i')
+    ..pPM<FairPrimitive>(4, _omitFieldNames ? '' : 'primitives',
+        subBuilder: FairPrimitive.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ValueDraw clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ValueDraw copyWith(void Function(ValueDraw) updates) =>
+      super.copyWith((message) => updates(message as ValueDraw)) as ValueDraw;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ValueDraw() / ValueDraw.new instead')
+  static ValueDraw create() => ValueDraw._();
+  static $pb.GeneratedMessage $_createMessage() => ValueDraw._();
+  @$core.override
+  ValueDraw createEmptyInstance() => ValueDraw._();
+  @$core.pragma('dart2js:noInline')
+  static ValueDraw getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ValueDraw>(ValueDraw.$_createMessage);
+  static ValueDraw? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get i => $_getI64(2);
+  @$pb.TagNumber(3)
+  set i($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasI() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearI() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<FairPrimitive> get primitives => $_getList(3);
+}
+
+/// One declared outcome a module asked of the message's draw (FAIR.md section 4): its `op` and inputs, as derive 1 reads them. Fields an op does not use are left out; a missing number is 0.
+class FairPrimitive extends $pb.GeneratedMessage {
+  factory FairPrimitive({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    FairPrimitiveOp? op,
+    $fixnum.Int64? min,
+    $fixnum.Int64? max,
+    $fixnum.Int64? count,
+    $fixnum.Int64? n,
+    $fixnum.Int64? k,
+    $core.bool? replace,
+    $core.Iterable<$fixnum.Int64>? weights,
+    $core.Iterable<$fixnum.Int64>? hands,
+    $fixnum.Int64? num,
+    $fixnum.Int64? den,
+    $core.Iterable<DiceRollRow>? rows,
+  }) {
+    final result = FairPrimitive._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (op != null) result.op = op;
+    if (min != null) result.min = min;
+    if (max != null) result.max = max;
+    if (count != null) result.count = count;
+    if (n != null) result.n = n;
+    if (k != null) result.k = k;
+    if (replace != null) result.replace = replace;
+    if (weights != null) result.weights.addAll(weights);
+    if (hands != null) result.hands.addAll(hands);
+    if (num != null) result.num = num;
+    if (den != null) result.den = den;
+    if (rows != null) result.rows.addAll(rows);
+    return result;
+  }
+
+  FairPrimitive._();
+
+  factory FairPrimitive.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FairPrimitive()..mergeFromBuffer(data, registry);
+  factory FairPrimitive.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FairPrimitive()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FairPrimitive',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: FairPrimitive.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aE<FairPrimitiveOp>(3, _omitFieldNames ? '' : 'op',
+        enumValues: FairPrimitiveOp.values)
+    ..aInt64(4, _omitFieldNames ? '' : 'min')
+    ..aInt64(5, _omitFieldNames ? '' : 'max')
+    ..aInt64(6, _omitFieldNames ? '' : 'count')
+    ..aInt64(7, _omitFieldNames ? '' : 'n')
+    ..aInt64(8, _omitFieldNames ? '' : 'k')
+    ..aOB(9, _omitFieldNames ? '' : 'replace')
+    ..p<$fixnum.Int64>(10, _omitFieldNames ? '' : 'weights', $pb.PbFieldType.K6)
+    ..p<$fixnum.Int64>(11, _omitFieldNames ? '' : 'hands', $pb.PbFieldType.K6)
+    ..aInt64(12, _omitFieldNames ? '' : 'num')
+    ..aInt64(13, _omitFieldNames ? '' : 'den')
+    ..pPM<DiceRollRow>(14, _omitFieldNames ? '' : 'rows',
+        subBuilder: DiceRollRow.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FairPrimitive clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FairPrimitive copyWith(void Function(FairPrimitive) updates) =>
+      super.copyWith((message) => updates(message as FairPrimitive))
+          as FairPrimitive;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use FairPrimitive() / FairPrimitive.new instead')
+  static FairPrimitive create() => FairPrimitive._();
+  static $pb.GeneratedMessage $_createMessage() => FairPrimitive._();
+  @$core.override
+  FairPrimitive createEmptyInstance() => FairPrimitive._();
+  @$core.pragma('dart2js:noInline')
+  static FairPrimitive getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FairPrimitive>(
+          FairPrimitive.$_createMessage);
+  static FairPrimitive? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  FairPrimitiveOp get op => $_getN(2);
+  @$pb.TagNumber(3)
+  set op(FairPrimitiveOp value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOp() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearOp() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get min => $_getI64(3);
+  @$pb.TagNumber(4)
+  set min($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMin() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearMin() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get max => $_getI64(4);
+  @$pb.TagNumber(5)
+  set max($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasMax() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearMax() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get count => $_getI64(5);
+  @$pb.TagNumber(6)
+  set count($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCount() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearCount() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get n => $_getI64(6);
+  @$pb.TagNumber(7)
+  set n($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasN() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearN() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get k => $_getI64(7);
+  @$pb.TagNumber(8)
+  set k($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasK() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearK() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get replace => $_getBF(8);
+  @$pb.TagNumber(9)
+  set replace($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasReplace() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearReplace() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $pb.PbList<$fixnum.Int64> get weights => $_getList(9);
+
+  @$pb.TagNumber(11)
+  $pb.PbList<$fixnum.Int64> get hands => $_getList(10);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get num => $_getI64(11);
+  @$pb.TagNumber(12)
+  set num($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasNum() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearNum() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $fixnum.Int64 get den => $_getI64(12);
+  @$pb.TagNumber(13)
+  set den($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasDen() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearDen() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $pb.PbList<DiceRollRow> get rows => $_getList(13);
+}
+
+/// One row of a roll: an expression rolled with its own dice, and its total.
+class DiceRollRow extends $pb.GeneratedMessage {
+  factory DiceRollRow({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? dice,
+    $core.Iterable<DiceRollTerm>? terms,
+    $fixnum.Int64? total,
+  }) {
+    final result = DiceRollRow._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (dice != null) result.dice = dice;
+    if (terms != null) result.terms.addAll(terms);
+    if (total != null) result.total = total;
+    return result;
+  }
+
+  DiceRollRow._();
+
+  factory DiceRollRow.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceRollRow()..mergeFromBuffer(data, registry);
+  factory DiceRollRow.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceRollRow()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DiceRollRow',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DiceRollRow.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'dice')
+    ..pPM<DiceRollTerm>(4, _omitFieldNames ? '' : 'terms',
+        subBuilder: DiceRollTerm.$_createMessage)
+    ..aInt64(5, _omitFieldNames ? '' : 'total')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceRollRow clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceRollRow copyWith(void Function(DiceRollRow) updates) =>
+      super.copyWith((message) => updates(message as DiceRollRow))
+          as DiceRollRow;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DiceRollRow() / DiceRollRow.new instead')
+  static DiceRollRow create() => DiceRollRow._();
+  static $pb.GeneratedMessage $_createMessage() => DiceRollRow._();
+  @$core.override
+  DiceRollRow createEmptyInstance() => DiceRollRow._();
+  @$core.pragma('dart2js:noInline')
+  static DiceRollRow getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DiceRollRow>(
+          DiceRollRow.$_createMessage);
+  static DiceRollRow? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get dice => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set dice($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDice() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDice() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<DiceRollTerm> get terms => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get total => $_getI64(4);
+  @$pb.TagNumber(5)
+  set total($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTotal() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTotal() => $_clearField(5);
+}
+
+/// One term of a roll: some dice, or a plain number added or taken away.
+class DiceRollTerm extends $pb.GeneratedMessage {
+  factory DiceRollTerm({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? sign,
+    $fixnum.Int64? count,
+    $fixnum.Int64? sides,
+    DiceRollTermKeep? keep,
+    $fixnum.Int64? keepN,
+    $core.Iterable<$fixnum.Int64>? rolls,
+    $core.Iterable<$fixnum.Int64>? dropped,
+    $fixnum.Int64? value,
+  }) {
+    final result = DiceRollTerm._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (sign != null) result.sign = sign;
+    if (count != null) result.count = count;
+    if (sides != null) result.sides = sides;
+    if (keep != null) result.keep = keep;
+    if (keepN != null) result.keepN = keepN;
+    if (rolls != null) result.rolls.addAll(rolls);
+    if (dropped != null) result.dropped.addAll(dropped);
+    if (value != null) result.value = value;
+    return result;
+  }
+
+  DiceRollTerm._();
+
+  factory DiceRollTerm.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceRollTerm()..mergeFromBuffer(data, registry);
+  factory DiceRollTerm.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceRollTerm()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DiceRollTerm',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DiceRollTerm.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'sign')
+    ..aInt64(4, _omitFieldNames ? '' : 'count')
+    ..aInt64(5, _omitFieldNames ? '' : 'sides')
+    ..aE<DiceRollTermKeep>(6, _omitFieldNames ? '' : 'keep',
+        enumValues: DiceRollTermKeep.values)
+    ..aInt64(7, _omitFieldNames ? '' : 'keepN')
+    ..p<$fixnum.Int64>(8, _omitFieldNames ? '' : 'rolls', $pb.PbFieldType.K6)
+    ..p<$fixnum.Int64>(9, _omitFieldNames ? '' : 'dropped', $pb.PbFieldType.K6)
+    ..aInt64(10, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceRollTerm clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceRollTerm copyWith(void Function(DiceRollTerm) updates) =>
+      super.copyWith((message) => updates(message as DiceRollTerm))
+          as DiceRollTerm;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DiceRollTerm() / DiceRollTerm.new instead')
+  static DiceRollTerm create() => DiceRollTerm._();
+  static $pb.GeneratedMessage $_createMessage() => DiceRollTerm._();
+  @$core.override
+  DiceRollTerm createEmptyInstance() => DiceRollTerm._();
+  @$core.pragma('dart2js:noInline')
+  static DiceRollTerm getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DiceRollTerm>(
+          DiceRollTerm.$_createMessage);
+  static DiceRollTerm? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get sign => $_getI64(2);
+  @$pb.TagNumber(3)
+  set sign($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSign() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSign() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get count => $_getI64(3);
+  @$pb.TagNumber(4)
+  set count($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCount() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCount() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get sides => $_getI64(4);
+  @$pb.TagNumber(5)
+  set sides($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSides() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSides() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  DiceRollTermKeep get keep => $_getN(5);
+  @$pb.TagNumber(6)
+  set keep(DiceRollTermKeep value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasKeep() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearKeep() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get keepN => $_getI64(6);
+  @$pb.TagNumber(7)
+  set keepN($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasKeepN() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearKeepN() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$fixnum.Int64> get rolls => $_getList(7);
+
+  @$pb.TagNumber(9)
+  $pb.PbList<$fixnum.Int64> get dropped => $_getList(8);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get value => $_getI64(9);
+  @$pb.TagNumber(10)
+  set value($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasValue() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearValue() => $_clearField(10);
 }
 
 /// The state of one checklist item.
@@ -14583,6 +15106,169 @@ class Chance extends $pb.GeneratedMessage {
   $core.bool hasSpread() => $_has(10);
   @$pb.TagNumber(14)
   void clearSpread() => $_clearField(14);
+}
+
+/// A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the VRF key `pk` of the server `owner` over `alpha`, which the conversation's chain fixes, and its output `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no server reachable. Kept when the message is deleted; never edited.
+class FairBlock extends $pb.GeneratedMessage {
+  factory FairBlock({
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? v,
+    $fixnum.Int64? derive,
+    $core.String? owner,
+    $fixnum.Int64? n,
+    $core.List<$core.int>? pk,
+    $core.List<$core.int>? alpha,
+    $core.List<$core.int>? beta,
+    $core.List<$core.int>? proof,
+    $core.List<$core.int>? prev,
+  }) {
+    final result = FairBlock._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (v != null) result.v = v;
+    if (derive != null) result.derive = derive;
+    if (owner != null) result.owner = owner;
+    if (n != null) result.n = n;
+    if (pk != null) result.pk = pk;
+    if (alpha != null) result.alpha = alpha;
+    if (beta != null) result.beta = beta;
+    if (proof != null) result.proof = proof;
+    if (prev != null) result.prev = prev;
+    return result;
+  }
+
+  FairBlock._();
+
+  factory FairBlock.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FairBlock()..mergeFromBuffer(data, registry);
+  factory FairBlock.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FairBlock()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FairBlock',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: FairBlock.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'v')
+    ..aInt64(4, _omitFieldNames ? '' : 'derive')
+    ..aOS(5, _omitFieldNames ? '' : 'owner')
+    ..aInt64(6, _omitFieldNames ? '' : 'n')
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'pk', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        8, _omitFieldNames ? '' : 'alpha', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        9, _omitFieldNames ? '' : 'beta', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        10, _omitFieldNames ? '' : 'proof', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        11, _omitFieldNames ? '' : 'prev', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FairBlock clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FairBlock copyWith(void Function(FairBlock) updates) =>
+      super.copyWith((message) => updates(message as FairBlock)) as FairBlock;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use FairBlock() / FairBlock.new instead')
+  static FairBlock create() => FairBlock._();
+  static $pb.GeneratedMessage $_createMessage() => FairBlock._();
+  @$core.override
+  FairBlock createEmptyInstance() => FairBlock._();
+  @$core.pragma('dart2js:noInline')
+  static FairBlock getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FairBlock>(FairBlock.$_createMessage);
+  static FairBlock? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get v => $_getI64(1);
+  @$pb.TagNumber(3)
+  set v($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasV() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearV() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get derive => $_getI64(2);
+  @$pb.TagNumber(4)
+  set derive($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasDerive() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearDerive() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get owner => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set owner($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasOwner() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearOwner() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get n => $_getI64(4);
+  @$pb.TagNumber(6)
+  set n($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasN() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearN() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get pk => $_getN(5);
+  @$pb.TagNumber(7)
+  set pk($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasPk() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearPk() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.List<$core.int> get alpha => $_getN(6);
+  @$pb.TagNumber(8)
+  set alpha($core.List<$core.int> value) => $_setBytes(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasAlpha() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearAlpha() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.List<$core.int> get beta => $_getN(7);
+  @$pb.TagNumber(9)
+  set beta($core.List<$core.int> value) => $_setBytes(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasBeta() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearBeta() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.List<$core.int> get proof => $_getN(8);
+  @$pb.TagNumber(10)
+  set proof($core.List<$core.int> value) => $_setBytes(8, value);
+  @$pb.TagNumber(10)
+  $core.bool hasProof() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearProof() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.List<$core.int> get prev => $_getN(9);
+  @$pb.TagNumber(11)
+  set prev($core.List<$core.int> value) => $_setBytes(9, value);
+  @$pb.TagNumber(11)
+  $core.bool hasPrev() => $_has(9);
+  @$pb.TagNumber(11)
+  void clearPrev() => $_clearField(11);
 }
 
 /// One emoji on a message, with the accounts behind it.
@@ -69846,238 +70532,6 @@ class DiceRoll extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(4)
   $pb.PbList<DiceRollRow> get rows => $_getList(3);
-}
-
-/// One row of a roll: an expression rolled with its own dice, and its total.
-class DiceRollRow extends $pb.GeneratedMessage {
-  factory DiceRollRow({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $core.String? dice,
-    $core.Iterable<DiceRollTerm>? terms,
-    $fixnum.Int64? total,
-  }) {
-    final result = DiceRollRow._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (dice != null) result.dice = dice;
-    if (terms != null) result.terms.addAll(terms);
-    if (total != null) result.total = total;
-    return result;
-  }
-
-  DiceRollRow._();
-
-  factory DiceRollRow.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceRollRow()..mergeFromBuffer(data, registry);
-  factory DiceRollRow.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceRollRow()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'DiceRollRow',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: DiceRollRow.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aOS(3, _omitFieldNames ? '' : 'dice')
-    ..pPM<DiceRollTerm>(4, _omitFieldNames ? '' : 'terms',
-        subBuilder: DiceRollTerm.$_createMessage)
-    ..aInt64(5, _omitFieldNames ? '' : 'total')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceRollRow clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceRollRow copyWith(void Function(DiceRollRow) updates) =>
-      super.copyWith((message) => updates(message as DiceRollRow))
-          as DiceRollRow;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use DiceRollRow() / DiceRollRow.new instead')
-  static DiceRollRow create() => DiceRollRow._();
-  static $pb.GeneratedMessage $_createMessage() => DiceRollRow._();
-  @$core.override
-  DiceRollRow createEmptyInstance() => DiceRollRow._();
-  @$core.pragma('dart2js:noInline')
-  static DiceRollRow getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DiceRollRow>(
-          DiceRollRow.$_createMessage);
-  static DiceRollRow? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $core.String get dice => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set dice($core.String value) => $_setString(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasDice() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearDice() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $pb.PbList<DiceRollTerm> get terms => $_getList(3);
-
-  @$pb.TagNumber(5)
-  $fixnum.Int64 get total => $_getI64(4);
-  @$pb.TagNumber(5)
-  set total($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(5)
-  $core.bool hasTotal() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearTotal() => $_clearField(5);
-}
-
-/// One term of a roll: some dice, or a plain number added or taken away.
-class DiceRollTerm extends $pb.GeneratedMessage {
-  factory DiceRollTerm({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $fixnum.Int64? sign,
-    $fixnum.Int64? count,
-    $fixnum.Int64? sides,
-    DiceRollTermKeep? keep,
-    $fixnum.Int64? keepN,
-    $core.Iterable<$fixnum.Int64>? rolls,
-    $core.Iterable<$fixnum.Int64>? dropped,
-    $fixnum.Int64? value,
-  }) {
-    final result = DiceRollTerm._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (sign != null) result.sign = sign;
-    if (count != null) result.count = count;
-    if (sides != null) result.sides = sides;
-    if (keep != null) result.keep = keep;
-    if (keepN != null) result.keepN = keepN;
-    if (rolls != null) result.rolls.addAll(rolls);
-    if (dropped != null) result.dropped.addAll(dropped);
-    if (value != null) result.value = value;
-    return result;
-  }
-
-  DiceRollTerm._();
-
-  factory DiceRollTerm.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceRollTerm()..mergeFromBuffer(data, registry);
-  factory DiceRollTerm.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceRollTerm()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'DiceRollTerm',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: DiceRollTerm.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aInt64(3, _omitFieldNames ? '' : 'sign')
-    ..aInt64(4, _omitFieldNames ? '' : 'count')
-    ..aInt64(5, _omitFieldNames ? '' : 'sides')
-    ..aE<DiceRollTermKeep>(6, _omitFieldNames ? '' : 'keep',
-        enumValues: DiceRollTermKeep.values)
-    ..aInt64(7, _omitFieldNames ? '' : 'keepN')
-    ..p<$fixnum.Int64>(8, _omitFieldNames ? '' : 'rolls', $pb.PbFieldType.K6)
-    ..p<$fixnum.Int64>(9, _omitFieldNames ? '' : 'dropped', $pb.PbFieldType.K6)
-    ..aInt64(10, _omitFieldNames ? '' : 'value')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceRollTerm clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceRollTerm copyWith(void Function(DiceRollTerm) updates) =>
-      super.copyWith((message) => updates(message as DiceRollTerm))
-          as DiceRollTerm;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use DiceRollTerm() / DiceRollTerm.new instead')
-  static DiceRollTerm create() => DiceRollTerm._();
-  static $pb.GeneratedMessage $_createMessage() => DiceRollTerm._();
-  @$core.override
-  DiceRollTerm createEmptyInstance() => DiceRollTerm._();
-  @$core.pragma('dart2js:noInline')
-  static DiceRollTerm getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DiceRollTerm>(
-          DiceRollTerm.$_createMessage);
-  static DiceRollTerm? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $fixnum.Int64 get sign => $_getI64(2);
-  @$pb.TagNumber(3)
-  set sign($fixnum.Int64 value) => $_setInt64(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasSign() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearSign() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $fixnum.Int64 get count => $_getI64(3);
-  @$pb.TagNumber(4)
-  set count($fixnum.Int64 value) => $_setInt64(3, value);
-  @$pb.TagNumber(4)
-  $core.bool hasCount() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearCount() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $fixnum.Int64 get sides => $_getI64(4);
-  @$pb.TagNumber(5)
-  set sides($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(5)
-  $core.bool hasSides() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearSides() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  DiceRollTermKeep get keep => $_getN(5);
-  @$pb.TagNumber(6)
-  set keep(DiceRollTermKeep value) => $_setField(6, value);
-  @$pb.TagNumber(6)
-  $core.bool hasKeep() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearKeep() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $fixnum.Int64 get keepN => $_getI64(6);
-  @$pb.TagNumber(7)
-  set keepN($fixnum.Int64 value) => $_setInt64(6, value);
-  @$pb.TagNumber(7)
-  $core.bool hasKeepN() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearKeepN() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $pb.PbList<$fixnum.Int64> get rolls => $_getList(7);
-
-  @$pb.TagNumber(9)
-  $pb.PbList<$fixnum.Int64> get dropped => $_getList(8);
-
-  @$pb.TagNumber(10)
-  $fixnum.Int64 get value => $_getI64(9);
-  @$pb.TagNumber(10)
-  set value($fixnum.Int64 value) => $_setInt64(9, value);
-  @$pb.TagNumber(10)
-  $core.bool hasValue() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearValue() => $_clearField(10);
 }
 
 const $core.bool _omitFieldNames =

@@ -113,7 +113,7 @@ func TestHostStore(t *testing.T) {
 	run := func(who model.Account, conv model.ConversationID, scope model.ModuleScope, value string) string {
 		t.Helper()
 		h.command = keep(scope, value)
-		if _, err := r.Command(ctx, who, conv, "keep", ""); err != nil {
+		if _, err := r.Command(ctx, who, conv, "keep", "", nil); err != nil {
 			t.Fatal(err)
 		}
 		return got
@@ -136,7 +136,7 @@ func TestHostStore(t *testing.T) {
 	if g := run(bob, there, model.ModuleScopeInstance, "all"); g != "all" {
 		t.Errorf("the instance's value was %q", g)
 	}
-	if _, err := r.Command(ctx, ann, here, "peek", ""); err != nil {
+	if _, err := r.Command(ctx, ann, here, "peek", "", nil); err != nil {
 		t.Error(err)
 	}
 	k := model.ModuleKey{Module: "keeper", Scope: model.ModuleScopeConversation, Conversation: here, Key: "last"}
@@ -158,7 +158,7 @@ func TestHostStore(t *testing.T) {
 		}
 		return Reply{Text: "ok"}, nil
 	}
-	if _, err := r.Command(ctx, ann, here, "keep", ""); err != nil {
+	if _, err := r.Command(ctx, ann, here, "keep", "", nil); err != nil {
 		t.Error(err)
 	}
 	if _, ok := st.values[model.ModuleKey{Module: "keeper", Scope: model.ModuleScopeInstance, Key: "last"}]; ok {
@@ -203,12 +203,12 @@ func TestPanicIsRefused(t *testing.T) {
 		t.Fatal(err)
 	}
 	ann := model.Account{ID: model.NewID[model.AccountID]()}
-	_, err = r.Command(ctx, ann, "", "roll", "")
+	_, err = r.Command(ctx, ann, "", "roll", "", nil)
 	var refusal *model.Error
 	if !errors.As(err, &refusal) || refusal.Code != model.CodeUnavailable || !strings.Contains(refusal.Message, "Dice") {
 		t.Fatalf("the refusal was %v", err)
 	}
-	if _, ok := r.Resolve(ctx, ann, "", model.KindDiceRoll, "1d6"); ok {
+	if _, ok := r.Resolve(ctx, ann, "", model.KindDiceRoll, "1d6", nil); ok {
 		t.Error("a resolve that panicked gave a value")
 	}
 	got := f.list()
@@ -237,7 +237,7 @@ func TestDeadline(t *testing.T) {
 		t.Fatal(err)
 	}
 	start := time.Now()
-	_, err = r.Command(context.Background(), model.Account{}, "", "wait", "")
+	_, err = r.Command(context.Background(), model.Account{}, "", "wait", "", nil)
 	if !errors.Is(err, model.ErrUnavailable) || time.Since(start) > time.Second {
 		t.Fatalf("after %v: %v", time.Since(start), err)
 	}
@@ -256,7 +256,7 @@ func TestDeadline(t *testing.T) {
 		return Reply{}, ctx.Err()
 	}}
 	r, _ = New(Options{Failed: f.add}, Module{Name: "waits", Handler: waits, Commands: []Command{{Name: "wait", Forms: noArgs}}})
-	if _, err := r.Command(ctx, model.Account{}, "", "wait", ""); !errors.Is(err, context.Canceled) {
+	if _, err := r.Command(ctx, model.Account{}, "", "wait", "", nil); !errors.Is(err, context.Canceled) {
 		t.Errorf("a cancelled request: %v", err)
 	}
 	if len(f.list()) != 1 {

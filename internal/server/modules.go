@@ -13,8 +13,8 @@ import (
 // wireModules registers the built-in modules (docs/DESIGN-MODULES.md
 // section 6.2) and hands the host to the two places that call them: chat,
 // which resolves the objects they claim when a message is posted (inline
-// dice), and commands, which runs their commands (/roll, /dice). This is the
-// one place that imports a module.
+// dice), and commands, which runs their commands (/roll, /dice), with what
+// chat draws their chance with. This is the one place that imports a module.
 //
 // It runs after chat and commands exist.
 func (s *Server) wireModules() error {
@@ -25,6 +25,9 @@ func (s *Server) wireModules() error {
 	s.Modules = reg
 	s.Chat.SetModules(reg)
 	s.Commands.SetModules(reg)
+	// Their chance is drawn by this server's VRF key, its chains owned by
+	// its name (docs/FAIR.md).
+	s.Chat.SetFair(s.Config.Hostname, s.Keys)
 	return nil
 }
 

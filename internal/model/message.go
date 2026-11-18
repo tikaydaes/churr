@@ -72,6 +72,54 @@ type ValueEnvelope struct {
 	Source string `json:"source,omitempty"`
 	// Removed: an edit changed the span; nothing was resolved for it.
 	Removed bool `json:"removed,omitempty"`
+	// Draw says the value took its chance from the message's draw (Fair):
+	// its object index, and the primitives it asked for (docs/FAIR.md).
+	Draw *ValueDraw `json:"draw,omitempty"`
+}
+
+// ValueDraw is how a value took its share of the message's draw: I is its
+// object index (docs/FAIR.md section 3), and Primitives, for a module that
+// asked the host for declared outcomes (Host.Draw), what it asked for, in
+// order. A module that read its stream itself (the dice) lists none; its
+// kind's data says what was derived.
+type ValueDraw struct {
+	I          int             `json:"i"`
+	Primitives []FairPrimitive `json:"primitives,omitempty"`
+}
+
+// FairPrimitive is one declared outcome asked of a draw (docs/FAIR.md
+// section 4), in the shape internal/fair reads.
+type FairPrimitive struct {
+	Op      string    `json:"op"`
+	Min     int64     `json:"min,omitempty"`
+	Max     int64     `json:"max,omitempty"`
+	Count   int       `json:"count,omitempty"`
+	N       int       `json:"n,omitempty"`
+	K       int       `json:"k,omitempty"`
+	Replace bool      `json:"replace,omitempty"`
+	Weights []int64   `json:"weights,omitempty"`
+	Hands   []int     `json:"hands,omitempty"`
+	Num     int64     `json:"num,omitempty"`
+	Den     int64     `json:"den,omitempty"`
+	Rows    []DiceRow `json:"rows,omitempty"`
+}
+
+// FairBlock is a message's proof of its draw (docs/FAIR.md section 8): the
+// ECVRF proof by the owner's VRF key pk over alpha, which the chain fixes
+// from the owner, the chain's name, n and prev, and its output beta, from
+// which every chance outcome of the message is derived by rule Derive. It is
+// stored with the message, kept when the message is deleted, and never
+// edited.
+type FairBlock struct {
+	V      int    `json:"v"`
+	Derive int    `json:"derive"`
+	Owner  string `json:"owner"`
+	N      int64  `json:"n"`
+	PK     Bytes  `json:"pk"`
+	Alpha  Bytes  `json:"alpha"`
+	Beta   Bytes  `json:"beta"`
+	Proof  Bytes  `json:"proof"`
+	Prev   Bytes  `json:"prev"`
 }
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -289,6 +337,7 @@ type Message struct {
 	Action         bool           `json:"action,omitempty"`
 	Chance         *Chance        `json:"chance,omitempty"`
 	View           *ValueEnvelope `json:"view,omitempty"`
+	Fair           *FairBlock     `json:"fair,omitempty"`
 	Fallback       string         `json:"fallback,omitempty"`
 	Reactions      []Reaction     `json:"reactions,omitempty"`
 	Thread         *ThreadSummary `json:"thread,omitempty"`

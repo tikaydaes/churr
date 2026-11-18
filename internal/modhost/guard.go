@@ -53,10 +53,10 @@ func (p *panicked) Error() string { return fmt.Sprint(p.value) }
 // person up past the deadline; what it does after that is thrown away, and
 // its store refuses. A failure is reported and comes back as a refusal in
 // the module's name; a cancelled request comes back as the context's error.
-func (r *Registry) call(ctx context.Context, m *Module, actor model.Account, conv model.ConversationID, entry string, fn func(ctx context.Context, h *Host) error) error {
+func (r *Registry) call(ctx context.Context, m *Module, actor model.Account, conv model.ConversationID, entry string, draws Draws, fn func(ctx context.Context, h *Host) error) error {
 	callCtx, cancel := context.WithTimeout(ctx, r.deadline)
 	defer cancel()
-	h := NewHost(HostOptions{Module: m.Name, Actor: actor, Conversation: conv, Intn: r.intn, Store: r.store, Context: callCtx})
+	h := NewHost(HostOptions{Module: m.Name, Actor: actor, Conversation: conv, Draws: draws, Store: r.store, Context: callCtx})
 	done := make(chan error, 1)
 	go func() {
 		defer func() {

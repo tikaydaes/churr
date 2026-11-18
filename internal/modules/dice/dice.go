@@ -3,14 +3,17 @@
 // rolls when the message is sent. A roll is a message whose text is the roll
 // in words ("Rolled 2d6+3: [4, 1] + 3 = 8") and whose view is a value of the
 // catalogue's kind dice_roll; inline dice are an object of that kind over
-// their characters. The dice are rolled from the host's randomness, which is
-// crypto/rand, so no result can be foreseen or steered (ruling R67).
+// their characters. The dice are rolled from the host's stream, the message's
+// share of its draw (docs/FAIR.md), by the frozen rule fair.Roll: nobody can
+// foresee or steer a result, and anyone re-derives every die from the proof
+// the message carries (ruling R67).
 package dice
 
 import (
 	"context"
 	"strings"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
 )
@@ -66,7 +69,10 @@ func (handler) Command(_ context.Context, h *modhost.Host, in modhost.Invocation
 	if err != nil {
 		return modhost.Reply{}, err
 	}
-	r := roll(h, model.DiceRoll{Dice: written, Rows: rows})
+	r, err := roll(h, model.DiceRoll{Dice: written, Rows: rows})
+	if err != nil {
+		return modhost.Reply{}, err
+	}
 	return modhost.Reply{Text: Text(r), View: &modhost.Value{Kind: model.KindDiceRoll, Data: r}}, nil
 }
 
@@ -80,14 +86,38 @@ func (handler) Resolve(_ context.Context, h *modhost.Host, in modhost.Marked) (m
 	if err != nil {
 		return modhost.Value{}, err
 	}
-	r := roll(h, model.DiceRoll{Dice: written, Rows: []model.DiceRow{{Dice: written, Terms: terms}}})
+	r, err := roll(h, model.DiceRoll{Dice: written, Rows: []model.DiceRow{{Dice: written, Terms: terms}}})
+	if err != nil {
+		return modhost.Value{}, err
+	}
 	return modhost.Value{Kind: model.KindDiceRoll, Data: r}, nil
 }
 
-// roll rolls every row of a roll read with nothing rolled.
-func roll(h *modhost.Host, r model.DiceRoll) model.DiceRoll {
-	for i := range r.Rows {
-		r.Rows[i].Terms, r.Rows[i].Total = RollTerms(r.Rows[i].Terms, func(sides int) int { return h.Intn(sides) + 1 })
+// roll rolls every row of a roll read with nothing rolled, from the call's
+// stream by derive 1's dice (docs/FAIR.md section 5): rows, terms and dice in
+// order, so a verifier given the roll's rows and the draw re-derives each.
+func roll(h *modhost.Host, r model.DiceRoll) (model.DiceRoll, error) {
+	s, err := h.Random()
+	if err != nil {
+		return r, err
 	}
-	return r
+	rows := make([]fair.DiceRow, len(r.Rows))
+	for i, row := range r.Rows {
+		rows[i].Dice = row.Dice
+		for _, t := range row.Terms {
+			rows[i].Terms = append(rows[i].Terms, fair.DiceTerm{Sign: t.Sign, Count: t.Count, Sides: t.Sides, Keep: t.Keep, KeepN: t.KeepN, Value: t.Value})
+		}
+	}
+	rolled, err := fair.Roll(s, rows)
+	if err != nil {
+		return r, err
+	}
+	for i, row := range rolled {
+		for j, t := range row.Terms {
+			mt := &r.Rows[i].Terms[j]
+			mt.Rolls, mt.Dropped, mt.Value = t.Rolls, t.Dropped, t.Value
+		}
+		r.Rows[i].Total = row.Total
+	}
+	return r, nil
 }

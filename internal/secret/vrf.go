@@ -168,3 +168,14 @@ func (k *Keys) VRFHistory() []VRFKey {
 	}
 	return out
 }
+
+// VRFProve proves alpha under the current VRF key: the proof, 81 bytes, and
+// its output beta, 32 (docs/FAIR.md section 6).
+func (k *Keys) VRFProve(alpha []byte) (proof, beta []byte, err error) {
+	proof, err = ecvrf.Prove(k.vrf, alpha)
+	if err != nil {
+		return nil, nil, err
+	}
+	beta, err = ecvrf.ProofToHash(proof)
+	return proof, beta, err
+}

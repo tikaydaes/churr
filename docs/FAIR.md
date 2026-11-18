@@ -22,8 +22,8 @@ The derivation is written three times and held to one vectors file
 - `u32be(x)` is x as 4 bytes, big-endian, unsigned; `u64be(x)` 8 bytes.
 - `SHA-256` is FIPS 180-4.
 - Whole numbers only. No step divides except `mod`, of whole numbers.
-- In JSON, bytes are base64 (standard alphabet, padded) in a message's
-  `fair` block and hex in the vectors file.
+- In JSON, bytes are base64url without padding in a message's `fair`
+  block, as everywhere in Churr's JSON, and hex in the vectors file.
 
 ## 2. Versions
 

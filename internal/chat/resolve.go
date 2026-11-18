@@ -43,6 +43,8 @@ type resolver struct {
 	// the modules that claim them (claims.go).
 	claims  string
 	modules *modhost.Registry
+	// draws is where resolved objects take their chance from.
+	draws modhost.Draws
 	// off are the modules switched off in the conversation, once offRead
 	// says they have been read (claims.go).
 	off     map[string]bool
@@ -203,7 +205,7 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 // (instants.go).
 func (s *Service) readWith(ctx context.Context, a store.Areas, st perm.State, text string, inst Instants) (content, error) {
 	var out content
-	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone, hints: inst.Objects, origin: s.origin, claims: inst.Claims, modules: s.modules,
+	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone, hints: inst.Objects, origin: s.origin, claims: inst.Claims, modules: s.modules, draws: inst.Draws,
 		overBroad: s.broadLimit.left(st.Actor, st.Settings.BroadPerHour) == 0}
 	doc := markdown.Parse(text)
 	out.entities = withHints(text, doc, markdown.Resolve(doc, r), inst.Hints)

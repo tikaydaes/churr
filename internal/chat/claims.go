@@ -155,7 +155,13 @@ func (r *resolver) Claimed(kind, inside string) (model.ValueEnvelope, bool) {
 	if !r.claimOn(kind) {
 		return model.ValueEnvelope{}, false
 	}
-	v, ok := r.modules.Resolve(r.ctx, r.st.Actor, r.st.Conversation.ID, kind, inside)
+	// An edit rolls for nothing: what it makes is thrown away. Anything
+	// else takes the message's draw, and with none the object stays text.
+	draws := r.draws
+	if r.claims == claimsEdit {
+		draws = noDraw()
+	}
+	v, ok := r.modules.Resolve(r.ctx, r.st.Actor, r.st.Conversation.ID, kind, inside, draws)
 	if ok && r.claims == claimsEdit {
 		return r.modules.Unresolved(kind)
 	}

@@ -2,17 +2,17 @@ package modhost
 
 import (
 	"context"
-	"crypto/rand"
+	"encoding/json"
 	"errors"
-	"math/big"
 	"unicode/utf8"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 )
 
 // Host is the toolkit a module is handed with each call, and all it may
-// reach: the verified actor and conversation, randomness, and the module's
-// own store. It is a type of its own, not an interface, so that what it
+// reach: the verified actor and conversation, its share of the message's
+// draw, and the module's own store. It is a type of its own, not an interface, so that what it
 // offers can grow (the clock and timers, cards of its own, private parts)
 // without any module changing.
 //
@@ -23,9 +23,24 @@ type Host struct {
 	module string
 	actor  model.Account
 	conv   model.ConversationID
-	intn   func(n int) int
+	draws  Draws
 	store  Store
+	// stream is the call's share of the draw once it has asked for it,
+	// and drawn the primitives it asked for (Draw).
+	stream *fair.Stream
+	drawn  []model.FairPrimitive
 }
+
+// Draws hands out the message's one draw (docs/FAIR.md): each chance object
+// of a message, in order of appearance, gets the stream of the next object
+// index. The first call makes the draw. The chat service gives one per
+// message; tests give fair.Objects over a beta of their own.
+type Draws interface {
+	Stream() (*fair.Stream, error)
+}
+
+// errNoDraw is chance asked for where no draw is to be had.
+var errNoDraw = errors.New("modhost: this call has no draw to take chance from")
 
 // HostOptions is what a Host is made from.
 type HostOptions struct {
@@ -37,9 +52,9 @@ type HostOptions struct {
 	Actor model.Account
 	// Conversation is where.
 	Conversation model.ConversationID
-	// Intn gives a whole number from 0 to n-1. Left out, it reads
-	// crypto/rand, so that a result cannot be foreseen or steered.
-	Intn func(n int) int
+	// Draws is where the call's chance comes from: the message's draw.
+	// Left out, the call has none, and asking for chance fails.
+	Draws Draws
 	// Store keeps the module's values. Left out, the module keeps nothing
 	// and every use of the store is refused.
 	Store Store
@@ -49,15 +64,12 @@ type HostOptions struct {
 }
 
 // NewHost makes a Host. The registry makes one for every call; a module's
-// own tests make one with a fixed Intn.
+// own tests make one with draws of their own.
 func NewHost(o HostOptions) *Host {
-	if o.Intn == nil {
-		o.Intn = cryptoIntn
-	}
 	if o.Context == nil {
 		o.Context = context.Background()
 	}
-	return &Host{ctx: o.Context, module: o.Module, actor: o.Actor, conv: o.Conversation, intn: o.Intn, store: o.Store}
+	return &Host{ctx: o.Context, module: o.Module, actor: o.Actor, conv: o.Conversation, draws: o.Draws, store: o.Store}
 }
 
 // Actor is the person the call is for.
@@ -66,18 +78,61 @@ func (h *Host) Actor() model.Account { return h.actor }
 // Conversation is where the call was made.
 func (h *Host) Conversation() model.ConversationID { return h.conv }
 
-// Intn gives a whole number from 0 to n-1, for n of at least 1.
-func (h *Host) Intn(n int) int { return h.intn(n) }
-
-// cryptoIntn gives a whole number from 0 to n-1 from crypto/rand.
-func cryptoIntn(n int) int {
-	v, err := rand.Int(rand.Reader, big.NewInt(int64(n)))
-	if err != nil {
-		// The system's random source failing is not something to carry
-		// on from.
-		panic("modhost: crypto/rand failed: " + err.Error())
+// Random is the call's stream: its object's share of the message's draw
+// (docs/FAIR.md section 3), the only chance a module has. A module that reads
+// it derives its outcomes by its kind's own frozen rule (the dice, by
+// fair.Roll), so a verifier re-derives them. The first ask takes the next
+// object index; later asks in the same call give the same stream.
+func (h *Host) Random() (*fair.Stream, error) {
+	if h.stream != nil {
+		return h.stream, nil
 	}
-	return int(v.Int64())
+	if h.draws == nil {
+		return nil, errNoDraw
+	}
+	s, err := h.draws.Stream()
+	if err != nil {
+		return nil, err
+	}
+	h.stream = s
+	return s, nil
+}
+
+// Draw derives declared outcomes from the call's stream, in order (docs/
+// FAIR.md section 4), and records the primitives in the value the call makes,
+// so that any client verifies them without knowing the module.
+func (h *Host) Draw(primitives ...model.FairPrimitive) ([]fair.Result, error) {
+	s, err := h.Random()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]fair.Result, 0, len(primitives))
+	for _, mp := range primitives {
+		var p fair.Primitive
+		raw, err := json.Marshal(mp)
+		if err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(raw, &p); err != nil {
+			return nil, err
+		}
+		r, err := fair.Draw(s, p)
+		if err != nil {
+			return nil, model.Invalid("draw", err.Error())
+		}
+		h.drawn = append(h.drawn, mp)
+		out = append(out, r)
+	}
+	return out, nil
+}
+
+// drew is what the value the call made records of the draw: nil when it
+// took no chance.
+func (h *Host) drew() *model.ValueDraw {
+	if h.stream == nil {
+		return nil
+	}
+	return &model.ValueDraw{I: int(h.stream.Object()), Primitives: h.drawn}
 }
 
 // Store is where the host keeps the modules' values: the server's store of

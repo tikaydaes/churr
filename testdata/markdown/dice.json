@@ -4,7 +4,7 @@
     "text": "I attack for [[2d6+3]] damage",
     "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
     "entities": [
-      {"type":"object","at":13,"len":9,"object":{"kind":"dice_roll","level":1,"data":{"dice":"2d6+3","rows":[{"dice":"2d6+3","terms":[{"sign":1,"count":2,"sides":6,"rolls":[6,6],"value":12},{"sign":1,"value":3}],"total":15}]},"by":"dice"}}
+      {"type":"object","at":13,"len":9,"object":{"kind":"dice_roll","level":1,"data":{"dice":"2d6+3","rows":[{"dice":"2d6+3","terms":[{"sign":1,"count":2,"sides":6,"rolls":[4,4],"value":8},{"sign":1,"value":3}],"total":11}]},"by":"dice","draw":{"i":0}}}
     ],
     "tasks": [],
     "plain": "I attack for [[2d6+3]] damage",
@@ -17,7 +17,7 @@
     "text": "[[ 2D6 + 3 ]].",
     "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
     "entities": [
-      {"type":"object","at":0,"len":13,"object":{"kind":"dice_roll","level":1,"data":{"dice":"2d6+3","rows":[{"dice":"2d6+3","terms":[{"sign":1,"count":2,"sides":6,"rolls":[6,6],"value":12},{"sign":1,"value":3}],"total":15}]},"by":"dice"}}
+      {"type":"object","at":0,"len":13,"object":{"kind":"dice_roll","level":1,"data":{"dice":"2d6+3","rows":[{"dice":"2d6+3","terms":[{"sign":1,"count":2,"sides":6,"rolls":[4,4],"value":8},{"sign":1,"value":3}],"total":11}]},"by":"dice","draw":{"i":0}}}
     ],
     "tasks": [],
     "plain": "[[ 2D6 + 3 ]].",
@@ -30,9 +30,9 @@
     "text": "[[4d6kh3]], [[adv]] and [[d%]]",
     "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
     "entities": [
-      {"type":"object","at":0,"len":10,"object":{"kind":"dice_roll","level":1,"data":{"dice":"4d6kh3","rows":[{"dice":"4d6kh3","terms":[{"sign":1,"count":4,"sides":6,"keep":"kh","keep_n":3,"rolls":[6,6,6,6],"dropped":[3],"value":18}],"total":18}]},"by":"dice"}},
-      {"type":"object","at":12,"len":7,"object":{"kind":"dice_roll","level":1,"data":{"dice":"2d20kh1","rows":[{"dice":"2d20kh1","terms":[{"sign":1,"count":2,"sides":20,"keep":"kh","keep_n":1,"rolls":[20,20],"dropped":[1],"value":20}],"total":20}]},"by":"dice"}},
-      {"type":"object","at":24,"len":6,"object":{"kind":"dice_roll","level":1,"data":{"dice":"1d100","rows":[{"dice":"1d100","terms":[{"sign":1,"count":1,"sides":100,"rolls":[100],"value":100}],"total":100}]},"by":"dice"}}
+      {"type":"object","at":0,"len":10,"object":{"kind":"dice_roll","level":1,"data":{"dice":"4d6kh3","rows":[{"dice":"4d6kh3","terms":[{"sign":1,"count":4,"sides":6,"keep":"kh","keep_n":3,"rolls":[4,4,4,2],"dropped":[3],"value":12}],"total":12}]},"by":"dice","draw":{"i":0}}},
+      {"type":"object","at":12,"len":7,"object":{"kind":"dice_roll","level":1,"data":{"dice":"2d20kh1","rows":[{"dice":"2d20kh1","terms":[{"sign":1,"count":2,"sides":20,"keep":"kh","keep_n":1,"rolls":[7,5],"dropped":[1],"value":7}],"total":7}]},"by":"dice","draw":{"i":1}}},
+      {"type":"object","at":24,"len":6,"object":{"kind":"dice_roll","level":1,"data":{"dice":"1d100","rows":[{"dice":"1d100","terms":[{"sign":1,"count":1,"sides":100,"rolls":[21],"value":21}],"total":21}]},"by":"dice","draw":{"i":2}}}
     ],
     "tasks": [],
     "plain": "[[4d6kh3]], [[adv]] and [[d%]]",
@@ -45,7 +45,7 @@
     "text": "[[d20]]",
     "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
     "entities": [
-      {"type":"object","at":0,"len":7,"object":{"kind":"dice_roll","level":1,"data":{"dice":"1d20","rows":[{"dice":"1d20","terms":[{"sign":1,"count":1,"sides":20,"rolls":[20],"value":20}],"total":20}]},"by":"dice"}}
+      {"type":"object","at":0,"len":7,"object":{"kind":"dice_roll","level":1,"data":{"dice":"1d20","rows":[{"dice":"1d20","terms":[{"sign":1,"count":1,"sides":20,"rolls":[8],"value":8}],"total":8}]},"by":"dice","draw":{"i":0}}}
     ],
     "tasks": [],
     "plain": "[[d20]]",

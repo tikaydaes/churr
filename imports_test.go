@@ -19,7 +19,7 @@ const module = "github.com/tikaydaes/churr/"
 // packages in lower layers, and model. It may not import one in its own
 // layer or above, except as mayAlso says.
 var layers = map[string]int{
-	"model": 0, "version": 0, "instant": 0, "timing": 0, "unicodename": 0, "ecvrf": 0,
+	"model": 0, "version": 0, "instant": 0, "timing": 0, "unicodename": 0, "ecvrf": 0, "fair": 0,
 	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1, "wirepb": 1, "memguard": 1, "modhost": 1,
 	"store": 2, "modules": 2,
 	"blob": 3, "perm": 3, "notices": 3,
@@ -42,6 +42,9 @@ var mayAlso = map[string][]string{
 	// The host of the built-in modules reads text and values as the
 	// foundations do (docs/DESIGN-MODULES.md section 6.2).
 	"modhost": {"markdown", "wirepb"},
+	// The derivation proves and checks draws with the VRF library
+	// (docs/FAIR.md).
+	"fair": {"ecvrf"},
 }
 
 // onlyThese lists packages whose imports of ours are spelled out in full.
@@ -52,10 +55,13 @@ var onlyThese = map[string][]string{
 	"relay": {"config", "ratelimit", "acme", "version"},
 	// The host must run in churr and in churr-hub: storage, posting and
 	// the clock reach it through small interfaces.
-	"modhost": {"model", "markdown", "instant", "wirepb"},
-	// A built-in module reaches only the host's toolkit and the model's
-	// types: no database, no socket, no other feature.
-	"modules": {"modhost", "model"},
+	"modhost": {"model", "markdown", "instant", "wirepb", "fair"},
+	// A built-in module reaches only the host's toolkit, the model's types
+	// and the derivation of outcomes from its stream: no database, no
+	// socket, no other feature.
+	"modules": {"modhost", "model", "fair"},
+	// The derivation leans on the model's types and the VRF library alone.
+	"fair": {"model", "ecvrf"},
 	// The vendored VRF library (docs/DESIGN-FAIR.md) is the owner's code as
 	// published: it leans on nothing of ours.
 	"ecvrf": {},
@@ -68,6 +74,12 @@ var moduleUsers = []string{"server", "hub"}
 // noDialing are the standard packages a built-in module may not import: it
 // makes no connections of its own.
 var noDialing = []string{"net", "os/exec", "plugin", "syscall", "unsafe"}
+
+// noRandomness are the sources of randomness the host of the modules, a
+// module and the derivation may not import: every chance outcome they make
+// comes from the message's draw (docs/DESIGN-FAIR.md section 9), so it is
+// provable by construction.
+var noRandomness = []string{"crypto/rand", "math/rand"}
 
 // owners lists the large dependencies that have one owner each.
 var owners = []struct {
@@ -160,6 +172,13 @@ func check(t *testing.T, dir, file string, isTest bool, target string) {
 		for _, p := range noDialing {
 			if target == p || strings.HasPrefix(target, p+"/") {
 				t.Errorf("%s imports %s: a built-in module makes no connections and reaches nothing the host does not hand it", file, target)
+			}
+		}
+	}
+	if !isTest && (strings.HasPrefix(dir, "internal/modules/") || dir == "internal/modhost" || dir == "internal/fair") {
+		for _, p := range noRandomness {
+			if target == p || strings.HasPrefix(target, p+"/") {
+				t.Errorf("%s imports %s: every chance outcome of a module comes from the message's draw (Host.Random), never another source", file, target)
 			}
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 )
 
@@ -82,7 +83,7 @@ func TestRegistryChecksWhatModulesAnswer(t *testing.T) {
 	actor := model.Account{ID: model.NewID[model.AccountID]()}
 
 	f.reply = Reply{Text: "Rolled 1d6: [4] = 4", View: &Value{Kind: model.KindDiceRoll, Data: roll(4)}}
-	made, err := r.Command(ctx, actor, "", "roll", "d6")
+	made, err := r.Command(ctx, actor, "", "roll", "d6", nil)
 	if err != nil || made.Text != f.reply.Text || made.View == nil || made.View.Level != 1 || made.View.By != "dice" {
 		t.Fatalf("made %+v, %v", made, err)
 	}
@@ -91,32 +92,32 @@ func TestRegistryChecksWhatModulesAnswer(t *testing.T) {
 		t.Fatalf("the data: %s", made.View.Data)
 	}
 	f.reply = Reply{View: f.reply.View}
-	if _, err := r.Command(ctx, actor, "", "roll", ""); err == nil {
+	if _, err := r.Command(ctx, actor, "", "roll", "", nil); err == nil {
 		t.Error("a reply with no text was taken")
 	}
 	f.reply = Reply{Text: "Rolled 1d6: [9] = 9", View: &Value{Kind: model.KindDiceRoll, Data: roll(9)}}
-	if _, err := r.Command(ctx, actor, "", "roll", ""); err == nil {
+	if _, err := r.Command(ctx, actor, "", "roll", "", nil); err == nil {
 		t.Error("a value that fails its kind's check was taken")
 	}
 	f.reply = Reply{Text: "x", View: &Value{Kind: model.KindDiceRoll, Data: map[string]any{"dice": 7}}}
-	if _, err := r.Command(ctx, actor, "", "roll", ""); err == nil {
+	if _, err := r.Command(ctx, actor, "", "roll", "", nil); err == nil {
 		t.Error("a value that does not fit its kind's schema was taken")
 	}
 	refusal := model.Invalid("text", "Write dice like 2d6+3.")
 	f.err = refusal
-	if _, err := r.Command(ctx, actor, "", "roll", "banana"); !errors.Is(err, refusal) {
+	if _, err := r.Command(ctx, actor, "", "roll", "banana", nil); !errors.Is(err, refusal) {
 		t.Errorf("the module's refusal came back as %v", err)
 	}
-	if _, err := r.Command(ctx, actor, "", "nothing", ""); err == nil {
+	if _, err := r.Command(ctx, actor, "", "nothing", "", nil); err == nil {
 		t.Error("a command no module answers was run")
 	}
 
 	f.err, f.value = nil, Value{Kind: model.KindDiceRoll, Data: roll(2)}
 	f.seen = nil
-	if v, ok := r.Resolve(ctx, actor, "", model.KindDiceRoll, "1d6"); !ok || v.By != "dice" || v.Removed {
+	if v, ok := r.Resolve(ctx, actor, "", model.KindDiceRoll, "1d6", nil); !ok || v.By != "dice" || v.Removed {
 		t.Fatalf("resolved %+v %v", v, ok)
 	}
-	if _, ok := r.Resolve(ctx, actor, "", model.KindDiceRoll, "banana"); ok || len(f.seen) != 1 {
+	if _, ok := r.Resolve(ctx, actor, "", model.KindDiceRoll, "banana", nil); ok || len(f.seen) != 1 {
 		t.Errorf("an inside the claim's pattern does not match reached the module: %v", f.seen)
 	}
 	if v, ok := r.Unresolved(model.KindDiceRoll); !ok || !v.Removed || v.By != "dice" || v.Level != 1 || v.Data != nil {
@@ -124,17 +125,39 @@ func TestRegistryChecksWhatModulesAnswer(t *testing.T) {
 	}
 }
 
-// A host's randomness is the registry's.
+// A host's chance is its share of the message's draw, and nothing else: the
+// first ask takes the next object's stream and later asks give the same; a
+// declared outcome is derived from it and recorded for the value; a call
+// with no draw has no chance at all.
 func TestHostRandomness(t *testing.T) {
-	h := NewHost(HostOptions{Intn: func(n int) int { return n - 1 }})
-	if h.Intn(6) != 5 {
-		t.Error("the fixed source was not used")
+	beta := make([]byte, 32)
+	objs := fair.NewObjects(beta)
+	first := NewHost(HostOptions{Draws: objs})
+	s, err := first.Random()
+	if err != nil || s.Object() != 0 {
+		t.Fatalf("first object: %v %v", s, err)
 	}
-	h = NewHost(HostOptions{})
-	for i := 0; i < 50; i++ {
-		if n := h.Intn(3); n < 0 || n > 2 {
-			t.Fatalf("crypto/rand gave %d", n)
-		}
+	if again, _ := first.Random(); again != s {
+		t.Error("a second ask in one call took another stream")
+	}
+	second := NewHost(HostOptions{Draws: objs})
+	p := model.FairPrimitive{Op: "int", Min: 1, Max: 6}
+	got, err := second.Draw(p)
+	want, _ := fair.Draw(fair.NewStream(beta, 1), fair.Primitive{Op: "int", Min: 1, Max: 6})
+	if err != nil || len(got) != 1 || *got[0].Value != *want.Value {
+		t.Fatalf("drew %+v %v, want %v", got, err, *want.Value)
+	}
+	if d := second.drew(); d == nil || d.I != 1 || len(d.Primitives) != 1 || d.Primitives[0].Op != "int" {
+		t.Errorf("recorded %+v", d)
+	}
+	if _, err := second.Draw(model.FairPrimitive{Op: "coin"}); err == nil {
+		t.Error("a primitive derive 1 does not know was drawn")
+	}
+	if NewHost(HostOptions{}).drew() != nil {
+		t.Error("a call that took no chance records a draw")
+	}
+	if _, err := NewHost(HostOptions{}).Random(); err == nil {
+		t.Error("a call with no draw had chance")
 	}
 }
 
@@ -149,10 +172,10 @@ func TestPeopleOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	bot := model.Account{ID: model.NewID[model.AccountID](), Role: model.RoleBot}
-	if _, err := r.Command(ctx, bot, "", "mine", ""); !errors.As(err, new(*model.Error)) || err.(*model.Error).Code != model.CodeInvalidValue {
+	if _, err := r.Command(ctx, bot, "", "mine", "", nil); !errors.As(err, new(*model.Error)) || err.(*model.Error).Code != model.CodeInvalidValue {
 		t.Errorf("a bot ran a people-only command: %v", err)
 	}
-	if _, err := r.Command(ctx, bot, "", "ours", ""); err != nil {
+	if _, err := r.Command(ctx, bot, "", "ours", "", nil); err != nil {
 		t.Errorf("a bot was refused a command for anyone: %v", err)
 	}
 }

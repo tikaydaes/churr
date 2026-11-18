@@ -25010,6 +25010,79 @@ components:
           items:
             $ref: '#/components/schemas/DiceRollRow'
           description: Its rows, in order (1 to 8), each with its dice and total.
+    FairPrimitive:
+      type: object
+      description: 'One declared outcome a module asked of the message''s draw (FAIR.md section 4): its `op` and
+        inputs, as derive 1 reads them. Fields an op does not use are left out; a missing number is 0.'
+      required: [op]
+      properties:
+        op:
+          type: string
+          enum: [int, ints, pick, shuffle, deal, yesno, dice]
+        min:
+          type: integer
+          format: int64
+          description: '`int`, `ints`: the least, included.'
+        max:
+          type: integer
+          format: int64
+          description: '`int`, `ints`: the greatest, included.'
+        count:
+          type: integer
+          format: int64
+          description: '`ints`: how many.'
+        n:
+          type: integer
+          format: int64
+          description: '`pick`, `shuffle`, `deal`: how many positions.'
+        k:
+          type: integer
+          format: int64
+          description: '`pick`: how many are picked.'
+        replace:
+          type: boolean
+          description: '`pick`: a position may be picked again.'
+        weights:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: '`pick`: one whole number of at least 0 per position.'
+        hands:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: '`deal`: the size of each hand, in order.'
+        num:
+          type: integer
+          format: int64
+          description: '`yesno`: yes with probability num/den.'
+        den:
+          type: integer
+          format: int64
+          description: '`yesno`: yes with probability num/den.'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiceRollRow'
+          description: '`dice`: the rows to roll, nothing rolled.'
+    ValueDraw:
+      type: object
+      description: 'How a value took its chance from the message''s draw (FAIR.md section 3): its object index,
+        and the declared outcomes it asked for, if any. A value of a kind with its own derivation, such as `dice_roll`,
+        lists none: its data says what was derived.'
+      required: [i]
+      properties:
+        i:
+          type: integer
+          format: int64
+          description: 'The object index: its stream is SHA-256(beta ‖ i ‖ k).'
+        primitives:
+          type: array
+          items:
+            $ref: '#/components/schemas/FairPrimitive'
+          description: The declared outcomes asked for, in order.
     ValueEnvelope:
       type: object
       description: 'A value of the catalogue (DESIGN-MODULES.md section 4.1): on a span of the text as an `object`
@@ -25052,6 +25125,54 @@ components:
         removed:
           type: boolean
           description: An edit changed the span; nothing was resolved for it.
+        draw:
+          $ref: '#/components/schemas/ValueDraw'
+          description: 'The value''s chance came from the message''s draw (`fair`): which share of it, and what
+            was asked.'
+    FairBlock:
+      type: object
+      description: 'A message''s proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI)
+        by the VRF key `pk` of the server `owner` over `alpha`, which the conversation''s chain fixes, and its output
+        `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no
+        server reachable. Kept when the message is deleted; never edited.'
+      required: [v, derive, owner, n, pk, alpha, beta, proof, prev]
+      properties:
+        v:
+          type: integer
+          format: int64
+          description: 'The layout of this block: 1.'
+        derive:
+          type: integer
+          format: int64
+          description: 'The rule outcomes are derived by: 1.'
+        owner:
+          type: string
+          description: The server that drew, by name.
+        n:
+          type: integer
+          format: int64
+          description: The draw's number in its chain, from 1.
+        pk:
+          type: string
+          contentEncoding: base64url
+          description: 'The owner''s VRF public key, 33 bytes compressed: its key in force when the message was
+            made.'
+        alpha:
+          type: string
+          contentEncoding: base64url
+          description: 'What was proved: built from the owner, the chain, n and prev (FAIR.md section 6).'
+        beta:
+          type: string
+          contentEncoding: base64url
+          description: The proof's output, 32 bytes.
+        proof:
+          type: string
+          contentEncoding: base64url
+          description: The ECVRF proof, 81 bytes.
+        prev:
+          type: string
+          contentEncoding: base64url
+          description: SHA-256 of the chain's previous proof, 32 bytes; zeros for draw 1.
     Chance:
       type: object
       description: 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot`
@@ -25187,6 +25308,10 @@ components:
           $ref: '#/components/schemas/ValueEnvelope'
           description: The message as a value of the catalogue, such as a roll of dice. `text` is the message; this
             is a view of it, drawn by a client that knows its kind.
+        fair:
+          $ref: '#/components/schemas/FairBlock'
+          description: The proof of the message's draw, when anything in it took chance from one (a roll of dice).
+            Kept when the message is deleted; never edited.
         fallback:
           type: string
           description: Plain text the server wrote to stand in for the cards, form and chance result.

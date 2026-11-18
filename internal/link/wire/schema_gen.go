@@ -489,6 +489,7 @@ var pbMessages = []pbMessage{
 		{"created_at", 18, pbTime, pbOne, 0, ""},
 		{"edited_at", 19, pbTime, pbOne, 0, ""},
 		{"view", 20, pbClient, pbOne, 0, "ValueEnvelope"},
+		{"fair", 21, pbClient, pbOne, 0, "FairBlock"},
 	}},
 	{name: "Profile", wrap: false, base: "", fields: []pbField{
 		{"id", 1, pbUuid, pbOne, 0, ""},

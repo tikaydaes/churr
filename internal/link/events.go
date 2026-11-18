@@ -94,6 +94,7 @@ type wireMessage struct {
 	Action    bool                 `json:"action,omitempty"`
 	Chance    *model.Chance        `json:"chance,omitempty"`
 	View      *model.ValueEnvelope `json:"view,omitempty"`
+	Fair      *model.FairBlock     `json:"fair,omitempty"`
 	CreatedAt model.Time           `json:"created_at"`
 	EditedAt  model.Time           `json:"edited_at,omitempty"`
 }
@@ -649,6 +650,14 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 		m.Entities = append(m.Entities, ent)
 	}
 	m.Entities = model.CheckObjects(m.Entities)
+	if w.Sealed == nil {
+		// The proof of the message's draw, checked; what took chance from
+		// a draw that fails is shown as its text (fair.go).
+		var ok bool
+		if m.Fair, ok = a.fairOf(w); !ok {
+			dropDrawn(&m)
+		}
+	}
 	files, rej, err := a.fileRows(w.AuthorID, w.Files, w.Cards, blobs)
 	if rej != nil || err != nil {
 		return rm, rej, err

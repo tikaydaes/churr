@@ -930,6 +930,7 @@ message Message {
   optional bool action = 33;
   Chance chance = 34;
   ValueEnvelope view = 35;
+  FairBlock fair = 36;
   optional string fallback = 16;
   repeated Reaction reactions = 17;
   ThreadSummary thread = 18;
@@ -996,6 +997,56 @@ message ValueEnvelope {
   optional string by = 7;
   optional string source = 8;
   optional bool removed = 9;
+  ValueDraw draw = 10;
+}
+
+// How a value took its chance from the message's draw (FAIR.md section 3): its object index, and the declared outcomes it asked for, if any. A value of a kind with its own derivation, such as `dice_roll`, lists none: its data says what was derived.
+message ValueDraw {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 i = 3;
+  repeated FairPrimitive primitives = 4;
+}
+
+// One declared outcome a module asked of the message's draw (FAIR.md section 4): its `op` and inputs, as derive 1 reads them. Fields an op does not use are left out; a missing number is 0.
+message FairPrimitive {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional FairPrimitiveOp op = 3;
+  optional int64 min = 4;
+  optional int64 max = 5;
+  optional int64 count = 6;
+  optional int64 n = 7;
+  optional int64 k = 8;
+  optional bool replace = 9;
+  repeated int64 weights = 10;
+  repeated int64 hands = 11;
+  optional int64 num = 12;
+  optional int64 den = 13;
+  repeated DiceRollRow rows = 14;
+}
+
+// One row of a roll: an expression rolled with its own dice, and its total.
+message DiceRollRow {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string dice = 3;
+  repeated DiceRollTerm terms = 4;
+  optional int64 total = 5;
+}
+
+// One term of a roll: some dice, or a plain number added or taken away.
+message DiceRollTerm {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 sign = 3;
+  optional int64 count = 4;
+  optional int64 sides = 5;
+  optional DiceRollTermKeep keep = 6;
+  optional int64 keep_n = 7;
+  repeated int64 rolls = 8;
+  repeated int64 dropped = 9;
+  optional int64 value = 10;
 }
 
 // The state of one checklist item.
@@ -1152,6 +1203,20 @@ message Chance {
   repeated string cards = 12;
   repeated bool reversed = 13;
   optional string spread = 14;
+}
+
+// A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the VRF key `pk` of the server `owner` over `alpha`, which the conversation's chain fixes, and its output `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no server reachable. Kept when the message is deleted; never edited.
+message FairBlock {
+  repeated int32 null_fields = 2;
+  optional int64 v = 3;
+  optional int64 derive = 4;
+  optional string owner = 5;
+  optional int64 n = 6;
+  optional bytes pk = 7;
+  optional bytes alpha = 8;
+  optional bytes beta = 9;
+  optional bytes proof = 10;
+  optional bytes prev = 11;
 }
 
 // One emoji on a message, with the accounts behind it.
@@ -5660,29 +5725,6 @@ message DiceRoll {
   repeated DiceRollRow rows = 4;
 }
 
-// One row of a roll: an expression rolled with its own dice, and its total.
-message DiceRollRow {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional string dice = 3;
-  repeated DiceRollTerm terms = 4;
-  optional int64 total = 5;
-}
-
-// One term of a roll: some dice, or a plain number added or taken away.
-message DiceRollTerm {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional int64 sign = 3;
-  optional int64 count = 4;
-  optional int64 sides = 5;
-  optional DiceRollTermKeep keep = 6;
-  optional int64 keep_n = 7;
-  repeated int64 rolls = 8;
-  repeated int64 dropped = 9;
-  optional int64 value = 10;
-}
-
 enum ServerSignInRegistration {
   SERVER_SIGN_IN_REGISTRATION_UNSPECIFIED = 0;
   SERVER_SIGN_IN_REGISTRATION_OPEN = 1; // "open"
@@ -5958,6 +6000,25 @@ enum EntityPrecision {
   ENTITY_PRECISION_UNSPECIFIED = 0;
   ENTITY_PRECISION_MINUTE = 1; // "minute"
   ENTITY_PRECISION_SECOND = 2; // "second"
+}
+
+enum FairPrimitiveOp {
+  FAIR_PRIMITIVE_OP_UNSPECIFIED = 0;
+  FAIR_PRIMITIVE_OP_INT = 1; // "int"
+  FAIR_PRIMITIVE_OP_INTS = 2; // "ints"
+  FAIR_PRIMITIVE_OP_PICK = 3; // "pick"
+  FAIR_PRIMITIVE_OP_SHUFFLE = 4; // "shuffle"
+  FAIR_PRIMITIVE_OP_DEAL = 5; // "deal"
+  FAIR_PRIMITIVE_OP_YESNO = 6; // "yesno"
+  FAIR_PRIMITIVE_OP_DICE = 7; // "dice"
+}
+
+enum DiceRollTermKeep {
+  DICE_ROLL_TERM_KEEP_UNSPECIFIED = 0;
+  DICE_ROLL_TERM_KEEP_KH = 1; // "kh"
+  DICE_ROLL_TERM_KEEP_KL = 2; // "kl"
+  DICE_ROLL_TERM_KEEP_DH = 3; // "dh"
+  DICE_ROLL_TERM_KEEP_DL = 4; // "dl"
 }
 
 enum FileKind {
@@ -7175,12 +7236,4 @@ enum CallRingStoppedFrameReason {
   CALL_RING_STOPPED_FRAME_REASON_DECLINED_ELSEWHERE = 2; // "declined_elsewhere"
   CALL_RING_STOPPED_FRAME_REASON_ENDED = 3; // "ended"
   CALL_RING_STOPPED_FRAME_REASON_TIMEOUT = 4; // "timeout"
-}
-
-enum DiceRollTermKeep {
-  DICE_ROLL_TERM_KEEP_UNSPECIFIED = 0;
-  DICE_ROLL_TERM_KEEP_KH = 1; // "kh"
-  DICE_ROLL_TERM_KEEP_KL = 2; // "kl"
-  DICE_ROLL_TERM_KEEP_DH = 3; // "dh"
-  DICE_ROLL_TERM_KEEP_DL = 4; // "dl"
 }

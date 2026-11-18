@@ -1066,6 +1066,73 @@ class EntityPrecision extends $pb.ProtobufEnum {
   const EntityPrecision._(super.value, super.name);
 }
 
+class FairPrimitiveOp extends $pb.ProtobufEnum {
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_UNSPECIFIED =
+      FairPrimitiveOp._(
+          0, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_UNSPECIFIED');
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_INT =
+      FairPrimitiveOp._(1, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_INT');
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_INTS =
+      FairPrimitiveOp._(2, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_INTS');
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_PICK =
+      FairPrimitiveOp._(3, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_PICK');
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_SHUFFLE =
+      FairPrimitiveOp._(4, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_SHUFFLE');
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_DEAL =
+      FairPrimitiveOp._(5, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_DEAL');
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_YESNO =
+      FairPrimitiveOp._(6, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_YESNO');
+  static const FairPrimitiveOp FAIR_PRIMITIVE_OP_DICE =
+      FairPrimitiveOp._(7, _omitEnumNames ? '' : 'FAIR_PRIMITIVE_OP_DICE');
+
+  static const $core.List<FairPrimitiveOp> values = <FairPrimitiveOp>[
+    FAIR_PRIMITIVE_OP_UNSPECIFIED,
+    FAIR_PRIMITIVE_OP_INT,
+    FAIR_PRIMITIVE_OP_INTS,
+    FAIR_PRIMITIVE_OP_PICK,
+    FAIR_PRIMITIVE_OP_SHUFFLE,
+    FAIR_PRIMITIVE_OP_DEAL,
+    FAIR_PRIMITIVE_OP_YESNO,
+    FAIR_PRIMITIVE_OP_DICE,
+  ];
+
+  static final $core.List<FairPrimitiveOp?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 7);
+  static FairPrimitiveOp? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const FairPrimitiveOp._(super.value, super.name);
+}
+
+class DiceRollTermKeep extends $pb.ProtobufEnum {
+  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_UNSPECIFIED =
+      DiceRollTermKeep._(
+          0, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_UNSPECIFIED');
+  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_KH =
+      DiceRollTermKeep._(1, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_KH');
+  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_KL =
+      DiceRollTermKeep._(2, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_KL');
+  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_DH =
+      DiceRollTermKeep._(3, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_DH');
+  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_DL =
+      DiceRollTermKeep._(4, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_DL');
+
+  static const $core.List<DiceRollTermKeep> values = <DiceRollTermKeep>[
+    DICE_ROLL_TERM_KEEP_UNSPECIFIED,
+    DICE_ROLL_TERM_KEEP_KH,
+    DICE_ROLL_TERM_KEEP_KL,
+    DICE_ROLL_TERM_KEEP_DH,
+    DICE_ROLL_TERM_KEEP_DL,
+  ];
+
+  static final $core.List<DiceRollTermKeep?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static DiceRollTermKeep? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const DiceRollTermKeep._(super.value, super.name);
+}
+
 class FileKind extends $pb.ProtobufEnum {
   static const FileKind FILE_KIND_UNSPECIFIED =
       FileKind._(0, _omitEnumNames ? '' : 'FILE_KIND_UNSPECIFIED');
@@ -6152,35 +6219,6 @@ class CallRingStoppedFrameReason extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const CallRingStoppedFrameReason._(super.value, super.name);
-}
-
-class DiceRollTermKeep extends $pb.ProtobufEnum {
-  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_UNSPECIFIED =
-      DiceRollTermKeep._(
-          0, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_UNSPECIFIED');
-  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_KH =
-      DiceRollTermKeep._(1, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_KH');
-  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_KL =
-      DiceRollTermKeep._(2, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_KL');
-  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_DH =
-      DiceRollTermKeep._(3, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_DH');
-  static const DiceRollTermKeep DICE_ROLL_TERM_KEEP_DL =
-      DiceRollTermKeep._(4, _omitEnumNames ? '' : 'DICE_ROLL_TERM_KEEP_DL');
-
-  static const $core.List<DiceRollTermKeep> values = <DiceRollTermKeep>[
-    DICE_ROLL_TERM_KEEP_UNSPECIFIED,
-    DICE_ROLL_TERM_KEEP_KH,
-    DICE_ROLL_TERM_KEEP_KL,
-    DICE_ROLL_TERM_KEEP_DH,
-    DICE_ROLL_TERM_KEEP_DL,
-  ];
-
-  static final $core.List<DiceRollTermKeep?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
-  static DiceRollTermKeep? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const DiceRollTermKeep._(super.value, super.name);
 }
 
 const $core.bool _omitEnumNames =

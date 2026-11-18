@@ -422,6 +422,15 @@
    "ready": 2,
    "running": 1
   },
+  "FairPrimitiveOp": {
+   "deal": 5,
+   "dice": 7,
+   "int": 1,
+   "ints": 2,
+   "pick": 3,
+   "shuffle": 4,
+   "yesno": 6
+  },
   "FileKind": {
    "audio": 3,
    "file": 5,
@@ -2539,6 +2548,31 @@
    "started_by_id": 5,
    "state": 4
   },
+  "FairBlock": {
+   "alpha": 8,
+   "beta": 9,
+   "derive": 4,
+   "n": 6,
+   "owner": 5,
+   "pk": 7,
+   "prev": 11,
+   "proof": 10,
+   "v": 3
+  },
+  "FairPrimitive": {
+   "count": 6,
+   "den": 13,
+   "hands": 11,
+   "k": 8,
+   "max": 5,
+   "min": 4,
+   "n": 7,
+   "num": 12,
+   "op": 3,
+   "replace": 9,
+   "rows": 14,
+   "weights": 10
+  },
   "FetchWakeUpResponse": {
    "wake_up": 3
   },
@@ -3345,6 +3379,7 @@
    "deleted_by_id": 32,
    "edited_at": 30,
    "entities": 11,
+   "fair": 36,
    "fallback": 16,
    "files": 13,
    "form": 15,
@@ -4860,10 +4895,15 @@
   "UploadFileResponse": {
    "file": 3
   },
+  "ValueDraw": {
+   "i": 3,
+   "primitives": 4
+  },
   "ValueEnvelope": {
    "alt": 6,
    "by": 7,
    "data": 5,
+   "draw": 10,
    "kind": 3,
    "level": 4,
    "removed": 9,

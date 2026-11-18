@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 )
 
@@ -275,7 +276,11 @@ func Written(terms []model.DiceTerm) string {
 }
 
 // RollTerms rolls the dice of terms with die, which gives a whole number from
-// 1 to sides, and returns the terms with their rolls and the total.
+// 1 to sides, and returns the terms with their rolls and the total. Which
+// dice count, and what a term comes to, are derive 1's (fair.Dropped and
+// fair.Score), the rule every verifier holds a roll to. A roll's dice come
+// from the message's draw (roll); this takes them from anywhere, for the
+// cases of testdata/commands/dice.json.
 func RollTerms(terms []model.DiceTerm, die func(sides int) int) ([]model.DiceTerm, int) {
 	out := make([]model.DiceTerm, len(terms))
 	total := 0
@@ -285,66 +290,13 @@ func RollTerms(terms []model.DiceTerm, die func(sides int) int) ([]model.DiceTer
 			for j := range t.Rolls {
 				t.Rolls[j] = die(t.Sides)
 			}
-			t.Dropped = droppedDice(t)
-			t.Value = 0
-			skip := map[int]bool{}
-			for _, j := range t.Dropped {
-				skip[j] = true
-			}
-			for j, r := range t.Rolls {
-				if !skip[j] {
-					t.Value += r
-				}
-			}
+			t.Dropped = fair.Dropped(t.Keep, t.KeepN, t.Rolls)
+			t.Value = fair.Score(fair.DiceTerm{Rolls: t.Rolls, Dropped: t.Dropped})
 		}
 		total += t.Sign * t.Value
 		out[i] = t
 	}
 	return out, total
-}
-
-// droppedDice says which rolls of a term do not count, by position. Of equal
-// rolls, the later one is dropped first.
-func droppedDice(t model.DiceTerm) []int {
-	if t.Keep == "" {
-		return nil
-	}
-	n := len(t.Rolls)
-	drop := t.KeepN // dh and dl
-	lowest := t.Keep == "dl" || t.Keep == "kh"
-	if t.Keep[0] == 'k' {
-		drop = n - t.KeepN
-	}
-	if drop <= 0 {
-		return nil
-	}
-	// Positions, sorted so that the ones to drop come first.
-	pos := make([]int, n)
-	for i := range pos {
-		pos[i] = i
-	}
-	before := func(a, b int) bool {
-		ra, rb := t.Rolls[a], t.Rolls[b]
-		if ra != rb {
-			if lowest {
-				return ra < rb
-			}
-			return ra > rb
-		}
-		return a > b
-	}
-	for i := 1; i < n; i++ { // insertion sort: at most 100 dice
-		for j := i; j > 0 && before(pos[j], pos[j-1]); j-- {
-			pos[j], pos[j-1] = pos[j-1], pos[j]
-		}
-	}
-	out := append([]int(nil), pos[:drop]...)
-	for i := 1; i < len(out); i++ {
-		for j := i; j > 0 && out[j] < out[j-1]; j-- {
-			out[j], out[j-1] = out[j-1], out[j]
-		}
-	}
-	return out
 }
 
 // Text is a roll in words, the text of the message that carries it, which

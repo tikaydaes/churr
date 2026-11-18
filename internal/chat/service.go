@@ -14,6 +14,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
 	"github.com/tikaydaes/churr/internal/notices"
@@ -107,6 +108,11 @@ type Service struct {
 
 	// modules are the built-in modules, set with SetModules (claims.go).
 	modules *modhost.Registry
+
+	// fairOwner is this server's name, the owner of its chains of draws,
+	// and prover its VRF key, set with SetFair (fair.go).
+	fairOwner string
+	prover    fair.Prover
 
 	// notifier is the notify package, set with SetNotifier (notifier.go).
 	notifier Notifier

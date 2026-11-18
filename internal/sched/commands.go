@@ -301,11 +301,10 @@ func (c *Commands) runModule(ctx context.Context, actor model.Account, st perm.S
 	if st.Conversation.Sealed() {
 		return Ran{}, model.Invalid("name", "The server cannot write into a sealed chat, so /"+mc.name+" cannot run there.")
 	}
-	made, err := c.modules.Command(ctx, actor, st.Conversation.ID, mc.cmd.Name, strings.TrimSpace(text))
-	if err != nil {
-		return Ran{}, err
-	}
-	posted, err := c.chat.Post(ctx, actor, chat.NewMessage{ConversationID: st.Conversation.ID, ParentID: parent, Text: made.Text, View: made.View})
+	// Post runs the command, so that its chance comes from the message's
+	// draw (docs/FAIR.md).
+	posted, err := c.chat.Post(ctx, actor, chat.NewMessage{ConversationID: st.Conversation.ID, ParentID: parent,
+		Command: &chat.ModuleCommand{Name: mc.cmd.Name, Text: strings.TrimSpace(text)}})
 	if err != nil {
 		return Ran{}, err
 	}

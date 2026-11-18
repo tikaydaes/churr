@@ -3,6 +3,7 @@ package markdown
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
 	"github.com/tikaydaes/churr/internal/modules/dice"
@@ -61,6 +63,8 @@ type corpusTask struct {
 
 // corpusResolver is the names that resolve in a case. It implements Resolver.
 type corpusResolver struct {
+	// draws is the case's draw, made at its first object.
+	draws          *fair.Objects
 	Accounts       map[string]string `json:"accounts"`
 	RemoteAccounts map[string]string `json:"remote_accounts"` // "username@server.name"
 	Groups         map[string]string `json:"groups"`
@@ -85,15 +89,18 @@ type corpusResolver struct {
 func (r *corpusResolver) Origin() string { return r.Home }
 
 // corpusModules are the built-in modules as the corpus reads text with
-// them: every die falls on its highest face, so that cases can say what is
-// stored.
+// them. Each case's dice come from a draw of its own whose output is
+// corpusBeta, object after object, so that cases can say what is stored.
 var corpusModules = func() *modhost.Registry {
-	r, err := modhost.New(modhost.Options{Intn: func(n int) int { return n - 1 }}, dice.Module())
+	r, err := modhost.New(modhost.Options{}, dice.Module())
 	if err != nil {
 		panic(err)
 	}
 	return r
 }()
+
+// corpusBeta stands for the output of each case's draw.
+var corpusBeta = sha256.Sum256([]byte("the markdown corpus"))
 
 // Claims are the modules' claims, unless the case reads text where nothing
 // is resolved.
@@ -111,7 +118,10 @@ func (r *corpusResolver) Claims() []Claim {
 // Claimed resolves a claimed object as the server does on send, and for
 // "edit" as an edit does: marked removed, with nothing resolved.
 func (r *corpusResolver) Claimed(kind, inside string) (model.ValueEnvelope, bool) {
-	v, ok := corpusModules.Resolve(context.Background(), model.Account{}, "", kind, inside)
+	if r.draws == nil {
+		r.draws = fair.NewObjects(corpusBeta[:])
+	}
+	v, ok := corpusModules.Resolve(context.Background(), model.Account{}, "", kind, inside, r.draws)
 	if ok && r.DiceMode == "edit" {
 		return corpusModules.Unresolved(kind)
 	}

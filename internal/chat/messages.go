@@ -154,6 +154,13 @@ type NewMessage struct {
 	// it (commands.go): Text is then the module's words for it. It is never
 	// taken from a request.
 	View *model.ValueEnvelope
+	// Command runs a built-in module's command and posts its answer as Text
+	// and View: Post runs it, so that its chance comes from the message's
+	// draw (fair.go). It is never taken from a request.
+	Command *ModuleCommand
+	// fairTries counts the times the post was made again because another
+	// message took its draw first.
+	fairTries int
 	// Reminder is set by the scheduler for a reminder: it may quote the
 	// message it is about at top level, from any conversation, and may
 	// then have no text (docs/FEATURES.md section 9.1). The scheduler
@@ -203,7 +210,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	if conv.Sealed() && in.Chance != nil {
 		return Posted{}, model.Invalid("chance", "The server cannot write into a sealed chat, so it cannot draw a result there.")
 	}
-	if conv.Sealed() && in.View != nil {
+	if conv.Sealed() && (in.View != nil || in.Command != nil) {
 		return Posted{}, model.Invalid("name", "The server cannot write into a sealed chat, so no module runs there.")
 	}
 	if conv.Sealed() {
@@ -212,6 +219,17 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		// content a sealed chat cannot hold (docs/PERMISSIONS.md
 		// section 17, case 147).
 		return Posted{}, model.BadRequest("A sealed chat takes only sealed messages.")
+	}
+	// The message's one draw, made when something in it first asks for
+	// chance (fair.go).
+	orig := in
+	draws := s.newDrawer(ctx, conv.ID)
+	if in.Command != nil {
+		made, err := s.modules.Command(ctx, actor, conv.ID, in.Command.Name, in.Command.Text, draws)
+		if err != nil {
+			return Posted{}, err
+		}
+		in.Text, in.View, in.Command = made.Text, made.View, nil
 	}
 	var form *store.Form
 	var fallback string
@@ -318,6 +336,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 
 	inst := in.Instants
 	inst.Claims = claimsMode(actor, in.Via)
+	inst.Draws = draws
 	read := in.Text
 	if in.View != nil {
 		// A module's words for its value are read for nothing: they are
@@ -341,6 +360,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		Action: in.Action, Chance: chance, View: in.View, CreatedAt: s.now(),
 	}
 	m.Fallback = fallback
+	m.Fair = draws.block
 	var out model.Message
 	type follower struct {
 		account model.AccountID
@@ -369,6 +389,11 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		// In a shared conversation the message stands where its event's
 		// stamp puts it (shared.go); anywhere else the order follows seq.
 		m.Seq, m.Order = seq, rec.Order(conv.ID, seq)
+		// The draw is this message's only if the chain is still where it
+		// was made from.
+		if err := draws.advance(ctx, tx); err != nil {
+			return err
+		}
 		if err := tx.Messages().Insert(ctx, &m, got.mentions); err != nil {
 			return err
 		}
@@ -445,6 +470,11 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		}
 		return rec.EmitAt(ctx, e)
 	})
+	if errors.Is(err, store.ErrFairMoved) && orig.fairTries < maxFairTries {
+		// Another message took the draw: this one takes the next.
+		orig.fairTries++
+		return s.Post(ctx, actor, orig)
+	}
 	if errors.Is(err, model.ErrAlreadyExists) && in.ClientID != "" {
 		// The same request arrived twice at once; the other one won.
 		in2 := in
@@ -800,9 +830,11 @@ func (s *Service) Delete(ctx context.Context, actor model.Account, id model.Mess
 			if out, err = s.eraseSealed(ctx, tx, rec, id, actor.ID, now); err != nil {
 				return err
 			}
-		case quick && cur.ReplyCount == 0:
+		case quick && cur.ReplyCount == 0 && cur.Fair == nil:
 			// No trace is left. The marker below exists only in the
-			// event, so clients drop what they show.
+			// event, so clients drop what they show. A message that used
+			// a draw always leaves its marker, which keeps the proof, so
+			// the chain stays whole (docs/FAIR.md).
 			keys, err := tx.Messages().DeleteOutright(ctx, id)
 			if err != nil {
 				return err

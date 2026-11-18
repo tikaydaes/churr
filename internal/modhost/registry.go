@@ -19,7 +19,6 @@ type Registry struct {
 	mods   []*Module
 	cmds   map[string]*Module
 	claims []ClaimRule
-	intn   func(n int) int
 	store  Store
 	// switches say where modules are off; nil is everywhere on.
 	switches Switches
@@ -31,9 +30,6 @@ type Registry struct {
 
 // Options are how a registry is made.
 type Options struct {
-	// Intn backs every Host's randomness; left out, crypto/rand. Tests
-	// that must know the outcome give one of their own.
-	Intn func(n int) int
 	// Store keeps the modules' values (host.go); left out, they keep
 	// nothing.
 	Store Store
@@ -108,7 +104,7 @@ func checkForms(forms []model.CommandForm, types map[string]bool) error {
 // one a command may have; every claimed kind is in the catalogue, with marks
 // and a pattern Go compiles.
 func New(o Options, mods ...Module) (*Registry, error) {
-	r := &Registry{cmds: map[string]*Module{}, intn: o.Intn, store: o.Store, switches: o.Switches, failed: o.Failed, deadline: o.Deadline}
+	r := &Registry{cmds: map[string]*Module{}, store: o.Store, switches: o.Switches, failed: o.Failed, deadline: o.Deadline}
 	if r.deadline <= 0 {
 		r.deadline = Deadline
 	}
@@ -233,10 +229,10 @@ func (r *Registry) CommandModule(name string) string {
 }
 
 // Command runs /name for an actor in a conversation, with what was typed
-// after the name, and checks the reply. A module's refusal comes back as it
-// gave it: the words are the module's, for the person who typed the
-// command.
-func (r *Registry) Command(ctx context.Context, actor model.Account, conv model.ConversationID, name, text string) (Made, error) {
+// after the name, and checks the reply. Its chance comes from draws, the
+// message's draw. A module's refusal comes back as it gave it: the words are
+// the module's, for the person who typed the command.
+func (r *Registry) Command(ctx context.Context, actor model.Account, conv model.ConversationID, name, text string, draws Draws) (Made, error) {
 	m := r.cmds[name]
 	if m == nil {
 		return Made{}, model.ErrNotFound.With("There is no command called /" + name + " here.")
@@ -250,9 +246,11 @@ func (r *Registry) Command(ctx context.Context, actor model.Account, conv model.
 		return Made{}, model.ErrFeatureOff.With("The " + title(m) + " module is switched off here, so /" + name + " cannot run.")
 	}
 	var reply Reply
-	err := r.call(ctx, m, actor, conv, "/"+name, func(ctx context.Context, h *Host) error {
+	var drew *model.ValueDraw
+	err := r.call(ctx, m, actor, conv, "/"+name, draws, func(ctx context.Context, h *Host) error {
 		var err error
 		reply, err = m.Handler.Command(ctx, h, Invocation{Command: name, Text: text})
+		drew = h.drew()
 		return err
 	})
 	if err != nil {
@@ -267,6 +265,7 @@ func (r *Registry) Command(ctx context.Context, actor model.Account, conv model.
 		if err != nil {
 			return Made{}, err
 		}
+		v.Draw = drew
 		out.View = &v
 	}
 	return out, nil
@@ -292,9 +291,9 @@ func (r *Registry) claim(kind string) (ClaimRule, bool) {
 }
 
 // Resolve gives the value of a marked object of a claimed kind, its inside
-// being text, as its module makes it and the host checks it. false leaves
-// the object as text.
-func (r *Registry) Resolve(ctx context.Context, actor model.Account, conv model.ConversationID, kind, text string) (model.ValueEnvelope, bool) {
+// being text, as its module makes it and the host checks it, its chance
+// from draws. false leaves the object as text.
+func (r *Registry) Resolve(ctx context.Context, actor model.Account, conv model.ConversationID, kind, text string, draws Draws) (model.ValueEnvelope, bool) {
 	c, ok := r.claim(kind)
 	if !ok || !c.Inside.MatchString(text) {
 		return model.ValueEnvelope{}, false
@@ -303,15 +302,18 @@ func (r *Registry) Resolve(ctx context.Context, actor model.Account, conv model.
 		return model.ValueEnvelope{}, false
 	}
 	var v Value
-	err := r.call(ctx, c.module, actor, conv, kind, func(ctx context.Context, h *Host) error {
+	var drew *model.ValueDraw
+	err := r.call(ctx, c.module, actor, conv, kind, draws, func(ctx context.Context, h *Host) error {
 		var err error
 		v, err = c.module.Handler.Resolve(ctx, h, Marked{Kind: kind, Text: text})
+		drew = h.drew()
 		return err
 	})
 	if err != nil || v.Kind != kind {
 		return model.ValueEnvelope{}, false
 	}
 	env, err := r.envelope(c.module, v)
+	env.Draw = drew
 	return env, err == nil
 }
 

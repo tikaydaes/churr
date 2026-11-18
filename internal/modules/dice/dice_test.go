@@ -1,6 +1,7 @@
 package dice
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tikaydaes/churr/internal/fair"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/modhost"
 )
@@ -154,33 +156,35 @@ func TestDiceVectors(t *testing.T) {
 	}
 }
 
-// registry is the host with this module alone, every die falling as pick
-// says.
-func registry(t *testing.T, pick func(n int) int) *modhost.Registry {
+// registry is the host with this module alone.
+func registry(t *testing.T) *modhost.Registry {
 	t.Helper()
-	r, err := modhost.New(modhost.Options{Intn: pick}, Module())
+	r, err := modhost.New(modhost.Options{}, Module())
 	if err != nil {
 		t.Fatal(err)
 	}
 	return r
 }
 
-// /roll and /dice, through the host as the server runs them, with the
-// lowest and highest faces: the text is the roll in words, the view a value
-// of kind dice_roll made by this module, and a roll the grammar refuses
-// comes back as the grammar's sentence.
+// /roll and /dice, through the host as the server runs them, from two
+// draws: the text is the roll in words, the view a value of kind dice_roll
+// made by this module, which says it took object 0 of the draw and is the
+// roll derive 1 gives for it, and a roll the grammar refuses comes back as
+// the grammar's sentence.
 func TestCommands(t *testing.T) {
 	ctx := context.Background()
-	lowest, highest := func(int) int { return 0 }, func(n int) int { return n - 1 }
-	for _, pick := range []func(int) int{lowest, highest} {
-		r := registry(t, pick)
+	for _, beta := range [][]byte{bytes.Repeat([]byte{0}, 32), bytes.Repeat([]byte{0xff}, 32)} {
+		r := registry(t)
 		for _, c := range []struct{ cmd, text, dice string }{
 			{"roll", "", "1d20"}, {"roll", "100d1000", "100d1000"}, {"roll", " 4d4+d6, 3d10k2 ", "4d4+1d6, 3d10kh2"},
 			{"roll", "adv", "2d20kh1"}, {"dice", "", "1d6"}, {"dice", "4+3", "4d6+3"}, {"dice", "4, 2d8", "4d6, 2d8"},
 		} {
-			made, err := r.Command(ctx, model.Account{}, "", c.cmd, c.text)
+			made, err := r.Command(ctx, model.Account{}, "", c.cmd, c.text, fair.NewObjects(beta))
 			if err != nil {
 				t.Fatalf("/%s %s: %v", c.cmd, c.text, err)
+			}
+			if made.View == nil || made.View.Draw == nil || made.View.Draw.I != 0 || !sameAsDerived(t, beta, 0, made.View.Data) {
+				t.Errorf("/%s %s: not derive 1's roll of object 0: %+v", c.cmd, c.text, made.View)
 			}
 			var got model.DiceRoll
 			if made.View == nil || made.View.Kind != model.KindDiceRoll || made.View.By != Name || json.Unmarshal(made.View.Data, &got) != nil {
@@ -191,12 +195,12 @@ func TestCommands(t *testing.T) {
 			}
 		}
 	}
-	r := registry(t, nil)
+	r := registry(t)
 	for _, c := range []struct{ cmd, text, want string }{
 		{"roll", "banana", "Write dice like"}, {"roll", "101d6", "at most 100 dice"}, {"roll", "1,2,3,4,5,6,7,8,9", "at most 8 rows"},
 		{"dice", "0", "at least one die"},
 	} {
-		_, err := r.Command(ctx, model.Account{}, "", c.cmd, c.text)
+		_, err := r.Command(ctx, model.Account{}, "", c.cmd, c.text, fair.NewObjects(make([]byte, 32)))
 		var e *model.Error
 		if err == nil || !strings.Contains(err.Error(), c.want) || !asError(err, &e) || e.Code != model.CodeInvalidValue {
 			t.Errorf("/%s %s: %v, want an invalid value saying %q", c.cmd, c.text, err, c.want)
@@ -209,7 +213,7 @@ func TestCommands(t *testing.T) {
 // row; what it refuses stays text.
 func TestInlineDice(t *testing.T) {
 	ctx := context.Background()
-	r := registry(t, func(n int) int { return n - 1 })
+	r := registry(t)
 	claims := r.Claims()
 	if len(claims) != 1 || claims[0].Kind != model.KindDiceRoll || claims[0].Open != "[[" || claims[0].Close != "]]" {
 		t.Fatalf("claims: %+v", claims)
@@ -224,16 +228,41 @@ func TestInlineDice(t *testing.T) {
 			t.Errorf("%q is offered as dice", in)
 		}
 	}
-	v, ok := r.Resolve(ctx, model.Account{}, "", model.KindDiceRoll, "2d6+3")
-	var got model.DiceRoll
-	if !ok || json.Unmarshal(v.Data, &got) != nil || got.Dice != "2d6+3" || len(got.Rows) != 1 || got.Rows[0].Total != 15 || v.By != Name {
-		t.Fatalf("[[2d6+3]] resolved as %+v %v", v, ok)
+	// Two objects of one message take objects 0 and 1 of its draw.
+	beta := bytes.Repeat([]byte{7}, 32)
+	draws := fair.NewObjects(beta)
+	for i, in := range []string{"2d6+3", "4d6kh3"} {
+		v, ok := r.Resolve(ctx, model.Account{}, "", model.KindDiceRoll, in, draws)
+		var got model.DiceRoll
+		if !ok || json.Unmarshal(v.Data, &got) != nil || len(got.Rows) != 1 || v.By != Name || v.Draw == nil || v.Draw.I != i ||
+			!sameAsDerived(t, beta, uint32(i), v.Data) {
+			t.Fatalf("[[%s]] resolved as %+v %v", in, v, ok)
+		}
 	}
 	for _, in := range []string{"1d6, 1d6", "dd", "2d1", " "} {
-		if _, ok := r.Resolve(ctx, model.Account{}, "", model.KindDiceRoll, in); ok {
+		if _, ok := r.Resolve(ctx, model.Account{}, "", model.KindDiceRoll, in, fair.NewObjects(beta)); ok {
 			t.Errorf("[[%s]] was rolled", in)
 		}
 	}
+}
+
+// sameAsDerived reports whether a dice_roll's rows are what derive 1 rolls
+// for them from object i of a draw with output beta.
+func sameAsDerived(t *testing.T, beta []byte, i uint32, data []byte) bool {
+	t.Helper()
+	var stored struct {
+		Rows []fair.DiceRow `json:"rows"`
+	}
+	if err := json.Unmarshal(data, &stored); err != nil {
+		t.Fatal(err)
+	}
+	again, err := fair.Roll(fair.NewStream(beta, i), stored.Rows)
+	if err != nil {
+		return false
+	}
+	a, _ := json.Marshal(again)
+	b, _ := json.Marshal(stored.Rows)
+	return string(a) == string(b)
 }
 
 func asError(err error, out **model.Error) bool {

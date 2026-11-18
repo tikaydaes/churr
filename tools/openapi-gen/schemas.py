@@ -825,6 +825,27 @@ S('DiceRoll', 'The data of kind `dice_roll`: dice the server rolled (FEATURES.md
 # kind: (the schema of its data, the lowest catalogue level that reads it in full)
 KINDS = {'dice_roll': ('DiceRoll', 1)}
 
+S('FairPrimitive', 'One declared outcome a module asked of the message\'s draw (FAIR.md section 4): its `op` and inputs, '
+                   'as derive 1 reads them. Fields an op does not use are left out; a missing number is 0.', {
+   'op': 'enum:int|ints|pick|shuffle|deal|yesno|dice',
+   'min?': ('int', '`int`, `ints`: the least, included.'),
+   'max?': ('int', '`int`, `ints`: the greatest, included.'),
+   'count?': ('int', '`ints`: how many.'),
+   'n?': ('int', '`pick`, `shuffle`, `deal`: how many positions.'),
+   'k?': ('int', '`pick`: how many are picked.'),
+   'replace?': ('bool', '`pick`: a position may be picked again.'),
+   'weights?': ('[int]', '`pick`: one whole number of at least 0 per position.'),
+   'hands?': ('[int]', '`deal`: the size of each hand, in order.'),
+   'num?': ('int', '`yesno`: yes with probability num/den.'),
+   'den?': ('int', '`yesno`: yes with probability num/den.'),
+   'rows?': ('[#DiceRollRow]', '`dice`: the rows to roll, nothing rolled.')})
+
+S('ValueDraw', 'How a value took its chance from the message\'s draw (FAIR.md section 3): its object index, and the '
+               'declared outcomes it asked for, if any. A value of a kind with its own derivation, such as `dice_roll`, '
+               'lists none: its data says what was derived.', {
+   'i': ('int', 'The object index: its stream is SHA-256(beta ‖ i ‖ k).'),
+   'primitives?': ('[#FairPrimitive]', 'The declared outcomes asked for, in order.')})
+
 S('ValueEnvelope', 'A value of the catalogue (DESIGN-MODULES.md section 4.1): on a span of the text as an `object` entity, '
   'or on a whole message as its `view`. The text is the message; the value is a view of it. A client draws `data` when '
   'it knows `kind` and `level` is not above its own, otherwise `alt`, otherwise the text. A client keeps an envelope '
@@ -843,7 +864,22 @@ S('ValueEnvelope', 'A value of the catalogue (DESIGN-MODULES.md section 4.1): on
    'alt?': ('#ValueEnvelope', 'The generic rendition, for a kind newer than the baseline.'),
    'by?': ('str', 'The module, manifest or bot that made it. Absent when the composer marked a kind by itself.'),
    'source?': ('str', 'The derived type it was read as, when there is one (`parcels/parcel`).'),
-   'removed?': ('bool', 'An edit changed the span; nothing was resolved for it.')})
+   'removed?': ('bool', 'An edit changed the span; nothing was resolved for it.'),
+   'draw?': ('#ValueDraw', "The value's chance came from the message's draw (`fair`): which share of it, and what was asked.")})
+
+S('FairBlock', "A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the "
+               "VRF key `pk` of the server `owner` over `alpha`, which the conversation's chain fixes, and its output "
+               "`beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no "
+               "server reachable. Kept when the message is deleted; never edited.", {
+   'v': ('int', 'The layout of this block: 1.'),
+   'derive': ('int', 'The rule outcomes are derived by: 1.'),
+   'owner': ('str', 'The server that drew, by name.'),
+   'n': ('int', "The draw's number in its chain, from 1."),
+   'pk': ('b64', "The owner's VRF public key, 33 bytes compressed: its key in force when the message was made."),
+   'alpha': ('b64', 'What was proved: built from the owner, the chain, n and prev (FAIR.md section 6).'),
+   'beta': ('b64', "The proof's output, 32 bytes."),
+   'proof': ('b64', 'The ECVRF proof, 81 bytes.'),
+   'prev': ('b64', "SHA-256 of the chain's previous proof, 32 bytes; zeros for draw 1.")})
 
 S('Chance', 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message\'s text and `view`.', {
    'kind': 'enum:flip|pick|shuffle|draw|tarot',
@@ -882,6 +918,7 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
    'action?': ('bool', 'The text says what the author is doing (typed with `/me`); drawn after the author\'s name.'),
    'chance?': '#Chance',
    'view?': ('#ValueEnvelope', 'The message as a value of the catalogue, such as a roll of dice. `text` is the message; this is a view of it, drawn by a client that knows its kind.'),
+   'fair?': ('#FairBlock', "The proof of the message's draw, when anything in it took chance from one (a roll of dice). Kept when the message is deleted; never edited."),
    'fallback?': ('str', 'Plain text the server wrote to stand in for the cards, form and chance result.'),
    'reactions?': '[#Reaction]',
    'thread?': '#ThreadSummary',

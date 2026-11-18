@@ -7,6 +7,7 @@ import (
 	"github.com/tikaydaes/churr/internal/instant"
 	"github.com/tikaydaes/churr/internal/markdown"
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/modhost"
 )
 
 // Instants is what a posting client says about the dates and times in a
@@ -26,6 +27,9 @@ type Instants struct {
 	// treated (claims.go): resolved for a person posting, marked for an
 	// edit, else left as text.
 	Claims string
+	// Draws is where the objects resolved take their chance from: the
+	// message's draw (fair.go).
+	Draws modhost.Draws
 }
 
 // maxHints bounds the hints one message may carry; the rest are dropped.

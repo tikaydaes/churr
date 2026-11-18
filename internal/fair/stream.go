@@ -93,3 +93,24 @@ func (s *Stream) Below(n uint64) uint64 {
 func (s *Stream) Intn(n int) int {
 	return int(s.Below(uint64(n)))
 }
+
+// Objects hands out the streams of one draw's chance objects: object 0, then
+// 1, and so on, in the order they are asked for, which is their order of
+// appearance in the message.
+type Objects struct {
+	beta []byte
+	next uint32
+}
+
+// NewObjects is the objects of a draw whose output is beta.
+func NewObjects(beta []byte) *Objects { return &Objects{beta: append([]byte(nil), beta...)} }
+
+// Stream is the next object's stream.
+func (o *Objects) Stream() (*Stream, error) {
+	s := NewStream(o.beta, o.next)
+	o.next++
+	return s, nil
+}
+
+// Taken is how many objects have taken a stream.
+func (o *Objects) Taken() int { return int(o.next) }
