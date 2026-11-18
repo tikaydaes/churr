@@ -107,13 +107,31 @@ void main() {
         '($label)', (tester) async {
       late final ServerState s;
       final table = [
+        // /roll is the dice module's command: its entry is the help the
+        // server lists with it, names written in.
         SlashCommand({
           'name': 'roll',
-          'kind': 'builtin',
+          'kind': 'module',
+          'module': 'dice',
           'description': 'Rolls dice, rolled by the server',
           'hint': '[dice]',
+          'help': {
+            'description': 'Rolls dice, rolled by the server.',
+            'examples': [
+              {'type': '/roll', 'then': 'Rolls one d20.'},
+              {
+                'type': '/roll 4d6kh3',
+                'then':
+                    'Rolls four six-sided dice and keeps the highest three; '
+                    'the lowest is shown struck through.',
+              },
+            ],
+            'where': 'Channels and chats. Not in sealed chats.',
+            'who': 'Anyone who can post. Not bots.',
+          },
         }),
         cmd('flip', d: 'Flips a coin'),
+        cmd('pick', d: 'Picks one of the options'),
         cmd('ban', d: 'Bans someone from this channel'),
         cmd('draw', d: 'Draws cards'),
       ];
@@ -156,16 +174,23 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Not in sealed chats.'), findsOneWidget);
-      // A related command opens its own entry; back goes to the list.
-      final flip = find.byKey(const Key('help-related-flip'));
-      await tester.ensureVisible(flip);
-      await tester.tap(flip);
+      await tester.tap(find.byKey(const Key('help-back')));
       await tester.pump();
-      expect(find.byKey(const Key('help-entry-flip')), findsOneWidget);
+      expect(find.byKey(const Key('help-roll')), findsOneWidget);
+      Navigator.of(tester.element(find.byKey(const Key('help-search')))).pop();
+      await settleAsync(tester);
+
+      // A related command opens its own entry; back goes to the list.
+      await open('flip');
+      final pick = find.byKey(const Key('help-related-pick'));
+      await tester.ensureVisible(pick);
+      await tester.tap(pick);
+      await tester.pump();
+      expect(find.byKey(const Key('help-entry-pick')), findsOneWidget);
       await tester.tap(find.byKey(const Key('help-back')));
       await tester.pump();
       expect(find.byKey(const Key('help-search')), findsOneWidget);
-      expect(find.byKey(const Key('help-roll')), findsOneWidget);
+      expect(find.byKey(const Key('help-flip')), findsOneWidget);
       Navigator.of(tester.element(find.byKey(const Key('help-search')))).pop();
       await settleAsync(tester);
 
