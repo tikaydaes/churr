@@ -1,7 +1,8 @@
 // The built-in slash commands (docs/FEATURES.md sections 12.3 and 12.4,
-// ruling R67): the table every client holds (the modules' commands, /roll
-// and /dice, are not here: the server lists them, with their help, and runs
-// them) and the one grammar they read
+// ruling R67): the table every client holds (the modules' commands, /roll,
+// /dice, /flip, /pick, /shuffle, /draw, /tarot and /mahjongg, are not here:
+// the server lists them, with their help, and runs them) and the one grammar
+// they read
 // typed text by. testdata/commands/commands.json is the table and
 // testdata/commands/parse.json the cases this file is held to
 // (e2e/commands.mjs). Nothing here touches the page, so it runs under Node.
@@ -9,7 +10,6 @@
 // The words the web chat says about commands are here too, in STRINGS: the
 // web chat keeps its wording beside the code that uses it.
 
-import { DECKS, SPREADS } from './message/cardnames.js';
 
 // name: [args, offered in a sealed chat, offered to admins only]. The order
 // is the menu's.
@@ -17,8 +17,6 @@ export const COMMANDS = {
   poll: ['form', false], rsvp: ['form', false], signup: ['form', false], approve: ['form', false], form: ['none', false],
   remind: ['raw', true], watch: ['person', true], unwatch: ['person', true],
   me: ['text', true], shrug: ['text_optional', true], tableflip: ['text_optional', true], unflip: ['text_optional', true], spoiler: ['text', true],
-  flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
-  tarot: ['spread', false], mahjongg: ['count', false], mahjong: ['count', false],
   join: ['channel', true], leave: ['channel_optional', false], part: ['channel_optional', false], msg: ['person_text', true], topic: ['text_optional', false],
   invite: ['person_channel', false], kick: ['person', false], ban: ['person_text', false], unban: ['person', false],
   exile: ['person_text', false, true], unexile: ['person', false, true], mute: ['person_duration', false],
@@ -41,7 +39,6 @@ export const GROUP_OF = {};
 for (const [g, names] of Object.entries({
   forms: 'poll rsvp signup approve form', reminders: 'remind watch unwatch',
   post: 'me shrug tableflip unflip spoiler say slap',
-  chance: 'flip pick shuffle draw tarot mahjongg mahjong',
   conversations: 'join leave part msg topic list query clear close knock',
   members: 'invite kick ban unban exile unexile mute op deop mod unmod names banlist voice devoice',
   people: 'whois ignore unignore nick whoami time',
@@ -63,7 +60,7 @@ export const SERVER_UNBAN = 'unexile';
 export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN, who: 'names', kickban: 'ban', kb: 'ban', amsg: 'broadcast' };
 
 // Another name for a command.
-const ALIASES = { part: 'leave', mahjong: 'mahjongg', info: 'version', ...HIDDEN_ALIASES };
+const ALIASES = { part: 'leave', info: 'version', ...HIDDEN_ALIASES };
 
 // aliasesOf lists the other names a command answers to, for /help.
 export const aliasesOf = (n) => Object.keys(ALIASES).filter((a) => ALIASES[a] === n);
@@ -74,7 +71,7 @@ export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n
 // (commands.json, replaceable). Every other built-in is protected, a new one
 // included: the server refuses its name and aliases to saved replies, custom
 // commands and bot commands, and ignores any made before.
-export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong', 'slap']);
+export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'slap']);
 
 // isProtected says whether a name is a protected built-in or one of its
 // aliases.
@@ -96,9 +93,6 @@ export function hiddenBuiltins(listed, admin) {
   return out;
 }
 
-// The results the server draws: never offered in a sealed chat, which the
-// server cannot write into.
-export const CHANCE = new Set(['flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
 
 export const SHRUG = '¯\\\\\\_(ツ)\\_/¯';
 const ENDINGS = { shrug: SHRUG, tableflip: '(╯°□°)╯︵ ┻━┻', unflip: '┬─┬ノ( º _ ºノ)' };
@@ -146,20 +140,6 @@ function channelRef(s) {
   return { name: s.replace(/^#/, '').trim() };
 }
 
-// findDeck finds a deck by name or alias, without regard to case.
-export function findDeck(name) {
-  const n = String(name || 'standard').toLowerCase();
-  for (const [key, d] of Object.entries(DECKS)) if (key === n || d.aliases.includes(n)) return key;
-  return null;
-}
-
-// findSpread finds a tarot spread by name or alias, without regard to case.
-export function findSpread(name) {
-  const n = String(name || 'three').toLowerCase();
-  for (const [key, sp] of Object.entries(SPREADS)) if (key === n || sp.aliases.includes(n)) return key;
-  return null;
-}
-
 // parse reads text typed in a composer. It returns null when the text is not
 // a built-in command, or { name, … } with what was read, or { name, error }.
 // hidden is what hiddenBuiltins() gives for the reader: those names are not
@@ -200,39 +180,6 @@ export function parse(text, hidden) {
       if (ENDINGS[name]) return { name, post: (rest ? rest + ' ' : '') + ENDINGS[name] };
       if (rest) out.text = rest;
       return out;
-    case 'options': {
-      const opts = rest ? rest.split('|').map((o) => o.trim()) : [];
-      if (opts.length < 2) return fail('needs_options');
-      if (opts.length > 20) return fail('too_many_options');
-      if (opts.some((o) => !o)) return fail('empty_option');
-      out.options = opts;
-      return out;
-    }
-    case 'draw': {
-      let count = 1, deck = 'standard';
-      if (words.length > 2) return fail('bad_draw');
-      if (words.length) {
-        if (/^\d+$/.test(words[0])) {
-          count = Number(words[0]);
-          if (words[1]) deck = words[1];
-        } else if (words.length === 1) deck = words[0];
-        else return fail('bad_draw');
-      }
-      if (count < 1) return fail('bad_draw');
-      const key = findDeck(deck);
-      if (!key) return fail('unknown_deck');
-      if (count > DECKS[key].cards.length) return fail('too_many_cards');
-      return { name, count, deck: key };
-    }
-    case 'spread': {
-      const key = words.length > 1 ? null : findSpread(rest);
-      return key ? { name, spread: key } : fail('unknown_spread');
-    }
-    case 'count': {
-      const n = rest ? (/^\d+$/.test(rest) ? Number(rest) : 0) : 1;
-      if (n < 1 || n > DECKS.mahjong.cards.length) return fail('bad_count');
-      return { name, count: n };
-    }
     case 'channel':
       if (!rest) return fail('needs_channel');
       out.channel = channelRef(rest);
@@ -306,14 +253,6 @@ export const STRINGS = {
   errors: {
     needs_text: (n) => `/${n} needs some text after it.`,
     takes_nothing: (n) => `/${n} takes nothing after it.`,
-    needs_options: (n) => `/${n} needs at least two options, separated by |.`,
-    too_many_options: (n) => `/${n} takes at most 20 options.`,
-    empty_option: (n) => `An option of /${n} is empty.`,
-    bad_draw: () => 'Write /draw [count] [deck], for example /draw 3 tarot.',
-    unknown_deck: () => `There is no such deck. The decks are: ${Object.keys(DECKS).join(', ')}.`,
-    too_many_cards: () => 'That deck does not have that many cards.',
-    unknown_spread: () => `There is no such spread. The spreads are: ${Object.keys(SPREADS).join(', ')}.`,
-    bad_count: () => `Draw 1 to ${DECKS.mahjong.cards.length} tiles.`,
     needs_channel: (n) => `/${n} needs a channel: type # and pick one.`,
     needs_person: (n) => `/${n} needs a person: type @ and pick one.`,
     bad_person: (n) => `/${n} takes one person, written @name.`,
@@ -321,9 +260,7 @@ export const STRINGS = {
     bad_broadcast_time: () => 'Show it for 1m to 24h, written like 15m or 2h.',
     mute_too_long: () => `A time-out lasts at most ${MUTE_MAX_SECONDS / 86400} days, written like 2h, 1d or 4w.`,
   },
-  notInSealed: (n) => CHANCE.has(n)
-    ? `/${n} is drawn by the server, which cannot write into a sealed chat.`
-    : `/${n} is not available in a sealed chat.`,
+  notInSealed: (n) => `/${n} is not available in a sealed chat.`,
   noSuchPerson: (p) => `Nobody here is called @${p}.`,
   noSuchChannel: (c) => `No channel you can see is called “${c}”.`,
   severalChannels: (c) => `Several channels are called “${c}”: type # and pick the one you mean.`,

@@ -51,8 +51,8 @@ check('/leave names /part', entry(admin.find((c) => c.name === 'leave'), admin).
 check('/ban names /kickban and /kb', ['/kickban', '/kb'].every((a) => entry(admin.find((c) => c.name === 'ban'), admin).aliases.includes(a)));
 
 // /help <word>.
-check('/help flip finds /flip', findListed(member, 'flip')?.name === 'flip');
-check('/help /flip finds /flip', findListed(member, '/flip')?.name === 'flip');
+check('/help shrug finds /shrug', findListed(member, 'shrug')?.name === 'shrug');
+check('/help /shrug finds /shrug', findListed(member, '/shrug')?.name === 'shrug');
 // A module's command (/roll) has the help the server gives with it.
 const roll = { name: 'roll', kind: 'module', module: 'dice', description: 'Rolls dice', hint: '[dice]',
   help: { description: 'Rolls dice, rolled by the server.', args: [{ name: 'dice', about: 'Such as 2d6.' }], examples: [{ type: '/roll', then: 'Rolls one d20.' }, { type: '/roll 2d6', then: 'Rolls two.' }], where: 'Channels.', who: 'People.' } };
@@ -91,6 +91,12 @@ for (const r of decks.rows) {
 }
 check('/tarot lists every spread', more('spreads').rows.map((r) => r.name).join() === Object.keys(SPREADS).join());
 check('/mahjongg says how many tiles', more('mahjong').rows[0].count.includes('144'));
+// The cards module's commands list what they draw from; another module's
+// command lists nothing.
+const draw = { name: 'draw', kind: 'module', module: 'cards', description: 'Draws cards', hint: '[count] [deck]', help: { description: 'Draws cards.' } };
+check('the module\'s /draw lists the decks', entry(draw, [draw]).more?.rows.length === Object.keys(DECKS).length);
+check('the module\'s /tarot lists the spreads', entry({ ...draw, name: 'tarot' }, [draw]).more?.rows.length === Object.keys(SPREADS).length);
+check('another module\'s /draw lists nothing', entry({ ...draw, module: 'other' }, [draw]).more === null);
 
 // Things you can type: every kind of object the composer knows.
 const covered = new Set(HELP.things.flatMap((t) => t.covers));

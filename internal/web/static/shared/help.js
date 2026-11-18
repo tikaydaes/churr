@@ -44,6 +44,10 @@ export function findListed(listed, word) {
 // usage, args, description, examples, aliases, where, who, notes,
 // related, more }. Related commands are only those listed here, so a
 // command hidden from this person is never named to them.
+// MODULE_MORE is the registry list each of the cards module's commands
+// draws from.
+const MODULE_MORE = { draw: 'decks', tarot: 'spreads', mahjongg: 'mahjong', mahjong: 'mahjong' };
+
 export function entry(c, listed) {
   const here = new Set((listed || []).map((x) => x.name));
   if (c.kind === 'module') {
@@ -53,7 +57,9 @@ export function entry(c, listed) {
     return {
       name: c.name, kind: c.kind, summary: c.description || words('noDescription'),
       usage: '/' + c.name + (c.hint ? ' ' + c.hint : ''), args: e.args || [], examples: e.examples || [],
-      description: e.description || '', aliases: [], where: e.where || '', who: e.who || '', notes: [], related: [], more: null,
+      description: e.description || '', aliases: [], where: e.where || '', who: e.who || '', notes: [], related: [],
+      // The cards module's commands list what they draw from.
+      more: c.module === 'cards' && MODULE_MORE[c.name] ? more(MODULE_MORE[c.name]) : null,
     };
   }
   if (c.kind !== 'builtin') {

@@ -597,7 +597,7 @@ export function findMessage(id) {
 // spinsLive says whether a message has reels that spin when it arrives
 // live: a chance result, or a value that moves (a roll, as the message's
 // view or inline).
-export function spinsLive(m) { return !!(m.chance || spins(m)); }
+export function spinsLive(m) { return spins(m); }
 
 export function putMessage(m) {
   const r = room(m.conversation_id);

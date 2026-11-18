@@ -11,6 +11,7 @@ import { isPublicKey, proofToHash, verify } from '../internal/web/static/shared/
 import { Histories, comparePin, pinHistory } from '../internal/web/static/shared/fair/pin.js';
 import { DERIVE, Stream, block, draw, isPrimitive, sameRoll } from '../internal/web/static/shared/fair/derive.js';
 import { verifyMessage } from '../internal/web/static/shared/fair/verify.js';
+import { kindAsks, kindClaims, rederive } from '../internal/web/static/shared/fair/kinds.js';
 import { clockOffset, drawT, learnServerTime } from '../internal/web/static/shared/fair/clock.js';
 
 const file = new URL('../testdata/ecvrf/vectors.json', import.meta.url);
@@ -150,6 +151,26 @@ for (const v of df.cases) {
   }
 }
 for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.label}`);
+
+// The built-in chance kinds (docs/FAIR.md section 5a), held to
+// testdata/fair/kinds.json as the server's and the app's are: each asks the
+// primitives its data names, they give the results recorded, the value
+// re-derives, and each invalid value does not.
+{
+  const kf = JSON.parse(readFileSync(new URL('../testdata/fair/kinds.json', import.meta.url), 'utf8'));
+  check(kf.derive === DERIVE && kf.cases.length >= 10 && kf.invalid.length >= 5, 'kinds: the file is derive 1\'s');
+  const norm = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).filter(([, y]) => y !== undefined && y !== 0 && y !== false).sort()) : x));
+  for (const c of kf.cases) {
+    const asks = kindAsks(c.kind, c.data);
+    check(norm(asks) === norm(c.asks), `kinds: ${c.label} asks what it did`);
+    const s = new Stream(hex(c.beta), c.i);
+    for (let j = 0; j < c.asks.length; j++) check(norm(await draw(s, c.asks[j])) === norm(c.results[j]), `kinds: ${c.label} result ${j}`);
+    check(await rederive(c.kind, c.data, hex(c.beta), c.i) === true, `kinds: ${c.label} re-derives`);
+    const claims = await kindClaims(c.kind, c.data, hex(c.beta), c.i);
+    check(norm(claims) === norm(c.results), `kinds: ${c.label} claims what it shows`);
+  }
+  for (const c of kf.invalid) check(await rederive(c.kind, c.data, hex(c.beta), c.i) === false, `kinds: ${c.label} does not re-derive`);
+}
 
 // A message's draw checked as the chat checks it (shared/fair/verify.js),
 // from testdata/fair/message.json, which the Go and Dart checks read too:

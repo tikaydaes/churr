@@ -5,7 +5,7 @@
 
 import { get, post, put, patch, del } from '/shared/api.js';
 import { h, toast, confirmDialog, openDialog, dateTime } from '/shared/dom.js';
-import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } from '/shared/commands.js';
+import { STRINGS, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } from '/shared/commands.js';
 import { store, conversation, putMessage, title, isSealed, needAccounts, markRead, onlineIn, live, hubOf, loadHub, hubKeeper } from './store.js';
 import { helpDialog, banListDialog, closeButton, knockPicker } from './cmddialogs.js';
 import { renderMarkdown } from '/shared/md/render.js';
@@ -52,18 +52,6 @@ function channel(ref) {
 
 const name = (a) => a.display_name || a.username;
 
-// chanceInput is what the server is asked to draw.
-function chanceInput(c) {
-  switch (c.name) {
-    case 'flip': return { kind: 'flip' };
-    case 'pick': case 'shuffle': return { kind: c.name, options: c.options };
-    case 'draw': return { kind: 'draw', count: c.count, deck: c.deck };
-    case 'mahjongg': return { kind: 'draw', count: c.count, deck: 'mahjong' };
-    case 'tarot': return { kind: 'tarot', spread: c.spread };
-  }
-  return null;
-}
-
 // run carries out a command read by parse(). ctx: { conversationId,
 // parentId, composer } where composer has clear(), post(content) and
 // say(text). It returns true when the command was dealt with, and false
@@ -90,14 +78,6 @@ async function carryOut(c, ctx, here) {
     // /me and the text conveniences post a message as typed.
     if (ctx.composer.broadOK && !(await ctx.composer.broadOK(c.post))) return;
     await ctx.composer.post({ text: c.post, action: c.action || undefined, parent_id: ctx.parentId || undefined, quote: ctx.composer.quote || undefined });
-    return;
-  }
-  if (CHANCE.has(c.name)) {
-    ctx.composer.clear();
-    const out = await post(`/conversations/${id}/messages`, { client_id: crypto.randomUUID(), chance: chanceInput(c), parent_id: ctx.parentId || undefined });
-    // The sender's own result arrives live too: it spins once as it first
-    // appears, whether this answer or the live event comes first.
-    putMessage({ ...out.message, _live: true });
     return;
   }
   switch (c.name) {

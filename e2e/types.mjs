@@ -1,8 +1,8 @@
 // The catalogue in the web chat (docs/DESIGN-MODULES.md sections 3.2, 4
 // and 9.1), without a server or a browser:
 //
-//   1. the dice_roll kind's check, against testdata/types/dice_roll.json,
-//      the cases the server's check passes too;
+//   1. the chance kinds' checks, against testdata/types/<kind>.json, the
+//      cases the server's check passes too;
 //   2. the three-step fallback: the kind, its generic rendition, the text,
 //      and the state "this needs a newer app";
 //   3. what moves when it arrives live;
@@ -109,6 +109,17 @@ for (const c of cases.valid) {
   if (!c.draws && got) check('drawn as it came: ' + c.name, got.rows.map((r) => r.total), c.data.rows.map((r) => r.total));
 }
 for (const c of cases.invalid) check('invalid: ' + c.name, diceRollData(c.data), null);
+// The other chance kinds (docs/FAIR.md section 5a), each against its own
+// file, and each drawn as a message's card with the text set as text.
+for (const kind of ['coin_flip', 'pick', 'shuffle', 'card_draw', 'tarot_reading']) {
+  const f = JSON.parse(readFileSync(new URL(`../testdata/types/${kind}.json`, import.meta.url), 'utf8'));
+  check(`${kind}: the file is the kind's`, [f.kind, f.level, !!KINDS[kind] && KINDS[kind].chance], [kind, KINDS[kind] && KINDS[kind].level, true]);
+  for (const c of f.valid) check(`${kind} valid: ${c.name}`, KINDS[kind].data(c.data) !== null, true);
+  for (const c of f.invalid) check(`${kind} invalid: ${c.name}`, KINDS[kind].data(c.data), null);
+  const m = { text: 'words', view: { kind, level: 1, data: f.valid[0].data, by: 'x' } };
+  const { card } = drawView(m, {});
+  check(`${kind}: drawn as a card`, !!card && card.className === 'chance', true);
+}
 const one = cases.valid[0].data;
 const frozen = JSON.stringify(one);
 diceRollData(one);

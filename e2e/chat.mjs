@@ -333,10 +333,10 @@ export async function chatFlow(kaity, sam, origin) {
       still: [...el.querySelectorAll('.slot.still')].map((s) => s.textContent),
     }));
     assert(d6.cubes.length === 4 && d6.cubes.every((f) => /^d6-[1-6]$/.test(f)) && d6.still.join() === '+3', `/dice 4+3 is four d6 and +3: ${JSON.stringify(d6)}`);
-    // A mistake is said before anything is sent. (The server's refusals
-    // of dice are covered by the Go tests: a 400 here would be logged.)
+    // A mistake comes back in the server's words: /pick is the choose
+    // module's, which the server reads.
     await say(a, '/pick tea');
-    await a.locator('.toast.error', { hasText: 'at least two options' }).waitFor();
+    await a.locator('.toast.error', { hasText: 'Give 2 to 20 options' }).waitFor();
     // The text stays in the box to be put right; here it is cleared.
     assert((await editor(a).textContent()).includes('/pick tea'), 'the mistaken command stays in the box');
     await editor(a).click();

@@ -1096,13 +1096,15 @@ export class Composer {
     }
     // A saved reply posts its text; a bot's command is sent to the bot,
     // which answers for everyone or for this person alone; a module's
-    // (/roll, /dice) is read and answered by the server, and its card
-    // spins once as it arrives.
-    this.clear();
+    // (/roll, /flip, /pick, /draw and the rest) is read and answered by the
+    // server, and its card spins once as it arrives. The box is cleared once
+    // the server has taken it: a refusal, in the server's words, leaves the
+    // line there to be put right.
     // A module's command may take chance: its client_id and second are
     // its draw's input.
     const out = await post(`/conversations/${this.o.conversationId}/commands`, { name, text: text || undefined, parent_id: this.o.parentId || undefined,
       client_id: crypto.randomUUID(), draw_t: drawT() });
+    this.clear();
     if (out.message) putMessage(c.kind === 'module' ? { ...out.message, _live: true } : out.message);
     if (out.interaction_id) store.emit('waiting', { interactionId: out.interaction_id, botId: c.bot_id, conversationId: this.o.conversationId, parentId: this.o.parentId || null });
     return true;

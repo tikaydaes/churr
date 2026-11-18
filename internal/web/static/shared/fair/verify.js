@@ -13,7 +13,9 @@
 // never hides the roll.
 
 import { verify } from './ecvrf.js';
-import { DERIVE, Stream, sameRoll } from './derive.js';
+import { DERIVE } from './derive.js';
+import { rederive } from './kinds.js';
+import { read, KINDS, LEVEL } from '../types/catalogue.js';
 
 // How far a draw's second may be from its message's time: the server's
 // window, and the looser one for a message drawn by another server, whose
@@ -79,12 +81,23 @@ export async function verifyMessage(m, ctx) {
   const objects = [];
   const check = async (where, v) => {
     if (!v || !v.draw) return;
-    let ok = true;
-    if (v.kind === 'dice_roll' && v.data && Array.isArray(v.data.rows)) ok = await sameRoll(new Stream(beta, v.draw.i), v.data.rows);
-    objects.push({ where, i: v.draw.i, ok });
+    // A kind with a composition of derive 1 is re-derived in full, from its
+    // checked data; one this client does not know is only proved, not
+    // re-derived, and says so.
+    const r = read(v);
+    let ok = true, known = false;
+    if (r.step === 'kind' && !r.removed && !r.alt && Number.isSafeInteger(v.draw.i) && v.draw.i >= 0) {
+      const again = await rederive(v.kind, r.data, beta, v.draw.i);
+      if (again !== null) { ok = again; known = true; }
+    } else if (!v.removed && Object.hasOwn(KINDS, v.kind) && v.level <= LEVEL && r.step !== 'kind') {
+      // A kind this client checks, whose data does not hold together: it
+      // took the draw, and what it shows is not what the draw gives.
+      ok = false; known = true;
+    }
+    objects.push({ where, i: v.draw.i, ok, known, kind: v.kind, data: r.step === 'kind' ? r.data : null });
   };
   await check('view', m.view);
   for (const e of m.entities || []) if (e.type === 'object') await check('object@' + e.at, e.object);
-  if (objects.some((o) => !o.ok)) return { ...fail('A die shown is not the one the proof gives.'), objects };
+  if (objects.some((o) => !o.ok)) return { ...fail('An outcome shown is not the one the proof gives.'), objects };
   return { state: 'verified', block, objects };
 }

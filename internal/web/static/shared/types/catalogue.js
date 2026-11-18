@@ -10,16 +10,23 @@
 // draw.js, beside the kind's own files under shared/types/<kind>/.
 
 import { diceRollData } from './dice-roll/data.js';
+import { coinFlipData, pickData, shuffleData, cardDrawData, tarotReadingData } from './chance/data.js';
 
 // LEVEL is the catalogue level this client reads in full (day-one rule 3).
 // A value whose level is above it is drawn by its alt, or as its text.
 export const LEVEL = 1;
 
 // KINDS is every kind this client knows: the lowest level that reads it,
-// its data's check (which gives what is drawn, or null), and whether it
-// moves when it arrives live.
+// its data's check (which gives what is drawn, or null), whether it moves
+// when it arrives live, and whether it is a built-in chance kind, whose card
+// shows the shield of its proof by default (DESIGN-FAIR.md section 13).
 export const KINDS = {
-  dice_roll: { level: 1, data: diceRollData, spins: true },
+  dice_roll: { level: 1, data: diceRollData, spins: true, chance: true },
+  coin_flip: { level: 1, data: coinFlipData, spins: true, chance: true },
+  pick: { level: 1, data: pickData, spins: true, chance: true },
+  shuffle: { level: 1, data: shuffleData, spins: true, chance: true },
+  card_draw: { level: 1, data: cardDrawData, spins: true, chance: true },
+  tarot_reading: { level: 1, data: tarotReadingData, spins: true, chance: true },
 };
 
 // How deep a value's renditions are followed: an alt of an alt is the

@@ -7,12 +7,13 @@
 //   node e2e/commands.mjs
 
 import { readFileSync } from 'node:fs';
-import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, GROUP_OF, GROUPS, isProtected, parse, literal, findDeck, hiddenBuiltins, MUTE_MAX_SECONDS, STRINGS } from '../internal/web/static/shared/commands.js';
+import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, GROUP_OF, GROUPS, isProtected, parse, literal, hiddenBuiltins, MUTE_MAX_SECONDS, STRINGS } from '../internal/web/static/shared/commands.js';
 import { presetForm, parseMoment, PresetError } from '../internal/web/static/shared/presets.js';
 import { fromWall, utc } from '../internal/web/static/shared/instant/zone.js';
 import { parseRemind, RemindError } from '../internal/web/static/shared/remind.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys, isRedCard, spokenResult } from '../internal/web/static/shared/message/chance.js';
+import { asChance } from '../internal/web/static/shared/types/chance/data.js';
 import { SPREADS, MEANINGS } from '../internal/web/static/shared/message/cardnames.js';
 
 const read = (p) => JSON.parse(readFileSync(new URL('../testdata/commands/' + p, import.meta.url), 'utf8'));
@@ -116,7 +117,6 @@ check('the same decks', same(Object.keys(DECKS), decks.decks.map((d) => d.name))
 for (const d of decks.decks) {
   const mine = DECKS[d.name];
   check(`deck ${d.name}: cards, aliases, orientation`, mine && same(mine.cards, d.cards) && same(mine.aliases, d.aliases) && mine.orientation === d.orientation && mine.naming === d.naming);
-  for (const a of [d.name, ...d.aliases]) check(`deck ${a} is found`, findDeck(a.toUpperCase()) === d.name);
   for (const card of new Set(d.cards)) {
     const l = cardLabel(d.name, card);
     check(`${d.name} ${card} has words`, l && l.name && l.short && !/undefined/.test(l.name + l.short), JSON.stringify(l));
@@ -134,8 +134,12 @@ const dice = read('dice.json');
   check('a roll of two rows: each slot knows its row and place', same(s.map((x) => x.row), [0, 0, 0, 0, 0, 1, 1, 1]) && s[4].at === 4 && s[4].of === 5 && s[7].of === 3);
   check('a roll of two rows is said row by row', spokenResult(rows) === 'Rolled 4d4+1d6, 3d10kh2: 4d4+1d6: 1, 4, 2, 3, 5; total 15. 3d10kh2: 7, 2 (dropped), 9; total 16', spokenResult(rows));
 }
-for (const f of dice.fallback) {
-  const c = f.chance;
+// The rolls of dice.json, and a value of each other chance kind of
+// chance.json, as the reels draw them; and each is said as the server
+// writes its text.
+const chance = read('chance.json');
+for (const f of [...dice.fallback.map((x) => ({ c: x.chance })), ...chance.texts.map((x) => ({ c: asChance(x.kind, x.data), text: x.text }))]) {
+  const c = f.c;
   const s = slots(c);
   let want;
   switch (c.kind) {

@@ -8,11 +8,15 @@
 import { h, icon } from '../dom.js';
 import { read } from './catalogue.js';
 import * as diceRoll from './dice-roll/view.js';
+import { viewOf } from './chance/view.js';
 import { t } from './words.js';
 
 // VIEWS is how each kind this client knows looks: its card (a whole
 // message), chip (in a sentence), tooltip and dialog.
-const VIEWS = { dice_roll: diceRoll };
+const VIEWS = {
+  dice_roll: diceRoll,
+  ...Object.fromEntries(['coin_flip', 'pick', 'shuffle', 'card_draw', 'tarot_reading'].map((k) => [k, viewOf(k)])),
+};
 
 // drawObject draws an `object` entity: the value its typed characters
 // stand for. live() is the message's spin clock when it arrived live, and
