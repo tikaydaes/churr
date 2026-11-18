@@ -67,7 +67,7 @@ void main() {
       },
       'another beta': () {
         final m = message();
-        m['fair']['beta'] = m['fair']['prev'];
+        m['fair']['beta'] = (m['fair']['alpha'] as String).substring(0, 43);
         return check(m);
       },
       'another n': () {

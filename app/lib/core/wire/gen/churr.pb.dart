@@ -15120,7 +15120,6 @@ class FairBlock extends $pb.GeneratedMessage {
     $core.List<$core.int>? alpha,
     $core.List<$core.int>? beta,
     $core.List<$core.int>? proof,
-    $core.List<$core.int>? prev,
   }) {
     final result = FairBlock._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -15132,7 +15131,6 @@ class FairBlock extends $pb.GeneratedMessage {
     if (alpha != null) result.alpha = alpha;
     if (beta != null) result.beta = beta;
     if (proof != null) result.proof = proof;
-    if (prev != null) result.prev = prev;
     return result;
   }
 
@@ -15162,8 +15160,6 @@ class FairBlock extends $pb.GeneratedMessage {
         9, _omitFieldNames ? '' : 'beta', $pb.PbFieldType.OY)
     ..a<$core.List<$core.int>>(
         10, _omitFieldNames ? '' : 'proof', $pb.PbFieldType.OY)
-    ..a<$core.List<$core.int>>(
-        11, _omitFieldNames ? '' : 'prev', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -15260,15 +15256,6 @@ class FairBlock extends $pb.GeneratedMessage {
   $core.bool hasProof() => $_has(8);
   @$pb.TagNumber(10)
   void clearProof() => $_clearField(10);
-
-  @$pb.TagNumber(11)
-  $core.List<$core.int> get prev => $_getN(9);
-  @$pb.TagNumber(11)
-  set prev($core.List<$core.int> value) => $_setBytes(9, value);
-  @$pb.TagNumber(11)
-  $core.bool hasPrev() => $_has(9);
-  @$pb.TagNumber(11)
-  void clearPrev() => $_clearField(11);
 }
 
 /// One emoji on a message, with the accounts behind it.

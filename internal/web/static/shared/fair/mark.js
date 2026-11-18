@@ -24,7 +24,7 @@ const WORDS = {
 
 // The block's fields, in the order the proof is read.
 const FIELDS = [['owner', 'Drawn by'], ['n', 'Draw number'], ['derive', 'Rule'], ['pk', 'Key'], ['alpha', 'Proved over (alpha)'],
-  ['proof', 'Proof'], ['beta', 'Output (beta)'], ['prev', 'Previous proof (hash)']];
+  ['proof', 'Proof'], ['beta', 'Output (beta)']];
 
 /** The check of a message's draw, made once: a promise kept on the message. */
 export function checkOnce(m, ctx) {

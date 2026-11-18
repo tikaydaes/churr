@@ -2,7 +2,6 @@ package fair
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -13,7 +12,13 @@ import (
 
 // The chain (docs/FAIR.md section 6): each conversation's draws, numbered from
 // 1, each proved over an alpha that nobody chooses: the owner's name, the
-// chain's name, the draw's number and the hash of the draw before's proof.
+// chain's name and the draw's number. Each draw stands alone. It is not
+// chained to the proof before it: an ECVRF proof is not unique (a prover
+// holding the key can make many valid proofs of one alpha, by its choice of
+// nonce), only its output is, so a hash of the previous proof in alpha would
+// let the key holder choose among next draws. n, used exactly once per
+// chain, is all the order a chain needs; a gap in n is what shows a draw
+// skipped or never sent.
 
 // BlockVersion is the version of the fair block's layout.
 const BlockVersion = 1
@@ -21,32 +26,21 @@ const BlockVersion = 1
 // alphaLabel opens every alpha of chains under this layout.
 const alphaLabel = "churr-fair-1"
 
-// NoPrev is prev for draw 1: 32 zero bytes.
-var NoPrev = make([]byte, 32)
-
 // Alpha is what draw n of a chain is proved over:
 //
-//	"churr-fair-1" ‖ u16be(len owner) ‖ owner ‖ u16be(len chain) ‖ chain ‖ u64be(n) ‖ prev
+//	"churr-fair-1" ‖ u16be(len owner) ‖ owner ‖ u16be(len chain) ‖ chain ‖ u64be(n)
 //
 // owner is the drawing server's name and chain the chain's name (the
 // conversation id, or the stream id of a conversation shared over the
-// link), both as UTF-8; prev is SHA-256 of draw n-1's proof, or NoPrev for
-// draw 1.
-func Alpha(owner, chain string, n int64, prev []byte) []byte {
-	b := make([]byte, 0, len(alphaLabel)+4+len(owner)+len(chain)+8+32)
+// link), both as UTF-8.
+func Alpha(owner, chain string, n int64) []byte {
+	b := make([]byte, 0, len(alphaLabel)+4+len(owner)+len(chain)+8)
 	b = append(b, alphaLabel...)
 	b = binary.BigEndian.AppendUint16(b, uint16(len(owner)))
 	b = append(b, owner...)
 	b = binary.BigEndian.AppendUint16(b, uint16(len(chain)))
 	b = append(b, chain...)
-	b = binary.BigEndian.AppendUint64(b, uint64(n))
-	return append(b, prev...)
-}
-
-// PrevOf is the prev of the draw after one with this proof.
-func PrevOf(proof []byte) []byte {
-	h := sha256.Sum256(proof)
-	return h[:]
+	return binary.BigEndian.AppendUint64(b, uint64(n))
 }
 
 // Prover proves an alpha with a server's current VRF key (secret.Keys).
@@ -56,14 +50,14 @@ type Prover interface {
 }
 
 // Make draws number n of a chain: the block a message carries.
-func Make(p Prover, owner, chain string, n int64, prev []byte) (model.FairBlock, error) {
-	alpha := Alpha(owner, chain, n, prev)
+func Make(p Prover, owner, chain string, n int64) (model.FairBlock, error) {
+	alpha := Alpha(owner, chain, n)
 	proof, beta, err := p.VRFProve(alpha)
 	if err != nil {
 		return model.FairBlock{}, err
 	}
 	return model.FairBlock{V: BlockVersion, Derive: Derive, Owner: owner, N: n, PK: p.VRFPublic(),
-		Alpha: alpha, Beta: beta, Proof: proof, Prev: append([]byte(nil), prev...)}, nil
+		Alpha: alpha, Beta: beta, Proof: proof}, nil
 }
 
 // Key is one entry of a server's VRF key history: the key and when it began.
@@ -89,7 +83,7 @@ var ErrBlock = errors.New("fair: the block does not check out")
 
 // CheckBlock checks a block as a receiver does (docs/FAIR.md section 9): its
 // layout and rule are known; it is the owner's, of this chain; alpha is
-// rebuilt from owner, chain, n and prev; pk is the owner's key at the
+// rebuilt from owner, chain and n; pk is the owner's key at the
 // message's time by its history; the proof verifies under pk and gives beta.
 func CheckBlock(b *model.FairBlock, owner, chain string, at model.Time, history []Key) error {
 	bad := func(why string) error { return fmt.Errorf("%w: %s", ErrBlock, why) }
@@ -100,9 +94,9 @@ func CheckBlock(b *model.FairBlock, owner, chain string, at model.Time, history 
 		return bad("unknown derive rule")
 	case b.Owner != owner:
 		return bad("not drawn by the server it came from")
-	case b.N < 1 || len(b.Prev) != 32:
+	case b.N < 1:
 		return bad("no place in a chain")
-	case !bytes.Equal(b.Alpha, Alpha(owner, chain, b.N, b.Prev)):
+	case !bytes.Equal(b.Alpha, Alpha(owner, chain, b.N)):
 		return bad("alpha is not this chain's")
 	}
 	pk, ok := KeyAt(history, at)
@@ -130,7 +124,7 @@ func ChainOfAlpha(alpha []byte) (string, bool) {
 	b = b[n:]
 	m := int(binary.BigEndian.Uint16(b))
 	b = b[2:]
-	if len(b) != m+8+32 {
+	if len(b) != m+8 {
 		return "", false
 	}
 	return string(b[:m]), true

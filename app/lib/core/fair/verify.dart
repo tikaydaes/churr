@@ -2,7 +2,7 @@
 // web chat does (shared/fair/verify.js), with nothing asked of any server:
 // the message and the VRF key history pinned on this device for the server
 // that drew it hold all it needs. The block's layout and rule are known; alpha is the one the
-// conversation's chain gives for its n and prev; pk is the key its owner had
+// conversation's chain gives for its n; pk is the key its owner had
 // when the message was made, by the pinned history; the proof verifies under
 // pk and gives beta; and every roll that took chance from the draw is what
 // derive 1 gives for it. A check that fails says why; a draw by a server
@@ -51,7 +51,7 @@ bool _same(List<int>? a, List<int>? b) {
 }
 
 /// alpha for draw [n] of a chain (docs/FAIR.md section 6).
-Uint8List alphaOf(String owner, String chain, int n, List<int> prev) {
+Uint8List alphaOf(String owner, String chain, int n) {
   final o = utf8.encode(owner), c = utf8.encode(chain);
   final b = BytesBuilder()..add(utf8.encode(_label));
   final len = ByteData(2);
@@ -66,9 +66,7 @@ Uint8List alphaOf(String owner, String chain, int n, List<int> prev) {
   final nb = ByteData(8)
     ..setUint32(0, n ~/ 4294967296)
     ..setUint32(4, n % 4294967296);
-  b
-    ..add(nb.buffer.asUint8List())
-    ..add(prev);
+  b.add(nb.buffer.asUint8List());
   return b.toBytes();
 }
 
@@ -85,7 +83,7 @@ String? chainOfAlpha(Uint8List alpha) {
   if (at + 2 > alpha.length) return null;
   final m = v.getUint16(at);
   at += 2;
-  if (alpha.length != at + m + 8 + 32) return null;
+  if (alpha.length != at + m + 8) return null;
   return utf8.decode(alpha.sublist(at, at + m));
 }
 
@@ -122,14 +120,11 @@ FairCheck verifyMessage(
   }
   final pk = fromB64(block['pk']), alpha = fromB64(block['alpha']);
   final beta = fromB64(block['beta']), proof = fromB64(block['proof']);
-  final prev = fromB64(block['prev']);
   final n = block['n'];
   if (pk == null ||
       alpha == null ||
       beta == null ||
       proof == null ||
-      prev == null ||
-      prev.length != 32 ||
       n is! int ||
       n < 1) {
     return fail('The proof is not whole.');
@@ -139,7 +134,7 @@ FairCheck verifyMessage(
     return fail('The proof is for another conversation.');
   }
   final owner = block['owner'] as String? ?? '';
-  if (!_same(alpha, alphaOf(owner, chain, n, prev))) {
+  if (!_same(alpha, alphaOf(owner, chain, n))) {
     return fail('The proof is not for this place in the conversation.');
   }
   final history = keysOf(owner);

@@ -106,7 +106,7 @@ type FairPrimitive struct {
 
 // FairBlock is a message's proof of its draw (docs/FAIR.md section 8): the
 // ECVRF proof by the owner's VRF key pk over alpha, which the chain fixes
-// from the owner, the chain's name, n and prev, and its output beta, from
+// from the owner, the chain's name and n, and its output beta, from
 // which every chance outcome of the message is derived by rule Derive. It is
 // stored with the message, kept when the message is deleted, and never
 // edited.
@@ -119,7 +119,6 @@ type FairBlock struct {
 	Alpha  Bytes  `json:"alpha"`
 	Beta   Bytes  `json:"beta"`
 	Proof  Bytes  `json:"proof"`
-	Prev   Bytes  `json:"prev"`
 }
 
 // Entity is something the server resolved in a message's text. At and Len

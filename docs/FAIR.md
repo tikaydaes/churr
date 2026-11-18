@@ -193,19 +193,27 @@ draws on the chain of its own id and draws on the stream's from then on.
              ‖ u16be(len(owner)) ‖ owner
              ‖ u16be(len(chain)) ‖ chain
              ‖ u64be(n)
-             ‖ prev
 
 - `"churr-fair-1"` is those 12 ASCII bytes, with no length before them.
 - `owner` is the drawing server's name and `chain` the chain's name,
   each UTF-8 with its length in bytes before it.
-- `prev` is SHA-256 of draw n−1's proof, 32 bytes; for draw 1 it is 32
-  zero bytes.
 
 Nothing in alpha comes from the person or the request. The proof is
 `ECVRF_prove(sk, alpha)` and `beta = ECVRF_proof_to_hash(proof)`.
 
+**Each draw stands alone.** Draw n's alpha, and so its output, depends
+on the owner, the chain and n, and on nothing of the draw before it. The
+draws are not chained to each other's proofs because an ECVRF proof is
+not unique: whoever holds the key can make many valid proofs of one
+alpha, by choosing the nonce (RFC 6979's is only what an honest prover
+uses). Only the output, `beta`, is unique for a key and an alpha. A hash
+of the previous proof in alpha would let the key holder choose among
+next draws by choosing among proofs of the last one. n, used exactly
+once per chain, is all the order a chain needs: a gap in n is what shows
+a draw skipped or never sent.
+
 **The head.** The server keeps each chain's head, the number of its last
-draw and SHA-256 of its proof (`fair_chains`, `SCHEMA.md`). A message's
+draw (`fair_chains`, `SCHEMA.md`). A message's
 draw is made, from the head, the first time something in it asks for
 chance; the head is moved to it in the same transaction that stores the
 message, and only from where the draw was made. If another message moved
@@ -217,8 +225,8 @@ chance takes no draw.
 **Deleting.** A deleted message keeps its `fair` block: its marker
 carries it, a deletion soon after posting included, and so does a
 channel's history sent to a server that joins. A message whose history
-has been removed for good (retention, an admin's purge) still leaves the
-next draw's `prev`, which says what came before.
+has been removed for good (retention, an admin's purge) leaves a gap in
+the n of the draws that remain, which says that something came between.
 
 ## 7. The vectors
 
@@ -259,7 +267,6 @@ In the message's JSON, beside `view` (`MESSAGE-FORMAT.md`):
 | `alpha` | section 6 |
 | `beta` | the proof's output, 32 bytes |
 | `proof` | the ECVRF proof, 81 bytes |
-| `prev` | SHA-256 of the chain's previous proof, 32 bytes |
 
 Each value of the message that took chance from the draw says so in its
 envelope: `draw: {i}`, its object index (section 3), and, for a module
@@ -280,15 +287,16 @@ record):
 
 1. `v` and `derive` are known.
 2. alpha's layout holds and names this conversation's chain (its id, or
-   its stream's); alpha is rebuilt from `owner`, that chain, `n` and
-   `prev`.
+   its stream's); alpha is rebuilt from `owner`, that chain and `n`.
 3. `pk` is the key the owner's history had in force at the message's
    `created_at`: the last entry to have begun by then.
 4. `ECVRF_verify(pk, proof, alpha)` holds and gives `beta`.
 5. Every value with `draw` is re-derived from `stream(i, ·)` of `beta`: a
    roll's every die, every dropped die, every value and total
    (section 5).
-6. Where the previous draw is at hand, its proof hashes to `prev`.
+6. Where the conversation's other draws are at hand, no two messages
+   carry the same n of one chain and owner; a gap in n is a draw that was
+   skipped, never sent, or removed with its history.
 
 **A server receiving a message** over the link checks 1 to 4: the owner
 must be the author's server, and the history is its own for its own

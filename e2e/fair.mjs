@@ -169,7 +169,7 @@ for (const v of df.invalid) check(!isPrimitive(v.draw), `derive: refuses ${v.lab
   await changed('a die of the card', (m) => { const t = m.view.data.rows[0].terms[0]; t.rolls[0] = t.rolls[0] === 1 ? 2 : 1; });
   await changed('an inline total', (m) => { m.entities[0].object.data.rows[0].total += 1; });
   await changed('another object index', (m) => { m.view.draw.i = 5; });
-  await changed('another beta', (m) => { m.fair.beta = m.fair.prev; });
+  await changed('another beta', (m) => { m.fair.beta = m.fair.alpha.slice(0, 43); });
   await changed('another n', (m) => { m.fair.n += 1; });
   await changed('a message older than its key', (m) => { m.created_at = '2026-02-01T00:00:00.000Z'; });
   await changed('a key not pinned', (m) => { m.fair.pk = mv.keys[0].key; });

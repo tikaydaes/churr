@@ -35,17 +35,17 @@
           "count": 2,
           "sides": 6,
           "rolls": [
-           6,
-           3
+           4,
+           1
           ],
-          "value": 9
+          "value": 5
          },
          {
           "sign": 1,
           "value": 3
          }
         ],
-        "total": 12
+        "total": 8
        }
       ]
      },
@@ -64,10 +64,9 @@
    "owner": "a.example",
    "n": 3,
    "pk": "A4nTYJh2WzRPplosvw5VimudZgigpKy1HiHsN8l58xi1",
-   "alpha": "Y2h1cnItZmFpci0xAAlhLmV4YW1wbGUAJDAxYTFlZTAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMQAAAAAAAAADg-K86tXD65CqmFxqDqG2EMcUZ8rxVgR_d3HoX6tBstA",
-   "beta": "wiKT-RfDwmRIyy0y8dL4oaaaTGDryeDGluQ44HLyfVo",
-   "proof": "AxyaDg8cPYM6NGfxfCxw1KOJC09iCEn_Bdmib9KTM3eBEt_taciFOld-wI_6x8yf0Ck20XiR6He-nbaV4O3e2EIlnO_NsSv91ztJFpNqoxQO",
-   "prev": "g-K86tXD65CqmFxqDqG2EMcUZ8rxVgR_d3HoX6tBstA"
+   "alpha": "Y2h1cnItZmFpci0xAAlhLmV4YW1wbGUAJDAxYTFlZTAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMQAAAAAAAAAD",
+   "beta": "97cLxr3Ryg4kNQDt7dMCD7Hvb0yRigkbnJX7DeONT4o",
+   "proof": "AgApvz3KD98_SZFTWtjUC261BbvodFdvxRA3lxRa-IoPnVtMOEroHouF_CqEsRrTV56mMQwlbDXz84uxIR2YXO9bU1k-EutlaKzhXwmlcm0J"
   },
   "id": "01a1ee00-0000-7000-8000-000000000002",
   "text": "Rolled 4d6kh3: …",
@@ -87,17 +86,17 @@
         "keep_n": 3,
         "rolls": [
          4,
+         6,
          1,
-         2,
          6
         ],
         "dropped": [
-         1
+         2
         ],
-        "value": 12
+        "value": 16
        }
       ],
-      "total": 12
+      "total": 16
      }
     ]
    },

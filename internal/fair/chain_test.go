@@ -36,9 +36,8 @@ func prover(t *testing.T, seed string) testProver {
 
 // Alpha's layout, worked by hand (docs/FAIR.md section 6).
 func TestAlphaLayout(t *testing.T) {
-	prev := bytes.Repeat([]byte{9}, 32)
-	want := append([]byte("churr-fair-1\x00\x03a.b\x00\x02c1\x00\x00\x00\x00\x00\x00\x01\x02"), prev...)
-	if got := Alpha("a.b", "c1", 258, prev); !bytes.Equal(got, want) {
+	want := []byte("churr-fair-1\x00\x03a.b\x00\x02c1\x00\x00\x00\x00\x00\x00\x01\x02")
+	if got := Alpha("a.b", "c1", 258); !bytes.Equal(got, want) {
 		t.Fatalf("alpha %x, want %x", got, want)
 	}
 	if c, ok := ChainOfAlpha(want); !ok || c != "c1" {
@@ -47,6 +46,35 @@ func TestAlphaLayout(t *testing.T) {
 	if _, ok := ChainOfAlpha(want[:len(want)-1]); ok {
 		t.Error("a short alpha was read")
 	}
+	if _, ok := ChainOfAlpha(append(want, make([]byte, 32)...)); ok {
+		t.Error("an alpha with a previous proof's hash after it was read")
+	}
+}
+
+// Each draw stands alone: draw n+1's alpha, and so its output, depends on
+// the owner, the chain and n+1 and on nothing of draw n. An ECVRF proof is
+// not unique (internal/ecvrf's TestProofsAreNotUniqueOutputsAre makes a
+// second valid proof of one alpha with a nonce of its choosing), so a draw
+// chained to the previous proof would let the key holder choose among next
+// draws by choosing among proofs of the last one.
+func TestADrawDependsOnlyOnItsPlace(t *testing.T) {
+	p := prover(t, "one")
+	a, err := Make(p, "a.example", "chain", 8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := Make(p, "a.example", "chain", 8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(a.Alpha, Alpha("a.example", "chain", 8)) || !bytes.Equal(a.Alpha, b.Alpha) || !bytes.Equal(a.Beta, b.Beta) {
+		t.Fatalf("draw 8 is not fixed by its place: %x %x", a.Beta, b.Beta)
+	}
+	for _, other := range [][]byte{Alpha("b.example", "chain", 8), Alpha("a.example", "chain2", 8), Alpha("a.example", "chain", 9)} {
+		if bytes.Equal(other, a.Alpha) {
+			t.Fatal("two places in the chains share an alpha")
+		}
+	}
 }
 
 // A block checks out only as it was made: by the owner, on its chain, under
@@ -54,7 +82,7 @@ func TestAlphaLayout(t *testing.T) {
 func TestCheckBlock(t *testing.T) {
 	p, other := prover(t, "one"), prover(t, "two")
 	history := []Key{{Key: other.pk, Began: 1000}, {Key: p.pk, Began: 2000}}
-	b, err := Make(p, "a.example", "chain", 2, PrevOf([]byte("proof 1")))
+	b, err := Make(p, "a.example", "chain", 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +107,7 @@ func TestCheckBlock(t *testing.T) {
 	beta := b
 	beta.Beta = bytes.Repeat([]byte{1}, 32)
 	bad("another beta", beta, "a.example", "chain", 2500)
-	forged, _ := Make(prover(t, "three"), "a.example", "chain", 2, b.Prev)
+	forged, _ := Make(prover(t, "three"), "a.example", "chain", 2)
 	bad("a key not in the history", forged, "a.example", "chain", 2500)
 }
 
@@ -113,7 +141,7 @@ type keyVector struct {
 func makeMessageVector(t *testing.T) messageVector {
 	p := prover(t, "the message vector's key")
 	old := prover(t, "an older key")
-	b, err := Make(p, "a.example", "01a1ee00-0000-7000-8000-000000000001", 3, PrevOf([]byte("draw 2's proof")))
+	b, err := Make(p, "a.example", "01a1ee00-0000-7000-8000-000000000001", 3)
 	if err != nil {
 		t.Fatal(err)
 	}

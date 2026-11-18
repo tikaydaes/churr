@@ -72,14 +72,11 @@ func (d *drawer) draw() error {
 	if err != nil {
 		return err
 	}
-	n, prev, err := d.s.store.Fair().Head(d.ctx, chain)
+	n, err := d.s.store.Fair().Head(d.ctx, chain)
 	if err != nil {
 		return err
 	}
-	if prev == nil {
-		prev = fair.NoPrev
-	}
-	b, err := fair.Make(d.s.prover, d.s.fairOwner, chain, n+1, prev)
+	b, err := fair.Make(d.s.prover, d.s.fairOwner, chain, n+1)
 	if err != nil {
 		return err
 	}
@@ -93,7 +90,7 @@ func (d *drawer) advance(ctx context.Context, tx store.Tx) error {
 	if d == nil || d.block == nil {
 		return nil
 	}
-	return tx.Fair().Advance(ctx, d.chain, d.block.N, fair.PrevOf(d.block.Proof))
+	return tx.Fair().Advance(ctx, d.chain, d.block.N)
 }
 
 // chainOf names a conversation's chain: the stream it is shared over, which

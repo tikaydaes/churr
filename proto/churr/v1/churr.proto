@@ -1208,6 +1208,7 @@ message Chance {
 // A message's proof of its one draw (FAIR.md section 8): an ECVRF proof (ECVRF-SECP256K1-SHA256-TAI) by the VRF key `pk` of the server `owner` over `alpha`, which the conversation's chain fixes, and its output `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no server reachable. Kept when the message is deleted; never edited.
 message FairBlock {
   repeated int32 null_fields = 2;
+  reserved 11;
   optional int64 v = 3;
   optional int64 derive = 4;
   optional string owner = 5;
@@ -1216,7 +1217,6 @@ message FairBlock {
   optional bytes alpha = 8;
   optional bytes beta = 9;
   optional bytes proof = 10;
-  optional bytes prev = 11;
 }
 
 // One emoji on a message, with the accounts behind it.

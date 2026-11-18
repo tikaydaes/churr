@@ -25156,7 +25156,7 @@ components:
         by the VRF key `pk` of the server `owner` over `alpha`, which the conversation''s chain fixes, and its output
         `beta`, from which every chance outcome in the message is derived by the rule `derive`. Checked with no
         server reachable. Kept when the message is deleted; never edited.'
-      required: [v, derive, owner, n, pk, alpha, beta, proof, prev]
+      required: [v, derive, owner, n, pk, alpha, beta, proof]
       properties:
         v:
           type: integer
@@ -25181,7 +25181,7 @@ components:
         alpha:
           type: string
           contentEncoding: base64url
-          description: 'What was proved: built from the owner, the chain, n and prev (FAIR.md section 6).'
+          description: 'What was proved: built from the owner, the chain and n (FAIR.md section 6).'
         beta:
           type: string
           contentEncoding: base64url
@@ -25190,10 +25190,6 @@ components:
           type: string
           contentEncoding: base64url
           description: The ECVRF proof, 81 bytes.
-        prev:
-          type: string
-          contentEncoding: base64url
-          description: SHA-256 of the chain's previous proof, 32 bytes; zeros for draw 1.
     Chance:
       type: object
       description: 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot`

@@ -735,7 +735,6 @@ final List<WireMessage> wireMessages = [
     WireField('alpha', 8, WireKind.bytes, WireCard.one, 0),
     WireField('beta', 9, WireKind.bytes, WireCard.one, 0),
     WireField('proof', 10, WireKind.bytes, WireCard.one, 0),
-    WireField('prev', 11, WireKind.bytes, WireCard.one, 0),
   ]),
   WireMessage('Reaction', WireShape.object, 0, pb.Reaction.new, const [
     WireField('emoji', 3, WireKind.string, WireCard.one, 0),

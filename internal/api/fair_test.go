@@ -71,7 +71,7 @@ func TestARollCarriesAProofThatChecksOut(t *testing.T) {
 	room := owner.Channel("fair", false, sam)
 
 	first := verified(t, ts, room, rolled(sam, room, "roll", "4d6kh3, d20"))
-	if first.N != 1 || !bytes.Equal(first.Prev, fair.NoPrev) || first.Owner != ts.Server.Config.Hostname || first.Derive != 1 {
+	if first.N != 1 || first.Owner != ts.Server.Config.Hostname || first.Derive != 1 {
 		t.Fatalf("the first draw: %+v", first)
 	}
 	// A plain post draws nothing and moves nothing.
@@ -79,13 +79,13 @@ func TestARollCarriesAProofThatChecksOut(t *testing.T) {
 		t.Fatalf("a plain post carries a block: %v", plain)
 	}
 	second := verified(t, ts, room, rolled(owner, room, "dice", "3"))
-	if second.N != 2 || !bytes.Equal(second.Prev, fair.PrevOf(first.Proof)) {
+	if second.N != 2 || !bytes.Equal(second.Alpha, fair.Alpha(ts.Server.Config.Hostname, room, 2)) {
 		t.Fatalf("the second draw does not follow the first: %+v", second)
 	}
 	// Inline dice: one draw for the message, each roll its own object.
 	m := owner.Post(room, "I hit for [[2d6+3]] and [[d20]]")
 	b := blockOf(t, m)
-	if b.N != 3 || !bytes.Equal(b.Prev, fair.PrevOf(second.Proof)) {
+	if b.N != 3 || !bytes.Equal(b.Alpha, fair.Alpha(ts.Server.Config.Hostname, room, 3)) {
 		t.Fatalf("the third draw: %+v", b)
 	}
 	for i, e := range diceIn(m) {
@@ -159,8 +159,8 @@ func TestRacingRollsTakeConsecutiveDraws(t *testing.T) {
 		if !ok {
 			t.Fatalf("draw %d was skipped: %v", k, byN)
 		}
-		if k > 1 && !bytes.Equal(b.Prev, fair.PrevOf(byN[k-1].Proof)) {
-			t.Fatalf("draw %d does not name draw %d", k, k-1)
+		if !bytes.Equal(b.Alpha, fair.Alpha(ts.Server.Config.Hostname, room, k)) {
+			t.Fatalf("draw %d is not proved over its place in the chain", k)
 		}
 	}
 }

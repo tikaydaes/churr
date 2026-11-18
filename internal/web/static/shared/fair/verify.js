@@ -2,7 +2,7 @@
 // nothing asked of any server: the message and the VRF key history pinned
 // for the server that drew it hold all it needs. A message's `fair` block
 // checks out when its layout and rule are known; alpha is the one its
-// conversation's chain gives for its n and prev; pk is the key its owner had
+// conversation's chain gives for its n; pk is the key its owner had
 // when the message was made, by the history this browser pinned for that
 // server; the proof verifies under pk and gives beta; and every value that
 // took chance from the draw is what derive 1 gives for it (a roll: every
@@ -27,16 +27,15 @@ const same = (a, b) => !!a && !!b && a.length === b.length && a.every((x, i) => 
 const utf8 = (s) => new TextEncoder().encode(s);
 
 /** alpha for draw n of a chain (docs/FAIR.md section 6). */
-export function alphaOf(owner, chain, n, prev) {
+export function alphaOf(owner, chain, n) {
   const o = utf8(owner), c = utf8(chain);
-  const out = new Uint8Array(LABEL.length + 2 + o.length + 2 + c.length + 8 + prev.length);
+  const out = new Uint8Array(LABEL.length + 2 + o.length + 2 + c.length + 8);
   const v = new DataView(out.buffer);
   let at = 0;
   out.set(utf8(LABEL), at); at += LABEL.length;
   v.setUint16(at, o.length); at += 2; out.set(o, at); at += o.length;
   v.setUint16(at, c.length); at += 2; out.set(c, at); at += c.length;
-  v.setUint32(at, Math.floor(n / 4294967296)); v.setUint32(at + 4, n >>> 0); at += 8;
-  out.set(prev, at);
+  v.setUint32(at, Math.floor(n / 4294967296)); v.setUint32(at + 4, n >>> 0);
   return out;
 }
 
@@ -49,7 +48,7 @@ export function chainOfAlpha(alpha) {
   at += 2 + v.getUint16(at);
   if (at + 2 > alpha.length) return null;
   const m = v.getUint16(at); at += 2;
-  if (alpha.length !== at + m + 8 + 32) return null;
+  if (alpha.length !== at + m + 8) return null;
   return new TextDecoder().decode(alpha.subarray(at, at + m));
 }
 
@@ -79,11 +78,11 @@ export async function verifyMessage(m, ctx) {
   if (block.v !== 1) return fail('This proof is in a layout this app does not know.');
   if (block.derive !== DERIVE) return fail('This roll was worked out by a rule this app does not know.');
   const pk = fromB64(block.pk), alpha = fromB64(block.alpha), beta = fromB64(block.beta);
-  const proof = fromB64(block.proof), prev = fromB64(block.prev);
-  if (!pk || !alpha || !beta || !proof || !prev || prev.length !== 32 || !(block.n >= 1)) return fail('The proof is not whole.');
+  const proof = fromB64(block.proof);
+  if (!pk || !alpha || !beta || !proof || !(Number.isSafeInteger(block.n) && block.n >= 1)) return fail('The proof is not whole.');
   const chain = chainOfAlpha(alpha);
   if (!chain || !(ctx.chains || []).includes(chain)) return fail('The proof is for another conversation.');
-  if (!same(alpha, alphaOf(block.owner, chain, block.n, prev))) return fail('The proof is not for this place in the conversation.');
+  if (!same(alpha, alphaOf(block.owner, chain, block.n))) return fail('The proof is not for this place in the conversation.');
   const history = ctx.keysOf ? ctx.keysOf(block.owner) : null;
   if (!history) {
     return { state: 'unknown', block, why: `It was drawn by ${block.owner}, and this conversation does not carry that server's key history, so it cannot be checked here.` };

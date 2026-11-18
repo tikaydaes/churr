@@ -62,7 +62,7 @@ own people's messages; a hub channel's messages are drawn by their
 author's instance, the chain named by the channel's stream, until the hub
 draws for its channels. The exact encodings are `FAIR.md` section 6.
 
-    alpha(n) = "churr-fair-1" ‖ owner name ‖ conversation id ‖ n ‖ SHA-256(proof(n-1))
+    alpha(n) = "churr-fair-1" ‖ owner name ‖ conversation id ‖ n
 
 - Nothing in alpha comes from the person rolling or from the request.
   So nobody can grind: not the player with nonces, not the server by
@@ -73,10 +73,16 @@ draws for its channels. The exact encodings are `FAIR.md` section 6.
 - One draw per message. A message with several chance objects splits the
   one output: `stream(i, k) = SHA-256(beta ‖ i ‖ k)` for object i,
   block k.
-- Draw n is used once. A deleted roll keeps its metadata as a marker, so
-  the chain stays whole. Where history has aged out, a message still
-  carries the hash of the previous proof, and the check says "chain not
-  followed further back".
+- Each draw stands alone: draw n's alpha and output depend on the owner,
+  the chain and n only. n is used exactly once per chain, and a gap in n
+  is what shows a skipped or unsent draw. A deleted roll keeps its
+  metadata as a marker, so no gap is made by deleting; history aged out
+  leaves a gap that says so.
+- Why the proof is not chained: an ECVRF proof is not unique (the key
+  holder can make other valid proofs of one alpha with other nonces);
+  only its output is. Chaining alpha to the previous proof would let the
+  server choose among next draws; chaining to the previous output would
+  add nothing n does not already give.
 
 ## 3. From randomness to outcome [built]
 
@@ -90,15 +96,16 @@ version number; old messages keep theirs.
 
 In the metadata field, clear and sealed alike:
 
-    fair { v, derive, owner, n, pk, alpha, beta, proof, prev }
+    fair { v, derive, owner, n, pk, alpha, beta, proof }
 
 `beta` and `alpha` are recomputable; they are stored because the owner
-asked, and they make a quick check possible. About 230 bytes.
+asked, and they make a quick check possible. About 190 bytes.
 
 A verifier, with no server reachable, checks: the proof under pk; alpha
-rebuilt from the conversation, n and prev; beta from the proof; the
+rebuilt from the owner, the conversation and n; beta from the proof; the
 outcome re-derived from beta and the request; pk against the record or
-pin; and, where the previous draw is at hand, the link to it.
+pin; and, where the conversation's other draws are at hand, that each n
+is used once and what gaps there are.
 
 ## 5. Sealed chats [proposed]
 
@@ -129,8 +136,8 @@ learns only that a draw happened.
 ## 7. The crash game
 
 - A game has its own chain; its start is announced with the key.
-- Everyone can compute alpha for round n before it starts, because they
-  hold proof(n-1). That is the commitment: the result is already fixed,
+- Everyone can compute alpha for round n before it starts: it is the
+  game's chain and n. That is the commitment: the result is already fixed,
   and nobody without the key can know it.
 - The server computes the proof at round start, keeps it, and reveals it
   at the crash. Everyone verifies and derives the crash point.

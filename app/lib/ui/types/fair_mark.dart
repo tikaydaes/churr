@@ -40,7 +40,6 @@ const _fields = [
   ('alpha', 'Proved over (alpha)'),
   ('proof', 'Proof'),
   ('beta', 'Output (beta)'),
-  ('prev', 'Previous proof (hash)'),
 ];
 
 final _checked = <String, FairCheck>{};

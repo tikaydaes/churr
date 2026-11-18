@@ -886,10 +886,9 @@ S('FairBlock', "A message's proof of its one draw (FAIR.md section 8): an ECVRF 
    'owner': ('str', 'The server that drew, by name.'),
    'n': ('int', "The draw's number in its chain, from 1."),
    'pk': ('b64', "The owner's VRF public key, 33 bytes compressed: its key in force when the message was made."),
-   'alpha': ('b64', 'What was proved: built from the owner, the chain, n and prev (FAIR.md section 6).'),
+   'alpha': ('b64', 'What was proved: built from the owner, the chain and n (FAIR.md section 6).'),
    'beta': ('b64', "The proof's output, 32 bytes."),
-   'proof': ('b64', 'The ECVRF proof, 81 bytes.'),
-   'prev': ('b64', "SHA-256 of the chain's previous proof, 32 bytes; zeros for draw 1.")})
+   'proof': ('b64', 'The ECVRF proof, 81 bytes.')})
 
 S('Chance', 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message\'s text and `view`.', {
    'kind': 'enum:flip|pick|shuffle|draw|tarot',

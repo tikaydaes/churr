@@ -732,7 +732,6 @@ var messages = []message{
 		{"alpha", 8, kindBytes, cardOne, 0, ""},
 		{"beta", 9, kindBytes, cardOne, 0, ""},
 		{"proof", 10, kindBytes, cardOne, 0, ""},
-		{"prev", 11, kindBytes, cardOne, 0, ""},
 	}},
 	{name: "Reaction", shape: shapeObject, extra: 0, fields: []field{
 		{"emoji", 3, kindString, cardOne, 0, ""},
