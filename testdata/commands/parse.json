@@ -1,5 +1,5 @@
 {
- "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, bot command or message), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json. A case may name hidden: the built-ins hidden for the reader there (by the rule of hidden_cases), which the grammar does not read, so the text goes on as a saved reply, bot command or message. hidden_cases are that one rule (ruling R72): given what the command list holds for a reader (name and kind) and whether the reader is an admin, the built-in names that are hidden: every built-in or alias that a listed command of another kind has the name of, except the protected ones (every built-in not marked replaceable in commands.json) and their aliases, which are never hidden that way; and the admin-only ones and their aliases for anyone else. literal_cases are the literal slash (ruling R74): text that starts with whitespace and then / is never a command; it is sent as a message with that whitespace dropped (literal is what is sent), and anything else gives null (it is read as usual: a command if it starts with /, a message otherwise). Text in a code span or block never starts with /, so it is never a command either. mute_max_seconds is the longest time-out /mute takes, the server's own limit (docs/FEATURES.md section 15); a longer one is the error mute_too_long.",
+ "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, bot command or message), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; args is the text after the name as typed, which /roll and /dice send to the server for the dice module to read (runCommand); action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json. A case may name hidden: the built-ins hidden for the reader there (by the rule of hidden_cases), which the grammar does not read, so the text goes on as a saved reply, bot command or message. hidden_cases are that one rule (ruling R72): given what the command list holds for a reader (name and kind) and whether the reader is an admin, the built-in names that are hidden: every built-in or alias that a listed command of another kind has the name of, except the protected ones (every built-in not marked replaceable in commands.json) and their aliases, which are never hidden that way; and the admin-only ones and their aliases for anyone else. literal_cases are the literal slash (ruling R74): text that starts with whitespace and then / is never a command; it is sent as a message with that whitespace dropped (literal is what is sent), and anything else gives null (it is read as usual: a command if it starts with /, a message otherwise). Text in a code span or block never starts with /, so it is never a command either. mute_max_seconds is the longest time-out /mute takes, the server's own limit (docs/FEATURES.md section 15); a longer one is the error mute_too_long.",
  "mute_max_seconds": 2419200,
  "errors": [
   "needs_text",
@@ -127,63 +127,63 @@
    "text": "/roll",
    "want": {
     "name": "roll",
-    "dice": ""
+    "args": ""
    }
   },
   {
    "text": "/roll 2d6 + 3",
    "want": {
     "name": "roll",
-    "dice": "2d6 + 3"
+    "args": "2d6 + 3"
    }
   },
   {
    "text": "/roll adv",
    "want": {
     "name": "roll",
-    "dice": "adv"
+    "args": "adv"
    }
   },
   {
    "text": "/roll 4d4+d6,3d10k2",
    "want": {
     "name": "roll",
-    "dice": "4d4+d6,3d10k2"
+    "args": "4d4+d6,3d10k2"
    }
   },
   {
    "text": "/dice",
    "want": {
     "name": "dice",
-    "dice": "1d6"
+    "args": ""
    }
   },
   {
    "text": "/dice 4",
    "want": {
     "name": "dice",
-    "dice": "4d6"
+    "args": "4"
    }
   },
   {
    "text": "/dice 4+3",
    "want": {
     "name": "dice",
-    "dice": "4d6+3"
+    "args": "4+3"
    }
   },
   {
    "text": "/dice 4,2+1",
    "want": {
     "name": "dice",
-    "dice": "4d6, 2d6+1"
+    "args": "4,2+1"
    }
   },
   {
    "text": "/dice 2d8",
    "want": {
     "name": "dice",
-    "dice": "2d8"
+    "args": "2d8"
    }
   },
   {

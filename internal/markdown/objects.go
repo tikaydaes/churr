@@ -52,26 +52,40 @@ type OriginSource interface {
 	Origin() string
 }
 
-// The ways inline dice are treated (DiceSource).
-const (
-	DiceOff  = ""     // left as text: a bot, a webhook, no resolver
-	DiceRoll = "roll" // rolled by the source: a person posting
-	DiceEdit = "edit" // marked removed, nothing rolled: an edit
-)
+// Claim is a kind a built-in module resolves when a message is sent
+// (docs/DESIGN-MODULES.md section 4.4): text marked by Open, an inside that
+// Inside matches in full, and Close, standing on the edges of an object.
+// Inline dice, `[[2d6+3]]`, are the dice module's claim of kind dice_roll.
+type Claim struct {
+	Kind        string
+	Open, Close string
+	Inside      *regexp.Regexp
+}
+
+// ClaimSource may also be implemented by a Resolver. Claims are the kinds
+// to look for where the text is written; none leaves such text as text (a
+// bot, a webhook). Claimed gives the value stored over a claimed object
+// whose inside is the text given; false leaves it as text.
+type ClaimSource interface {
+	Claims() []Claim
+	Claimed(kind, inside string) (model.ValueEnvelope, bool)
+}
 
 // HintDice is the kind an author's hint gives inline dice: what the
 // composer calls the object of kind dice_roll over `[[...]]`.
 const HintDice = "dice"
 
-// DiceSource may also be implemented by a Resolver. InlineDice says what
-// becomes of `[[2d6+3]]` (ruling R73): DiceOff, DiceRoll or DiceEdit, and
-// gives the value stored over the dice, of kind dice_roll. object is handed
-// the dice with nothing rolled and rolls them; handed nil (an edit), it
-// gives the value of dice nothing was rolled for. false leaves the dice as
-// text.
-type DiceSource interface {
-	InlineDice() (mode string, object func(roll *model.DiceRoll) (model.ValueEnvelope, bool))
+// hintKind is the kind of hint that names an object of a claimed kind.
+func hintKind(kind string) string {
+	if kind == model.KindDiceRoll {
+		return HintDice
+	}
+	return kind
 }
+
+// maxClaimed is the most an object of a claimed kind may span, its marks
+// included (docs/DESIGN-MODULES.md section 4.3: a match of at most 128).
+const maxClaimed = 128
 
 // objectScan is what the resolver keeps for finding objects.
 type objectScan struct {
@@ -190,8 +204,8 @@ func (res *resolver) plainOver(a, b int) bool {
 // hinted reports whether a hint names exactly this object.
 func hinted(hints []model.ObjectHint, e model.Entity) bool {
 	kind := e.Type
-	if e.Type == model.EntityObject && e.Object != nil && e.Object.Kind == model.KindDiceRoll {
-		kind = HintDice
+	if e.Type == model.EntityObject && e.Object != nil {
+		kind = hintKind(e.Object.Kind)
 	}
 	for _, h := range hints {
 		if h.Kind == kind && h.Start == e.At && h.End == e.At+e.Len {
@@ -252,9 +266,13 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 			return e, true
 		}
 	}
-	if try(HintDice) {
-		if e, ok := res.dice(i, b); ok {
-			return e, true
+	if cs, ok := res.r.(ClaimSource); ok {
+		for _, c := range cs.Claims() {
+			if try(hintKind(c.Kind)) {
+				if e, ok := res.claimed(cs, c, i, b); ok {
+					return e, true
+				}
+			}
 		}
 	}
 	return model.Entity{}, false
@@ -837,43 +855,31 @@ func degrees(src []uint16, j, b, whole, min int, max float64) (string, int, bool
 	return v, k, true
 }
 
-// Inline dice (docs/MESSAGE-FORMAT.md section 3.2): `[[`, an expression
-// of /roll's grammar (model.ParseDice) of 1 to 100 characters with no
-// bracket or line break, and `]]`, on the edges. They become an object of
-// kind dice_roll, whose data holds the expression written out in full as
-// its one row.
-func (res *resolver) dice(i, b int) (model.Entity, bool) {
-	mode := DiceOff
-	var object func(*model.DiceRoll) (model.ValueEnvelope, bool)
-	if ds, ok := res.r.(DiceSource); ok {
-		mode, object = ds.InlineDice()
-	}
-	if mode == DiceOff || object == nil {
-		return model.Entity{}, false
-	}
+// claimed reads an object of a claimed kind that starts at i: the claim's
+// Open, an inside on one line, its Close, on the edges, at most maxClaimed
+// units in all. Inline dice (docs/MESSAGE-FORMAT.md section 3.2) are
+// `[[`, an expression of the dice module's grammar, and `]]`. What the
+// inside says is the module's to decide.
+func (res *resolver) claimed(cs ClaimSource, c Claim, i, b int) (model.Entity, bool) {
 	src := res.src
-	if !hasPrefixExact(src[i:b], "[[") {
+	if c.Open == "" || c.Close == "" || c.Inside == nil || !hasPrefixExact(src[i:b], c.Open) {
 		return model.Entity{}, false
 	}
-	k := i + 2
-	for k < b && k-i-2 <= model.MaxDiceText && src[k] != ']' && src[k] != '[' && src[k] != '\n' {
+	open, close := len(utf16.Encode([]rune(c.Open))), len(utf16.Encode([]rune(c.Close)))
+	k := i + open
+	for k < b && k+close-i <= maxClaimed && src[k] != '\n' && !hasPrefixExact(src[k:b], c.Close) {
 		k++
 	}
-	expr := unitsString(src[i+2 : k])
-	if k+1 >= b || src[k] != ']' || src[k+1] != ']' || strings.TrimSpace(expr) == "" || !rightEdge(src, k+2) {
+	if k >= b || k+close-i > maxClaimed || !hasPrefixExact(src[k:b], c.Close) || !rightEdge(src, k+close) {
 		return model.Entity{}, false
 	}
-	terms, written, err := model.ParseDice(expr)
-	if err != nil {
+	inside := unitsString(src[i+open : k])
+	if !c.Inside.MatchString(inside) {
 		return model.Entity{}, false
 	}
-	var roll *model.DiceRoll
-	if mode != DiceEdit {
-		roll = &model.DiceRoll{Dice: written, Rows: []model.DiceRow{{Dice: written, Terms: terms}}}
-	}
-	v, ok := object(roll)
+	v, ok := cs.Claimed(c.Kind, inside)
 	if !ok {
 		return model.Entity{}, false
 	}
-	return model.Entity{Type: model.EntityObject, At: i, Len: k + 2 - i, Object: &v}, true
+	return model.Entity{Type: model.EntityObject, At: i, Len: k + close - i, Object: &v}, true
 }

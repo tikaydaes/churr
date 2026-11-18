@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -15,7 +16,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/tikaydaes/churr/internal/model"
-	"github.com/tikaydaes/churr/internal/wirepb"
+	"github.com/tikaydaes/churr/internal/modhost"
+	"github.com/tikaydaes/churr/internal/modules/dice"
 )
 
 // The corpus lives at the repository root so that the web chat and the apps
@@ -74,35 +76,46 @@ type corpusResolver struct {
 	Hints       []model.ObjectHint       `json:"object_hints,omitempty"`
 	// Home is the server's own origin, for links to its messages.
 	Home string `json:"origin,omitempty"`
-	// DiceMode is "edit" for text read as an edit reads it; otherwise
-	// inline dice are rolled (InlineDice).
+	// DiceMode is "edit" for text read as an edit reads it, and "off"
+	// where nothing is resolved; otherwise inline dice are rolled
+	// (Claimed).
 	DiceMode string `json:"dice,omitempty"`
 }
 
 func (r *corpusResolver) Origin() string { return r.Home }
 
-// InlineDice rolls every die to its highest face, so that cases can say
-// what is stored: the value of kind dice_roll a server stores, its data
-// the roll's object. "edit" marks dice as an edit does.
-func (r *corpusResolver) InlineDice() (string, func(*model.DiceRoll) (model.ValueEnvelope, bool)) {
-	mode := DiceRoll
-	if r.DiceMode == "edit" {
-		mode = DiceEdit
+// corpusModules are the built-in modules as the corpus reads text with
+// them: every die falls on its highest face, so that cases can say what is
+// stored.
+var corpusModules = func() *modhost.Registry {
+	r, err := modhost.New(modhost.Options{Intn: func(n int) int { return n - 1 }}, dice.Module())
+	if err != nil {
+		panic(err)
 	}
-	return mode, func(roll *model.DiceRoll) (model.ValueEnvelope, bool) {
-		level, _ := wirepb.KindLevel(model.KindDiceRoll)
-		v := model.ValueEnvelope{Kind: model.KindDiceRoll, Level: level, By: "dice"}
-		if roll == nil {
-			v.Removed = true
-			return v, true
-		}
-		for i := range roll.Rows {
-			roll.Rows[i].Terms, roll.Rows[i].Total = model.RollDice(roll.Rows[i].Terms, func(sides int) int { return sides })
-		}
-		raw, err := json.Marshal(roll)
-		v.Data = raw
-		return v, err == nil
+	return r
+}()
+
+// Claims are the modules' claims, unless the case reads text where nothing
+// is resolved.
+func (r *corpusResolver) Claims() []Claim {
+	if r.DiceMode == "off" {
+		return nil
 	}
+	var out []Claim
+	for _, c := range corpusModules.Claims() {
+		out = append(out, Claim{Kind: c.Kind, Open: c.Open, Close: c.Close, Inside: c.Inside})
+	}
+	return out
+}
+
+// Claimed resolves a claimed object as the server does on send, and for
+// "edit" as an edit does: marked removed, with nothing resolved.
+func (r *corpusResolver) Claimed(kind, inside string) (model.ValueEnvelope, bool) {
+	v, ok := corpusModules.Resolve(context.Background(), model.Account{}, "", kind, inside)
+	if ok && r.DiceMode == "edit" {
+		return corpusModules.Unresolved(kind)
+	}
+	return v, ok
 }
 
 func (r *corpusResolver) Patterns() []model.ReferencePattern { return r.RefPatterns }

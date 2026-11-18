@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/modules/dice"
 	"github.com/tikaydaes/churr/internal/testkit"
 	"github.com/tikaydaes/churr/internal/wirepb"
 )
@@ -55,6 +56,12 @@ func sameOverProtobuf(t *testing.T, ts *testkit.TestServer, bearer, op, path str
 	if !reflect.DeepEqual(a, b) {
 		t.Fatalf("%s differs over protobuf:\n got %s\nwant %s", op, got, want)
 	}
+}
+
+// rolled runs a module's command, /roll or /dice, as a client does, and
+// returns the message its answer was posted as.
+func rolled(c *testkit.Client, room, name, text string) map[string]any {
+	return c.Must(200, "POST", convPath(room)+"/commands", map[string]any{"name": name, "text": text})["message"].(map[string]any)
 }
 
 // remarshal turns a JSON value into a Go value through its JSON.
@@ -155,20 +162,20 @@ func TestARollIsTextAndView(t *testing.T) {
 	room := owner.Channel("games", false, sam)
 	msgs := convPath(room) + "/messages"
 
-	m := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "4d6kh3+2, d20"}})["message"].(map[string]any)
+	m := rolled(sam, room, "roll", "4d6kh3+2, d20")
 	if m["chance"] != nil || m["fallback"] != nil {
 		t.Fatalf("a roll is no chance result: %v", m)
 	}
 	roll := rollOf(t, m["view"].(map[string]any))
 	rows := arr(roll, "rows")
 	first := rows[0].(map[string]any)
-	dice := arr(first, "terms")[0].(map[string]any)
-	if roll["dice"] != "4d6kh3+2, 1d20" || len(rows) != 2 || len(arr(dice, "rolls")) != 4 || len(arr(dice, "dropped")) != 1 {
+	term := arr(first, "terms")[0].(map[string]any)
+	if roll["dice"] != "4d6kh3+2, 1d20" || len(rows) != 2 || len(arr(term, "rolls")) != 4 || len(arr(term, "dropped")) != 1 {
 		t.Fatalf("the roll: %v", roll)
 	}
 	var r model.DiceRoll
 	remarshal(t, roll, &r)
-	if !r.Valid() || m["text"] != r.Text() || len(r.Text()) < len("Rolled 4d6kh3+2, 1d20: [") {
+	if !r.Valid() || m["text"] != dice.Text(r) || len(dice.Text(r)) < len("Rolled 4d6kh3+2, 1d20: [") {
 		t.Fatalf("the text %q is not the roll %+v in words", m["text"], r)
 	}
 
@@ -190,5 +197,7 @@ func TestARollIsTextAndView(t *testing.T) {
 	if again["text"] != m["text"] {
 		t.Fatalf("after a refused edit: %v", again)
 	}
-	sam.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "1,2,3,4,5,6,7,8,9"}})
+	sam.Refused(400, model.CodeInvalidValue, "POST", convPath(room)+"/commands", map[string]any{"name": "roll", "text": "1,2,3,4,5,6,7,8,9"})
+	// A roll is no chance result.
+	sam.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll"}})
 }

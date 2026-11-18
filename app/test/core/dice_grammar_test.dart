@@ -16,11 +16,6 @@ void main() {
       expect(parseDice('${c['input']}'), c['dice']);
     });
   }
-  for (final c in d['d6'] as List) {
-    test('/dice ${jsonEncode(c['input'])} is ${c['dice']}', () {
-      expect(diceD6('${c['input']}'), c['dice']);
-    });
-  }
   for (final c in d['errors'] as List) {
     test('refuses ${jsonEncode(c['input'])}', () {
       expect(parseDice('${c['input']}'), isNull);

@@ -1765,12 +1765,12 @@ message FormInput {
   optional int64 closes_at = 13; // time
 }
 
-// Asks the server to draw a result. People only; refused in a sealed chat. A roll becomes the message's text, the roll in words, and its `view`, a value of kind `dice_roll`; any other result its `chance` and `fallback`.
+// Asks the server to draw a result, which becomes the message's `chance` and `fallback`. People only; refused in a sealed chat. A roll of dice is no chance result: `/roll` and `/dice` are the dice module's commands, run with `runCommand`.
 message ChanceInput {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
+  reserved 4;
   optional ChanceInputKind kind = 3;
-  optional string dice = 4;
   repeated string options = 5;
   optional int64 count = 6;
   optional string deck = 7;
@@ -6199,7 +6199,7 @@ enum FormInputResults {
 
 enum ChanceInputKind {
   CHANCE_INPUT_KIND_UNSPECIFIED = 0;
-  CHANCE_INPUT_KIND_ROLL = 1; // "roll"
+  reserved 1;
   CHANCE_INPUT_KIND_FLIP = 2; // "flip"
   CHANCE_INPUT_KIND_PICK = 3; // "pick"
   CHANCE_INPUT_KIND_SHUFFLE = 4; // "shuffle"

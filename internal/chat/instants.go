@@ -22,9 +22,10 @@ type Instants struct {
 	// Objects are the author's choices for ranges of the text: plain
 	// text, or one kind of object (ruling R73, references.go).
 	Objects []model.ObjectHint
-	// Dice is how inline dice are treated (dice.go): markdown.DiceRoll
-	// for a person posting, markdown.DiceEdit for an edit, else text.
-	Dice string
+	// Claims is how objects that modules claim, such as inline dice, are
+	// treated (claims.go): resolved for a person posting, marked for an
+	// edit, else left as text.
+	Claims string
 }
 
 // maxHints bounds the hints one message may carry; the rest are dropped.
@@ -98,7 +99,7 @@ func withHints(text string, doc markdown.Doc, entities []model.Entity, hints []m
 // one the author kept as plain text, or one no pattern matched then.
 func keptInstants(old, now []model.Entity) []model.Entity {
 	kept := func(e model.Entity) bool {
-		return e.Type == model.EntityInstant || e.Type == model.EntityEvent || e.Type == model.EntityReference || isDice(e)
+		return e.Type == model.EntityInstant || e.Type == model.EntityEvent || e.Type == model.EntityReference || isResolved(e)
 	}
 	var keep []model.Entity
 	for _, e := range old {

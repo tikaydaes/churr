@@ -13,7 +13,6 @@ import { fromWall, utc } from '../internal/web/static/shared/instant/zone.js';
 import { parseRemind, RemindError } from '../internal/web/static/shared/remind.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys, isRedCard, spokenResult } from '../internal/web/static/shared/message/chance.js';
-import { diceD6 } from '../internal/web/static/shared/md/dice.js';
 import { SPREADS, MEANINGS } from '../internal/web/static/shared/message/cardnames.js';
 
 const read = (p) => JSON.parse(readFileSync(new URL('../testdata/commands/' + p, import.meta.url), 'utf8'));
@@ -129,8 +128,6 @@ check('every suit, rank and extra card has words', Object.keys(decks.suits).ever
 
 // The reels (and the cards turned over) land on the server's result, slot by slot.
 const dice = read('dice.json');
-// What follows /dice, as a roll (dice.json, d6).
-for (const c of dice.d6) check(`/dice ${JSON.stringify(c.input)} is ${c.dice}`, diceD6(c.input) === c.dice, diceD6(c.input));
 {
   const rows = dice.fallback.find((f) => f.chance.kind === 'roll' && f.chance.rows.length > 1).chance;
   const s = slots(rows);

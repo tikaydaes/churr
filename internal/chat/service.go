@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/modhost"
 	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
@@ -103,6 +104,9 @@ type Service struct {
 
 	// forms is the forms package, set with SetForms (forms.go).
 	forms Forms
+
+	// modules are the built-in modules, set with SetModules (claims.go).
+	modules *modhost.Registry
 
 	// notifier is the notify package, set with SetNotifier (notifier.go).
 	notifier Notifier

@@ -1118,7 +1118,6 @@ final List<WireMessage> wireMessages = [
   ]),
   WireMessage('ChanceInput', WireShape.object, 0, pb.ChanceInput.new, const [
     WireField('kind', 3, WireKind.enum_, WireCard.one, 80),
-    WireField('dice', 4, WireKind.string, WireCard.one, 0),
     WireField('options', 5, WireKind.string, WireCard.list, 0),
     WireField('count', 6, WireKind.int_, WireCard.one, 0),
     WireField('deck', 7, WireKind.string, WireCard.one, 0),
@@ -3726,7 +3725,7 @@ final List<WireEnum> wireEnums = [
   WireEnum(const ['', 'message', 'reminder', 'form', 'watch'], pb.ScheduledItemKind.valueOf),
   WireEnum(const ['', 'poll', 'rsvp', 'signup', 'approve', 'checkin', 'ticket', 'roles'], pb.FormInputPreset.valueOf),
   WireEnum(const ['', 'live', 'after_answer', 'after_close'], pb.FormInputResults.valueOf),
-  WireEnum(const ['', 'roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot'], pb.ChanceInputKind.valueOf),
+  WireEnum(const ['', '', 'flip', 'pick', 'shuffle', 'draw', 'tarot'], pb.ChanceInputKind.valueOf),
   WireEnum(const ['', 'minute', 'second'], pb.InstantHintPrecision.valueOf),
   WireEnum(const ['', 'plain', 'reference', 'message_link', 'measure', 'colour', 'phone', 'email', 'geo', 'dice', 'number', 'codepoint'], pb.ObjectHintKind.valueOf),
   WireEnum(const ['', 'day', 'week', 'month'], pb.RepeatEvery.valueOf),

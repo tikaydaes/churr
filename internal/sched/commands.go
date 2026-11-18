@@ -8,6 +8,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/chat"
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/modhost"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
 )
@@ -28,6 +29,9 @@ type Commands struct {
 	perm  *perm.Checker
 	chat  *chat.Service
 	bots  BotCommands
+	// modules are the built-in modules, whose commands run here once no
+	// saved reply or bot command of the name has taken it (ruling R72).
+	modules *modhost.Registry
 }
 
 // NewCommands makes the service.
@@ -38,6 +42,10 @@ func NewCommands(s store.Store, p *perm.Checker, c *chat.Service) *Commands {
 // SetBots hands over the bots package, which is built after this one. It is
 // called once while the server is being put together.
 func (c *Commands) SetBots(b BotCommands) { c.bots = b }
+
+// SetModules hands over the built-in modules the server registers. It is
+// called once while the server is being put together.
+func (c *Commands) SetModules(m *modhost.Registry) { c.modules = m }
 
 // maxCommandText is the most that may be typed after a command's name.
 const maxCommandText = 4000
@@ -144,9 +152,11 @@ type Ran struct {
 // then the commands of bots in the conversation, and the first match wins.
 // A saved reply posts its text as the actor, under every rule of posting;
 // anything typed after its name is refused, so nothing is dropped silently
-// (decision F15). Built-in commands are the client's to carry out, and a
-// protected one is never looked up: a command of its name made before it
-// was protected is ignored.
+// (decision F15). Then a built-in module's command (/roll, /dice) runs
+// through the host, and its answer is posted as the actor's message. The
+// other built-in commands are the client's to carry out, and a protected
+// one is never looked up: a command of its name made before it was
+// protected is ignored.
 func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.ConversationID, parent model.MessageID, name, text string) (Ran, error) {
 	st, err := c.perm.Can(ctx, actor, perm.SendCommand, conv)
 	if err != nil {
@@ -194,12 +204,37 @@ func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.Conv
 			return Ran{InteractionID: interaction}, nil
 		}
 	}
+	if c.modules.HasCommand(name) {
+		return c.runModule(ctx, actor, st, parent, name, text)
+	}
 	if model.BuiltinCommand(name) {
 		// No community command of this name: it is the built-in, which
 		// the app carries out.
 		return Ran{}, model.Invalid("name", "That command is carried out by the app, not sent to the server.")
 	}
 	return Ran{}, model.ErrNotFound.With("There is no command called /" + name + " here.")
+}
+
+// runModule runs a built-in module's command and posts its answer, under
+// every rule of posting. A module answers people, and writes nothing into a
+// sealed chat, which the server cannot write into. A refusal is the
+// module's own sentence, for the person who typed the command.
+func (c *Commands) runModule(ctx context.Context, actor model.Account, st perm.State, parent model.MessageID, name, text string) (Ran, error) {
+	if st.Conversation.Sealed() {
+		return Ran{}, model.Invalid("name", "The server cannot write into a sealed chat, so /"+name+" cannot run there.")
+	}
+	if actor.Role == model.RoleBot {
+		return Ran{}, model.Invalid("name", "Built-in modules answer people; a bot makes its own.")
+	}
+	made, err := c.modules.Command(ctx, actor, st.Conversation.ID, name, strings.TrimSpace(text))
+	if err != nil {
+		return Ran{}, err
+	}
+	posted, err := c.chat.Post(ctx, actor, chat.NewMessage{ConversationID: st.Conversation.ID, ParentID: parent, Text: made.Text, View: made.View})
+	if err != nil {
+		return Ran{}, err
+	}
+	return Ran{Message: &posted.Message}, nil
 }
 
 // Replies returns the community's saved replies and the actor's own.

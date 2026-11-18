@@ -90,7 +90,7 @@ func TestRegistryChecksWhatModulesAnswer(t *testing.T) {
 	if _, err := r.Command(ctx, actor, "", "roll", ""); err == nil {
 		t.Error("a value that does not fit its kind's schema was taken")
 	}
-	refusal := model.Invalid("chance.dice", "Write dice like 2d6+3.")
+	refusal := model.Invalid("text", "Write dice like 2d6+3.")
 	f.err = refusal
 	if _, err := r.Command(ctx, actor, "", "roll", "banana"); !errors.Is(err, refusal) {
 		t.Errorf("the module's refusal came back as %v", err)

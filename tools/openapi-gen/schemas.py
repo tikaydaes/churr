@@ -843,9 +843,8 @@ S('Chance', 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`,
    'reversed?': ('[bool]', 'A draw from a deck with orientation, and a tarot reading: whether each card came up reversed.'),
    'spread?': ('str', 'A tarot reading: the spread (testdata/commands/tarot.json).')})
 
-S('ChanceInput', 'Asks the server to draw a result. People only; refused in a sealed chat. A roll becomes the message\'s text, the roll in words, and its `view`, a value of kind `dice_roll`; any other result its `chance` and `fallback`.', {
-   'kind': 'enum:roll|flip|pick|shuffle|draw|tarot',
-   'dice?': ('str', 'A roll: the expression (FEATURES.md section 12.4), rows separated by commas. Empty is `1d20`.', {'maxLength': 100}),
+S('ChanceInput', 'Asks the server to draw a result, which becomes the message\'s `chance` and `fallback`. People only; refused in a sealed chat. A roll of dice is no chance result: `/roll` and `/dice` are the dice module\'s commands, run with `runCommand`.', {
+   'kind': 'enum:flip|pick|shuffle|draw|tarot',
    'options?': ('[str]', 'A pick or shuffle: 2 to 20 options of up to 200 characters.', {'maxItems': 20}),
    'count?': ('int', 'A draw: how many cards. Default 1.'),
    'deck?': ('str', 'A draw: the deck, by name or alias. Default `standard`.'),

@@ -5,7 +5,6 @@
 // (test/core/commands_test.dart). The web chat's copy is
 // internal/web/static/shared/commands.js.
 
-import '../markdown/dice.dart';
 import 'decks.dart';
 
 /// The server-wide ban's two commands (ruling R72). Their names are the
@@ -369,8 +368,8 @@ Map<String, Object?>? parseCommand(
       if (rest.isNotEmpty) out['text'] = rest;
       return out;
     case 'dice':
-      // /dice: a bare first number of a row is that many d6.
-      out['dice'] = name == 'dice' ? diceD6(rest) : rest;
+      // /roll and /dice are the dice module's: the server reads the dice.
+      out['args'] = rest;
       return out;
     case 'options':
       final opts = rest.isEmpty
@@ -489,10 +488,6 @@ Map<String, Object?>? parseCommand(
 /// The chance request a parsed command asks the server for, or null.
 Map<String, Object?>? chanceRequest(Map<String, Object?> c) =>
     switch (c['name']) {
-      'roll' || 'dice' => {
-        'kind': 'roll',
-        if ((c['dice'] as String? ?? '').isNotEmpty) 'dice': c['dice'],
-      },
       'flip' => {'kind': 'flip'},
       'pick' || 'shuffle' => {'kind': c['name'], 'options': c['options']},
       'draw' => {'kind': 'draw', 'count': c['count'], 'deck': c['deck']},

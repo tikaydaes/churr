@@ -8,7 +8,6 @@
 // web chat keeps its wording beside the code that uses it.
 
 import { DECKS, SPREADS } from './message/cardnames.js';
-import { diceD6 } from './md/dice.js';
 
 // name: [args, offered in a sealed chat, offered to admins only]. The order
 // is the menu's.
@@ -200,8 +199,8 @@ export function parse(text, hidden) {
       if (rest) out.text = rest;
       return out;
     case 'dice':
-      // /dice: a bare first number of a row is that many d6.
-      out.dice = name === 'dice' ? diceD6(rest) : rest;
+      // /roll and /dice are the dice module's: the server reads the dice.
+      out.args = rest;
       return out;
     case 'options': {
       const opts = rest ? rest.split('|').map((o) => o.trim()) : [];

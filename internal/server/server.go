@@ -30,6 +30,7 @@ import (
 	"github.com/tikaydaes/churr/internal/memguard"
 	"github.com/tikaydaes/churr/internal/mod"
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/modhost"
 	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/people"
 	"github.com/tikaydaes/churr/internal/perm"
@@ -115,6 +116,8 @@ type Server struct {
 	Forms    *forms.Service
 	Sched    *sched.Service
 	Commands *sched.Commands
+	// Modules are the built-in modules (modules.go).
+	Modules *modhost.Registry
 	// Bots is bots, their commands and interactions, and webhooks.
 	Bots *bots.Service
 	// Calls is the calls service and the media server behind it (calls.go).
@@ -224,6 +227,10 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 	s.wirePeople()
 	// forms, the scheduler and commands (forms.go).
 	s.wireForms()
+	// the built-in modules: inline dice, /roll and /dice (modules.go).
+	if err := s.wireModules(); err != nil {
+		return fail(err)
+	}
 	// bots, their commands and interactions, and webhooks (bots.go).
 	s.wireBots()
 	// moderation, link previews and the janitor (chatmore.go).

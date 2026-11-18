@@ -954,10 +954,13 @@ op('GET commands', 'listCommands',
    err='not_found')
 
 op('POST conversations/{id}/commands', 'runCommand',
-   'Run a bot command or a saved reply',
+   'Run a bot command, a built-in module\'s command or a saved reply',
    who='Any local member of the conversation, at any level. Not while timed out.',
    desc=("The server looks the name up in this order and stops at the first match: the caller's own saved replies, "
-         'custom commands, then commands of bots in this conversation. No match is `not_found`. A saved reply or '
+         'custom commands, commands of bots in this conversation, then the commands of the built-in modules (`/roll` '
+         'and `/dice`, DESIGN-MODULES.md section 9.1). No match is `not_found`. A module\'s command posts its answer '
+         'as a message from the caller, its words as the text and its value as the `view`; a person only, never in a '
+         'sealed chat, and what the module refuses (dice it cannot read) is `invalid_value` in its words. A saved reply or '
          'custom command is posted as a message from the caller, who must be allowed to post; text after its name is '
          'refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot '
          '`command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives '

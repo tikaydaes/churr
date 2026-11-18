@@ -1818,7 +1818,8 @@ change.
 Every command makes the ordinary request, so every rule of
 `PERMISSIONS.md` applies and a refusal is the server's, shown in its
 words. Only `/roll`, `/dice`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
-and `/tarot` need anything new of the server: it draws their result.
+and `/tarot` need anything new of the server: it draws their result
+(`/roll` and `/dice` through `runCommand`, the rest as a `chance`).
 Arriving live, a result plays once and never again on a press
 (`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
 total; cards and tiles lie face down and are turned over one after
@@ -1905,8 +1906,13 @@ passes; the result names an error the client words itself.
   row a first term that is a bare number is that many d6, and only that:
   `/dice 4` is `4d6`, `/dice 4+3` is `4d6+3` (the later 3 is added),
   `/dice 4k3` is `4d6k3`, `/dice 4, 2+1` is `4d6, 2d6+1`; a term written
-  with a `d` is as written (`/dice 2d8` is `2d8`); nothing is `1d6`. The
-  client rewrites it so and asks the server for a roll.
+  with a `d` is as written (`/dice 2d8` is `2d8`); nothing is `1d6`.
+- `/roll` and `/dice` are the dice module's commands
+  (`DESIGN-MODULES.md` section 9.1): the client sends what was typed
+  after the name with `runCommand`, and the server reads it, rolls and
+  posts the roll as the person's message. Dice it cannot read are
+  refused with `invalid_value` in its words; the grammar is read by the
+  server alone (`internal/modules/dice`).
 
 Stored: `saved_replies`, `commands`.
 

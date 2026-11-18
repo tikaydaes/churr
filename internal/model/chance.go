@@ -2,22 +2,20 @@ package model
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
-// Chance results: /roll, /flip, /pick and /shuffle (ruling R67,
+// Chance results: /flip, /pick, /shuffle, /draw and /tarot (ruling R67,
 // docs/MESSAGE-FORMAT.md section 1.2). The client asks; the server draws
 // the result and stores it on the message, where no edit can reach it, so
-// every reader sees a result nobody could have made up. A roll is stored as
-// the message's text and its view, a value of kind dice_roll (DiceRoll);
-// the other results as Chance.
+// every reader sees a result nobody could have made up. A roll is the dice
+// module's (internal/modules/dice): a message whose text is the roll in
+// words and whose view is a value of kind dice_roll, whose shape and check
+// are here (DiceRoll).
 
-// The kinds of chance request. A roll's result is a DiceRoll, the others' a
-// Chance.
+// The kinds of chance request.
 const (
-	ChanceRoll    = "roll"
 	ChanceFlip    = "flip"
 	ChancePick    = "pick"
 	ChanceShuffle = "shuffle"
@@ -25,16 +23,18 @@ const (
 	ChanceTarot   = "tarot"
 )
 
-// The limits of a chance request. testdata/commands/dice.json holds cases
-// at each of them.
+// The limits of the kind dice_roll, which the dice module rolls within.
+// testdata/commands/dice.json holds cases at each of them.
 const (
-	MaxDiceText     = 100   // characters of a dice expression
-	MaxDiceTerms    = 10    // terms in one row of a roll
-	MaxDiceRows     = 8     // rows of a roll, separated by commas
-	MaxDice         = 100   // dice in one roll, all terms and rows together
-	MaxDieSides     = 1000  // sides of one die
-	MaxDiceNumber   = 10000 // a plain number in a roll
-	MinChanceOption = 2     // options for /pick and /shuffle
+	MaxDiceTerms = 10   // terms in one row of a roll
+	MaxDiceRows  = 8    // rows of a roll, separated by commas
+	MaxDice      = 100  // dice in one roll, all terms and rows together
+	MaxDieSides  = 1000 // sides of one die
+)
+
+// The limits of a chance request.
+const (
+	MinChanceOption = 2 // options for /pick and /shuffle
 	MaxChanceOption = 20
 	MaxOptionText   = 200 // characters of one option
 )
@@ -43,7 +43,6 @@ const (
 // (schema ChanceInput).
 type ChanceInput struct {
 	Kind    string   `json:"kind"`
-	Dice    string   `json:"dice,omitempty"`
 	Options []string `json:"options,omitempty"`
 	// Count and Deck are for a draw: how many cards (1 when left out),
 	// from which deck, by name or alias (standard when left out).
@@ -117,331 +116,6 @@ type Chance struct {
 	Spread string `json:"spread,omitempty"`
 }
 
-// diceSyntax is said when an expression cannot be read.
-const diceSyntax = "Write dice like 2d6+3, d20, 4d6kh3, 2d20kl1, adv or dis."
-
-// ParseDiceRows reads a roll of one or more rows separated by commas
-// (FEATURES.md section 12.4), each an expression ParseDice reads; spaces
-// may stand around the commas. Nothing at all is 1d20; an empty row
-// between commas is refused. The limits on characters and dice are for
-// the whole roll, and a roll has at most MaxDiceRows rows. It returns the
-// rows with nothing rolled and the roll written out in full, rows
-// separated by ", ".
-func ParseDiceRows(expr string) ([]DiceRow, string, error) {
-	if utf8.RuneCountInString(expr) > MaxDiceText {
-		return nil, "", diceErr(fmt.Sprintf("A roll is at most %d characters.", MaxDiceText))
-	}
-	parts := strings.Split(expr, ",")
-	if len(parts) > MaxDiceRows {
-		return nil, "", diceErr(fmt.Sprintf("A roll has at most %d rows, separated by commas.", MaxDiceRows))
-	}
-	rows := make([]DiceRow, 0, len(parts))
-	written := make([]string, 0, len(parts))
-	dice := 0
-	for _, p := range parts {
-		if len(parts) > 1 && strings.TrimSpace(p) == "" {
-			return nil, "", diceErr("A row between commas cannot be empty.")
-		}
-		terms, text, err := ParseDice(p)
-		if err != nil {
-			return nil, "", err
-		}
-		for _, t := range terms {
-			dice += t.Count
-		}
-		if dice > MaxDice {
-			return nil, "", diceErr(fmt.Sprintf("A roll has at most %d dice.", MaxDice))
-		}
-		rows = append(rows, DiceRow{Dice: text, Terms: terms})
-		written = append(written, text)
-	}
-	return rows, strings.Join(written, ", "), nil
-}
-
-// DiceD6 turns what follows /dice into a roll (FEATURES.md section 12.4):
-// in each row, a first term that is a bare number is that many d6
-// (`4` is `4d6`, `4+3` is `4d6+3`, `4k3` is `4d6k3`); everything else is
-// as written (`2d8` stays `2d8`, a later number is added). Nothing at all
-// is 1d6. Rows are separated by ", ".
-func DiceD6(expr string) string {
-	if strings.TrimSpace(expr) == "" {
-		return "1d6"
-	}
-	parts := strings.Split(expr, ",")
-	for i, p := range parts {
-		q := strings.TrimSpace(p)
-		j := 0
-		for j < len(q) && q[j] >= '0' && q[j] <= '9' {
-			j++
-		}
-		if j > 0 && (j == len(q) || (q[j] != 'd' && q[j] != 'D')) {
-			q = q[:j] + "d6" + q[j:]
-		}
-		parts[i] = q
-	}
-	return strings.Join(parts, ", ")
-}
-
-func diceErr(msg string) error { return Invalid("chance.dice", msg) }
-
-// ParseDice reads a dice expression (FEATURES.md section 12.4): terms
-// joined by + and -, each NdM (N defaults to 1; d% is d100), NdM followed
-// by kh, kl, dh or dl and an optional count (k alone is kh; the count
-// defaults to 1), a plain number, or adv and dis for 2d20kh1 and 2d20kl1.
-// Case and spaces do not matter. Nothing at all is 1d20. It returns the
-// terms with nothing rolled and the expression written out in full.
-func ParseDice(expr string) ([]DiceTerm, string, error) {
-	if utf8.RuneCountInString(expr) > MaxDiceText {
-		return nil, "", diceErr(fmt.Sprintf("A roll is at most %d characters.", MaxDiceText))
-	}
-	// Spaces may stand beside + and -, and nowhere else: "2d6 3" is not
-	// read as 2d63.
-	fields := strings.Fields(strings.ToLower(expr))
-	for k := 1; k < len(fields); k++ {
-		a, b := fields[k-1], fields[k]
-		if !strings.ContainsAny(a[len(a)-1:], "+-") && !strings.ContainsAny(b[:1], "+-") {
-			return nil, "", diceErr(diceSyntax)
-		}
-	}
-	s := strings.Join(fields, "")
-	if s == "" {
-		s = "1d20"
-	}
-	var terms []DiceTerm
-	dice := 0
-	i := 0
-	for i < len(s) {
-		sign := 1
-		switch s[i] {
-		case '+':
-			i++
-		case '-':
-			sign = -1
-			i++
-		default:
-			if len(terms) > 0 {
-				return nil, "", diceErr(diceSyntax)
-			}
-		}
-		if i >= len(s) {
-			return nil, "", diceErr(diceSyntax)
-		}
-		t, n, err := diceTerm(s[i:])
-		if err != nil {
-			return nil, "", err
-		}
-		i += n
-		t.Sign = sign
-		terms = append(terms, t)
-		if len(terms) > MaxDiceTerms {
-			return nil, "", diceErr(fmt.Sprintf("A roll has at most %d terms.", MaxDiceTerms))
-		}
-		dice += t.Count
-		if dice > MaxDice {
-			return nil, "", diceErr(fmt.Sprintf("A roll has at most %d dice.", MaxDice))
-		}
-	}
-	return terms, DiceString(terms), nil
-}
-
-// diceTerm reads one term from the start of s and says how many bytes it
-// took.
-func diceTerm(s string) (DiceTerm, int, error) {
-	for _, w := range []struct {
-		word string
-		keep string
-	}{{"adv", "kh"}, {"dis", "kl"}} {
-		if strings.HasPrefix(s, w.word) {
-			return DiceTerm{Count: 2, Sides: 20, Keep: w.keep, KeepN: 1}, len(w.word), nil
-		}
-	}
-	i := 0
-	num := func() (int, bool, error) {
-		start := i
-		for i < len(s) && s[i] >= '0' && s[i] <= '9' {
-			i++
-		}
-		if i == start {
-			return 0, false, nil
-		}
-		if i-start > 6 {
-			return 0, true, diceErr(fmt.Sprintf("A number in a roll is at most %d.", MaxDiceNumber))
-		}
-		n, _ := strconv.Atoi(s[start:i])
-		return n, true, nil
-	}
-	count, hasCount, err := num()
-	if err != nil {
-		return DiceTerm{}, 0, err
-	}
-	if i >= len(s) || s[i] != 'd' {
-		// A plain number.
-		if !hasCount {
-			return DiceTerm{}, 0, diceErr(diceSyntax)
-		}
-		if count > MaxDiceNumber {
-			return DiceTerm{}, 0, diceErr(fmt.Sprintf("A number in a roll is at most %d.", MaxDiceNumber))
-		}
-		return DiceTerm{Value: count}, i, nil
-	}
-	i++ // the d
-	if !hasCount {
-		count = 1
-	}
-	if count < 1 {
-		return DiceTerm{}, 0, diceErr("Roll at least one die.")
-	}
-	if count > MaxDice {
-		return DiceTerm{}, 0, diceErr(fmt.Sprintf("A roll has at most %d dice.", MaxDice))
-	}
-	var sides int
-	if i < len(s) && s[i] == '%' {
-		sides = 100
-		i++
-	} else {
-		var has bool
-		if sides, has, err = num(); err != nil || !has {
-			if err == nil {
-				err = diceErr(diceSyntax)
-			}
-			if has {
-				err = diceErr(fmt.Sprintf("A die has 2 to %d sides.", MaxDieSides))
-			}
-			return DiceTerm{}, 0, err
-		}
-	}
-	if sides < 2 || sides > MaxDieSides {
-		return DiceTerm{}, 0, diceErr(fmt.Sprintf("A die has 2 to %d sides.", MaxDieSides))
-	}
-	t := DiceTerm{Count: count, Sides: sides}
-	if i < len(s) && s[i] == 'k' || i+1 < len(s) && s[i] == 'd' && (s[i+1] == 'h' || s[i+1] == 'l') {
-		mode := s[i : i+1]
-		i++
-		switch {
-		case i < len(s) && s[i] == 'h':
-			mode += "h"
-			i++
-		case i < len(s) && s[i] == 'l':
-			mode += "l"
-			i++
-		default:
-			mode += "h" // k alone keeps the highest
-		}
-		n, has, err := num()
-		if err != nil {
-			return DiceTerm{}, 0, err
-		}
-		if !has {
-			n = 1
-		}
-		t.Keep, t.KeepN = mode, n
-		if mode[0] == 'k' && (n < 1 || n > count) {
-			return DiceTerm{}, 0, diceErr(fmt.Sprintf("Keep between 1 and %d of %dd%d.", count, count, sides))
-		}
-		if mode[0] == 'd' && (n < 1 || n >= count) {
-			if count == 1 {
-				return DiceTerm{}, 0, diceErr("Dropping needs at least two dice.")
-			}
-			return DiceTerm{}, 0, diceErr(fmt.Sprintf("Drop between 1 and %d of %dd%d.", count-1, count, sides))
-		}
-	}
-	return t, i, nil
-}
-
-// DiceString writes terms out in full: 2d6+1d4kh1-3.
-func DiceString(terms []DiceTerm) string {
-	var b strings.Builder
-	for i, t := range terms {
-		if t.Sign < 0 {
-			b.WriteByte('-')
-		} else if i > 0 {
-			b.WriteByte('+')
-		}
-		if t.Count == 0 {
-			b.WriteString(strconv.Itoa(t.Value))
-			continue
-		}
-		fmt.Fprintf(&b, "%dd%d", t.Count, t.Sides)
-		if t.Keep != "" {
-			fmt.Fprintf(&b, "%s%d", t.Keep, t.KeepN)
-		}
-	}
-	return b.String()
-}
-
-// RollDice rolls the dice of terms with die, which gives a whole number from
-// 1 to sides, and returns the terms with their rolls and the total.
-func RollDice(terms []DiceTerm, die func(sides int) int) ([]DiceTerm, int) {
-	out := make([]DiceTerm, len(terms))
-	total := 0
-	for i, t := range terms {
-		if t.Count > 0 {
-			t.Rolls = make([]int, t.Count)
-			for j := range t.Rolls {
-				t.Rolls[j] = die(t.Sides)
-			}
-			t.Dropped = droppedDice(t)
-			t.Value = 0
-			skip := map[int]bool{}
-			for _, j := range t.Dropped {
-				skip[j] = true
-			}
-			for j, r := range t.Rolls {
-				if !skip[j] {
-					t.Value += r
-				}
-			}
-		}
-		total += t.Sign * t.Value
-		out[i] = t
-	}
-	return out, total
-}
-
-// droppedDice says which rolls of a term do not count, by position. Of equal
-// rolls, the later one is dropped first.
-func droppedDice(t DiceTerm) []int {
-	if t.Keep == "" {
-		return nil
-	}
-	n := len(t.Rolls)
-	drop := t.KeepN // dh and dl
-	lowest := t.Keep == "dl" || t.Keep == "kh"
-	if t.Keep[0] == 'k' {
-		drop = n - t.KeepN
-	}
-	if drop <= 0 {
-		return nil
-	}
-	// Positions, sorted so that the ones to drop come first.
-	pos := make([]int, n)
-	for i := range pos {
-		pos[i] = i
-	}
-	before := func(a, b int) bool {
-		ra, rb := t.Rolls[a], t.Rolls[b]
-		if ra != rb {
-			if lowest {
-				return ra < rb
-			}
-			return ra > rb
-		}
-		return a > b
-	}
-	for i := 1; i < n; i++ { // insertion sort: at most 100 dice
-		for j := i; j > 0 && before(pos[j], pos[j-1]); j-- {
-			pos[j], pos[j-1] = pos[j-1], pos[j]
-		}
-	}
-	out := append([]int(nil), pos[:drop]...)
-	for i := 1; i < len(out); i++ {
-		for j := i; j > 0 && out[j] < out[j-1]; j-- {
-			out[j], out[j-1] = out[j-1], out[j]
-		}
-	}
-	return out
-}
-
 // CheckChanceOptions checks the options of a pick or shuffle and returns
 // them trimmed.
 func CheckChanceOptions(options []string) ([]string, error) {
@@ -462,32 +136,12 @@ func CheckChanceOptions(options []string) ([]string, error) {
 	return out, nil
 }
 
-// Roll makes the roll a request of kind roll asks for. intn gives a whole
-// number from 0 to n-1; the server passes one that reads crypto/rand.
-func Roll(in ChanceInput, intn func(n int) int) (DiceRoll, error) {
-	if in.Kind != ChanceRoll {
-		return DiceRoll{}, Invalid("chance.kind", "Only a roll is rolled.")
-	}
-	rows, text, err := ParseDiceRows(in.Dice)
-	if err != nil {
-		return DiceRoll{}, err
-	}
-	if len(in.Options) > 0 || in.Count != 0 || in.Deck != "" || in.Spread != "" {
-		return DiceRoll{}, Invalid("chance", "A roll takes dice only.")
-	}
-	for i := range rows {
-		rows[i].Terms, rows[i].Total = RollDice(rows[i].Terms, func(sides int) int { return intn(sides) + 1 })
-	}
-	return DiceRoll{Dice: text, Rows: rows}, nil
-}
-
-// DrawChance draws the result a request other than a roll asks for (a roll
-// is Roll's). intn gives a whole number from 0 to n-1; the server passes one
+// DrawChance draws the result a request asks for. intn gives a whole number from 0 to n-1; the server passes one
 // that reads crypto/rand.
 func DrawChance(in ChanceInput, intn func(n int) int) (Chance, error) {
 	switch in.Kind {
 	case ChanceFlip:
-		if in.Dice != "" || len(in.Options) > 0 {
+		if len(in.Options) > 0 {
 			return Chance{}, Invalid("chance", "A coin flip takes nothing more.")
 		}
 		out := "heads"
@@ -496,9 +150,6 @@ func DrawChance(in ChanceInput, intn func(n int) int) (Chance, error) {
 		}
 		return Chance{Kind: ChanceFlip, Outcome: out}, nil
 	case ChancePick, ChanceShuffle:
-		if in.Dice != "" {
-			return Chance{}, Invalid("chance.dice", "Only a roll takes dice.")
-		}
 		opts, err := CheckChanceOptions(in.Options)
 		if err != nil {
 			return Chance{}, err
@@ -517,7 +168,7 @@ func DrawChance(in ChanceInput, intn func(n int) int) (Chance, error) {
 		}
 		return Chance{Kind: ChanceShuffle, Options: opts, Order: order}, nil
 	case ChanceDraw:
-		if in.Dice != "" || len(in.Options) > 0 {
+		if len(in.Options) > 0 {
 			return Chance{}, Invalid("chance", "A draw takes a count and a deck only.")
 		}
 		d, ok := findDeck(in.Deck)
@@ -537,7 +188,7 @@ func DrawChance(in ChanceInput, intn func(n int) int) (Chance, error) {
 		cards, rev := drawCards(d, n, intn)
 		return Chance{Kind: ChanceDraw, Deck: d.Name, Cards: cards, Reversed: rev}, nil
 	case ChanceTarot:
-		if in.Dice != "" || len(in.Options) > 0 || in.Count != 0 || in.Deck != "" {
+		if len(in.Options) > 0 || in.Count != 0 || in.Deck != "" {
 			return Chance{}, Invalid("chance", "A tarot reading takes a spread only.")
 		}
 		sp, ok := findSpread(in.Spread)
@@ -673,22 +324,6 @@ func (c Chance) Valid() bool {
 	return false
 }
 
-// Text is a roll in words, the text of the message that carries it, which
-// reads correctly with no client support and is what search reads:
-// "Rolled 2d6+3: [4, 1] + 3 = 8". Dice that do not count are in
-// parentheses; rows are separated by "; ".
-func (r DiceRoll) Text() string {
-	var b strings.Builder
-	b.WriteString("Rolled " + r.Dice + ":")
-	for k, row := range r.Rows {
-		if k > 0 {
-			b.WriteString(";")
-		}
-		writeDiceRow(&b, row)
-	}
-	return b.String()
-}
-
 // Fallback is the plain text that stands in for a result for a client that
 // cannot draw it, and that search reads.
 func (c Chance) Fallback() string {
@@ -736,35 +371,4 @@ func (c Chance) Fallback() string {
 		return "Shuffled: " + strings.Join(parts, ", ")
 	}
 	return ""
-}
-
-// writeDiceRow writes one row of a roll's text: " [4, 1] + 3 = 8".
-func writeDiceRow(b *strings.Builder, row DiceRow) {
-	for i, t := range row.Terms {
-		switch {
-		case t.Sign < 0:
-			b.WriteString(" - ")
-		case i > 0:
-			b.WriteString(" + ")
-		default:
-			b.WriteString(" ")
-		}
-		if t.Count == 0 {
-			b.WriteString(strconv.Itoa(t.Value))
-			continue
-		}
-		drop := map[int]bool{}
-		for _, j := range t.Dropped {
-			drop[j] = true
-		}
-		parts := make([]string, len(t.Rolls))
-		for j, r := range t.Rolls {
-			parts[j] = strconv.Itoa(r)
-			if drop[j] {
-				parts[j] = "(" + parts[j] + ")"
-			}
-		}
-		b.WriteString("[" + strings.Join(parts, ", ") + "]")
-	}
-	fmt.Fprintf(b, " = %d", row.Total)
 }

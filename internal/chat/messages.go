@@ -7,7 +7,6 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"github.com/tikaydaes/churr/internal/markdown"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/perm"
@@ -143,9 +142,13 @@ type NewMessage struct {
 	Form           *model.FormInput
 	Via            *model.Via
 	// Action marks text typed with /me; Chance asks the server to draw a
-	// result for /roll, /flip, /pick, /shuffle or /draw (ruling R67).
+	// result for /flip, /pick, /shuffle, /draw or /tarot (ruling R67).
 	Action bool
 	Chance *model.ChanceInput
+	// View is a built-in module's answer to a command, as the host checked
+	// it (commands.go): Text is then the module's words for it. It is never
+	// taken from a request.
+	View *model.ValueEnvelope
 	// Reminder is set by the scheduler for a reminder: it may quote the
 	// message it is about at top level, from any conversation, and may
 	// then have no text (docs/FEATURES.md section 9.1). The scheduler
@@ -195,6 +198,9 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	if conv.Sealed() && in.Chance != nil {
 		return Posted{}, model.Invalid("chance", "The server cannot write into a sealed chat, so it cannot draw a result there.")
 	}
+	if conv.Sealed() && in.View != nil {
+		return Posted{}, model.Invalid("name", "The server cannot write into a sealed chat, so no module runs there.")
+	}
 	if conv.Sealed() {
 		// Sealed messages are posted by the sealed package, which the
 		// API reaches when the body carries `sealed`. Anything else is
@@ -231,24 +237,14 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			}
 		}
 	}
-	chance, roll, err := checkMarks(actor, in)
+	chance, err := checkMarks(actor, in)
 	if err != nil {
 		return Posted{}, err
 	}
 	if chance != nil {
 		fallback = chance.Fallback()
 	}
-	// A roll is its text, the roll in words, which uses no Markdown and so
-	// reads the same everywhere, with the roll as its view.
-	var view *model.ValueEnvelope
-	if roll != nil {
-		v, err := diceValue(roll)
-		if err != nil {
-			return Posted{}, err
-		}
-		view = &v
-	}
-	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && chance == nil && roll == nil && !(in.Reminder && in.Quote != nil) {
+	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && chance == nil && !(in.Reminder && in.Quote != nil) {
 		return Posted{}, model.BadRequest("A message needs text, a file or a card.")
 	}
 	if in.ClientID != "" {
@@ -316,8 +312,14 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	}
 
 	inst := in.Instants
-	inst.Dice = diceMode(actor, in.Via)
-	got, err := s.readWith(ctx, s.store, st, in.Text, inst)
+	inst.Claims = claimsMode(actor, in.Via)
+	read := in.Text
+	if in.View != nil {
+		// A module's words for its value are read for nothing: they are
+		// plain text, the same everywhere (a roll's "[4, 1] + 3 = 8").
+		read = ""
+	}
+	got, err := s.readWith(ctx, s.store, st, read, inst)
 	if err != nil {
 		return Posted{}, err
 	}
@@ -331,10 +333,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	m := model.Message{
 		ID: model.NewID[model.MessageID](), ConversationID: conv.ID, AuthorID: actor.ID, ParentID: parent.ID,
 		Quote: in.Quote, ClientID: in.ClientID, Text: in.Text, Entities: got.entities, Cards: in.Cards, Via: in.Via,
-		Action: in.Action, Chance: chance, View: view, CreatedAt: s.now(),
-	}
-	if roll != nil {
-		m.Text = roll.Text()
+		Action: in.Action, Chance: chance, View: in.View, CreatedAt: s.now(),
 	}
 	m.Fallback = fallback
 	var out model.Message
@@ -618,7 +617,7 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 		text = *in.Text
 	}
 	if m.View != nil && text != m.Text {
-		// The text of a message with a view is the server's words for the
+		// The text of a message with a view is the module's words for the
 		// value, which no edit changes (ruling R67).
 		return m, model.ErrConflict.With("The text of a roll is the server's, and cannot be edited.")
 	}
@@ -646,11 +645,11 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 	// switches quick corrections off) holds no edit, even one made in the
 	// same millisecond as the message.
 	quick := now.Sub(m.CreatedAt) < time.Duration(quickSeconds)*time.Second
-	// An edit rolls no dice: those it leaves alone keep their rolls, and
-	// the rest are marked removed (dice.go).
+	// An edit resolves no objects: those it leaves alone keep their
+	// values, and the rest are marked removed (claims.go).
 	inst := in.Instants
-	if diceMode(actor, m.Via) == markdown.DiceRoll {
-		inst.Dice = markdown.DiceEdit
+	if claimsMode(actor, m.Via) == claimsSend {
+		inst.Claims = claimsEdit
 	}
 	got, err := s.readWith(ctx, s.store, st, text, inst)
 	if err != nil {
@@ -660,7 +659,7 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 		// An edit that adds a broad mention counts as one.
 		s.broadLimit.take(actor, st.Settings.BroadPerHour, 1)
 	}
-	got.entities = keepRolls(m.Text, m.Entities, text, got.entities)
+	got.entities = keepResolved(m.Text, m.Entities, text, got.entities)
 	if in.Text == nil || *in.Text == m.Text && in.Instants.TimeZone == "" && len(in.Instants.Hints) == 0 && len(in.Instants.Objects) == 0 {
 		got.entities = keptInstants(m.Entities, got.entities)
 	}

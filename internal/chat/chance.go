@@ -19,32 +19,34 @@ func cryptoIntn(n int) int {
 	return int(v.Int64())
 }
 
-// checkMarks checks a new message's action mark and chance request and draws
-// the result (ruling R67): a roll, or another chance result. A chance result
-// stands alone, and only a person may ask for one.
-func checkMarks(actor model.Account, in NewMessage) (*model.Chance, *model.DiceRoll, error) {
+// checkMarks checks a new message's action mark, chance request and module
+// view, and draws a chance result (ruling R67). A chance result or a
+// module's answer stands alone, and only a person may ask for one. (A roll
+// is the dice module's answer to /roll, which comes as a view.)
+func checkMarks(actor model.Account, in NewMessage) (*model.Chance, error) {
 	if in.Action && in.Text == "" {
-		return nil, nil, model.Invalid("action", "An action needs text: what you are doing.")
+		return nil, model.Invalid("action", "An action needs text: what you are doing.")
+	}
+	if in.View != nil {
+		if actor.Role == model.RoleBot {
+			return nil, model.Invalid("name", "Built-in modules answer people; a bot makes its own.")
+		}
+		if in.Text == "" || in.Action || in.Chance != nil || len(in.FileIDs) > 0 || len(in.Cards) > 0 || in.Form != nil {
+			return nil, model.Invalid("view", "A module's answer is a message of its own: its words and its view.")
+		}
 	}
 	if in.Chance == nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 	if actor.Role == model.RoleBot {
-		return nil, nil, model.Invalid("chance", "Chance results are for people; a bot draws its own.")
+		return nil, model.Invalid("chance", "Chance results are for people; a bot draws its own.")
 	}
 	if in.Text != "" || in.Action || len(in.FileIDs) > 0 || len(in.Cards) > 0 || in.Form != nil {
-		return nil, nil, model.Invalid("chance", "A chance result is a message of its own, with no text, files, cards or form.")
-	}
-	if in.Chance.Kind == model.ChanceRoll {
-		r, err := model.Roll(*in.Chance, cryptoIntn)
-		if err != nil {
-			return nil, nil, err
-		}
-		return nil, &r, nil
+		return nil, model.Invalid("chance", "A chance result is a message of its own, with no text, files, cards or form.")
 	}
 	c, err := model.DrawChance(*in.Chance, cryptoIntn)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return &c, nil, nil
+	return &c, nil
 }

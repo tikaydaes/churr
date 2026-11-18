@@ -95,8 +95,10 @@ without text.
 
 ### 1.2 Chance results
 
-The client asks (`postMessage` with `chance`, a `ChanceInput`); the
-server draws the result with `crypto/rand` and stores it on the message.
+The client asks (`postMessage` with `chance`, a `ChanceInput`; for a
+roll, `runCommand` with `/roll` or `/dice` and the dice as typed, which
+the dice module reads); the server draws the result with `crypto/rand`
+and stores it on the message.
 No edit can change it, so every reader sees a result nobody made up. The
 request comes with no text, files, cards or form. People only: a bot's
 request is refused. Never in a sealed chat, which the server cannot
@@ -113,7 +115,7 @@ result in plain English, which old clients show and search reads.
 
 | `kind`    | Asked with                       | Stored                                                   |
 |-----------|----------------------------------|----------------------------------------------------------|
-| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4), rows separated by commas | In the view's `DiceRoll`: `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
+| `/roll`, `/dice` (`runCommand`) | `text`: the expression (`FEATURES.md` section 12.4), rows separated by commas | In the view's `DiceRoll`: `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
 | `flip`    | nothing                          | `outcome`: `heads` or `tails`                            |
 | `pick`    | `options`: 2 to 20               | `options` as given, `picked`: the position of the one picked |
 | `shuffle` | `options`: 2 to 20               | `options` as given, `order`: their positions in shuffled order |
@@ -669,8 +671,11 @@ web chat it copies `lat,lon`.
 (section 1.2, `FEATURES.md` 12.4, the same limits, one row: a comma
 is not read as dice) of 1 to 100
 characters with no bracket or line break, and `]]`, on the edges:
-`I hit for [[2d6+3]] damage`. The server rolls it when a person's
-message is posted (with the random source of `/roll`), never on an edit:
+`I hit for [[2d6+3]] damage`. Inline dice are the dice module's claim
+(`DESIGN-MODULES.md` section 4.4): the server offers it any `[[...]]`
+whose inside is made of the grammar's characters, and the module rolls
+what it reads, when a person's message is posted (with the random source
+of `/roll`), never on an edit:
 the entity is an `object` whose `object` is a value of kind `dice_roll`,
 its `DiceRoll` holding the expression written out in full and one row
 with each term as it fell and the total. An edit keeps the

@@ -280,7 +280,7 @@ void main() {
     c.text.text = '/roll 2d6+3';
     final roll = await c.send();
     expect(roll, isA<RunBuiltin>());
-    expect((roll as RunBuiltin).parsed, {'name': 'roll', 'dice': '2d6+3'});
+    expect((roll as RunBuiltin).parsed, {'name': 'roll', 'args': '2d6+3'});
     c.text.text = '/kick';
     final kick = await c.send() as RunBuiltin;
     expect(kick.parsed, {'name': 'kick', 'error': 'needs_person'});

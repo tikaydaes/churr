@@ -2476,8 +2476,6 @@ class ChanceInputKind extends $pb.ProtobufEnum {
   static const ChanceInputKind CHANCE_INPUT_KIND_UNSPECIFIED =
       ChanceInputKind._(
           0, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_UNSPECIFIED');
-  static const ChanceInputKind CHANCE_INPUT_KIND_ROLL =
-      ChanceInputKind._(1, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_ROLL');
   static const ChanceInputKind CHANCE_INPUT_KIND_FLIP =
       ChanceInputKind._(2, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_FLIP');
   static const ChanceInputKind CHANCE_INPUT_KIND_PICK =
@@ -2491,7 +2489,6 @@ class ChanceInputKind extends $pb.ProtobufEnum {
 
   static const $core.List<ChanceInputKind> values = <ChanceInputKind>[
     CHANCE_INPUT_KIND_UNSPECIFIED,
-    CHANCE_INPUT_KIND_ROLL,
     CHANCE_INPUT_KIND_FLIP,
     CHANCE_INPUT_KIND_PICK,
     CHANCE_INPUT_KIND_SHUFFLE,

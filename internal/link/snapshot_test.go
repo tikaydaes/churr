@@ -146,8 +146,7 @@ func TestValuesTravelInTheSnapshotAndAreChecked(t *testing.T) {
 	l := testkit.NewLinked(t, 3, true)
 	a, b, c := l.Servers[0], l.Servers[1], l.Servers[2]
 	ch := a.Owner.Channel("table", false)
-	msgs := "/api/v1/conversations/" + ch + "/messages"
-	rolled := a.Owner.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "2d6+3"}})["message"].(map[string]any)
+	rolled := a.Owner.Must(200, "POST", "/api/v1/conversations/"+ch+"/commands", map[string]any{"name": "roll", "text": "2d6+3"})["message"].(map[string]any)
 	inline := a.Owner.Post(ch, "I hit for [[1d4]]")
 	conv := model.ConversationID(ch)
 	view := func(data json.RawMessage, alt *model.ValueEnvelope) *model.ValueEnvelope {
@@ -224,8 +223,7 @@ func TestValuesTravelLiveAndAreChecked(t *testing.T) {
 	a, b := l.Servers[0], l.Servers[1]
 	ch := a.Owner.Channel("table", false)
 	stream, local := l.Share(0, ch, "table", nil, 1)
-	msgs := "/api/v1/conversations/" + local[1] + "/messages"
-	rolled := b.Owner.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "d20"}})["message"].(map[string]any)
+	rolled := b.Owner.Must(200, "POST", "/api/v1/conversations/"+local[1]+"/commands", map[string]any{"name": "roll", "text": "d20"})["message"].(map[string]any)
 	inline := b.Owner.Post(local[1], "a check: [[d20+2]]")
 	if got, _ := valuesOf(a.Owner.HasMessage(ch, rolled["text"].(string))); fmt.Sprint(got) != fmt.Sprint(rolled["view"]) {
 		t.Fatalf("the roll arrived as %v, want %v", got, rolled["view"])

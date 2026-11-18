@@ -21772,13 +21772,12 @@ class FormInput extends $pb.GeneratedMessage {
   void clearClosesAt() => $_clearField(13);
 }
 
-/// Asks the server to draw a result. People only; refused in a sealed chat. A roll becomes the message's text, the roll in words, and its `view`, a value of kind `dice_roll`; any other result its `chance` and `fallback`.
+/// Asks the server to draw a result, which becomes the message's `chance` and `fallback`. People only; refused in a sealed chat. A roll of dice is no chance result: `/roll` and `/dice` are the dice module's commands, run with `runCommand`.
 class ChanceInput extends $pb.GeneratedMessage {
   factory ChanceInput({
     $core.Iterable<$core.int>? emptyFields,
     $core.Iterable<$core.int>? nullFields,
     ChanceInputKind? kind,
-    $core.String? dice,
     $core.Iterable<$core.String>? options,
     $fixnum.Int64? count,
     $core.String? deck,
@@ -21788,7 +21787,6 @@ class ChanceInput extends $pb.GeneratedMessage {
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (kind != null) result.kind = kind;
-    if (dice != null) result.dice = dice;
     if (options != null) result.options.addAll(options);
     if (count != null) result.count = count;
     if (deck != null) result.deck = deck;
@@ -21813,7 +21811,6 @@ class ChanceInput extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aE<ChanceInputKind>(3, _omitFieldNames ? '' : 'kind',
         enumValues: ChanceInputKind.values)
-    ..aOS(4, _omitFieldNames ? '' : 'dice')
     ..pPS(5, _omitFieldNames ? '' : 'options')
     ..aInt64(6, _omitFieldNames ? '' : 'count')
     ..aOS(7, _omitFieldNames ? '' : 'deck')
@@ -21857,42 +21854,33 @@ class ChanceInput extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearKind() => $_clearField(3);
 
-  @$pb.TagNumber(4)
-  $core.String get dice => $_getSZ(3);
-  @$pb.TagNumber(4)
-  set dice($core.String value) => $_setString(3, value);
-  @$pb.TagNumber(4)
-  $core.bool hasDice() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearDice() => $_clearField(4);
-
   @$pb.TagNumber(5)
-  $pb.PbList<$core.String> get options => $_getList(4);
+  $pb.PbList<$core.String> get options => $_getList(3);
 
   @$pb.TagNumber(6)
-  $fixnum.Int64 get count => $_getI64(5);
+  $fixnum.Int64 get count => $_getI64(4);
   @$pb.TagNumber(6)
-  set count($fixnum.Int64 value) => $_setInt64(5, value);
+  set count($fixnum.Int64 value) => $_setInt64(4, value);
   @$pb.TagNumber(6)
-  $core.bool hasCount() => $_has(5);
+  $core.bool hasCount() => $_has(4);
   @$pb.TagNumber(6)
   void clearCount() => $_clearField(6);
 
   @$pb.TagNumber(7)
-  $core.String get deck => $_getSZ(6);
+  $core.String get deck => $_getSZ(5);
   @$pb.TagNumber(7)
-  set deck($core.String value) => $_setString(6, value);
+  set deck($core.String value) => $_setString(5, value);
   @$pb.TagNumber(7)
-  $core.bool hasDeck() => $_has(6);
+  $core.bool hasDeck() => $_has(5);
   @$pb.TagNumber(7)
   void clearDeck() => $_clearField(7);
 
   @$pb.TagNumber(8)
-  $core.String get spread => $_getSZ(7);
+  $core.String get spread => $_getSZ(6);
   @$pb.TagNumber(8)
-  set spread($core.String value) => $_setString(7, value);
+  set spread($core.String value) => $_setString(6, value);
   @$pb.TagNumber(8)
-  $core.bool hasSpread() => $_has(7);
+  $core.bool hasSpread() => $_has(6);
   @$pb.TagNumber(8)
   void clearSpread() => $_clearField(8);
 }

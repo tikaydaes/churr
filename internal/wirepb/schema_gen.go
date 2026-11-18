@@ -1115,7 +1115,6 @@ var messages = []message{
 	}},
 	{name: "ChanceInput", shape: shapeObject, extra: 0, fields: []field{
 		{"kind", 3, kindEnum, cardOne, 80, ""},
-		{"dice", 4, kindString, cardOne, 0, ""},
 		{"options", 5, kindString, cardList, 0, ""},
 		{"count", 6, kindInt, cardOne, 0, ""},
 		{"deck", 7, kindString, cardOne, 0, ""},
@@ -3722,7 +3721,7 @@ var enums = [][]string{
 	{"", "message", "reminder", "form", "watch"},                            // ScheduledItemKind
 	{"", "poll", "rsvp", "signup", "approve", "checkin", "ticket", "roles"}, // FormInputPreset
 	{"", "live", "after_answer", "after_close"},                             // FormInputResults
-	{"", "roll", "flip", "pick", "shuffle", "draw", "tarot"},                // ChanceInputKind
+	{"", "", "flip", "pick", "shuffle", "draw", "tarot"},                    // ChanceInputKind
 	{"", "minute", "second"},                                                // InstantHintPrecision
 	{"", "plain", "reference", "message_link", "measure", "colour", "phone", "email", "geo", "dice", "number", "codepoint"}, // ObjectHintKind
 	{"", "day", "week", "month"},                                       // RepeatEvery

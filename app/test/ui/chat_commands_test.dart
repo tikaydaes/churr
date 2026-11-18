@@ -15,13 +15,14 @@ import 'package:flutter_test/flutter_test.dart';
 import '../conversation_support.dart';
 
 /// The built-in commands of ruling R67 typed in the conversation screen:
-/// /roll is drawn by the server and shown as a result, a mistyped command
+/// /roll is sent to the server's dice module, which rolls it, and shown as a
+/// result, a mistyped command
 /// is refused before anything is sent, and the server's refusal is shown in
 /// its words.
 void main() {
   for (final (label, size) in [('phone', phone), ('desktop', desktop)]) {
     testWidgets(
-      '/roll posts a chance request and draws the server\'s result ($label)',
+      '/roll runs the dice module on the server and draws its result ($label)',
       (tester) async {
         await setSize(tester, size);
         registerChatCommands();
@@ -32,7 +33,7 @@ void main() {
           fake = FakeServer();
         });
         fake.on(
-          'POST /api/v1/conversations/$general/messages',
+          'POST /api/v1/conversations/$general/commands',
           (r) => {
             'message': {
               'id': 'rolled',
@@ -85,9 +86,10 @@ void main() {
         await settle(tester, 2);
         await tester.tap(find.byKey(const Key('send')));
         await settle(tester, 10);
-        expect(fake.where('POST', '/messages').single.body, {
-          'client_id': isA<String>(),
-          'chance': {'kind': 'roll', 'dice': '2d6+3'},
+        expect(fake.where('POST', '/messages'), isEmpty);
+        expect(fake.where('POST', '/commands').single.body, {
+          'name': 'roll',
+          'text': '2d6+3',
         });
         expect(tester.widget<TextField>(box).controller!.text, isEmpty);
         await tester.pump(const Duration(seconds: 2));
@@ -171,7 +173,7 @@ void main() {
               }
             : created,
       );
-      fake.on('POST /api/v1/conversations/$general/messages', (r) async {
+      fake.on('POST /api/v1/conversations/$general/commands', (r) async {
         if (eventFirst) await event();
         return {'message': message};
       });

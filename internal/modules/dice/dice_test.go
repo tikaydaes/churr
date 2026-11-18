@@ -229,7 +229,7 @@ func TestInlineDice(t *testing.T) {
 	if !ok || json.Unmarshal(v.Data, &got) != nil || got.Dice != "2d6+3" || len(got.Rows) != 1 || got.Rows[0].Total != 15 || v.By != Name {
 		t.Fatalf("[[2d6+3]] resolved as %+v %v", v, ok)
 	}
-	for _, in := range []string{"1d6, 1d6", "dd", "2d1"} {
+	for _, in := range []string{"1d6, 1d6", "dd", "2d1", " "} {
 		if _, ok := r.Resolve(ctx, model.Account{}, "", model.KindDiceRoll, in); ok {
 			t.Errorf("[[%s]] was rolled", in)
 		}

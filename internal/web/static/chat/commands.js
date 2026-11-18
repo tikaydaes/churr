@@ -55,7 +55,6 @@ const name = (a) => a.display_name || a.username;
 // chanceInput is what the server is asked to draw.
 function chanceInput(c) {
   switch (c.name) {
-    case 'roll': case 'dice': return { kind: 'roll', dice: c.dice || undefined };
     case 'flip': return { kind: 'flip' };
     case 'pick': case 'shuffle': return { kind: c.name, options: c.options };
     case 'draw': return { kind: 'draw', count: c.count, deck: c.deck };
@@ -91,6 +90,14 @@ async function carryOut(c, ctx, here) {
     // /me and the text conveniences post a message as typed.
     if (ctx.composer.broadOK && !(await ctx.composer.broadOK(c.post))) return;
     await ctx.composer.post({ text: c.post, action: c.action || undefined, parent_id: ctx.parentId || undefined, quote: ctx.composer.quote || undefined });
+    return;
+  }
+  if (c.name === 'roll' || c.name === 'dice') {
+    // The dice module's commands: the server reads the dice, rolls them
+    // and posts the roll, or says in its own words what it cannot read.
+    ctx.composer.clear();
+    const out = await post(`/conversations/${id}/commands`, { name: c.name, text: c.args || undefined, parent_id: ctx.parentId || undefined });
+    if (out.message) putMessage({ ...out.message, _live: true });
     return;
   }
   if (CHANCE.has(c.name)) {

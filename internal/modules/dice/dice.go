@@ -54,8 +54,12 @@ func (handler) Command(_ context.Context, h *modhost.Host, in modhost.Invocation
 	return modhost.Reply{Text: Text(r), View: &modhost.Value{Kind: model.KindDiceRoll, Data: r}}, nil
 }
 
-// Resolve rolls inline dice: one row, in the grammar of /roll.
+// Resolve rolls inline dice: one row, in the grammar of /roll. Unlike
+// /roll, nothing at all is no dice: `[[ ]]` stays text.
 func (handler) Resolve(_ context.Context, h *modhost.Host, in modhost.Marked) (modhost.Value, error) {
+	if strings.TrimSpace(in.Text) == "" {
+		return modhost.Value{}, diceErr(diceSyntax)
+	}
 	terms, written, err := Parse(in.Text)
 	if err != nil {
 		return modhost.Value{}, err
