@@ -1,3 +1,4 @@
+import '../fair/pin.dart';
 import 'json.dart';
 
 /// What a server says about itself before and after sign-in (`Server`,
@@ -17,6 +18,7 @@ class ServerInfo {
     this.defaultThemes,
     this.pushKinds = const [],
     this.welcome,
+    this.vrfKeys = const [],
   });
 
   factory ServerInfo.fromJson(Json j) {
@@ -38,6 +40,7 @@ class ServerInfo {
       defaultThemes: object(j['default_themes']),
       pushKinds: strings(j['push_kinds']),
       welcome: j['welcome'] as String?,
+      vrfKeys: vrfKeysOf(j['vrf_keys']),
     );
   }
 
@@ -49,6 +52,11 @@ class ServerInfo {
   /// The server welcome text, Churr Markdown, sent to a signed-in caller
   /// (`/motd`, ruling R74). Null or empty when there is none.
   final String? welcome;
+
+  /// The server's VRF key history, oldest first, as sent: what chance
+  /// outcomes are proved under (docs/DESIGN-FAIR.md). The app pins it
+  /// (core/fair/pin.dart).
+  final List<Map<String, dynamic>> vrfKeys;
 
   /// The server's host name.
   final String name;

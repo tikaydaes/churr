@@ -9765,6 +9765,12 @@ abstract class L10n {
   /// **'You are already in {channel}.'**
   String cmdAlreadyIn(String channel);
 
+  /// Shown when a server's VRF key history is not the pinned one with keys added (docs/DESIGN-FAIR.md).
+  ///
+  /// In en, this message translates to:
+  /// **'{server} now shows a different key for proving dice and other chance results than the one this device saw before. Results proved under the new key cannot be checked against the old one; ask the server\'s owner what happened.'**
+  String vrfKeyChanged(String server);
+
   /// No description provided for @knockAccepted.
   ///
   /// In en, this message translates to:

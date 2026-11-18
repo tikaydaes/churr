@@ -3854,6 +3854,15 @@
       }
     }
   },
+  "vrfKeyChanged": "{server} now shows a different key for proving dice and other chance results than the one this device saw before. Results proved under the new key cannot be checked against the old one; ask the server's owner what happened.",
+  "@vrfKeyChanged": {
+    "description": "Shown when a server's VRF key history is not the pinned one with keys added (docs/DESIGN-FAIR.md).",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
   "knockAccepted": "You were added to {channel}.",
   "@knockAccepted": {
     "placeholders": {

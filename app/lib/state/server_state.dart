@@ -10,6 +10,7 @@ import '../core/api/me.dart';
 import '../core/api/reference_patterns.dart';
 import '../core/db/app_db.dart';
 import '../core/db/cache_db.dart';
+import '../core/fair/pin.dart';
 import '../core/live.dart';
 import '../core/models/account.dart';
 import '../core/models/chat_request.dart';
@@ -156,10 +157,29 @@ class ServerState extends ChangeNotifier {
     }
   }
 
+  /// The server's VRF key history against the one pinned on this device
+  /// (core/fair/pin.dart); null until the description is fetched. A
+  /// [PinState.changed] is shown as a warning (ServerNoticesHost).
+  PinResult? vrfPin;
+
+  /// Whether the server shows a VRF key history other than the pinned one.
+  bool get vrfPinChanged => vrfPin?.state == PinState.changed;
+
+  static const _vrfPinKey = 'fair.vrf_pin';
+
+  Future<void> _checkVrfPin(ServerInfo i) async {
+    vrfPin = await checkPin(
+      () => db.setting(_vrfPinKey),
+      (v) => db.putSetting(_vrfPinKey, v),
+      i.vrfKeys,
+    );
+  }
+
   /// Fetches the server's description again.
   Future<void> refreshInfo() async {
     try {
       info = await api.getServer();
+      await _checkVrfPin(info!);
       if (!_disposed) notifyListeners();
     } on Exception {
       // Offline: the app keeps its local copies.

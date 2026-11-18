@@ -5956,6 +5956,11 @@ class L10nEn extends L10n {
   }
 
   @override
+  String vrfKeyChanged(String server) {
+    return '$server now shows a different key for proving dice and other chance results than the one this device saw before. Results proved under the new key cannot be checked against the old one; ask the server\'s owner what happened.';
+  }
+
+  @override
   String knockAccepted(String channel) {
     return 'You were added to $channel.';
   }

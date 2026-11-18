@@ -29,6 +29,8 @@ class _ServerNoticesHostState extends State<ServerNoticesHost> {
   final _subs = <String, StreamSubscription<Json>>{};
   final _servers = <ServerState>{};
   final _announced = <String>{};
+  // Servers whose changed VRF key history has been warned of this run.
+  final _vrfWarned = <String>{};
   Timer? _expiry;
 
   @override
@@ -57,6 +59,15 @@ class _ServerNoticesHostState extends State<ServerNoticesHost> {
   void _changed() {
     if (!mounted) return;
     setState(() {});
+    // A server whose VRF key history is not the pinned one with keys
+    // added (core/fair/pin.dart) is warned of once a run.
+    for (final srv in _servers) {
+      if (srv.vrfPinChanged && _vrfWarned.add(srv.localId)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) say(context, L10n.of(context).vrfKeyChanged(srv.name));
+        });
+      }
+    }
     // Hidden once it runs out, with no event: the earliest end is waited for.
     _expiry?.cancel();
     DateTime? next;
