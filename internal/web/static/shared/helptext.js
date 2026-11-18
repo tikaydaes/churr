@@ -1124,7 +1124,7 @@ export const HELP = {
    "popup": "Offered as you finish typing it.",
    "example": {"type": "I hit for [[2d6+3]] damage", "then": "Shows the two dice and the total, say = 10."},
    "sealed": "Not in sealed chats: the text stays as typed.",
-   "covers": ["entity:dice"]
+   "covers": ["entity:object"]
   },
   {
    "id": "checklists",
