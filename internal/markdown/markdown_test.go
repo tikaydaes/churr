@@ -15,6 +15,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/wirepb"
 )
 
 // The corpus lives at the repository root so that the web chat and the apps
@@ -81,12 +82,34 @@ type corpusResolver struct {
 func (r *corpusResolver) Origin() string { return r.Home }
 
 // InlineDice rolls every die to its highest face, so that cases can say
-// what is stored; "edit" marks dice as an edit does.
-func (r *corpusResolver) InlineDice() (string, func(int) int) {
+// what is stored: the value of kind dice_roll a server stores, its data
+// encoded as the server encodes it. "edit" marks dice as an edit does.
+func (r *corpusResolver) InlineDice() (string, func(*model.DiceRoll) (model.ValueEnvelope, bool)) {
+	mode := DiceRoll
 	if r.DiceMode == "edit" {
-		return DiceEdit, nil
+		mode = DiceEdit
 	}
-	return DiceRoll, func(sides int) int { return sides }
+	return mode, func(roll *model.DiceRoll) (model.ValueEnvelope, bool) {
+		level, _ := wirepb.KindLevel(model.KindDiceRoll)
+		v := model.ValueEnvelope{Kind: model.KindDiceRoll, Level: level, By: "dice"}
+		if roll == nil {
+			v.Removed = true
+			return v, true
+		}
+		for i := range roll.Rows {
+			roll.Rows[i].Terms, roll.Rows[i].Total = model.RollDice(roll.Rows[i].Terms, func(sides int) int { return sides })
+		}
+		raw, _ := json.Marshal(roll)
+		var data any
+		dec := json.NewDecoder(bytes.NewReader(raw))
+		dec.UseNumber()
+		if dec.Decode(&data) != nil {
+			return v, false
+		}
+		var err error
+		v.Data, err = wirepb.EncodeKind(model.KindDiceRoll, data)
+		return v, err == nil
+	}
 }
 
 func (r *corpusResolver) Patterns() []model.ReferencePattern { return r.RefPatterns }

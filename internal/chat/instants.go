@@ -98,8 +98,7 @@ func withHints(text string, doc markdown.Doc, entities []model.Entity, hints []m
 // one the author kept as plain text, or one no pattern matched then.
 func keptInstants(old, now []model.Entity) []model.Entity {
 	kept := func(e model.Entity) bool {
-		return e.Type == model.EntityInstant || e.Type == model.EntityEvent || e.Type == model.EntityReference ||
-			e.Type == model.EntityDice
+		return e.Type == model.EntityInstant || e.Type == model.EntityEvent || e.Type == model.EntityReference || isDice(e)
 	}
 	var keep []model.Entity
 	for _, e := range old {

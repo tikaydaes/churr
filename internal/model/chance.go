@@ -10,9 +10,12 @@ import (
 // Chance results: /roll, /flip, /pick and /shuffle (ruling R67,
 // docs/MESSAGE-FORMAT.md section 1.2). The client asks; the server draws
 // the result and stores it on the message, where no edit can reach it, so
-// every reader sees a result nobody could have made up.
+// every reader sees a result nobody could have made up. A roll is stored as
+// the message's text and its view, a value of kind dice_roll (DiceRoll);
+// the other results as Chance.
 
-// The kinds of chance result.
+// The kinds of chance request. A roll's result is a DiceRoll, the others' a
+// Chance.
 const (
 	ChanceRoll    = "roll"
 	ChanceFlip    = "flip"
@@ -51,8 +54,8 @@ type ChanceInput struct {
 	Spread string `json:"spread,omitempty"`
 }
 
-// DiceTerm is one term of a roll (schema DiceTerm): some dice, or a plain
-// number added or taken away.
+// DiceTerm is one term of a roll (schema DiceRollTerm): some dice, or a
+// plain number added or taken away.
 type DiceTerm struct {
 	// Sign is 1 to add the term, -1 to take it away.
 	Sign int `json:"sign"`
@@ -72,7 +75,7 @@ type DiceTerm struct {
 	Value int `json:"value"`
 }
 
-// DiceRow is one row of a roll (schema DiceRow): an expression of its
+// DiceRow is one row of a roll (schema DiceRollRow): an expression of its
 // own, rolled with its own dice, and its total.
 type DiceRow struct {
 	// Dice is the row written out in full.
@@ -81,14 +84,19 @@ type DiceRow struct {
 	Total int        `json:"total"`
 }
 
-// Chance is a result the server drew (schema Chance).
-type Chance struct {
-	Kind string `json:"kind"`
+// DiceRoll is a roll the server made: the data of kind dice_roll (schema
+// DiceRoll), carried in a value's envelope.
+type DiceRoll struct {
 	// Dice is the roll as the server read it, written out in full (`d20`
 	// is `1d20`, `adv` is `2d20kh1`), its rows separated by ", ".
-	Dice string `json:"dice,omitempty"`
-	// Rows are a roll's rows, in order, each with its dice and total.
-	Rows []DiceRow `json:"rows,omitempty"`
+	Dice string `json:"dice"`
+	// Rows are its rows, in order, each with its dice and total.
+	Rows []DiceRow `json:"rows"`
+}
+
+// Chance is a result the server drew other than a roll (schema Chance).
+type Chance struct {
+	Kind string `json:"kind"`
 	// Outcome is heads or tails, for a flip.
 	Outcome string `json:"outcome,omitempty"`
 	// Options are as the person gave them, for pick and shuffle. Picked is
@@ -454,22 +462,30 @@ func CheckChanceOptions(options []string) ([]string, error) {
 	return out, nil
 }
 
-// DrawChance draws the result a request asks for. intn gives a whole number
-// from 0 to n-1; the server passes one that reads crypto/rand.
+// Roll makes the roll a request of kind roll asks for. intn gives a whole
+// number from 0 to n-1; the server passes one that reads crypto/rand.
+func Roll(in ChanceInput, intn func(n int) int) (DiceRoll, error) {
+	if in.Kind != ChanceRoll {
+		return DiceRoll{}, Invalid("chance.kind", "Only a roll is rolled.")
+	}
+	rows, text, err := ParseDiceRows(in.Dice)
+	if err != nil {
+		return DiceRoll{}, err
+	}
+	if len(in.Options) > 0 || in.Count != 0 || in.Deck != "" || in.Spread != "" {
+		return DiceRoll{}, Invalid("chance", "A roll takes dice only.")
+	}
+	for i := range rows {
+		rows[i].Terms, rows[i].Total = RollDice(rows[i].Terms, func(sides int) int { return intn(sides) + 1 })
+	}
+	return DiceRoll{Dice: text, Rows: rows}, nil
+}
+
+// DrawChance draws the result a request other than a roll asks for (a roll
+// is Roll's). intn gives a whole number from 0 to n-1; the server passes one
+// that reads crypto/rand.
 func DrawChance(in ChanceInput, intn func(n int) int) (Chance, error) {
 	switch in.Kind {
-	case ChanceRoll:
-		rows, text, err := ParseDiceRows(in.Dice)
-		if err != nil {
-			return Chance{}, err
-		}
-		if len(in.Options) > 0 {
-			return Chance{}, Invalid("chance.options", "A roll takes no options.")
-		}
-		for i := range rows {
-			rows[i].Terms, rows[i].Total = RollDice(rows[i].Terms, func(sides int) int { return intn(sides) + 1 })
-		}
-		return Chance{Kind: ChanceRoll, Dice: text, Rows: rows}, nil
 	case ChanceFlip:
 		if in.Dice != "" || len(in.Options) > 0 {
 			return Chance{}, Invalid("chance", "A coin flip takes nothing more.")
@@ -556,45 +572,50 @@ func drawCards(d deck, n int, intn func(n int) int) ([]string, []bool) {
 	return cards[:n], rev
 }
 
-// Valid reports whether a result that came from somewhere else (another
-// server of a shared conversation) holds together: its kind is known, a
-// roll's dice are within the limits and add up to its total, and a pick or
-// shuffle names its own options. It cannot tell whether it was drawn
-// fairly; the server that drew it vouches for that.
-func (c Chance) Valid() bool {
-	switch c.Kind {
-	case ChanceRoll:
-		if len(c.Rows) == 0 || len(c.Rows) > MaxDiceRows {
+// Valid reports whether a roll that came from somewhere else holds
+// together: its dice are within the limits and add up to each row's total.
+// It cannot tell whether it was rolled fairly; whoever rolled it vouches
+// for that.
+func (r DiceRoll) Valid() bool {
+	if len(r.Rows) == 0 || len(r.Rows) > MaxDiceRows {
+		return false
+	}
+	dice := 0
+	for _, row := range r.Rows {
+		if len(row.Terms) == 0 || len(row.Terms) > MaxDiceTerms {
 			return false
 		}
-		dice := 0
-		for _, row := range c.Rows {
-			if len(row.Terms) == 0 || len(row.Terms) > MaxDiceTerms {
+		total := 0
+		for _, t := range row.Terms {
+			if t.Sign != 1 && t.Sign != -1 {
 				return false
 			}
-			total := 0
-			for _, t := range row.Terms {
-				if t.Sign != 1 && t.Sign != -1 {
+			if t.Count > 0 {
+				dice += t.Count
+				if len(t.Rolls) != t.Count || t.Sides < 2 || t.Sides > MaxDieSides {
 					return false
 				}
-				if t.Count > 0 {
-					dice += t.Count
-					if len(t.Rolls) != t.Count || t.Sides < 2 || t.Sides > MaxDieSides {
+				for _, r := range t.Rolls {
+					if r < 1 || r > t.Sides {
 						return false
 					}
-					for _, r := range t.Rolls {
-						if r < 1 || r > t.Sides {
-							return false
-						}
-					}
 				}
-				total += t.Sign * t.Value
 			}
-			if total != row.Total {
-				return false
-			}
+			total += t.Sign * t.Value
 		}
-		return dice <= MaxDice
+		if total != row.Total {
+			return false
+		}
+	}
+	return dice <= MaxDice
+}
+
+// Valid reports whether a result that came from somewhere else (another
+// server of a shared conversation) holds together: its kind is known, and a
+// pick or shuffle names its own options. It cannot tell whether it was
+// drawn fairly; the server that drew it vouches for that.
+func (c Chance) Valid() bool {
+	switch c.Kind {
 	case ChanceFlip:
 		return c.Outcome == "heads" || c.Outcome == "tails"
 	case ChanceDraw, ChanceTarot:
@@ -643,21 +664,26 @@ func (c Chance) Valid() bool {
 	return false
 }
 
+// Text is a roll in words, the text of the message that carries it, which
+// reads correctly with no client support and is what search reads:
+// "Rolled 2d6+3: [4, 1] + 3 = 8". Dice that do not count are in
+// parentheses; rows are separated by "; ".
+func (r DiceRoll) Text() string {
+	var b strings.Builder
+	b.WriteString("Rolled " + r.Dice + ":")
+	for k, row := range r.Rows {
+		if k > 0 {
+			b.WriteString(";")
+		}
+		writeDiceRow(&b, row)
+	}
+	return b.String()
+}
+
 // Fallback is the plain text that stands in for a result for a client that
-// cannot draw it, and that search reads: "Rolled 2d6+3: [4, 1] + 3 = 8".
-// Dice that do not count are in brackets; rows are separated by "; ".
+// cannot draw it, and that search reads.
 func (c Chance) Fallback() string {
 	switch c.Kind {
-	case ChanceRoll:
-		var b strings.Builder
-		b.WriteString("Rolled " + c.Dice + ":")
-		for k, row := range c.Rows {
-			if k > 0 {
-				b.WriteString(";")
-			}
-			writeDiceRow(&b, row)
-		}
-		return b.String()
 	case ChanceFlip:
 		return "Flipped a coin: " + c.Outcome
 	case ChanceDraw:
@@ -703,7 +729,7 @@ func (c Chance) Fallback() string {
 	return ""
 }
 
-// writeDiceRow writes one row of a roll's fallback: " [4, 1] + 3 = 8".
+// writeDiceRow writes one row of a roll's text: " [4, 1] + 3 = 8".
 func writeDiceRow(b *strings.Builder, row DiceRow) {
 	for i, t := range row.Terms {
 		switch {

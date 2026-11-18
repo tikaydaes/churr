@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -38,28 +39,29 @@ func TestActionAndChance(t *testing.T) {
 	}
 	owner.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"action": true, "chance": map[string]any{"kind": "flip"}})
 
-	// A roll: drawn by the server, with every die and the total.
+	// A roll: drawn by the server, with every die and the total, as the
+	// message's text and view (dice_test.go).
 	for i := 0; i < 20; i++ {
 		m := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "4d6kh3+2"}})["message"].(map[string]any)
-		c := m["chance"].(map[string]any)
+		c := rollOf(t, m["view"].(map[string]any))
 		rows := c["rows"].([]any)
 		row := rows[0].(map[string]any)
 		terms := row["terms"].([]any)
 		dice := terms[0].(map[string]any)
 		rolls := dice["rolls"].([]any)
-		if c["dice"] != "4d6kh3+2" || len(rows) != 1 || len(rolls) != 4 || len(dice["dropped"].([]any)) != 1 || m["text"] != nil {
+		if c["dice"] != "4d6kh3+2" || len(rows) != 1 || len(rolls) != 4 || len(dice["dropped"].([]any)) != 1 || m["chance"] != nil {
 			t.Fatalf("roll: %v", m)
 		}
-		total := int(row["total"].(float64))
-		if total < 5 || total > 20 || total != int(dice["value"].(float64))+2 {
+		total := row["total"].(int64)
+		if total < 5 || total > 20 || total != dice["value"].(int64)+2 {
 			t.Fatalf("roll total %d: %v", total, c)
 		}
-		if m["fallback"] == "" {
-			t.Fatalf("a roll needs its fallback: %v", m)
+		if text, _ := m["text"].(string); !strings.HasPrefix(text, "Rolled 4d6kh3+2: [") {
+			t.Fatalf("a roll's text is the roll in words: %v", m)
 		}
 	}
 	// Rows: each rolled on its own, with its own total.
-	two := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "4d4+d6, 3d10k2"}})["message"].(map[string]any)["chance"].(map[string]any)
+	two := rollOf(t, sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "4d4+d6, 3d10k2"}})["message"].(map[string]any)["view"].(map[string]any))
 	if rs := two["rows"].([]any); two["dice"] != "4d4+1d6, 3d10kh2" || len(rs) != 2 || rs[1].(map[string]any)["dice"] != "3d10kh2" ||
 		len(rs[1].(map[string]any)["terms"].([]any)[0].(map[string]any)["dropped"].([]any)) != 1 {
 		t.Fatalf("rows: %v", two)
@@ -68,16 +70,10 @@ func TestActionAndChance(t *testing.T) {
 	// No edit reaches the result.
 	r := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll"}})["message"].(map[string]any)
 	sam.Refused(400, model.CodeInvalidRequest, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"chance": map[string]any{"kind": "roll"}})
-	e := sam.Must(200, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"text": "for initiative"})["message"].(map[string]any)
-	total := func(m map[string]any) any {
-		return m["chance"].(map[string]any)["rows"].([]any)[0].(map[string]any)["total"]
-	}
-	if total(e) != total(r) || r["chance"].(map[string]any)["dice"] != "1d20" {
-		t.Fatalf("after an edit: %v, before %v", e, r)
-	}
+	sam.Refused(409, model.CodeConflict, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"text": "for initiative"})
 	got := owner.Must(200, "GET", "/api/v1/messages/"+r["id"].(string), nil)["message"].(map[string]any)
-	if total(got) != total(r) {
-		t.Fatalf("read back: %v", got)
+	if got["text"] != r["text"] || got["view"].(map[string]any)["data"] != r["view"].(map[string]any)["data"] || rollOf(t, r["view"].(map[string]any))["dice"] != "1d20" {
+		t.Fatalf("read back: %v, posted %v", got, r)
 	}
 
 	// The others.

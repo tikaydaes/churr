@@ -44,21 +44,25 @@ void main() {
             ],
             origin: '${r['origin'] ?? ''}',
           );
+          // Inline dice are the server's value of kind dice_roll over the
+          // span; the app finds them as `dice` and is held to the range.
           final want = [
             for (final e in (c['entities'] as List?) ?? const [])
-              if (objectKinds.contains((e as Map)['type']))
-                // What the server draws for inline dice is its own; the
-                // app reads the shape.
-                e['type'] == 'dice'
-                    ? {
-                        'type': 'dice',
-                        'at': e['at'],
-                        'len': e['len'],
-                        'value': e['value'],
-                      }
-                    : e,
+              if (e is Map &&
+                  e['type'] == 'object' &&
+                  (e['object'] as Map?)?['kind'] == 'dice_roll')
+                {'type': 'dice', 'at': e['at'], 'len': e['len']}
+              else if (objectKinds.contains((e as Map)['type']))
+                e,
           ];
-          expect(jsonEncode(_norm(objs)), jsonEncode(_norm(want)));
+          final found = [
+            for (final o in objs)
+              if (o['type'] == 'dice')
+                {'type': 'dice', 'at': o['at'], 'len': o['len']}
+              else
+                o,
+          ];
+          expect(jsonEncode(_norm(found)), jsonEncode(_norm(want)));
         });
       }
     });

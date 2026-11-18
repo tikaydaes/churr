@@ -23821,7 +23821,6 @@ components:
           - phone
           - email
           - geo
-          - dice
           - number
           - codepoint
           - object
@@ -23873,9 +23872,8 @@ components:
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
             to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.
             For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case. For `phone`: `+` and the digits. For
-            `email`: the address as typed. For `dice`: the roll written out in full (`2d6+3`). For `number`: the
-            number in decimal (below 2^128). For `codepoint`: `U+` and at least four upper-case hex digits; its
-            name is looked up with `lookupCodePoints`.'
+            `email`: the address as typed. For `number`: the number in decimal (below 2^128). For `codepoint`: `U+`
+            and at least four upper-case hex digits; its name is looked up with `lookupCodePoints`.'
         base:
           type: integer
           format: int64
@@ -23891,19 +23889,6 @@ components:
         lon:
           type: string
           description: 'For `geo`: the longitude in decimal degrees, as typed (-180 to 180).'
-        terms:
-          type: array
-          items:
-            $ref: '#/components/schemas/DiceTerm'
-          description: 'For `dice`: each term as it fell, drawn by the server when the message was posted (ruling
-            R73).'
-        total:
-          type: integer
-          format: int64
-          description: 'For `dice`: the result.'
-        removed:
-          type: boolean
-          description: 'For `dice`: an edit wrote or changed these dice, and nothing was rolled for them.'
         unit:
           type: string
           description: 'For `measure`: the unit''s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`,
@@ -23916,7 +23901,9 @@ components:
             which answers only a reader who may see it.'
         object:
           $ref: '#/components/schemas/ValueEnvelope'
-          description: 'For `object`: the value the span''s characters stand for. The characters are its text.'
+          description: 'For `object`: the value the span''s characters stand for; the characters are its text. Inline
+            dice (`[[2d6+3]]`, ruling R73) are one of kind `dice_roll`, rolled by the server when the message was
+            posted; an edit that wrote or changed them marks them `removed`, with nothing rolled.'
     CodePointName:
       type: object
       description: A Unicode code point's name and general category (`lookupCodePoints`).
@@ -24669,82 +24656,16 @@ components:
         removed:
           type: boolean
           description: An edit changed the span; nothing was resolved for it.
-    DiceTerm:
-      type: object
-      description: 'One term of a roll: some dice, or a plain number added or taken away.'
-      required: [sign, value]
-      properties:
-        sign:
-          type: integer
-          format: int64
-          description: 1 to add the term, -1 to take it away.
-        count:
-          type: integer
-          format: int64
-          description: 'Dice only: how many.'
-        sides:
-          type: integer
-          format: int64
-          description: 'Dice only: the sides of each die.'
-        keep:
-          type: string
-          enum: [kh, kl, dh, dl]
-          description: Keep highest, keep lowest, drop highest, drop lowest.
-        keep_n:
-          type: integer
-          format: int64
-          description: How many are kept or dropped.
-        rolls:
-          type: array
-          items:
-            type: integer
-            format: int64
-          description: Each die as it fell, in order.
-        dropped:
-          type: array
-          items:
-            type: integer
-            format: int64
-          description: Positions in `rolls` that do not count.
-        value:
-          type: integer
-          format: int64
-          description: A plain number's value, or the sum of the dice that count. The sign is not applied to it.
-    DiceRow:
-      type: object
-      description: 'One row of a roll: an expression rolled with its own dice, and its total.'
-      required: [dice, terms, total]
-      properties:
-        dice:
-          type: string
-          description: The row written out in full (`d20` is `1d20`).
-        terms:
-          type: array
-          items:
-            $ref: '#/components/schemas/DiceTerm'
-          description: Each term with its dice.
-        total:
-          type: integer
-          format: int64
-          description: The row's total.
     Chance:
       type: object
-      description: A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot`
-        (MESSAGE-FORMAT.md section 1.2). No edit changes it.
+      description: 'A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot`
+        (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message''s text
+        and `view`.'
       required: [kind]
       properties:
         kind:
           type: string
-          enum: [roll, flip, pick, shuffle, draw, tarot]
-        dice:
-          type: string
-          description: 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv`
-            is `2d20kh1`), its rows separated by `, `.'
-        rows:
-          type: array
-          items:
-            $ref: '#/components/schemas/DiceRow'
-          description: 'A roll: its rows, in order (1 to 8), each with its dice and total.'
+          enum: [flip, pick, shuffle, draw, tarot]
         outcome:
           type: string
           enum: [heads, tails]
@@ -24783,7 +24704,9 @@ components:
           description: 'A tarot reading: the spread (testdata/commands/tarot.json).'
     ChanceInput:
       type: object
-      description: Asks the server to draw a result. People only; refused in a sealed chat.
+      description: Asks the server to draw a result. People only; refused in a sealed chat. A roll becomes the message's
+        text, the roll in words, and its `view`, a value of kind `dice_roll`; any other result its `chance` and
+        `fallback`.
       required: [kind]
       properties:
         kind:

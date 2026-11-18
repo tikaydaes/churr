@@ -39,10 +39,36 @@ const (
 	EntityPhone       = "phone"        // a telephone number in + form
 	EntityEmail       = "email"        // an email address
 	EntityGeo         = "geo"          // a latitude and longitude
-	EntityDice        = "dice"         // inline dice, [[2d6+3]], rolled on post
 	EntityNumber      = "number"       // a whole number written 0x…, 0b… or 0o…
 	EntityCodePoint   = "codepoint"    // a Unicode code point written U+…, &#x…;, \u{…}
+	// A value of the catalogue over the span (Object): inline dice,
+	// [[2d6+3]], rolled on post, are one of kind dice_roll.
+	EntityObject = "object"
 )
+
+// The kinds of the catalogue (docs/DESIGN-MODULES.md section 4.1) the
+// server makes.
+const (
+	KindDiceRoll = "dice_roll" // data: DiceRoll
+)
+
+// ValueEnvelope is a value of the catalogue (schema ValueEnvelope): on a
+// span of a message's text as an object entity, or on the whole message as
+// its view. The text is the message; the value is a view of it. Data is the
+// kind's own protobuf message, encoded (wirepb.EncodeKind), kept as it came.
+type ValueEnvelope struct {
+	Kind  string `json:"kind"`
+	Level int    `json:"level"`
+	Data  Bytes  `json:"data,omitempty"`
+	// Alt is the generic rendition, for a kind newer than the baseline.
+	Alt *ValueEnvelope `json:"alt,omitempty"`
+	// By is the module, manifest or bot that made it.
+	By string `json:"by,omitempty"`
+	// Source is the derived type it was read as, when there is one.
+	Source string `json:"source,omitempty"`
+	// Removed: an edit changed the span; nothing was resolved for it.
+	Removed bool `json:"removed,omitempty"`
+}
 
 // Entity is something the server resolved in a message's text. At and Len
 // count UTF-16 code units, which is how JavaScript and Dart index strings.
@@ -86,13 +112,8 @@ type Entity struct {
 	// A place's latitude and longitude in decimal degrees, as typed.
 	Lat string `json:"lat,omitempty"`
 	Lon string `json:"lon,omitempty"`
-	// Inline dice: Value is the roll written out in full, Terms each
-	// term as it fell and Total the result, drawn by the server when the
-	// message was posted. Removed marks dice an edit wrote or changed:
-	// nothing was rolled for them.
-	Terms   []DiceTerm `json:"terms,omitempty"`
-	Total   *int       `json:"total,omitempty"`
-	Removed bool       `json:"removed,omitempty"`
+	// Object is the value an object entity's characters stand for.
+	Object *ValueEnvelope `json:"object,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).
@@ -240,8 +261,10 @@ type SealedPayload struct {
 // docs/MESSAGE-FORMAT.md defines, with the stored columns that are not sent.
 //
 // Action marks text typed with /me: it is drawn after the author's name.
-// Chance is a result the server drew for /roll, /flip, /pick, /shuffle or
-// /draw, which no edit changes (ruling R67).
+// Chance is a result the server drew for /flip, /pick, /shuffle, /draw or
+// /tarot, which no edit changes (ruling R67). View is the message as a value
+// of the catalogue, such as a roll: Text is the message, in words, and the
+// view is how a client that knows the kind draws it.
 type Message struct {
 	ID             MessageID      `json:"id"`
 	ConversationID ConversationID `json:"conversation_id"`
@@ -261,6 +284,7 @@ type Message struct {
 	Form           *Form          `json:"form,omitempty"`
 	Action         bool           `json:"action,omitempty"`
 	Chance         *Chance        `json:"chance,omitempty"`
+	View           *ValueEnvelope `json:"view,omitempty"`
 	Fallback       string         `json:"fallback,omitempty"`
 	Reactions      []Reaction     `json:"reactions,omitempty"`
 	Thread         *ThreadSummary `json:"thread,omitempty"`

@@ -44,9 +44,12 @@ type diceVectors struct {
 		Input string `json:"input"`
 		Dice  string `json:"dice"`
 	} `json:"d6"`
+	// A roll's case is a DiceRoll and its text (with "kind": "roll"
+	// beside it, which the clients read); every other case a Chance and
+	// its fallback.
 	Fallback []struct {
-		Chance Chance `json:"chance"`
-		Text   string `json:"text"`
+		Chance json.RawMessage `json:"chance"`
+		Text   string          `json:"text"`
 	} `json:"fallback"`
 	Refusals []struct {
 		Input ChanceInput `json:"input"`
@@ -101,7 +104,7 @@ func TestDiceVectors(t *testing.T) {
 				t.Errorf("%s %v term %d: got %+v, want %+v", c.Dice, c.Rolls, i, g, w)
 			}
 		}
-		if !(Chance{Kind: ChanceRoll, Dice: c.Dice, Rows: []DiceRow{{Dice: c.Dice, Terms: rolled, Total: total}}}).Valid() {
+		if !(DiceRoll{Dice: c.Dice, Rows: []DiceRow{{Dice: c.Dice, Terms: rolled, Total: total}}}).Valid() {
 			t.Errorf("%s: a rolled result is not valid", c.Dice)
 		}
 	}
@@ -131,11 +134,34 @@ func TestDiceVectors(t *testing.T) {
 		}
 	}
 	for _, c := range v.Fallback {
-		if got := c.Chance.Fallback(); got != c.Text {
+		var kind struct {
+			Kind string `json:"kind"`
+		}
+		if err := json.Unmarshal(c.Chance, &kind); err != nil {
+			t.Fatal(err)
+		}
+		if kind.Kind == ChanceRoll {
+			var r DiceRoll
+			if err := json.Unmarshal(c.Chance, &r); err != nil {
+				t.Fatal(err)
+			}
+			if got := r.Text(); got != c.Text {
+				t.Errorf("roll text: got %q, want %q", got, c.Text)
+			}
+			if !r.Valid() {
+				t.Errorf("%+v is not valid", r)
+			}
+			continue
+		}
+		var ch Chance
+		if err := json.Unmarshal(c.Chance, &ch); err != nil {
+			t.Fatal(err)
+		}
+		if got := ch.Fallback(); got != c.Text {
 			t.Errorf("fallback: got %q, want %q", got, c.Text)
 		}
-		if !c.Chance.Valid() {
-			t.Errorf("%+v is not valid", c.Chance)
+		if !ch.Valid() {
+			t.Errorf("%+v is not valid", ch)
 		}
 	}
 	var dk struct {
@@ -182,7 +208,7 @@ func TestDiceVectors(t *testing.T) {
 func TestDrawChance(t *testing.T) {
 	for _, pick := range []func(n int) int{func(int) int { return 0 }, func(n int) int { return n - 1 }} {
 		for _, in := range []ChanceInput{
-			{Kind: ChanceRoll, Dice: "100d1000"}, {Kind: ChanceRoll}, {Kind: ChanceRoll, Dice: "4d4+d6, 3d10k2"}, {Kind: ChanceFlip},
+			{Kind: ChanceFlip},
 			{Kind: ChancePick, Options: []string{"a", "b", "c"}}, {Kind: ChanceShuffle, Options: []string{"a", "b", "c", "d"}},
 			{Kind: ChanceDraw}, {Kind: ChanceDraw, Count: 78, Deck: "tarot"}, {Kind: ChanceDraw, Count: 5, Deck: "54"},
 			{Kind: ChanceDraw, Count: 144, Deck: "mahjong"}, {Kind: ChanceDraw, Count: 108, Deck: "canasta"},
@@ -208,8 +234,21 @@ func TestDrawChance(t *testing.T) {
 	if (Chance{Kind: ChanceDraw, Deck: "tarot", Cards: []string{"major-0"}}).Valid() {
 		t.Error("a tarot card needs its orientation")
 	}
-	five := 5
-	if (Chance{Kind: ChanceRoll, Dice: "1d6", Rows: []DiceRow{{Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: five}}}).Valid() {
+	for _, pick := range []func(n int) int{func(int) int { return 0 }, func(n int) int { return n - 1 }} {
+		for _, in := range []ChanceInput{{Kind: ChanceRoll, Dice: "100d1000"}, {Kind: ChanceRoll}, {Kind: ChanceRoll, Dice: "4d4+d6, 3d10k2"}} {
+			r, err := Roll(in, pick)
+			if err != nil {
+				t.Fatalf("%+v: %v", in, err)
+			}
+			if !r.Valid() || r.Text() == "" {
+				t.Errorf("%+v gave %+v", in, r)
+			}
+		}
+	}
+	if _, err := DrawChance(ChanceInput{Kind: ChanceRoll}, func(int) int { return 0 }); err == nil {
+		t.Error("a roll was drawn as a chance result")
+	}
+	if (DiceRoll{Dice: "1d6", Rows: []DiceRow{{Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: 7}}}).Valid() {
 		t.Error("a die above its sides was taken")
 	}
 }

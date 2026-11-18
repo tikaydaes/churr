@@ -231,14 +231,24 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			}
 		}
 	}
-	chance, err := checkMarks(actor, in)
+	chance, roll, err := checkMarks(actor, in)
 	if err != nil {
 		return Posted{}, err
 	}
 	if chance != nil {
 		fallback = chance.Fallback()
 	}
-	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && chance == nil && !(in.Reminder && in.Quote != nil) {
+	// A roll is its text, the roll in words, which uses no Markdown and so
+	// reads the same everywhere, with the roll as its view.
+	var view *model.ValueEnvelope
+	if roll != nil {
+		v, err := diceValue(roll)
+		if err != nil {
+			return Posted{}, err
+		}
+		view = &v
+	}
+	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && chance == nil && roll == nil && !(in.Reminder && in.Quote != nil) {
 		return Posted{}, model.BadRequest("A message needs text, a file or a card.")
 	}
 	if in.ClientID != "" {
@@ -321,7 +331,10 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	m := model.Message{
 		ID: model.NewID[model.MessageID](), ConversationID: conv.ID, AuthorID: actor.ID, ParentID: parent.ID,
 		Quote: in.Quote, ClientID: in.ClientID, Text: in.Text, Entities: got.entities, Cards: in.Cards, Via: in.Via,
-		Action: in.Action, Chance: chance, CreatedAt: s.now(),
+		Action: in.Action, Chance: chance, View: view, CreatedAt: s.now(),
+	}
+	if roll != nil {
+		m.Text = roll.Text()
 	}
 	m.Fallback = fallback
 	var out model.Message
@@ -603,6 +616,11 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 	text, cards := m.Text, m.Cards
 	if in.Text != nil {
 		text = *in.Text
+	}
+	if m.View != nil && text != m.Text {
+		// The text of a message with a view is the server's words for the
+		// value, which no edit changes (ruling R67).
+		return m, model.ErrConflict.With("The text of a roll is the server's, and cannot be edited.")
 	}
 	if utf8.RuneCountInString(text) > model.MaxMessageText {
 		return m, model.ErrTooLarge.With("A message is at most 16,000 characters.")

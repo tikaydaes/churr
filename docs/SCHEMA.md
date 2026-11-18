@@ -715,6 +715,8 @@ account row.
 | `client_id`         | The sender's own identifier, for sending once.  |
 | `entities`, `cards` | As in `MESSAGE-FORMAT.md`. Link previews are cards here; a preview card carries `preview_url`, the address it previews, and a card without it was posted by a bot or webhook. |
 | `fallback`          | Plain text standing in for the cards and form.  |
+| `action`, `chance`  | Added by migration 0003. `action`: typed with `/me`. `chance`: a result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw` or `/tarot` (ruling R67), as JSON. |
+| `view`              | Added by migration 0022. The message as a value of the catalogue (a `ValueEnvelope`, DESIGN-MODULES.md section 4.1), such as a roll of dice, as JSON, stored as it came. `text` is the message in words; nothing drawn is stored. Cleared with the text on a delete or a purge. |
 | `system`            | Set on a notice the server posted; `text` is then empty. |
 | `via_kind`, `via_name` | How it was posted if not typed by its author. |
 | `via_account_id`    | Who caused it, when that is not the author: the person whose command a bot answered. |

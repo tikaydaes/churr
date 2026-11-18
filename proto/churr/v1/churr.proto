@@ -949,8 +949,8 @@ message Quote {
 
 // Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
 message Entity {
-  repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
+  reserved 23, 24, 25;
   optional EntityType type = 3;
   optional int64 at = 4;
   optional int64 len = 5;
@@ -970,26 +970,9 @@ message Entity {
   optional int64 end = 20; // time
   optional string lat = 21;
   optional string lon = 22;
-  repeated DiceTerm terms = 23;
-  optional int64 total = 24;
-  optional bool removed = 25;
   optional string unit = 19;
   optional bytes message_id = 18; // identifier
   ValueEnvelope object = 27;
-}
-
-// One term of a roll: some dice, or a plain number added or taken away.
-message DiceTerm {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional int64 sign = 3;
-  optional int64 count = 4;
-  optional int64 sides = 5;
-  optional DiceTermKeep keep = 6;
-  optional int64 keep_n = 7;
-  repeated int64 rolls = 8;
-  repeated int64 dropped = 9;
-  optional int64 value = 10;
 }
 
 // A value of the catalogue (DESIGN-MODULES.md section 4.1): on a span of the text as an `object` entity, or on a whole message as its `view`. The text is the message; the value is a view of it. A client draws `data` when it knows `kind` and `level` is not above its own, otherwise `alt`, otherwise the text. A client keeps an envelope it does not understand byte for byte.
@@ -1144,14 +1127,12 @@ message FormVotersValueOuter {
   map<string, FormVotersValue> values = 1;
 }
 
-// A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it.
+// A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it. A roll is no chance result: it is the message's text and `view`.
 message Chance {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
-  reserved 5, 6;
+  reserved 4, 5, 6, 15;
   optional ChanceKind kind = 3;
-  optional string dice = 4;
-  repeated DiceRow rows = 15;
   optional ChanceOutcome outcome = 7;
   repeated string options = 8;
   optional int64 picked = 9;
@@ -1160,15 +1141,6 @@ message Chance {
   repeated string cards = 12;
   repeated bool reversed = 13;
   optional string spread = 14;
-}
-
-// One row of a roll: an expression rolled with its own dice, and its total.
-message DiceRow {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional string dice = 3;
-  repeated DiceTerm terms = 4;
-  optional int64 total = 5;
 }
 
 // One emoji on a message, with the accounts behind it.
@@ -1793,7 +1765,7 @@ message FormInput {
   optional int64 closes_at = 13; // time
 }
 
-// Asks the server to draw a result. People only; refused in a sealed chat.
+// Asks the server to draw a result. People only; refused in a sealed chat. A roll becomes the message's text, the roll in words, and its `view`, a value of kind `dice_roll`; any other result its `chance` and `fallback`.
 message ChanceInput {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -5814,6 +5786,7 @@ enum WakeUpConversationKind {
 
 enum EntityType {
   ENTITY_TYPE_UNSPECIFIED = 0;
+  reserved 17;
   ENTITY_TYPE_ACCOUNT = 1; // "account"
   ENTITY_TYPE_GROUP = 2; // "group"
   ENTITY_TYPE_BROADCAST = 3; // "broadcast"
@@ -5830,7 +5803,6 @@ enum EntityType {
   ENTITY_TYPE_PHONE = 14; // "phone"
   ENTITY_TYPE_EMAIL = 15; // "email"
   ENTITY_TYPE_GEO = 16; // "geo"
-  ENTITY_TYPE_DICE = 17; // "dice"
   ENTITY_TYPE_NUMBER = 18; // "number"
   ENTITY_TYPE_CODEPOINT = 19; // "codepoint"
   ENTITY_TYPE_OBJECT = 20; // "object"
@@ -5846,14 +5818,6 @@ enum EntityPrecision {
   ENTITY_PRECISION_UNSPECIFIED = 0;
   ENTITY_PRECISION_MINUTE = 1; // "minute"
   ENTITY_PRECISION_SECOND = 2; // "second"
-}
-
-enum DiceTermKeep {
-  DICE_TERM_KEEP_UNSPECIFIED = 0;
-  DICE_TERM_KEEP_KH = 1; // "kh"
-  DICE_TERM_KEEP_KL = 2; // "kl"
-  DICE_TERM_KEEP_DH = 3; // "dh"
-  DICE_TERM_KEEP_DL = 4; // "dl"
 }
 
 enum FileKind {
@@ -5948,7 +5912,7 @@ enum FormResults {
 
 enum ChanceKind {
   CHANCE_KIND_UNSPECIFIED = 0;
-  CHANCE_KIND_ROLL = 1; // "roll"
+  reserved 1;
   CHANCE_KIND_FLIP = 2; // "flip"
   CHANCE_KIND_PICK = 3; // "pick"
   CHANCE_KIND_SHUFFLE = 4; // "shuffle"

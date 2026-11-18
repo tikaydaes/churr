@@ -1453,10 +1453,11 @@ schema's messages, and each entity is the client schema's with
 - `action` (a `/me` message) and `chance` (a result the origin's
   server drew, ruling R67) travel as they are. The receiver checks that
   a `chance` holds together (`MESSAGE-FORMAT.md` section 1.2: known
-  kind, dice within the limits adding up to the total, cards from the
-  named deck) and refuses the event as `invalid` if not; it cannot tell
-  whether the draw was fair, and takes the origin's word for that. A
-  server too old to know them shows the text, or the `fallback`.
+  kind, cards from the named deck) and refuses the event as `invalid`
+  if not; it cannot tell whether the draw was fair, and takes the
+  origin's word for that. A server too old to know them shows the text,
+  or the `fallback`. A roll is no `chance`: its `text` travels, and its
+  `view` does not travel yet, so a peer shows the roll as its text.
 
 **`blobs`** lists every file an event refers to: attachments, card
 images, the via icon, custom emoji, an avatar.

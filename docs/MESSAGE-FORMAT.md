@@ -67,8 +67,9 @@ This is the shape the API returns and events carry.
 | `cards`           | Section 6.                                                 |
 | `form`            | Section 7.                                                 |
 | `fallback`        | Plain text the server wrote to stand in for the cards, the form and a chance result. Shown by a client or bot that cannot draw them. Empty if there are none. |
+| `view`            | The message as a value of the catalogue (a `ValueEnvelope`, `DESIGN-MODULES.md` section 4.1): `kind`, `level`, `data` (that kind's own protobuf message, as base64url bytes), `by`, and `alt`, `source`, `removed` where they apply. Today only a roll has one (section 1.2). `text` is the message; the view is how a client that knows the kind and reads its level draws it, and a client that does not shows the text. Stored as it came; never edited; removed with the text on a delete. |
 | `action`          | Present and true when the text says what the author is doing, typed with `/me` (section 1.1). |
-| `chance`          | A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (section 1.2). |
+| `chance`          | A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (section 1.2). A roll is a `view` instead. |
 | `reactions`       | Section 8. `account_ids` holds at most the first ten; the rest come from the reactions endpoint. |
 | `thread`          | Top-level messages with replies only. `last_reply_order` is the `order` of the reply at `last_reply_seq`: where the thread's marker is drawn. |
 | `via`             | How it was posted if not typed by its author: `{"kind": "webhook" \| "reminder" \| "scheduled" \| "command" \| "import" \| "system", "name": "…", "account_id": "…", "icon_file_id": "…"}`. `account_id` is who caused it (the person who sent a command a bot answered). `icon_file_id` is a webhook's icon for this message. |
@@ -96,16 +97,23 @@ without text.
 
 The client asks (`postMessage` with `chance`, a `ChanceInput`); the
 server draws the result with `crypto/rand` and stores it on the message.
-No edit can change it, so every reader sees a result nobody made up. A
-message with a result has no text, files, cards or form when posted, and
-its `fallback` is the result in plain English ("Rolled 2d6+3: [4, 2] + 3
-= 9"), which old clients show and search reads. People only: a bot's
+No edit can change it, so every reader sees a result nobody made up. The
+request comes with no text, files, cards or form. People only: a bot's
 request is refused. Never in a sealed chat, which the server cannot
 write into. Deleting the message removes the result.
 
+A **roll** is stored as the message's `text`, the roll in plain English
+("Rolled 2d6+3: [4, 2] + 3 = 9", dropped dice in parentheses, rows
+separated by `; `), written with no Markdown so it reads the same with
+no client support, and its `view`: a value of kind `dice_roll` (level 1,
+`by` `dice`) whose data is a `DiceRoll`, `{dice, rows}`. An edit that
+changes the text of a message with a view is refused with `conflict`.
+Every other result is the message's `chance`, with its `fallback` the
+result in plain English, which old clients show and search reads.
+
 | `kind`    | Asked with                       | Stored                                                   |
 |-----------|----------------------------------|----------------------------------------------------------|
-| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4), rows separated by commas | `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
+| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4), rows separated by commas | In the view's `DiceRoll`: `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
 | `flip`    | nothing                          | `outcome`: `heads` or `tails`                            |
 | `pick`    | `options`: 2 to 20               | `options` as given, `picked`: the position of the one picked |
 | `shuffle` | `options`: 2 to 20               | `options` as given, `order`: their positions in shuffled order |
@@ -330,7 +338,7 @@ and never resolve names themselves.
 | `phone`        | `+61 7 3123 4567` | `value` | The typed text, as a control: call (`tel:`) or copy (section 3.2). |
 | `email`        | `sam@example.com` | `value` | The typed text, as a control: write (`mailto:`) or copy (section 3.2). |
 | `geo`          | `-27.4698, 153.0251`, `geo:48.8584,2.2945` | `lat`, `lon` | The typed text, as a control: the device's maps on phones, copy elsewhere (section 3.2). |
-| `dice`         | `[[2d6+3]]` in a sentence | `value`, `terms`, `total`, or `removed` | The server's roll inline, spun once when it arrives live (section 3.2). |
+| `object`       | `[[2d6+3]]` in a sentence (inline dice) | `object`: a value of the catalogue (section 1, `view`); inline dice are kind `dice_roll`, or `removed` | The typed text, and for inline dice the server's roll inline, spun once when it arrives live (section 3.2). |
 | `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
 | `number`       | `0x4f22`, `0b1011`, `0o755` | `value`, `base` | The typed text, as a control that opens the number in decimal, hexadecimal, octal and binary (section 3.2). |
 | `codepoint`    | `U+1F600`, `&#x10F2;`, `\u{1F600}` | `value` | The typed text and the character beside it in muted text, as a control that opens what the code point is (section 3.2). |
@@ -663,11 +671,13 @@ is not read as dice) of 1 to 100
 characters with no bracket or line break, and `]]`, on the edges:
 `I hit for [[2d6+3]] damage`. The server rolls it when a person's
 message is posted (with the random source of `/roll`), never on an edit:
-the entity carries `value` (the roll written out in full), `terms` (each
-term as it fell, as a chance result's) and `total`. An edit keeps the
+the entity is an `object` whose `object` is a value of kind `dice_roll`,
+its `DiceRoll` holding the expression written out in full and one row
+with each term as it fell and the total. An edit keeps the
 roll of dice it leaves exactly as they were (the same characters, in
 the same place among the message's dice); dice it writes or changes get
-`removed: true` and nothing rolled. Bots, webhooks, imports and commands
+a value with `removed: true`, no data and nothing rolled. An author's
+object hint names inline dice with kind `dice`. Bots, webhooks, imports and commands
 get no inline dice, and a sealed chat has none: the text stays as
 typed. Clients draw the typed text, each die (drawn as a `/roll`
 result's, the height of the line: `ART.md`) and the total in the
@@ -691,7 +701,7 @@ The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
 `message-links.json` (its `origin`) `measures.json`, `colours.json`, `numbers.json`, `codepoints.json`, `events.json` (its trees too), `contacts.json`, `places.json` and `dice.json` (rolled with every die
 on its highest face, or `"dice": "edit"` as an edit reads it; a client
-compares only `type`, `at`, `len` and `value`), run by the server and compared with
+finds them as `dice` and compares only the range), run by the server and compared with
 each client's own scanner.
 
 ## 4. Checklists

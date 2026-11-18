@@ -984,8 +984,6 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(15, _omitEnumNames ? '' : 'ENTITY_TYPE_EMAIL');
   static const EntityType ENTITY_TYPE_GEO =
       EntityType._(16, _omitEnumNames ? '' : 'ENTITY_TYPE_GEO');
-  static const EntityType ENTITY_TYPE_DICE =
-      EntityType._(17, _omitEnumNames ? '' : 'ENTITY_TYPE_DICE');
   static const EntityType ENTITY_TYPE_NUMBER =
       EntityType._(18, _omitEnumNames ? '' : 'ENTITY_TYPE_NUMBER');
   static const EntityType ENTITY_TYPE_CODEPOINT =
@@ -1011,7 +1009,6 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_PHONE,
     ENTITY_TYPE_EMAIL,
     ENTITY_TYPE_GEO,
-    ENTITY_TYPE_DICE,
     ENTITY_TYPE_NUMBER,
     ENTITY_TYPE_CODEPOINT,
     ENTITY_TYPE_OBJECT,
@@ -1067,34 +1064,6 @@ class EntityPrecision extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const EntityPrecision._(super.value, super.name);
-}
-
-class DiceTermKeep extends $pb.ProtobufEnum {
-  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
-      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
-  static const DiceTermKeep DICE_TERM_KEEP_KH =
-      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
-  static const DiceTermKeep DICE_TERM_KEEP_KL =
-      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
-  static const DiceTermKeep DICE_TERM_KEEP_DH =
-      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
-  static const DiceTermKeep DICE_TERM_KEEP_DL =
-      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
-
-  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
-    DICE_TERM_KEEP_UNSPECIFIED,
-    DICE_TERM_KEEP_KH,
-    DICE_TERM_KEEP_KL,
-    DICE_TERM_KEEP_DH,
-    DICE_TERM_KEEP_DL,
-  ];
-
-  static final $core.List<DiceTermKeep?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
-  static DiceTermKeep? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const DiceTermKeep._(super.value, super.name);
 }
 
 class FileKind extends $pb.ProtobufEnum {
@@ -1416,8 +1385,6 @@ class FormResults extends $pb.ProtobufEnum {
 class ChanceKind extends $pb.ProtobufEnum {
   static const ChanceKind CHANCE_KIND_UNSPECIFIED =
       ChanceKind._(0, _omitEnumNames ? '' : 'CHANCE_KIND_UNSPECIFIED');
-  static const ChanceKind CHANCE_KIND_ROLL =
-      ChanceKind._(1, _omitEnumNames ? '' : 'CHANCE_KIND_ROLL');
   static const ChanceKind CHANCE_KIND_FLIP =
       ChanceKind._(2, _omitEnumNames ? '' : 'CHANCE_KIND_FLIP');
   static const ChanceKind CHANCE_KIND_PICK =
@@ -1431,7 +1398,6 @@ class ChanceKind extends $pb.ProtobufEnum {
 
   static const $core.List<ChanceKind> values = <ChanceKind>[
     CHANCE_KIND_UNSPECIFIED,
-    CHANCE_KIND_ROLL,
     CHANCE_KIND_FLIP,
     CHANCE_KIND_PICK,
     CHANCE_KIND_SHUFFLE,

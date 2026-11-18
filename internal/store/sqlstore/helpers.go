@@ -103,6 +103,14 @@ func chanceArg(c *model.Chance) any {
 	return jsonArg(c)
 }
 
+// viewArg is a message's view for its column: NULL if none.
+func viewArg(v *model.ValueEnvelope) any {
+	if v == nil {
+		return nil
+	}
+	return jsonArg(v)
+}
+
 // rawJSON passes JSON that is already encoded, or NULL if there is none.
 func rawJSON(b []byte) any {
 	if len(b) == 0 {

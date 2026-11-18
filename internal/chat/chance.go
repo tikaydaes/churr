@@ -20,24 +20,31 @@ func cryptoIntn(n int) int {
 }
 
 // checkMarks checks a new message's action mark and chance request and draws
-// the result (ruling R67). A chance result stands alone, and only a person
-// may ask for one.
-func checkMarks(actor model.Account, in NewMessage) (*model.Chance, error) {
+// the result (ruling R67): a roll, or another chance result. A chance result
+// stands alone, and only a person may ask for one.
+func checkMarks(actor model.Account, in NewMessage) (*model.Chance, *model.DiceRoll, error) {
 	if in.Action && in.Text == "" {
-		return nil, model.Invalid("action", "An action needs text: what you are doing.")
+		return nil, nil, model.Invalid("action", "An action needs text: what you are doing.")
 	}
 	if in.Chance == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	if actor.Role == model.RoleBot {
-		return nil, model.Invalid("chance", "Chance results are for people; a bot draws its own.")
+		return nil, nil, model.Invalid("chance", "Chance results are for people; a bot draws its own.")
 	}
 	if in.Text != "" || in.Action || len(in.FileIDs) > 0 || len(in.Cards) > 0 || in.Form != nil {
-		return nil, model.Invalid("chance", "A chance result is a message of its own, with no text, files, cards or form.")
+		return nil, nil, model.Invalid("chance", "A chance result is a message of its own, with no text, files, cards or form.")
+	}
+	if in.Chance.Kind == model.ChanceRoll {
+		r, err := model.Roll(*in.Chance, cryptoIntn)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, &r, nil
 	}
 	c, err := model.DrawChance(*in.Chance, cryptoIntn)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return &c, nil
+	return &c, nil, nil
 }

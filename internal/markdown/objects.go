@@ -55,15 +55,22 @@ type OriginSource interface {
 // The ways inline dice are treated (DiceSource).
 const (
 	DiceOff  = ""     // left as text: a bot, a webhook, no resolver
-	DiceRoll = "roll" // rolled, with the source's die: a person posting
+	DiceRoll = "roll" // rolled by the source: a person posting
 	DiceEdit = "edit" // marked removed, nothing rolled: an edit
 )
 
+// HintDice is the kind an author's hint gives inline dice: what the
+// composer calls the object of kind dice_roll over `[[...]]`.
+const HintDice = "dice"
+
 // DiceSource may also be implemented by a Resolver. InlineDice says what
-// becomes of `[[2d6+3]]` (ruling R73): DiceOff, DiceRoll with die, which
-// gives a whole number from 1 to sides, or DiceEdit.
+// becomes of `[[2d6+3]]` (ruling R73): DiceOff, DiceRoll or DiceEdit, and
+// gives the value stored over the dice, of kind dice_roll. object is handed
+// the dice with nothing rolled and rolls them; handed nil (an edit), it
+// gives the value of dice nothing was rolled for. false leaves the dice as
+// text.
 type DiceSource interface {
-	InlineDice() (mode string, die func(sides int) int)
+	InlineDice() (mode string, object func(roll *model.DiceRoll) (model.ValueEnvelope, bool))
 }
 
 // objectScan is what the resolver keeps for finding objects.
@@ -182,8 +189,12 @@ func (res *resolver) plainOver(a, b int) bool {
 
 // hinted reports whether a hint names exactly this object.
 func hinted(hints []model.ObjectHint, e model.Entity) bool {
+	kind := e.Type
+	if e.Type == model.EntityObject && e.Object != nil && e.Object.Kind == model.KindDiceRoll {
+		kind = HintDice
+	}
 	for _, h := range hints {
-		if h.Kind == e.Type && h.Start == e.At && h.End == e.At+e.Len {
+		if h.Kind == kind && h.Start == e.At && h.End == e.At+e.Len {
 			return true
 		}
 	}
@@ -241,7 +252,7 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 			return e, true
 		}
 	}
-	if try(model.EntityDice) {
+	if try(HintDice) {
 		if e, ok := res.dice(i, b); ok {
 			return e, true
 		}
@@ -828,14 +839,16 @@ func degrees(src []uint16, j, b, whole, min int, max float64) (string, int, bool
 
 // Inline dice (docs/MESSAGE-FORMAT.md section 3.2): `[[`, an expression
 // of /roll's grammar (model.ParseDice) of 1 to 100 characters with no
-// bracket or line break, and `]]`, on the edges. Value is the expression
-// written out in full.
+// bracket or line break, and `]]`, on the edges. They become an object of
+// kind dice_roll, whose data holds the expression written out in full as
+// its one row.
 func (res *resolver) dice(i, b int) (model.Entity, bool) {
-	mode, die := DiceOff, func(int) int { return 1 }
+	mode := DiceOff
+	var object func(*model.DiceRoll) (model.ValueEnvelope, bool)
 	if ds, ok := res.r.(DiceSource); ok {
-		mode, die = ds.InlineDice()
+		mode, object = ds.InlineDice()
 	}
-	if mode == DiceOff {
+	if mode == DiceOff || object == nil {
 		return model.Entity{}, false
 	}
 	src := res.src
@@ -854,12 +867,13 @@ func (res *resolver) dice(i, b int) (model.Entity, bool) {
 	if err != nil {
 		return model.Entity{}, false
 	}
-	e := model.Entity{Type: model.EntityDice, At: i, Len: k + 2 - i, Value: written}
-	if mode == DiceEdit {
-		e.Removed = true
-		return e, true
+	var roll *model.DiceRoll
+	if mode != DiceEdit {
+		roll = &model.DiceRoll{Dice: written, Rows: []model.DiceRow{{Dice: written, Terms: terms}}}
 	}
-	rolled, total := model.RollDice(terms, die)
-	e.Terms, e.Total = rolled, &total
-	return e, true
+	v, ok := object(roll)
+	if !ok {
+		return model.Entity{}, false
+	}
+	return model.Entity{Type: model.EntityObject, At: i, Len: k + 2 - i, Object: &v}, true
 }

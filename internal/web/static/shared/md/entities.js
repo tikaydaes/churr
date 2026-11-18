@@ -33,8 +33,9 @@ export function entityAt(entities, node) {
 // INSIDE is the entity types that lie inside a run of plain text rather
 // than over a node: instants the author's client resolved from phrases
 // ("this Friday at 5pm", ruling R69), and the objects of ruling R73
-// (objects.js). The renderer cuts the text around them.
-export const INSIDE = new Set(['instant', 'reference', 'message_link', 'measure', 'colour', 'number', 'codepoint', 'phone', 'email', 'geo', 'dice']);
+// (objects.js), among them a value of the catalogue (`object`: inline dice
+// are one). The renderer cuts the text around them.
+export const INSIDE = new Set(['instant', 'reference', 'message_link', 'measure', 'colour', 'number', 'codepoint', 'phone', 'email', 'geo', 'dice', 'object']);
 
 // objectsIn returns the entities of those types that lie inside a text
 // node, in order of `at`.

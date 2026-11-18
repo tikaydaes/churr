@@ -102,11 +102,13 @@ for (const file of files) {
     // The objects, found as the server finds them.
     const r = c.resolver || {};
     const objs = findObjects(c.text, { patterns: r.patterns || [], hints: r.object_hints || [], origin: r.origin, dice: r.dice === 'off' ? false : undefined }, tree);
-    // What the server draws for inline dice is its own: the client reads
-    // the shape.
-    const wantObjs = (c.entities || []).filter((e) => OBJECT_KINDS.includes(e.type))
-      .map((e) => (e.type === 'dice' ? { type: e.type, at: e.at, len: e.len, value: e.value } : e));
-    if (!same(objs, wantObjs)) fail(file, c.name, 'the objects differ', `want ${JSON.stringify(norm(wantObjs))}\n       got  ${JSON.stringify(norm(objs))}`);
+    // Inline dice are the server's value of kind dice_roll over the span;
+    // the client finds them as `dice` and is held to the range.
+    const isRoll = (e) => e.type === 'object' && e.object && e.object.kind === 'dice_roll';
+    const wantObjs = (c.entities || []).filter((e) => OBJECT_KINDS.includes(e.type) || isRoll(e))
+      .map((e) => (isRoll(e) ? { type: 'dice', at: e.at, len: e.len } : e));
+    const gotObjs = objs.map((e) => (e.type === 'dice' ? { type: 'dice', at: e.at, len: e.len } : e));
+    if (!same(gotObjs, wantObjs)) fail(file, c.name, 'the objects differ', `want ${JSON.stringify(norm(wantObjs))}\n       got  ${JSON.stringify(norm(gotObjs))}`);
 
     // The checklist items of the tree against the case's tasks.
     const items = taskItems(tree, c.text);

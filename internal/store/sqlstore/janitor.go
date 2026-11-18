@@ -98,7 +98,7 @@ func (j janitor) ExpireMessage(ctx context.Context, msg model.MessageID, now mod
 				deletedAt = now
 			}
 			return exec(`
-				UPDATE messages SET text = '', entities = '[]', cards = '[]', fallback = '', search_text = '', chance = NULL, ciphertext = NULL,
+				UPDATE messages SET text = '', entities = '[]', cards = '[]', fallback = '', search_text = '', chance = NULL, view = NULL, ciphertext = NULL,
 					deleted_at = ?, deleted_by = NULL, purged_at = ?, history_hidden_at = NULL, client_id = NULL,
 					quote_message_id = NULL, quote_start = NULL, quote_end = NULL WHERE id = ?`, int64(deletedAt), int64(now), a)
 		}
