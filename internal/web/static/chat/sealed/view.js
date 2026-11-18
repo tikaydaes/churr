@@ -11,6 +11,7 @@ import { h, icon, iconButton, button, fill, toast, busy, openMenu, openDialog, c
 import { renderMarkdown, plainText } from '/shared/md/render.js';
 import { parse } from '/shared/md/parse.js';
 import { taskItems, mentionEntities } from '/shared/md/entities.js';
+import { keepValues } from '/shared/types/catalogue.js';
 import { instantEntities, viewerZone } from '/shared/instant/zone.js';
 import { findObjects } from '/shared/md/objects.js';
 import { loadPatterns, serverPatterns } from '../patterns.js';
@@ -462,7 +463,10 @@ export class SealedChat {
     this.sendBtn.disabled = true;
     try {
       if (this.editing) {
-        await this.send(editContent(this.editing.reference, text, sealedEntities(text, this.people())));
+        // Values the message carried (from a newer device, say) are kept
+        // untouched where their text still stands (day-one rule 5).
+        const m = this.editing;
+        await this.send(editContent(m.reference, text, keepValues(m.text, m.entities, text, sealedEntities(text, this.people()))));
       } else {
         const entries = [];
         for (const f of this.files) {

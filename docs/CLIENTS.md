@@ -1037,9 +1037,30 @@ chat" (9.19). In the merged layout the "New…" and
   underline, a control labelled "Place … Open in maps" on phones (the
   app launches `geo:` on Android and `maps:` on iOS) and "Place … Copy"
   on desktops and in the web chat, which copy `lat,lon`.
-- **Inline dice** (ruling R73) are drawn in the sentence: the typed
+- **Values of the catalogue** (`DESIGN-MODULES.md` sections 3.2 and 4)
+  are a message's `view` and its `object` entities. The web chat reads
+  catalogue level 1 (`shared/types/catalogue.js`, `LEVEL`) and draws a
+  value by its kind when it knows the kind, the value's `level` is not
+  above its own and the data passes the kind's check; otherwise by its
+  `alt`, the same way; otherwise as the text. A view drawn by its kind
+  stands in place of the message's text. A kind or level the client does
+  not read leaves the text with the state "this needs a newer app": a
+  note under a message's text ("Shown as text: this needs a newer
+  version of Churr."), a dotted underline and a tooltip on an object's
+  typed text. Data that fails its kind's check falls back a step and is
+  no error to the reader. Everything shown is set as text. An edit the
+  client makes itself (a sealed chat's) keeps the message's values,
+  untouched, wherever their characters still stand. The kinds' checks
+  are held to `testdata/types/<kind>.json`, which the server's check
+  passes too. Today the one kind is `dice_roll`: a roll as a message's
+  view is drawn as `/roll`'s result always was (`ART.md`): a row of
+  dice per row of the roll and its total, spun once on live arrival.
+- **Inline dice** (ruling R73) are an `object` entity of kind
+  `dice_roll`, drawn in the sentence: the typed
   text dim, each die (dropped ones struck through), a plus or minus for
-  plain numbers, and `= total`, labelled with the whole roll in words.
+  plain numbers, and `= total`, labelled with the whole roll in words,
+  which is also its tooltip. In the web chat selecting them (a click,
+  Enter or Space) opens the whole roll in a dialog.
   They spin once when the message arrived live (the web chat's `_live`,
   the app's `ChanceLive`, noted per dice) and again when selected. For
   its sender a message arrives twice, as the answer to posting it and as

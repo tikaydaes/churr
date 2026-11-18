@@ -4,7 +4,11 @@
 //      rows, following decisions as the text changes, the hints sent;
 //   2. what each key does while the list is open, for class A (exact
 //      tokens) and class B (loose phrases);
-//   3. sealed chats: the sending device's entities honour the hints.
+//   3. sealed chats: the sending device's entities honour the hints;
+//   4. objects in a message that are values of the catalogue (inline dice
+//      are one): found in the text, read through the catalogue's fallback,
+//      kept through an edit the client makes itself. How they look is
+//      e2e/types.mjs.
 //
 // The grammar itself is in the shared corpus (markdown.mjs, which compares
 // the client's scanner with testdata/markdown). `node e2e/objects.mjs`.
@@ -17,6 +21,8 @@ import { numberRows, codePointFacts } from '../internal/web/static/shared/object
 import { UNITS } from '../internal/web/static/shared/objects/units.js';
 import { readFileSync } from 'node:fs';
 import { ics, eventTitle } from '../internal/web/static/shared/objects/ics.js';
+import { objectsIn } from '../internal/web/static/shared/md/entities.js';
+import { read, keepValues } from '../internal/web/static/shared/types/catalogue.js';
 
 let checks = 0, failures = 0;
 const check = (what, got, want) => {
@@ -145,6 +151,19 @@ check('B: Tab and Enter accept', [B('Tab'), B('Enter')], ['accept', 'accept']);
 check('B: space does not accept', B(' '), '');
 check('B: Escape dismisses', B('Escape'), 'dismiss');
 check('B: arrows move', [B('ArrowDown'), B('ArrowUp')], ['down', 'up']);
+
+// 4. Values of the catalogue in a message: an `object` entity over the
+// characters that stand for it.
+const rolled = { kind: 'dice_roll', level: 1, by: 'dice', data: { dice: '2d6+3', rows: [{ dice: '2d6+3', terms: [{ sign: 1, count: 2, sides: 6, rolls: [6, 2], value: 8 }, { sign: 1, value: 3 }], total: 11 }] } };
+const said = 'I hit for [[2d6+3]] and X1';
+const ents = [{ type: 'object', at: 10, len: 9, object: rolled }, { type: 'object', at: 24, len: 2, object: { kind: 'parcel', level: 9, data: { id: 'X1' } } }];
+check('found inside the text, as the renderer cuts it', objectsIn(ents, { t: 'text', at: 0, len: said.length }).map((e) => e.at), [10, 24]);
+check('inline dice are drawn by their kind', [read(ents[0].object).step, read(ents[0].object).kind], ['kind', 'dice_roll']);
+check('a value this client does not know stays its text, for a newer app', read(ents[1].object), { step: 'text', newer: true });
+check('an edit marks changed dice removed: the kind says so', read({ kind: 'dice_roll', level: 1, by: 'dice', removed: true }).removed, true);
+const edited = keepValues(said, ents, 'Oh, I hit for [[2d6+3]] and X1!', []);
+check('an edit keeps the values whose text stands, moved with it', edited.map((e) => e.at), [14, 28]);
+check('untouched, the one it does not know among them', edited[1].object === ents[1].object, true);
 
 if (checks < 30) { failures++; console.log('FAIL objects: too few checks ran'); }
 console.log(`${failures ? 'FAIL' : 'ok  '} objects: ${checks} checks, ${failures} failure(s)`);

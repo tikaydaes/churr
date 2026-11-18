@@ -14,6 +14,7 @@ import { renderCards } from './cards.js';
 import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
 import { renderChance, spinLive, spokenResult } from './chance.js';
+import { drawView, newerNote } from '../types/draw.js';
 import { ROLE_SAYS } from '../hub.js';
 import { ownerOverrideText, managerDismissedText } from '../roles.js';
 import { ATTENTION, alertText } from '../alerts.js';
@@ -205,9 +206,15 @@ export function renderMessage(m, env, opts = {}) {
   } else {
     const quote = quoteBlock(m, env);
     if (quote) main.append(quote);
+    // The message as a value of the catalogue (a roll): its kind's card in
+    // place of the text, which stands when this client cannot draw it. It
+    // plays once when it arrives live, and never again.
+    const view = drawView(m, { live: m._live && !opts.bare ? (m._spins = m._spins || {}) : null });
+    if (view.card) main.append(view.card);
     // /me: the author's name, then what they are doing (ruling R67).
-    if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, env.md(m))));
+    else if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, env.md(m))));
     else if (m.text) main.append(renderMarkdown(m.text, m.entities, env.md(m)));
+    if (view.newer) main.append(newerNote());
     // A result the server drew. It plays once when it arrives live, and
     // never again (rulings R67, R68, R87).
     if (m.chance) {

@@ -1,0 +1,39 @@
+{
+  "kind": "dice_roll",
+  "level": 1,
+  "about": "The data of kind dice_roll (docs/DESIGN-MODULES.md sections 4.2 and 9.1). Every client's check of it gives the same answer: valid cases are drawn (with `draws`, what is drawn, where it differs from the data), invalid ones fall back a step. Go: internal/model (TestDiceRollCases); web: e2e/types.mjs.",
+  "valid": [
+    {"name": "one row, dice and a number",
+     "data": {"dice": "2d6+3", "rows": [{"dice": "2d6+3", "terms": [{"sign": 1, "count": 2, "sides": 6, "rolls": [4, 1], "value": 5}, {"sign": 1, "value": 3}], "total": 8}]}},
+    {"name": "keep highest, a dropped die, and a second row",
+     "data": {"dice": "4d6kh3, 1d20", "rows": [
+       {"dice": "4d6kh3", "terms": [{"sign": 1, "count": 4, "sides": 6, "keep": "kh", "keep_n": 3, "rolls": [6, 1, 5, 2], "dropped": [1], "value": 13}], "total": 13},
+       {"dice": "1d20", "terms": [{"sign": 1, "count": 1, "sides": 20, "rolls": [20], "value": 20}], "total": 20}]}},
+    {"name": "a term taken away",
+     "data": {"dice": "1d4-2", "rows": [{"dice": "1d4-2", "terms": [{"sign": 1, "count": 1, "sides": 4, "rolls": [1], "value": 1}, {"sign": -1, "value": 2}], "total": -1}]}},
+    {"name": "a field this reader does not know is left out",
+     "data": {"dice": "1d2", "later": {"x": 1}, "rows": [{"dice": "1d2", "terms": [{"sign": 1, "count": 1, "sides": 2, "rolls": [2], "value": 2, "colour": "red"}], "total": 2}]},
+     "draws": {"dice": "1d2", "rows": [{"dice": "1d2", "terms": [{"sign": 1, "value": 2, "count": 1, "sides": 2, "rolls": [2], "dropped": []}], "total": 2}]}},
+    {"name": "a keep this reader does not know is none",
+     "data": {"dice": "3d6", "rows": [{"dice": "3d6", "terms": [{"sign": 1, "count": 3, "sides": 6, "keep": "kx", "keep_n": 1, "rolls": [1, 2, 3], "value": 6}], "total": 6}]},
+     "draws": {"dice": "3d6", "rows": [{"dice": "3d6", "terms": [{"sign": 1, "value": 6, "count": 3, "sides": 6, "rolls": [1, 2, 3], "dropped": []}], "total": 6}]}}
+  ],
+  "invalid": [
+    {"name": "not an object", "data": "GgUyZDYrMw"},
+    {"name": "no rows", "data": {"dice": "1d6", "rows": []}},
+    {"name": "nine rows", "data": {"dice": "x", "rows": [
+      {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1}, {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1},
+      {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1}, {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1},
+      {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1}, {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1},
+      {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1}, {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1},
+      {"dice": "1", "terms": [{"sign": 1, "value": 1}], "total": 1}]}},
+    {"name": "the total does not add up", "data": {"dice": "2d6", "rows": [{"dice": "2d6", "terms": [{"sign": 1, "count": 2, "sides": 6, "rolls": [3, 3], "value": 6}], "total": 7}]}},
+    {"name": "a die above its sides", "data": {"dice": "1d6", "rows": [{"dice": "1d6", "terms": [{"sign": 1, "count": 1, "sides": 6, "rolls": [7], "value": 7}], "total": 7}]}},
+    {"name": "fewer rolls than dice", "data": {"dice": "2d6", "rows": [{"dice": "2d6", "terms": [{"sign": 1, "count": 2, "sides": 6, "rolls": [3], "value": 3}], "total": 3}]}},
+    {"name": "a die of 1001 sides", "data": {"dice": "1d1001", "rows": [{"dice": "1d1001", "terms": [{"sign": 1, "count": 1, "sides": 1001, "rolls": [5], "value": 5}], "total": 5}]}},
+    {"name": "a sign that is not 1 or -1", "data": {"dice": "3", "rows": [{"dice": "3", "terms": [{"sign": 2, "value": 3}], "total": 6}]}},
+    {"name": "a dropped die that is not there", "data": {"dice": "2d6kh1", "rows": [{"dice": "2d6kh1", "terms": [{"sign": 1, "count": 2, "sides": 6, "keep": "kh", "keep_n": 1, "rolls": [3, 5], "dropped": [2], "value": 5}], "total": 5}]}},
+    {"name": "a total that is text", "data": {"dice": "3", "rows": [{"dice": "3", "terms": [{"sign": 1, "value": 3}], "total": "3"}]}},
+    {"name": "no expression", "data": {"rows": [{"dice": "3", "terms": [{"sign": 1, "value": 3}], "total": 3}]}}
+  ]
+}

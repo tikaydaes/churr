@@ -83,7 +83,7 @@ function advance(ms) {
 
 const { renderChance, spinLive, spin, revealPlan, duration, SPIN_MS, REVEAL } = await import('../internal/web/static/shared/message/chance.js');
 const { setSheetsForTest } = await import('../internal/web/static/shared/message/chanceart.js');
-const { diceControl } = await import('../internal/web/static/shared/objects/dice.js');
+const { drawObject } = await import('../internal/web/static/shared/types/draw.js');
 setSheetsForTest([], {});
 
 let failures = 0, checks = 0;
@@ -151,27 +151,36 @@ const shown = (el) => !el.hidden;
   check('each row\'s total once its own dice stop', shown(totals[0]) && shown(totals[1]) && !el.classList.contains('spinning'));
 }
 
-// Inline dice: the same.
+// Inline dice, an object entity of kind dice_roll: the same.
+const inline = (at, dice, terms, total) => ({ type: 'object', at, len: 9, object: { kind: 'dice_roll', level: 1, by: 'dice', data: { dice, rows: [{ dice, terms, total }] } } });
 {
-  const e = { type: 'dice', at: 9, value: '2d6+3', terms: [{ sign: 1, count: 2, sides: 6, rolls: [4, 1], value: 5 }, { sign: 1, value: 3 }], total: 8 };
+  const e = inline(9, '2d6+3', [{ sign: 1, count: 2, sides: 6, rolls: [4, 1], value: 5 }, { sign: 1, value: 3 }], 8);
   const clock = {};
-  const el = diceControl(e, '[[2d6+3]]', { live: () => clock });
+  const el = drawObject(e, '[[2d6+3]]', { live: () => clock });
   const total = el.querySelector('.chance-total');
   check('inline dice hide their total while they roll', el.classList.contains('spinning') && !shown(total));
   advance(SPIN_MS + 100);
   check('inline dice show their total once stopped', shown(total) && total.textContent.includes('8') && !el.classList.contains('spinning'));
-  el.dispatch('click');
+  // Pressed, they open the roll in a dialog, and do not roll again.
+  const body = new El('body');
+  globalThis.document.body = body;
+  El.prototype.showModal = function () { this.open = true; };
+  El.prototype.close = function () {};
+  el.dispatch('click', { stopPropagation() {} });
   check('inline dice pressed do not roll again', !el.classList.contains('spinning'));
+  const dlg = body.querySelector('dialog');
+  check('inline dice pressed open the roll', dlg && dlg.open && dlg.querySelector('.chance') && dlg.querySelectorAll('.slot').length === 3 && dlg.textContent.includes('[[2d6+3]]'));
+  delete globalThis.document.body;
 }
 {
   // Inline dice are drawn as /roll's: a d20 on the fly; a d6 without its
   // sprite (none here) keeps its number; the label is unchanged.
-  const e = { type: 'dice', at: 0, value: '1d20+1d6', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, count: 1, sides: 6, rolls: [3], value: 3 }], total: 20 };
-  const el = diceControl(e, '[[d20+d6]]', {});
+  const e = inline(0, '1d20+1d6', [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, count: 1, sides: 6, rolls: [3], value: 3 }], 20);
+  const el = drawObject(e, '[[d20+d6]]', {});
   const faces = el.querySelectorAll('.slot-face');
   check('an inline d20 is drawn as a die', faces[0].classList.contains('art') && faces[0].classList.contains('art-die'));
   check('an inline d6 without its sprite keeps its number', !faces[1].classList.contains('art') && faces[1].textContent === '3');
-  check('the inline label is as before: the expression, each die and the total', el.getAttribute('aria-label') === 'Dice [[d20+d6]]. Rolled 1d20+1d6: 17, 3; total 20', el.getAttribute('aria-label'));
+  check('the inline label is as before: the expression, each die and the total', el.getAttribute('aria-label') === 'Dice [[d20+d6]]. Rolled 1d20+1d6: 17, 3; total 20. Opens the roll', el.getAttribute('aria-label'));
 }
 
 // 3 and 5. /draw: face down, then turned over in order; no names listed.

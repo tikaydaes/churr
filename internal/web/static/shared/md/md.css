@@ -139,3 +139,11 @@ button.measure:hover .cp-shown { color: inherit; }
 .dice-inline .slot-face:not(.art) { padding: 0; font-size: 1em; background: none; box-shadow: none; }
 .dice-inline .dice-typed { font-family: var(--mono); font-size: .9em; color: var(--dim); }
 .dice-inline.removed { font-family: var(--mono); font-size: .9em; }
+/* Pressed, inline dice open the whole roll. */
+.dice-inline[role="button"] { cursor: pointer; }
+.dice-inline[role="button"]:hover { box-shadow: inset 0 -2px 0 var(--cyan); }
+/* A value of the catalogue this client cannot draw: its typed text, with
+   a dotted line that says a newer app shows more (its title says so). */
+.object-newer { text-decoration: underline dotted var(--dim) 1px; text-underline-offset: 3px; }
+/* The note under a message whose view this client cannot draw. */
+.needs-newer { margin: 4px 0 0; }

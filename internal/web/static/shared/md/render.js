@@ -15,7 +15,7 @@ import { instantControl } from '../instant/view.js';
 import { measureControl } from '../objects/measure-view.js';
 import { numberControl, codePointControl } from '../objects/codepoint-view.js';
 import { eventControl } from '../objects/event.js';
-import { diceControl } from '../objects/dice.js';
+import { drawObject } from '../types/draw.js';
 import { h, icon, iconButton, copyText, openMenu, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
 
@@ -37,6 +37,8 @@ import { highlightInto } from '../highlight/hl.js';
 //   linkBare                   draw bare links without an entity as links
 //                              (cards carry no entities)
 //   remindAt(iso)              sets a reminder at an instant (ruling R69)
+//   spinClock()                → the message's spin clock when it arrived
+//                              live, or null: its values spin once
 
 // renderMarkdown draws a message's text. It returns a <div class="md">.
 export function renderMarkdown(text, entities, ctx = {}) {
@@ -260,8 +262,9 @@ class Renderer {
         return h('button', { type: 'button', class: 'geo', title: 'Copy ' + value, 'aria-label': `Place ${typed}. Copy`,
           onclick: () => copyText(value, 'Copied ' + value) }, typed);
       }
-      // Inline dice: the server's roll, spun once when it arrives live.
-      case 'dice': return diceControl(e, typed, { live: this.ctx.diceLive || null });
+      // A value of the catalogue over the span, drawn by its kind (inline
+      // dice spin once when they arrive live), or as the typed text.
+      case 'object': return drawObject(e, typed, { live: this.ctx.spinClock || null });
       default: return typed;
     }
   }

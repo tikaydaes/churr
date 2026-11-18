@@ -307,8 +307,8 @@ export async function chatFlow(kaity, sam, origin) {
     assert(fa.length === 5 && JSON.stringify(fa) === JSON.stringify(fb), `both see the same dice: ${fa} / ${fb}`);
     const id = await res(b).evaluate((el) => el.closest('.msg').dataset.id);
     const m = (await b.request.get(origin + '/api/v1/messages/' + id)).ok() ? (await (await b.request.get(origin + '/api/v1/messages/' + id)).json()).message : null;
-    assert(m && m.chance && m.chance.dice === '4d6kh3+2', 'the message carries the server\'s roll');
-    const row = m.chance.rows[0];
+    assert(m && m.view && m.view.kind === 'dice_roll' && m.view.data.dice === '4d6kh3+2', 'the message carries the server\'s roll as its view');
+    const row = m.view.data.rows[0];
     const want = [...row.terms[0].rolls.map(String), String(row.terms[1].value)];
     assert(JSON.stringify(fa) === JSON.stringify(want), `each reel landed on the server's value: ${fa} / ${want}`);
     assert((await res(a).locator('.chance-total strong').textContent()) === String(row.total), 'the total is the server\'s');

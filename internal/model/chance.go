@@ -573,16 +573,18 @@ func drawCards(d deck, n int, intn func(n int) int) ([]string, []bool) {
 }
 
 // Valid reports whether a roll that came from somewhere else holds
-// together: its dice are within the limits and add up to each row's total.
-// It cannot tell whether it was rolled fairly; whoever rolled it vouches
-// for that.
+// together: it names its dice, its dice are within the limits, the dice
+// it drops are among them, and they add up to each row's total. It cannot
+// tell whether it was rolled fairly; whoever rolled it vouches for that.
+// testdata/types/dice_roll.json holds it and the clients' checks to the
+// same answers.
 func (r DiceRoll) Valid() bool {
-	if len(r.Rows) == 0 || len(r.Rows) > MaxDiceRows {
+	if r.Dice == "" || len(r.Rows) == 0 || len(r.Rows) > MaxDiceRows {
 		return false
 	}
 	dice := 0
 	for _, row := range r.Rows {
-		if len(row.Terms) == 0 || len(row.Terms) > MaxDiceTerms {
+		if row.Dice == "" || len(row.Terms) == 0 || len(row.Terms) > MaxDiceTerms {
 			return false
 		}
 		total := 0
@@ -599,6 +601,13 @@ func (r DiceRoll) Valid() bool {
 					if r < 1 || r > t.Sides {
 						return false
 					}
+				}
+				seen := make(map[int]bool, len(t.Dropped))
+				for _, i := range t.Dropped {
+					if i < 0 || i >= t.Count || seen[i] {
+						return false
+					}
+					seen[i] = true
 				}
 			}
 			total += t.Sign * t.Value

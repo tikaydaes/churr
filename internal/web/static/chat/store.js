@@ -31,6 +31,7 @@ import { sortByOrder, seqRange } from './order.js';
 import { rememberServerDefaults } from '/shared/themes.js';
 import { isManager, isModerator } from '/shared/hub.js';
 import { keepsPeace as keepsPeaceLevel } from '/shared/roles.js';
+import { spins } from '/shared/types/catalogue.js';
 
 const listeners = new Map();
 
@@ -594,8 +595,9 @@ export function findMessage(id) {
 // editing, a thread page), so the screen shows it without waiting for the
 // event that follows.
 // spinsLive says whether a message has reels that spin when it arrives
-// live: a chance result or inline dice.
-export function spinsLive(m) { return !!(m.chance || (m.entities || []).some((e) => e.type === 'dice')); }
+// live: a chance result, or a value that moves (a roll, as the message's
+// view or inline).
+export function spinsLive(m) { return !!(m.chance || spins(m)); }
 
 export function putMessage(m) {
   const r = room(m.conversation_id);

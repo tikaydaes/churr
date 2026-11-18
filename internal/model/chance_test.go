@@ -497,3 +497,39 @@ func TestMuteLimit(t *testing.T) {
 		t.Errorf("parse.json says %d, the server allows %d", v.MuteMaxSeconds, MaxTimeoutSeconds)
 	}
 }
+
+// TestDiceRollCases: the server's check of a roll that came from somewhere
+// else gives the answers testdata/types/dice_roll.json gives, the ones the
+// clients' checks give.
+func TestDiceRollCases(t *testing.T) {
+	raw, err := os.ReadFile("../../testdata/types/dice_roll.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cases struct {
+		Valid, Invalid []struct {
+			Name string          `json:"name"`
+			Data json.RawMessage `json:"data"`
+		}
+	}
+	if err := json.Unmarshal(raw, &cases); err != nil {
+		t.Fatal(err)
+	}
+	read := func(data json.RawMessage) bool {
+		var r DiceRoll
+		return json.Unmarshal(data, &r) == nil && r.Valid()
+	}
+	for _, c := range cases.Valid {
+		if !read(c.Data) {
+			t.Errorf("%s: refused", c.Name)
+		}
+	}
+	for _, c := range cases.Invalid {
+		if read(c.Data) {
+			t.Errorf("%s: taken", c.Name)
+		}
+	}
+	if len(cases.Valid) < 3 || len(cases.Invalid) < 5 {
+		t.Fatal("too few cases")
+	}
+}
