@@ -240,3 +240,27 @@ func TestEveryChanceCommandIsProved(t *testing.T) {
 		}
 	}
 }
+
+// A card's shield (docs/DESIGN-FAIR.md section 13) names outcomes of the
+// message's draw and nothing else: a verdict written beside them is refused,
+// so no reader is ever told one by a card; a shield that names more than a
+// draw may hold is refused too.
+func TestACardsShieldCarriesNoVerdict(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	room := owner.Channel("shields", false)
+	bot := owner.Bot("dealer")
+	owner.Add(room, "member", bot)
+	msgs := convPath(room) + "/messages"
+	verdict := map[string]any{"title": "Fair, honest", "fair_mark": map[string]any{"objects": []int{0}, "state": "verified"}}
+	bot.Refused(400, model.CodeInvalidRequest, "POST", msgs, map[string]any{"text": "", "cards": []any{verdict}})
+	card := map[string]any{"title": "Fair, honest", "fair_mark": map[string]any{"objects": []int{0, 2}}}
+	posted := obj(bot.Must(201, "POST", msgs, map[string]any{"text": "", "cards": []any{card}}), "message")
+	mark := arr(posted, "cards")[0].(map[string]any)["fair_mark"].(map[string]any)
+	if len(mark) != 1 || len(mark["objects"].([]any)) != 2 {
+		t.Fatalf("the shield as kept: %v", mark)
+	}
+	for _, objects := range [][]int{{100}, {-1}, make([]int, 21)} {
+		bot.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"text": "", "cards": []any{map[string]any{"title": "x", "fair_mark": map[string]any{"objects": objects}}}})
+	}
+}

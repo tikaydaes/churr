@@ -14,7 +14,8 @@ import { renderCards } from './cards.js';
 import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
 import { drawView, newerNote } from '../types/draw.js';
-import { fairMark } from '../fair/mark.js';
+import { shieldFor } from '../fair/shield.js';
+import { KINDS, read } from '../types/catalogue.js';
 import { ROLE_SAYS } from '../hub.js';
 import { ownerOverrideText, managerDismissedText } from '../roles.js';
 import { ATTENTION, alertText } from '../alerts.js';
@@ -215,13 +216,16 @@ export function renderMessage(m, env, opts = {}) {
     else if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, env.md(m))));
     else if (m.text) main.append(renderMarkdown(m.text, m.entities, env.md(m)));
     if (view.newer) main.append(newerNote());
-    // The check of the message's draw, when anything in it took chance
-    // from one: verified, or plainly not (shared/fair/mark.js).
-    const mark = env.fair ? fairMark(m, env.fair(m)) : null;
+    // The shield of the message's draw, from this browser's own check,
+    // shown by default for the built-in chance kinds (shared/fair/shield.js).
+    const shown = (v) => { const r = read(v); return r.step === 'kind' && !r.removed && KINDS[r.kind].chance && v.draw; };
+    const chancy = m.fair && ((m.view && shown(m.view)) || (m.entities || []).some((e) => e.type === 'object' && e.object && shown(e.object)));
+    const mark = chancy && env.fair ? shieldFor(m, env.fair(m)) : null;
     if (mark) main.append(mark);
     const files = renderFiles(m.files);
     if (files) main.append(files);
-    const cards = renderCards(m.cards, { md: env.md(m), nameOf: env.nameOf, onRemovePreview: perms.canRemovePreview ? (i) => env.on.removePreview(m, i) : null });
+    const cards = renderCards(m.cards, { md: env.md(m), nameOf: env.nameOf, onRemovePreview: perms.canRemovePreview ? (i) => env.on.removePreview(m, i) : null,
+      shield: env.fair ? (objects) => shieldFor(m, env.fair(m), objects) : null });
     if (cards) main.append(cards);
     if (m.form) {
       main.append(renderForm(m, {

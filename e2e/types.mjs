@@ -10,8 +10,9 @@
 //   5. a roll drawn: as a message's card and as inline dice, through the
 //      catalogue, with the text set as text; and what cannot be drawn left
 //      as its text;
-//   6. the check of a roll's proof under its message: verified, or
-//      plainly not, the roll drawn either way.
+//   6. the shield of a draw's proof: drawn from this client's own check,
+//      by built-in chance kinds and by a card's fair_mark, never green on a
+//      card's say-so.
 //
 // It runs on a small stand-in for the page's elements.
 //
@@ -203,32 +204,68 @@ v = drawView({ text: 'x', view: marked }, {});
 check('markup in the data is shown as its characters', v.card.querySelector('.chance-title').textContent, 'Rolled <img src=x onerror=alert(1)>');
 check('and makes no element of its own', made.filter((t) => t === 'IMG' || t === 'B'), []);
 
-// 6. The check of a roll's proof under the message (shared/fair/mark.js):
-// "Checking" at first, then "Verified", or plainly "Not verified", or
-// "Cannot be checked here" for a draw by a server whose key history this
-// client was never given, the roll shown every way; none for a message that
-// drew nothing.
+// 6. The shield (shared/fair/shield.js, DESIGN-FAIR.md section 13): drawn
+// from this client's own check, never from what a card says. Checking at
+// first, then a shield with a tick for a proof that checks out, a shield
+// with a question mark for a draw whose server's key history this client
+// was never given, a warning triangle for one that fails; each its own
+// shape and spoken label. A card's fair_mark stands on outcomes it names,
+// and cannot make the shield green: on a message with no draw, or naming an
+// outcome the draw does not have, it fails. A value of kind fair_mark is no
+// kind this client draws. Pressed, it opens Validate result with the draw in
+// the fragment.
 {
-  const { fairMark } = await import(S + 'fair/mark.js');
+  const { shieldFor } = await import(S + 'fair/shield.js');
+  const { renderCards } = await import(S + 'message/cards.js');
+  const { fromFragment } = await import(S + 'fair/validate.js');
   const mv = JSON.parse(readFileSync(new URL('../testdata/fair/message.json', import.meta.url), 'utf8'));
   const ctx = { keysOf: (name) => (name === mv.server ? { keys: mv.keys } : null), server: mv.server };
-  check('no mark for a message that drew nothing', fairMark({ text: 'x' }, ctx), null);
+  const shape = (el) => el.querySelectorAll('path').map((p) => p.getAttribute('d'));
+  const word = (el) => el.querySelector('span.fair-shield-word').textContent;
+  const judged = async (el) => { await el._judged; return [el.dataset.state, word(el)]; };
+  check('no shield for a message that drew nothing', shieldFor({ text: 'x' }, ctx), null);
+
   const good = structuredClone(mv.message);
-  const mark = fairMark(good, ctx);
-  check('the mark checks first', [mark.className, mark.textContent.trim()], ['fair-mark checking', 'Checking the roll…']);
-  await good._fairCheck;
-  check('then says the roll is verified', [mark.className, mark.textContent.trim()], ['fair-mark verified', 'Verified']);
+  const ok = shieldFor(good, ctx);
+  check('the shield checks first', [ok.dataset.state, word(ok)], ['checking', 'Checking the proof']);
+  check('then is green: the proof and every outcome check out', await judged(ok), ['verified', 'Verified']);
+  check('its label is spoken', ok.getAttribute('aria-label').startsWith('Verified. '), true);
+
   const bad = structuredClone(mv.message);
   bad.fair.t += 1;
-  const no = fairMark(bad, ctx);
-  await bad._fairCheck;
-  check('or plainly that it is not', [no.className, no.textContent.trim(), no.title], ['fair-mark failed', 'Not verified', 'The proof is not this message\'s.']);
-  check('and the roll is still drawn', drawView(bad, {}).card !== null, true);
+  const no = shieldFor(bad, ctx);
+  check('a check that fails is the warning mark', await judged(no), ['failed', 'Not verified']);
+  check('which says why', no.title, 'The proof is not this message\'s.');
+  const changed = structuredClone(mv.message);
+  changed.view.data.rows[0].terms[0].rolls[0] = changed.view.data.rows[0].terms[0].rolls[0] === 1 ? 2 : 1;
+  check('an outcome changed fails', (await judged(shieldFor(changed, ctx)))[0], 'failed');
+
   const far = structuredClone(mv.message);
-  const unknown = fairMark(far, { ...ctx, keysOf: () => null });
-  await far._fairCheck;
-  check('or that it cannot be checked here, with why', [unknown.className, unknown.textContent.trim(), unknown.title.includes(mv.server)],
-    ['fair-mark unknown', 'Cannot be checked here', true]);
+  const unknown = shieldFor(far, { ...ctx, keysOf: () => null });
+  check('a draw this client holds no key history for cannot be checked here', await judged(unknown), ['unknown', 'Cannot be checked here']);
+  check('the three states are three shapes', new Set([ok, no, unknown].map((e) => JSON.stringify(shape(e)))).size, 3);
+
+  // A card's fair_mark: named outcomes only, and never a verdict of its own.
+  const named = (objects, m = structuredClone(mv.message)) => shieldFor(m, ctx, objects);
+  check('a card naming the roll is green', (await judged(named([0])))[0], 'verified');
+  check('a card naming an outcome the draw does not have fails', (await judged(named([7])))[0], 'failed');
+  const plain = { id: 'p', text: 'A bot says it is fair', created_at: mv.message.created_at, cards: [{ title: 'Verified fair', fair_mark: { objects: [0], state: 'verified', verified: true } }] };
+  const drawn = renderCards(plain.cards, { shield: (objects) => shieldFor(plain, ctx, objects) });
+  const cardShield = drawn.querySelector('button.fair-shield');
+  check('a card with a fair_mark draws the shield', !!cardShield, true);
+  check('on a message with no draw it fails, whatever the card says', await judged(cardShield), ['failed', 'Not verified']);
+  check('a card with no fair_mark draws none', renderCards([{ title: 'Shield' }], { shield: () => { throw new Error('asked for a shield'); } }).querySelector('button.fair-shield'), null);
+  check('a value of kind fair_mark is not drawn as a shield', [read({ kind: 'fair_mark', level: 1, data: { objects: [0] } }).step,
+    drawView({ text: 'x', view: { kind: 'fair_mark', level: 1, data: { objects: [0] } } }, {}).card], ['text', null]);
+
+  // Pressed: Validate result, the draw in the fragment.
+  let opened = null;
+  const press = shieldFor(structuredClone(mv.message), ctx, undefined, { open: (u) => { opened = u; } });
+  await press._judged;
+  press.dispatch('click');
+  for (let k = 0; k < 50 && !opened; k++) await new Promise((r) => setImmediate(r));
+  const doc = opened && fromFragment(opened.slice(opened.indexOf('#')));
+  check('pressed, it opens /validate with the draw in the fragment', [opened && opened.startsWith('/validate#'), doc && doc.alpha === mv.message.fair.alpha, doc && doc.objects.length], [true, true, 2]);
 }
 
 if (checks < 40) { failures++; console.log('FAIL types: too few checks ran'); }

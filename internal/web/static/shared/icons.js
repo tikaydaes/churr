@@ -38,6 +38,10 @@ export const ICONS = {
   // a locked channel: nobody can be added or join
   padlock: ['M8 10V7l2-2h4l2 2v3', 'M5 10h14v10H5z', 'M12 13v4'],
   shield: ['M12 3l8 3v7l-3 5-5 3-5-3-3-5V6z'],
+  // the fair shield's states (shared/fair/shield.js): drawn only from the
+  // client's own check of a draw
+  'shield-check': ['M12 3l8 3v7l-3 5-5 3-5-3-3-5V6z', 'M8.5 12l2.5 2.5 4.5-5'],
+  'shield-unknown': ['M12 3l8 3v7l-3 5-5 3-5-3-3-5V6z', 'M10 9.5l1-1h2l1 1v1.5l-2 1.5v1', 'M12 16v1'],
   people: ['M7 5h4l1 1v4l-1 1H7L6 10V6z', 'M3 20v-3l2-2h8l2 2v3', 'M15 5h2l1 1v4l-1 1h-2', 'M17 15h2l2 2v3'],
   person: ['M10 4h4l2 2v4l-2 2h-4l-2-2V6z', 'M5 21v-3l3-3h8l3 3v3'],
   bot: ['M5 8h14v11H5z', 'M12 8V4M9 12v2M15 12v2M2 12v4M22 12v4'],

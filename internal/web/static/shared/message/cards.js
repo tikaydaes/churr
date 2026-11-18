@@ -37,5 +37,9 @@ function card(c, index, env) {
     c.text ? renderCardText(c.text, md) : null,
     fields,
     c.image_file_id ? h('img', { class: 'card-image', src: fileURL(c.image_file_id), alt: c.title || '', loading: 'lazy' }) : null,
-    (c.footer || c.at) ? h('div', { class: 'card-footer' }, [c.footer, c.at && dateTime(c.at)].filter(Boolean).join(' · ')) : null);
+    (c.footer || c.at) ? h('div', { class: 'card-footer' }, [c.footer, c.at && dateTime(c.at)].filter(Boolean).join(' · ')) : null,
+    // A card's shield names outcomes of the message's draw and no verdict:
+    // the chat draws it from its own check (shared/fair/shield.js). Nothing
+    // else a card holds can draw it.
+    c.fair_mark && env.shield ? env.shield(Array.isArray(c.fair_mark.objects) ? c.fair_mark.objects.filter(Number.isSafeInteger) : []) : null);
 }
