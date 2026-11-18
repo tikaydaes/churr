@@ -207,8 +207,14 @@ class SealedController extends ChangeNotifier {
   // (MessageActions hands these over; a decrypted message's id is its
   // reference.)
 
-  Future<void> edit(Message m, String text) =>
-      session!.edit(m.conversationId, otherOf(m.conversationId)!, m.id, text);
+  Future<void> edit(Message m, String text) => session!.edit(
+    m.conversationId,
+    otherOf(m.conversationId)!,
+    m.id,
+    text,
+    oldText: m.text,
+    oldEntities: [for (final e in m.entities) e.raw],
+  );
 
   Future<void> delete(Message m) =>
       session!.delete(m.conversationId, otherOf(m.conversationId)!, m.id);

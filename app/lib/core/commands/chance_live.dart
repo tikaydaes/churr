@@ -1,9 +1,10 @@
 import 'package:clock/clock.dart';
 
 import '../models/message.dart';
+import '../types/catalogue.dart';
 
-/// Which chance results and inline dice arrived live (rulings R67, R73,
-/// R87): they play once when first drawn, and never for a message loaded
+/// Which chance results and values that move (a roll, as a message's view
+/// or inline dice) arrived live (rulings R67, R73, R87): they play once when first drawn, and never for a message loaded
 /// from history, met again on scrolling back or drawn again.
 ///
 /// A message is noted as it comes in: over the live connection, and for
@@ -42,17 +43,19 @@ abstract final class ChanceLive {
     }
   }
 
-  /// Notes the reels of a message that came in live: its chance result
-  /// and each of its inline dice.
+  /// Notes the reels of a message that came in live: its chance result or
+  /// its view, and each of its values in the text that moves (inline
+  /// dice), as the catalogue says ([spins]).
   static void arrivedMessage(Message m, {DateTime? now}) {
-    if (m.chance != null) arrived(m.id, m.createdAt, now: now);
-    for (final d in m.entities) {
-      if (d.type == 'dice') arrived(diceId(m.id, d.at), m.createdAt, now: now);
+    if (m.chance != null || viewSpins(m)) arrived(m.id, m.createdAt, now: now);
+    for (final e in m.entities) {
+      if (objectSpins(e)) arrived(objectId(m.id, e.at), m.createdAt, now: now);
     }
   }
 
-  /// The id under which the inline dice at [at] in a message are noted.
-  static String diceId(String messageId, int at) => '$messageId#dice@$at';
+  /// The id under which the value in the text at [at] of a message (inline
+  /// dice) is noted.
+  static String objectId(String messageId, int at) => '$messageId#object@$at';
 
   /// How far into its one spin [id] is when drawn now: zero the first
   /// time a result that arrived live is drawn, the time since then while

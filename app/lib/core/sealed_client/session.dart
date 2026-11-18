@@ -25,6 +25,7 @@ import '../access_key.dart' show accessKeyWrap, parseAccessKey;
 import '../api/me.dart';
 import '../models/message.dart' hide Quote;
 import '../sealed/sealed.dart';
+import '../types/catalogue.dart';
 import 'api.dart';
 import 'content_view.dart';
 import 'notify_keys.dart';
@@ -972,21 +973,35 @@ class SealedSession {
     ],
   );
 
-  Future<void> edit(String conv, String other, String reference, String text) =>
-      send(
-        conv,
-        other,
-        editContent(
-          Uuid.parse(reference),
+  /// Edits one of this person's messages. The values of the catalogue the
+  /// message carried ([oldEntities] over [oldText]: a newer device's, say)
+  /// are kept untouched where their text still stands (day-one rule 5).
+  Future<void> edit(
+    String conv,
+    String other,
+    String reference,
+    String text, {
+    String oldText = '',
+    List<Json> oldEntities = const [],
+  }) => send(
+    conv,
+    other,
+    editContent(
+      Uuid.parse(reference),
+      text,
+      entities: keepValues(
+        oldText,
+        oldEntities,
+        text,
+        workOutEntities(
           text,
-          entities: workOutEntities(
-            text,
-            usernames,
-            zone: InstantEnv.deviceZone,
-            patterns: patterns(),
-          ),
+          usernames,
+          zone: InstantEnv.deviceZone,
+          patterns: patterns(),
         ),
-      );
+      ),
+    ),
+  );
 
   /// Deletes one of this person's messages: the sealed `delete`, then
   /// the server's row (whose ciphertext and blobs it erases at once).

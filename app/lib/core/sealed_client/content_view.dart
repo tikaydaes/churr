@@ -27,7 +27,9 @@ import 'sqlite_store.dart';
 /// The objects of ruling R73 are found with the server's reference
 /// [patterns] (a sealed chat has none of its own) and the author's
 /// [objectHints]; a receiving device keeps the sender's references that
-/// hold up.
+/// hold up, and the sender's values of the catalogue (`object` entities)
+/// untouched, for the catalogue to check when it draws them
+/// (docs/DESIGN-MODULES.md section 4.4, "Sealed chats").
 List<Json> workOutEntities(
   String text,
   Map<String, String> usernames, {
@@ -95,6 +97,7 @@ List<Json> workOutEntities(
     out.addAll(_sentInstants(text, sent, out));
     out.addAll(_sentReferences(text, sent, out));
     out.addAll(_sentObjects(text, sent, out));
+    out.addAll(_sentValues(text, sent, out));
   }
   out.sort((a, b) => (a['at'] as int).compareTo(b['at'] as int));
   return out;
@@ -176,6 +179,26 @@ List<Json> _sentObjects(String text, List<Object?> sent, List<Json> taken) {
       return x['type'] != 'task' && at < a + l && a < at + len;
     });
     if (!overlaps) out.add(f);
+  }
+  return out;
+}
+
+/// The values of the catalogue among a sender's entities: each `object`
+/// entity inside the text and over no other entity, kept as it came, even
+/// of a kind this device does not know (day-one rule 5). Whether it is
+/// drawn is the catalogue's to say, when it is drawn.
+List<Json> _sentValues(String text, List<Object?> sent, List<Json> taken) {
+  final out = <Json>[];
+  for (final e in sent) {
+    if (e is! Map || e['type'] != 'object' || e['object'] is! Map) continue;
+    final at = e['at'], len = e['len'];
+    if (at is! int || len is! int || at < 0 || len <= 0) continue;
+    if (at + len > text.length) continue;
+    final overlaps = [...taken, ...out].any((x) {
+      final a = x['at'] as int, l = x['len'] as int;
+      return x['type'] != 'task' && at < a + l && a < at + len;
+    });
+    if (!overlaps) out.add(e.cast<String, dynamic>());
   }
   return out;
 }

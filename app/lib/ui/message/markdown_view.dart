@@ -44,7 +44,7 @@ class MarkdownContext {
     this.onRemindAt,
     this.messageLink,
     this.eventFile,
-    this.liveDice,
+    this.liveObject,
   });
 
   final Map<String, Account> accounts;
@@ -84,16 +84,16 @@ class MarkdownContext {
   /// file's UID. Null: "Event", no link.
   final ({String title, String link, String id})? eventFile;
 
-  /// How far into their one spin the inline dice at a position are, if
-  /// they arrived live and are still turning (ruling R73, [ChanceLive]);
+  /// How far into its one spin the value in the text at a position is
+  /// (inline dice), if it arrived live and is still turning ([ChanceLive]);
   /// null otherwise.
-  final Duration? Function(int at)? liveDice;
+  final Duration? Function(int at)? liveObject;
 
   /// This context with [remind] as its [onRemindAt], and [eventFile].
   MarkdownContext withRemind(
     Future<void> Function(DateTime at)? remind, {
     ({String title, String link, String id})? eventFile,
-    Duration? Function(int at)? liveDice,
+    Duration? Function(int at)? liveObject,
   }) => MarkdownContext(
     accounts: accounts,
     groups: groups,
@@ -108,6 +108,7 @@ class MarkdownContext {
     onRemindAt: remind,
     messageLink: messageLink,
     eventFile: eventFile ?? this.eventFile,
+    liveObject: liveObject ?? this.liveObject,
   );
 }
 
@@ -644,7 +645,7 @@ class _Renderer {
           child: PlaceChip(entity: e, typed: typed, style: style),
         );
       case 'dice':
-        final live = mc.liveDice;
+        final live = mc.liveObject;
         return WidgetSpan(
           alignment: PlaceholderAlignment.middle,
           child: DiceChip(

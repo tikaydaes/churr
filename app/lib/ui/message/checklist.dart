@@ -9,6 +9,7 @@ import '../theme/tokens.dart';
 import '../widgets/controls.dart';
 import '../theme/churr_icons.dart';
 import '../../core/commands/chance_live.dart';
+import '../../core/types/catalogue.dart';
 import '../../core/objects/ics.dart';
 import '../screens/conversation/message_menu.dart' show messageLink;
 import 'markdown_view.dart';
@@ -73,17 +74,18 @@ MarkdownContext checklistMarkdown(
           id: m.id,
         )
       : null;
-  // Inline dice spin once when the message arrived live.
-  final liveDice = m.entities.any((e) => e.type == 'dice')
-      ? (int at) => ChanceLive.spinAt(ChanceLive.diceId(m.id, at))
+  // Its values in the text that move (inline dice) spin once when the
+  // message arrived live.
+  final liveObject = m.entities.any(objectSpins)
+      ? (int at) => ChanceLive.spinAt(ChanceLive.objectId(m.id, at))
       : null;
   if (m.tasks.isEmpty && !m.entities.any((e) => e.type == 'task')) {
-    return remind == null && eventFile == null && liveDice == null
+    return remind == null && eventFile == null && liveObject == null
         ? base
         : base.withRemind(
             remind ?? base.onRemindAt,
             eventFile: eventFile,
-            liveDice: liveDice,
+            liveObject: liveObject,
           );
   }
   return MarkdownContext(
@@ -101,7 +103,7 @@ MarkdownContext checklistMarkdown(
     onRemindAt: remind ?? base.onRemindAt,
     messageLink: base.messageLink,
     eventFile: eventFile ?? base.eventFile,
-    liveDice: liveDice ?? base.liveDice,
+    liveObject: liveObject ?? base.liveObject,
   );
 }
 
