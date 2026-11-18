@@ -38,6 +38,7 @@ import { signOutSealed } from './sealed/index.js';
 import { RequestsView, notifyRequest } from './requests.js';
 import { ApprovalsView, watchApprovals } from './approvals.js';
 import { NoticesView } from './notices.js';
+import { checkServerPin, PIN_CHANGED } from '/shared/fair/pin.js';
 import { lockNow, startAutoLock, isLockKey } from './lock.js';
 import { notifyKnock, setAsking } from './cmddialogs.js';
 import { install as keepComposerFocus, opened } from './keepfocus.js';
@@ -249,6 +250,9 @@ async function start() {
   }
   store.accounts.set(store.me.id, store.me);
   rememberServerDefaults(store.server.default_themes);
+  // The server's VRF key history, pinned in this browser (DESIGN-FAIR.md).
+  store.vrfPin = checkServerPin(store.server);
+  if (store.vrfPin.state === 'changed') toast(PIN_CHANGED, true);
   loadPrefs();
   try { await loadEverything(); } catch (err) { toast(err.message, true); }
   get('/bookmarks', { limit: 200 }).then((r) => { for (const b of r.bookmarks) store.bookmarks.add(b.message_id); }).catch(() => {});
