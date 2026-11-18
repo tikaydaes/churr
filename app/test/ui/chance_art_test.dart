@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_art.dart';
-import 'package:churr/core/models/message.dart';
 import 'package:churr/ui/message/chance_view.dart';
-import 'package:churr/ui/message/dice_view.dart';
-import 'package:churr/ui/message/dice_shape.dart';
+import 'package:churr/core/types/dice_roll.dart';
+import 'package:churr/ui/types/dice_roll/dice_roll_view.dart';
+import 'package:churr/ui/types/dice_roll/dice_shape.dart';
 import 'package:churr/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -89,37 +89,40 @@ void main() {
     tester,
   ) async {
     final cube = File('assets/chance/dice-cube.json').readAsBytesSync();
-    final entity = Entity.fromJson({
-      'type': 'dice',
-      'at': 0,
-      'len': 15,
-      'value': '2d6+1d20+3',
-      'terms': [
+    // The data of an inline roll: a value of kind dice_roll.
+    final data = diceRollData({
+      'dice': '2d6+1d20+3',
+      'rows': [
         {
-          'sign': 1,
-          'count': 2,
-          'sides': 6,
-          'rolls': [4, 1],
-          'value': 5,
+          'dice': '2d6+1d20+3',
+          'terms': [
+            {
+              'sign': 1,
+              'count': 2,
+              'sides': 6,
+              'rolls': [4, 1],
+              'value': 5,
+            },
+            {
+              'sign': 1,
+              'count': 1,
+              'sides': 20,
+              'rolls': [17],
+              'value': 17,
+            },
+            {'sign': 1, 'value': 3},
+          ],
+          'total': 25,
         },
-        {
-          'sign': 1,
-          'count': 1,
-          'sides': 20,
-          'rolls': [17],
-          'value': 17,
-        },
-        {'sign': 1, 'value': 3},
       ],
-      'total': 25,
     });
     const style = TextStyle(fontSize: 16);
     Future<void> chip(AssetBundle bundle) => _pump(
       tester,
       bundle,
-      DiceChip(
+      DiceRollChip(
         key: ObjectKey(bundle),
-        entity: entity,
+        data: data,
         typed: '[[2d6+d20+3]]',
         style: style,
       ),

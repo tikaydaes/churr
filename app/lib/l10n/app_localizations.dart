@@ -9549,11 +9549,29 @@ abstract class L10n {
   /// **'Place {lat}, {lon}: opens maps on phones'**
   String objectGeoRow(String lat, String lon);
 
-  /// No description provided for @diceLabel.
+  /// No description provided for @diceOpen.
   ///
   /// In en, this message translates to:
-  /// **'Dice {typed}: {said}; total {total}'**
-  String diceLabel(String typed, String said, String total);
+  /// **'Dice {typed}. {said}. Opens the roll'**
+  String diceOpen(String typed, String said);
+
+  /// No description provided for @diceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice'**
+  String get diceTitle;
+
+  /// No description provided for @valueNewerTip.
+  ///
+  /// In en, this message translates to:
+  /// **'This needs a newer version of Churr to be shown as more than text'**
+  String get valueNewerTip;
+
+  /// No description provided for @valueNewerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown as text: this needs a newer version of Churr.'**
+  String get valueNewerNote;
 
   /// No description provided for @diceRemoved.
   ///

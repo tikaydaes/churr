@@ -17,6 +17,7 @@ import 'chance_view.dart';
 import 'media.dart';
 import 'message_slots.dart';
 import 'server_image.dart';
+import '../types/draw.dart';
 
 /// One message as docs/MESSAGE-FORMAT.md orders it: text, files, cards,
 /// the form, and beside the content its reactions and thread summary.
@@ -79,6 +80,7 @@ class MessageTile extends StatelessWidget {
     final name = m.via?.kind == 'webhook'
         ? (m.via?.name ?? author?.name)
         : author?.name;
+    final view = m.isDeleted ? (card: null, newer: false) : drawView(m);
     return Semantics(
       container: true,
       child: Padding(
@@ -160,7 +162,13 @@ class MessageTile extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                       ),
                     ),
-                  if (m.text.isNotEmpty && m.action)
+                  // The message as a value of the catalogue (a roll): its
+                  // kind's card in place of the text, which stands when this
+                  // client cannot draw it. It plays once when it arrives
+                  // live, and never again.
+                  if (view.card case final card?)
+                    card
+                  else if (m.text.isNotEmpty && m.action)
                     ActionText(
                       name: name ?? 'Someone',
                       text: m.text,
@@ -184,6 +192,7 @@ class MessageTile extends StatelessWidget {
                         markdown,
                       ),
                     ),
+                  if (view.newer) const NewerNote(),
                   if (m.files.isNotEmpty)
                     MessageFiles(server: server, files: m.files),
                   if (m.chance != null && !m.isDeleted)
@@ -347,7 +356,9 @@ String systemText(
           : '$who’s imported account was claimed with a link made by $by.';
     case 'group_access':
       final group = sys['name'] as String?;
-      final via = group == null ? ' through a group' : ' through the group $group';
+      final via = group == null
+          ? ' through a group'
+          : ' through the group $group';
       return by == null || sys['by_id'] == m.authorId
           ? '$who added themself$via'
           : '$who was added$via, by $by';
@@ -376,8 +387,7 @@ const attentionKinds = {
 /// Whether a notice is one that wants attention, drawn in pink rather
 /// than the quiet grey of the others: an override, a manager dismissed
 /// from the console (FEATURES.md 21.12) or an access alert.
-bool isAttentionNotice(Message m) =>
-    attentionKinds.contains(m.system?['kind']);
+bool isAttentionNotice(Message m) => attentionKinds.contains(m.system?['kind']);
 
 /// The marker a deleted message leaves: who deleted it and when.
 String deletedText(Message m, Map<String, Account> accounts) {

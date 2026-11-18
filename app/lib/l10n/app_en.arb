@@ -3673,20 +3673,20 @@
       }
     }
   },
-  "diceLabel": "Dice {typed}: {said}; total {total}",
-  "@diceLabel": {
+  "diceOpen": "Dice {typed}. {said}. Opens the roll",
+  "@diceOpen": {
     "placeholders": {
       "typed": {
         "type": "String"
       },
       "said": {
         "type": "String"
-      },
-      "total": {
-        "type": "String"
       }
     }
   },
+  "diceTitle": "Dice",
+  "valueNewerTip": "This needs a newer version of Churr to be shown as more than text",
+  "valueNewerNote": "Shown as text: this needs a newer version of Churr.",
   "diceRemoved": "(not rolled: written in an edit)",
   "diceRemovedLabel": "Dice {typed}, not rolled: written in an edit",
   "@diceRemovedLabel": {

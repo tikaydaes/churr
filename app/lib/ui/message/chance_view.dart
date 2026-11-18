@@ -13,7 +13,7 @@ import '../theme/shapes.dart';
 import '../theme/tokens.dart';
 import 'card_names.dart';
 import 'chance_art.dart';
-import 'dice_shape.dart';
+import '../types/dice_roll/dice_shape.dart';
 
 /// A card's words: its full name, a short form for its slot, and its
 /// Unicode character where it has one.
@@ -1134,35 +1134,39 @@ class ChanceViewState extends State<ChanceView> {
     );
   }
 
-  String _spoken(L10n t, Json ch) {
-    final head = _headline(t, ch);
-    if (ch['kind'] == 'roll') {
-      // Each row its dice and its total; with more than one, each row
-      // named by its expression.
-      final rows = _list(ch['rows']).whereType<Map>().toList();
-      final said = [
-        for (var r = 0; r < rows.length; r++)
-          '${[
-            for (final s in _slots)
-              if (s.row == r) [if (s.sign == '−') '−', s.text, if (s.dropped) '(${t.chanceDropped})'].join(' '),
-          ].join(', ')}; ${t.chanceTotalSpoken((rows[r]['total'] as num? ?? 0).toInt())}',
-      ];
-      if (rows.length == 1) return '$head: ${said[0]}';
-      return '$head: ${[for (var r = 0; r < rows.length; r++) '${rows[r]['dice']}: ${said[r]}'].join('. ')}';
-    }
-    final parts = [
-      for (final s in _slots)
-        [
-          if (s.position != null) '${tarotPosition(t, s.position!)}:',
-          if (s.sign == '−') '−',
-          ch['kind'] == 'draw' || ch['kind'] == 'tarot' ? s.caption : s.text,
-          if (s.dropped) '(${t.chanceDropped})',
-          if (s.reversed != null)
-            (s.reversed! ? t.chanceReversed : t.chanceUpright),
-        ].join(' '),
+  String _spoken(L10n t, Json ch) => chanceSpoken(t, ch, _slots);
+}
+
+/// A result in words: what a screen reader hears, and what inline dice
+/// say on hover. [slots] are the result's ([chanceSlots]).
+String chanceSpoken(L10n t, Json ch, List<ChanceSlot> slots) {
+  final head = _headline(t, ch);
+  if (ch['kind'] == 'roll') {
+    // Each row its dice and its total; with more than one, each row
+    // named by its expression.
+    final rows = _list(ch['rows']).whereType<Map>().toList();
+    final said = [
+      for (var r = 0; r < rows.length; r++)
+        '${[
+          for (final s in slots)
+            if (s.row == r) [if (s.sign == '−') '−', s.text, if (s.dropped) '(${t.chanceDropped})'].join(' '),
+        ].join(', ')}; ${t.chanceTotalSpoken((rows[r]['total'] as num? ?? 0).toInt())}',
     ];
-    return '$head: ${parts.join(', ')}';
+    if (rows.length == 1) return '$head: ${said[0]}';
+    return '$head: ${[for (var r = 0; r < rows.length; r++) '${rows[r]['dice']}: ${said[r]}'].join('. ')}';
   }
+  final parts = [
+    for (final s in slots)
+      [
+        if (s.position != null) '${tarotPosition(t, s.position!)}:',
+        if (s.sign == '−') '−',
+        ch['kind'] == 'draw' || ch['kind'] == 'tarot' ? s.caption : s.text,
+        if (s.dropped) '(${t.chanceDropped})',
+        if (s.reversed != null)
+          (s.reversed! ? t.chanceReversed : t.chanceUpright),
+      ].join(' '),
+  ];
+  return '$head: ${parts.join(', ')}';
 }
 
 /// The line struck through a dropped die, corner to corner: the dice's

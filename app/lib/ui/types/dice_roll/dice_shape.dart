@@ -9,7 +9,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../theme/tokens.dart';
+import '../../theme/tokens.dart';
 
 /// A die of more sides than this is drawn as a circle.
 const ngonMaxSides = 30;

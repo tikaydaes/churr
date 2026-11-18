@@ -17,11 +17,11 @@ import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import 'highlight.dart';
 import 'contact_view.dart';
-import 'dice_view.dart';
 import 'event_view.dart';
 import 'instant_view.dart';
 import 'codepoint_view.dart';
 import 'measure_view.dart';
+import '../types/draw.dart';
 
 /// What drawing a message's text needs to know about the server it is
 /// on: the current names behind its entities, and what happens when a
@@ -236,7 +236,7 @@ class _Renderer {
     'phone',
     'email',
     'geo',
-    'dice',
+    'object',
   };
 
   static bool _webAddress(String? url) {
@@ -644,16 +644,15 @@ class _Renderer {
           baseline: TextBaseline.alphabetic,
           child: PlaceChip(entity: e, typed: typed, style: style),
         );
-      case 'dice':
+      case 'object':
+        // A value of the catalogue over the span, drawn by its kind (inline
+        // dice spin once when they arrive live), or as the typed text.
         final live = mc.liveObject;
-        return WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: DiceChip(
-            entity: e,
-            typed: typed,
-            style: style,
-            live: live == null ? null : () => live(e.at),
-          ),
+        return drawObject(
+          e,
+          typed,
+          style,
+          live: live == null ? null : () => live(e.at),
         );
     }
     return TextSpan(text: typed, style: style);

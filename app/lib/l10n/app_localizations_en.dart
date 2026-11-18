@@ -5789,9 +5789,20 @@ class L10nEn extends L10n {
   }
 
   @override
-  String diceLabel(String typed, String said, String total) {
-    return 'Dice $typed: $said; total $total';
+  String diceOpen(String typed, String said) {
+    return 'Dice $typed. $said. Opens the roll';
   }
+
+  @override
+  String get diceTitle => 'Dice';
+
+  @override
+  String get valueNewerTip =>
+      'This needs a newer version of Churr to be shown as more than text';
+
+  @override
+  String get valueNewerNote =>
+      'Shown as text: this needs a newer version of Churr.';
 
   @override
   String get diceRemoved => '(not rolled: written in an edit)';

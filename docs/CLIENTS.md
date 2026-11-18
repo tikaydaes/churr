@@ -1038,9 +1038,10 @@ chat" (9.19). In the merged layout the "New…" and
   app launches `geo:` on Android and `maps:` on iOS) and "Place … Copy"
   on desktops and in the web chat, which copy `lat,lon`.
 - **Values of the catalogue** (`DESIGN-MODULES.md` sections 3.2 and 4)
-  are a message's `view` and its `object` entities. The web chat reads
-  catalogue level 1 (`shared/types/catalogue.js`, `LEVEL`) and draws a
-  value by its kind when it knows the kind, the value's `level` is not
+  are a message's `view` and its `object` entities. Both clients read
+  catalogue level 1 (the web chat's `shared/types/catalogue.js`,
+  `LEVEL`; the app's `lib/core/types/catalogue.dart`, `catalogueLevel`)
+  and draw a value by its kind when it knows the kind, the value's `level` is not
   above its own and the data passes the kind's check; otherwise by its
   `alt`, the same way; otherwise as the text. A view drawn by its kind
   stands in place of the message's text. A kind or level the client does
@@ -1050,19 +1051,24 @@ chat" (9.19). In the merged layout the "New…" and
   typed text. Data that fails its kind's check falls back a step and is
   no error to the reader. Everything shown is set as text. An edit the
   client makes itself (a sealed chat's) keeps the message's values,
-  untouched, wherever their characters still stand. The kinds' checks
-  are held to `testdata/types/<kind>.json`, which the server's check
-  passes too. Today the one kind is `dice_roll`: a roll as a message's
+  untouched, wherever their characters still stand, and a sealed chat's
+  receiving device keeps the sender's `object` entities as they came.
+  Over protobuf a value's data is its kind's message as bytes; the app
+  reads it into the kind's object, and keeps data of a kind or field it
+  does not know as the bytes it came as, which it never draws. The
+  kinds' checks are held to `testdata/types/<kind>.json`, which the
+  server's check passes too. Today the one kind is `dice_roll`: a roll as a message's
   view is drawn as `/roll`'s result always was (`ART.md`): a row of
   dice per row of the roll and its total, spun once on live arrival.
 - **Inline dice** (ruling R73) are an `object` entity of kind
   `dice_roll`, drawn in the sentence: the typed
   text dim, each die (dropped ones struck through), a plus or minus for
   plain numbers, and `= total`, labelled with the whole roll in words,
-  which is also its tooltip. In the web chat selecting them (a click,
-  Enter or Space) opens the whole roll in a dialog.
+  which is also its tooltip. Selecting them (a click or tap, Enter or
+  Space) opens the whole roll in a dialog (in the app on a phone, a
+  sheet), and never rolls them again.
   They spin once when the message arrived live (the web chat's `_live`,
-  the app's `ChanceLive`, noted per dice) and again when selected. For
+  the app's `ChanceLive`, noted per value). For
   its sender a message arrives twice, as the answer to posting it and as
   its live event; whichever comes first counts, and the other is the
   same arrival. The spin belongs to the message, not to one drawing of

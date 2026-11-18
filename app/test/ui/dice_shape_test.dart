@@ -2,16 +2,22 @@ import 'dart:io';
 import 'dart:math' as m;
 
 import 'package:churr/core/commands/chance_live.dart';
+import 'package:churr/core/models/message.dart';
+import 'package:churr/core/types/dice_roll.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_view.dart';
-import 'package:churr/ui/message/dice_shape.dart';
+import 'package:churr/ui/types/dice_roll/dice_roll_view.dart';
+import 'package:churr/ui/types/draw.dart';
+import 'package:churr/ui/types/dice_roll/dice_shape.dart';
 import 'package:churr/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Dice and coins drawn on the fly (docs/ART.md): a die of N sides is a
 /// regular N-gon up to ngonMaxSides, a circle above; a d2 and a /flip are
-/// a coin.
+/// a coin. A roll is a value of kind dice_roll, drawn through the catalogue
+/// (docs/DESIGN-MODULES.md section 9.1): as a message's card, and as inline
+/// dice.
 
 Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
   MaterialApp(
@@ -22,8 +28,8 @@ Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
   ),
 );
 
+/// The data of a roll of [rolls] on dice of [sides].
 Map<String, Object> _roll(int sides, List<int> rolls) => {
-  'kind': 'roll',
   'dice': '${rolls.length}d$sides',
   'rows': [
     {
@@ -42,10 +48,23 @@ Map<String, Object> _roll(int sides, List<int> rolls) => {
   ],
 };
 
+/// A message whose view is that roll, drawn as the catalogue draws it.
+Widget _card(String id, int sides, List<int> rolls) {
+  final m = Message.fromJson({
+    'id': id,
+    'conversation_id': 'c1',
+    'text': 'Rolled',
+    'created_at': '2026-11-18T00:00:00.000Z',
+    'view': {'kind': 'dice_roll', 'level': 1, 'data': _roll(sides, rolls)},
+  });
+  return drawView(m).card!;
+}
+
 void main() {
   test('the breakpoint is the web chat\'s', () {
-    final js = File('../internal/web/static/shared/types/dice-roll/diceshape.js')
-        .readAsStringSync();
+    final js = File(
+      '../internal/web/static/shared/types/dice-roll/diceshape.js',
+    ).readAsStringSync();
     expect(
       RegExp(r'NGON_MAX_SIDES = (\d+);').firstMatch(js)!.group(1),
       '$ngonMaxSides',
@@ -116,7 +135,8 @@ void main() {
   testWidgets('a d20 shows a 20-cornered shape with its number', (
     tester,
   ) async {
-    await _pump(tester, ChanceView(messageId: 'd20', chance: _roll(20, [17])));
+    await _pump(tester, _card('d20', 20, [17]));
+    expect(find.byType(DiceRollCard), findsOneWidget);
     final die = tester.widget<DieFace>(find.byKey(const Key('art-0')));
     expect((die.sides, die.value), (20, '17'));
     final paint = tester.widget<CustomPaint>(
@@ -132,7 +152,7 @@ void main() {
   testWidgets('a d2 is a coin: heads for 1, tails for 2, spoken as such', (
     tester,
   ) async {
-    await _pump(tester, ChanceView(messageId: 'd2', chance: _roll(2, [1, 2])));
+    await _pump(tester, _card('d2', 2, [1, 2]));
     final a = tester.widget<DieFace>(find.byKey(const Key('art-0')));
     final b = tester.widget<DieFace>(find.byKey(const Key('art-1')));
     expect((a.sides, a.value, b.value), (2, '1', '2'));
@@ -153,6 +173,47 @@ void main() {
       find.bySemanticsLabel(RegExp(r'heads \(1\), tails \(2\).*3')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('inline dice draw the same shapes, the height of the line', (
+    tester,
+  ) async {
+    const style = TextStyle(fontSize: 16);
+    await _pump(
+      tester,
+      DiceRollChip(
+        data: diceRollData(_roll(20, [17])),
+        typed: '[[d20]]',
+        style: style,
+      ),
+    );
+    final die = tester.widget<DieFace>(
+      find.descendant(
+        of: find.byKey(const Key('inline-die-0')),
+        matching: find.byType(DieFace),
+      ),
+    );
+    expect((die.sides, die.value), (20, '17'));
+    expect(
+      tester.getSize(find.byKey(const Key('inline-die-0'))),
+      const Size.square(16 * dieInLine),
+    );
+    await _pump(
+      tester,
+      DiceRollChip(
+        key: const Key('coin'),
+        data: diceRollData(_roll(2, [2])),
+        typed: '[[d2]]',
+        style: style,
+      ),
+    );
+    final coin = tester.widget<DieFace>(
+      find.descendant(
+        of: find.byKey(const Key('inline-die-0')),
+        matching: find.byType(DieFace),
+      ),
+    );
+    expect((coin.sides, coin.value), (2, '2'));
   });
 
   testWidgets('a flip is the same coin, its words kept for screen readers', (

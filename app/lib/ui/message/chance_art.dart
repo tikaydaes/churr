@@ -3,7 +3,7 @@
 // tools/art-gen/pack.py. A sheet is read the first time something from its
 // set is shown. With no sheet, or one that fails to load, a slot keeps its
 // text face, as before. Every other die, and a coin, is drawn on the fly
-// (dice_shape.dart). Face down, a card shows the french sheet's card back
+// (types/dice_roll/dice_shape.dart). Face down, a card shows the french sheet's card back
 // at its own deck's size, and a tile the tile back drawn here by rule
 // ([TileBack]).
 
@@ -11,7 +11,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 
-import 'dice_shape.dart';
+import '../types/dice_roll/dice_shape.dart';
 
 /// The suit black of a card's lettering: the card's own colour, the same
 /// on every theme (docs/ART.md).
