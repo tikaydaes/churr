@@ -1475,7 +1475,7 @@ at all.
 ### Wire shapes
 
 **A message on the wire** (the schema's `Message`; its `quote`,
-`cards`, `form`, `via`, `sealed`, `chance` and `view` are the client
+`cards`, `form`, `via`, `sealed` and `view` are the client
 schema's messages, and each entity is the client schema's with
 `stream_id` beside it) is the message object of
 `MESSAGE-FORMAT.md` section 1 with these differences:
@@ -1503,13 +1503,9 @@ schema's messages, and each entity is the client schema's with
   `:name@server.name:` for a custom emoji. Each resolves, on the
   author's home server, only in a conversation shared with that
   server, and becomes an ordinary `account` or `emoji` entity.
-- `action` (a `/me` message) and `chance` (a result the origin's
-  server drew, ruling R67) travel as they are. The receiver checks that
-  a `chance` holds together (`MESSAGE-FORMAT.md` section 1.2: known
-  kind, cards from the named deck) and refuses the event as `invalid`
-  if not; it cannot tell whether the draw was fair, and takes the
-  origin's word for that. A server too old to know them shows the text,
-  or the `fallback`.
+- `action` (a `/me` message) travels as it is. A chance result is the
+  message's `view`, held to its kind's check like any value, and proved
+  by its `fair` block (below).
 - `view` (the message as a value of the catalogue, such as a roll) and
   each `object` entity's value travel as the origin holds them, in
   events, in history and from a hub's holder. Every receiver holds each
@@ -1520,7 +1516,7 @@ schema's messages, and each entity is the client schema's with
   read as text. That is no refusal: the message still arrives, with its
   text. A value of a kind the receiver does not know, or of a level above
   the one its check reads, is carried unchanged, its data the bytes it
-  came as. As with `chance`, the check is of the shape, not the
+  came as. The check is of the shape, not the
   fairness. A sealed message carries none: its values travel inside its
   payload.
 - `fair`, the proof of the message's draw (`FAIR.md` section 8), travels

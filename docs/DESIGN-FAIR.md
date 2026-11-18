@@ -3,7 +3,9 @@
 A design, partly built. Parts marked [proposed] are not confirmed by the
 owner. Built: the library in three languages (section 9), the key
 (section 1), the input and the derivation (sections 2 and 3), the `fair`
-block (section 4), and dice on them, checked by the clients.
+block (section 4), and every chance command on them as built-in modules
+(dice, flip, pick, shuffle, draw, tarot, mahjongg), checked by the
+clients.
 `FAIR.md` is the specification of what is built: every encoding, the
 order outcomes are derived in, and the vectors.
 
@@ -164,8 +166,9 @@ that a draw happened. The sealed text itself holds no result.
   derives declared outcomes from it. Modules are forbidden `crypto/rand`
   and `math/rand` by the layer rules, so every outcome a module makes is
   provable by construction. [built]
-- The old chance code (flip, pick, shuffle, draw, tarot, mahjongg) moves
-  to the stream as it moves into modules.
+- Flip, pick, shuffle, draw, tarot and mahjongg are built-in modules on
+  the draw (`internal/modules/dice`, `choose`, `cards`), each kind a fixed
+  composition of the primitives (`FAIR.md` section 5a). [built]
 - The ecvrf sources are vendored (the owner's own code) [built]: Go in
   `internal/ecvrf` with the secp256k1 library it is written on; the web
   chat's verifier in `internal/web/static/shared/fair/ecvrf.js`, a plain
@@ -323,5 +326,5 @@ Owner: "make it a little green shield that can be included on any card
 3. The input, the `fair` block, `Host.Random()`, dice on it; clients
    verify and show "verified". [built]
 4. Sealed draws; two-server mixing on direct links.
-5. The rest of chance as it becomes modules; the crash game after live
-   cards.
+5. The rest of chance as it becomes modules [built]; the crash game after
+   live cards.

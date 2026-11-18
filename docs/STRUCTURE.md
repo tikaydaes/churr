@@ -274,11 +274,24 @@ catalogue.
   and stamps its level and the module's name.
 
 **`modules/dice`** — the dice module (`DESIGN-MODULES.md` section
-9.1): `/roll`, `/dice` and inline dice, `[[2d6+3]]`, which it claims.
+9.1): `/roll`, `/dice`, `/flip` and inline dice, `[[2d6+3]]`, which it
+claims.
 The grammar of dice lives here and nowhere else: `Parse`, `ParseRows`,
 `D6`, `RollTerms`, `Text`. Passes `testdata/commands/dice.json`. The
 shape of a roll and the check of one from elsewhere are the
 catalogue's kind `dice_roll`, in `model`.
+
+**`modules/choose`** — `/pick` and `/shuffle`: one of the options given,
+or all of them in a new order, as the kinds `pick` and `shuffle`.
+
+**`modules/cards`** — `/draw`, `/tarot`, `/mahjongg` and `/mahjong`:
+cards from a deck of `model`'s registry, a tarot spread, mahjong tiles,
+as the kinds `card_draw` and `tarot_reading`.
+
+Each of the three draws only through `modhost.Host` by the compositions
+of `fair` (`KindAsks`, `FAIR.md` section 5a), and passes
+`testdata/fair/kinds.json` and the refusals of
+`testdata/commands/chance.json`.
 
 ### Storage
 

@@ -173,6 +173,37 @@ keep 1 to `count`, `dh`/`dl` drop 1 to `count`−1; `success` 0 to
 The dice module's grammar is narrower (8 rows, 10 terms, 100 dice, 1,000
 sides).
 
+## 5a. The built-in kinds
+
+Each chance kind of the catalogue besides a roll is a fixed composition of
+the primitives of section 4, asked in the order written here of the
+value's object stream, and read from what the value's data says was asked.
+A verifier given the data and the draw asks the same primitives of the same
+stream and compares every outcome the data shows with what they give. The
+modules draw through the same functions (`internal/fair/kinds.go`:
+`KindAsks`, `Rederive`), and the web chat (`shared/fair/kinds.js`) and the
+app (`lib/core/fair/kinds.dart`) repeat them.
+
+| kind | its data | asks, in order | the outcome |
+|---|---|---|---|
+| `coin_flip` (`/flip`) | `outcome` | `yesno(1, 2)` | yes is `heads`, no is `tails` |
+| `pick` (`/pick`) | `options`, `picked` | `pick(n = len(options), k = 1)` | `picked` is `picked[0]` |
+| `shuffle` (`/shuffle`) | `options`, `order` | `shuffle(n = len(options))` | `order` is `order` |
+| `card_draw` (`/draw`, `/mahjongg`) | `deck`, `cards`, `reversed` | `pick(n = size of the deck, k = len(cards))`; then, for a deck with orientation, `ints(0, 1, count = len(cards))` | card t is the deck's card at position `picked[t]`, the deck's cards in their order in `testdata/commands/decks.json`; card t is reversed when `values[t]` is 1 |
+| `tarot_reading` (`/tarot`) | `spread`, `cards`, `reversed` | as `card_draw` of the `tarot` deck with `len(cards)` the spread's positions, always with orientation | as `card_draw` |
+| `dice_roll` (`/roll`, `/dice`, inline) | `dice`, `rows` | `dice(rows)`, the rows with nothing rolled | section 5 |
+
+A card is the outcome, not its position: where a deck holds a card more
+than once (mahjong's tiles, pinochle, the shoes), any of its positions
+shows the same card, and the check compares cards. `/mahjongg` is a draw
+from the `mahjong` deck: mahjong's rules ask nothing more of the draw. No
+primitive was added for these kinds.
+
+`testdata/fair/kinds.json` holds a value of every kind drawn from a stated
+`beta` and object index: what it asks, what derive 1 gives, and its data;
+and values whose outcome the draw did not give, which every implementation
+says do not re-derive.
+
 ## 6. The input
 
 **One shape for every draw.** Every draw a server's VRF key ever makes, of
@@ -316,7 +347,10 @@ owner (`/.well-known/churr`, a pin, a hub channel's record):
 5. `ECVRF_verify(pk, proof, UTF-8(alpha))` holds and gives `beta`.
 6. Every value with `draw` is re-derived from `stream(i, ·)` of `beta`: a
    roll's every die, every dropped die, every value and total
-   (section 5).
+   (section 5); every other kind's outcome by its composition
+   (section 5a). A value of a kind the checker knows whose data does not
+   hold together fails; one of a kind it does not know is proved but not
+   re-derived.
 
 **A server receiving a message** over the link checks 1 to 5, with the
 looser bound of 3: the owner must be the author's server, and the history
@@ -343,9 +377,10 @@ a direct link. A client pins each history by server name on first sight; a
 later one that is the pinned one with keys added is taken, and any other is
 a warning and every draw of that server "Not verified".
 
-## 10. Still drawn with ordinary randomness
+## 10. Nothing drawn with ordinary randomness
 
-Flip, pick, shuffle, draw, tarot and mahjongg are not yet modules: the
-server draws them from the operating system's randomness, as before, and
-they carry no proof. They move to the draw as they become modules, using
-the primitives of section 4.
+Every chance outcome a server shows is drawn from a message's draw: dice,
+flip, pick, shuffle, draw, tarot and mahjongg are built-in modules, and a
+module may import no other randomness. The operating system's randomness
+serves only what is not a chance outcome: keys, tokens, identifiers,
+nonces and the jitter of retries.

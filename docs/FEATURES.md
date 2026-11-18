@@ -1656,7 +1656,7 @@ command can be run (everywhere for a custom command, for its owner
 for a personal saved reply, in the bot's conversations for a bot
 command). Hidden means not in the command menu, not read by the
 grammar of 12.4 and not carried out; each name on its own, so a
-command called `mahjong` hides `/mahjong` and not `/mahjongg`. Creating or
+command called `shrug` hides `/shrug` and not `/tableflip`. Creating or
 renaming a saved reply or custom command to a replaceable built-in's name shows
 one line saying it replaces the built-in on this server (for a
 personal one, for its owner). The rule is one function in each
@@ -1664,8 +1664,7 @@ client and the server (`hiddenBuiltins`, `model.HiddenBuiltins`)
 held to `testdata/commands/parse.json`, `hidden_cases`.
 
 **Protected built-ins.** Only the fun and game built-ins are
-replaceable: `/shrug`, `/tableflip`, `/unflip`, `/flip`,
-`/pick`, `/shuffle`, `/draw`, `/tarot`, `/mahjongg` and `/mahjong`
+replaceable: `/shrug`, `/tableflip`, `/unflip` and `/slap`
 (marked `replaceable` in `commands.json`). Every other built-in, and
 any added later unless someone decides otherwise, is protected: it is
 a core chat function (posting, forms, reminders, conversations,
@@ -1735,12 +1734,6 @@ in the command menu and keeps its names from being taken.
 | `/me`        | text                                      | Posts the text as an action (`MESSAGE-FORMAT.md` 1.1) | yes |
 | `/shrug`, `/tableflip`, `/unflip` | `[text]`              | Posts the text with ¯\\_(ツ)_/¯, (╯°□°)╯︵ ┻━┻ or ┬─┬ノ( º _ ºノ) after it | yes |
 | `/spoiler`   | text                                      | Posts `\|\|text\|\|`, the spoiler of Churr Markdown | yes |
-| `/flip`      | none                                      | The server flips a coin                           | no |
-| `/pick`      | `a \| b \| c`                             | The server picks one                              | no |
-| `/shuffle`   | `a \| b \| c`                             | The server shuffles them                          | no |
-| `/draw`      | `[count] [deck]`                          | The server draws cards from a deck                | no |
-| `/mahjongg`, `/mahjong` | `[count]`                      | The server draws mahjong tiles                    | no |
-| `/tarot`     | `[spread]`                                | The server draws a tarot reading                  | no |
 | `/join`      | `#channel`                                | Joins a channel (`joinConversation`) and opens it | yes |
 | `/leave`, `/part` | `[#channel]`                         | Leaves this channel or the one named (`leaveConversation`) | no |
 | `/msg`       | `@person [text]`                          | Opens the chat with them (`openChat`) and sends the text there | yes |
@@ -1815,15 +1808,16 @@ change.
 
 Every command makes the ordinary request, so every rule of
 `PERMISSIONS.md` applies and a refusal is the server's, shown in its
-words. Only `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` and
-`/tarot` need anything new of the server: it draws their result, as a
-`chance`. `/roll` and `/dice` are not built-ins but the dice module's,
-run with `runCommand` (12.4).
+words. The chance commands are not built-ins but built-in modules'
+commands, run with `runCommand` (12.4): `/roll`, `/dice` and `/flip`
+the dice module's, `/pick` and `/shuffle` the choose module's, `/draw`,
+`/tarot`, `/mahjongg` and `/mahjong` the cards module's, listed with
+their help and switched on and off like any module.
 Each instance and hub has a VRF key for proving chance results
 (`DESIGN-FAIR.md`), published with its history at `/.well-known/churr`
 and in getServer, pinned by linked servers, hubs and clients; the web
-chat and the app warn when a server shows another. Results are not yet
-proved with it.
+chat and the app warn when a server shows another. Every result is
+proved with it, and each client shows the shield of its own check.
 Arriving live, a result plays once and never again on a press
 (`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
 total; cards and tiles lie face down and are turned over one after

@@ -66,11 +66,10 @@ This is the shape the API returns and events carry.
 | `files`           | Section 5.                                                 |
 | `cards`           | Section 6.                                                 |
 | `form`            | Section 7.                                                 |
-| `fallback`        | Plain text the server wrote to stand in for the cards, the form and a chance result. Shown by a client or bot that cannot draw them. Empty if there are none. |
-| `view`            | The message as a value of the catalogue (a `ValueEnvelope`, `DESIGN-MODULES.md` section 4.1): `kind`, `level`, `data` (that kind's own message as a JSON object; in protobuf the message's bytes; `WIRE-PROTOBUF.md`, "Values of the catalogue"), `by`, and `alt`, `source`, `removed` and `draw` (the value took chance from the message's `fair` draw) where they apply. Today only a roll has one (section 1.2). `text` is the message; the view is how a client that knows the kind and reads its level draws it, and a client that does not shows the text. Stored as it came; never edited; removed with the text on a delete. One from another server is held to its kind's check first, and falls back a step if it fails (`LINK-PROTOCOL.md` section 11). |
+| `fallback`        | Plain text the server wrote to stand in for the cards and the form. Shown by a client or bot that cannot draw them. Empty if there are none. |
+| `view`            | The message as a value of the catalogue (a `ValueEnvelope`, `DESIGN-MODULES.md` section 4.1): `kind`, `level`, `data` (that kind's own message as a JSON object; in protobuf the message's bytes; `WIRE-PROTOBUF.md`, "Values of the catalogue"), `by`, and `alt`, `source`, `removed` and `draw` (the value took chance from the message's `fair` draw) where they apply. Today the chance kinds have one (section 1.2). `text` is the message; the view is how a client that knows the kind and reads its level draws it, and a client that does not shows the text. Stored as it came; never edited; removed with the text on a delete. One from another server is held to its kind's check first, and falls back a step if it fails (`LINK-PROTOCOL.md` section 11). |
 | `action`          | Present and true when the text says what the author is doing, typed with `/me` (section 1.1). |
-| `fair`            | The proof of the message's one draw (`FAIR.md` section 8): `{v, derive, owner, t, pk, alpha, beta, proof}`, present when anything in the message took chance from it (a roll, inline dice); its input is the second `t` and the message's `client_id`, which is then served with the message and kept for good. Every value that did carries `draw: {i}` in its envelope, its share of the draw. Stored with the message, never edited, kept on its marker when it is deleted. One from another server is checked on arrival and dropped, with the values that drew from it, if it fails (`FAIR.md` section 9). |
-| `chance`          | A result the server drew for `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (section 1.2). A roll is a `view` instead. |
+| `fair`            | The proof of the message's one draw (`FAIR.md` section 8): `{v, derive, owner, t, pk, alpha, beta, proof}`, present when anything in the message took chance from it (a roll, inline dice, a coin, a pick, a shuffle, cards); its input is the second `t` and the message's `client_id`, which is then served with the message and kept for good. Every value that did carries `draw: {i}` in its envelope, its share of the draw. Stored with the message, never edited, kept on its marker when it is deleted. One from another server is checked on arrival and dropped, with the values that drew from it, if it fails (`FAIR.md` section 9). |
 | `reactions`       | Section 8. `account_ids` holds at most the first ten; the rest come from the reactions endpoint. |
 | `thread`          | Top-level messages with replies only. `last_reply_order` is the `order` of the reply at `last_reply_seq`: where the thread's marker is drawn. |
 | `via`             | How it was posted if not typed by its author: `{"kind": "webhook" \| "reminder" \| "scheduled" \| "command" \| "import" \| "system", "name": "…", "account_id": "…", "icon_file_id": "…"}`. `account_id` is who caused it (the person who sent a command a bot answered). `icon_file_id` is a webhook's icon for this message. |
@@ -96,36 +95,39 @@ without text.
 
 ### 1.2 Chance results
 
-The client asks (`postMessage` with `chance`, a `ChanceInput`; for a
-roll, `runCommand` with `/roll` or `/dice` and the dice as typed, which
-the dice module reads) and stores the result on the message. A roll's
-dice come from the message's draw, whose proof is its `fair` block
-(`FAIR.md`): anyone re-derives every die with no server reachable. The
-other results are drawn from the operating system's randomness and
-carry no proof yet.
-No edit can change it, so every reader sees a result nobody made up. The
-request comes with no text, files, cards or form. People only: a bot's
-request is refused. Never in a sealed chat, which the server cannot
-write into. Deleting the message removes the result; a roll's `fair`
-block stays on its marker.
+Every chance command is a built-in module's (`DESIGN-MODULES.md`
+section 6.2), run with `runCommand` and what was typed after the name,
+which the module reads: `/roll`, `/dice` and `/flip` the dice module's,
+`/pick` and `/shuffle` the choose module's, `/draw`, `/tarot`,
+`/mahjongg` and `/mahjong` the cards module's. Every outcome comes from
+the message's draw, whose proof is its `fair` block (`FAIR.md`): anyone
+re-derives it with no server reachable. No edit can change it, so every
+reader sees a result nobody made up. People only: a bot's command is
+refused. Never in a sealed chat, which the server cannot write into.
+Deleting the message removes the result; its `fair` block stays on its
+marker.
 
-A **roll** is stored as the message's `text`, the roll in plain English
+A result is stored as the message's `text`, the result in plain English
 ("Rolled 2d6+3: [4, 2] + 3 = 9", dropped dice in parentheses, rows
-separated by `; `), written with no Markdown so it reads the same with
-no client support, and its `view`: a value of kind `dice_roll` (level 1,
-`by` `dice`) whose data is a `DiceRoll`, `{dice, rows}`. An edit that
-changes the text of a message with a view is refused with `conflict`.
-Every other result is the message's `chance`, with its `fallback` the
-result in plain English, which old clients show and search reads.
+separated by `; `; "Flipped a coin: tails"; "Picked coffee from: tea |
+coffee"), written with no Markdown so it reads the same with no client
+support, and its `view`: a value of its kind (level 1, `by` the module).
+An edit that changes the text of a message with a view is refused with
+`conflict`.
 
-| `kind`    | Asked with                       | Stored                                                   |
-|-----------|----------------------------------|----------------------------------------------------------|
-| `/roll`, `/dice` (`runCommand`) | `text`: the expression (`FEATURES.md` section 12.4), rows separated by commas | In the view's `DiceRoll`: `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
-| `flip`    | nothing                          | `outcome`: `heads` or `tails`                            |
-| `pick`    | `options`: 2 to 20               | `options` as given, `picked`: the position of the one picked |
-| `shuffle` | `options`: 2 to 20               | `options` as given, `order`: their positions in shuffled order |
-| `draw`    | `count` (default 1), `deck` by name or alias (default `standard`) | `deck` (its name), `cards` (codes, in order drawn, no card drawn more often than the deck holds it), and `reversed` (one per card) for a deck with orientation |
-| `tarot`   | `spread` by name or alias (default `three`) | `deck` (`tarot`), `spread`, `cards` (one per position), `reversed` |
+| Command | Typed after it | The view's kind and data |
+|---------|----------------|--------------------------|
+| `/roll`, `/dice` | the expression (`FEATURES.md` section 12.4), rows separated by commas | `dice_roll`, a `DiceRoll`: `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
+| `/flip` | nothing | `coin_flip`: `outcome`, `heads` or `tails` |
+| `/pick` | 2 to 20 options separated by `\|` | `pick`: `options` as given, trimmed; `picked`, the position of the one picked |
+| `/shuffle` | 2 to 20 options separated by `\|` | `shuffle`: `options` as given, trimmed; `order`, their positions in shuffled order |
+| `/draw` | `[count] [deck]`: a count (default 1), a deck by name or alias (default `standard`), or both | `card_draw`: `deck` (its name), `cards` (codes, in order drawn, no card drawn more often than the deck holds it), and `reversed` (one per card) for a deck with orientation, and only then |
+| `/mahjongg`, `/mahjong` | `[count]`, 1 to 144 | `card_draw` from the `mahjong` deck |
+| `/tarot` | `[spread]` by name or alias (default `three`) | `tarot_reading`: `spread`, `cards` (one per position, from the tarot deck), `reversed` (one per card) |
+
+Each kind's outcome is derived from its share of the draw by the fixed
+composition of `FAIR.md` section 5a, and each is checked by
+`testdata/types/<kind>.json` in every reader.
 
 The decks, their card codes and the tarot spreads, positions and meanings
 are the shared tables `testdata/commands/decks.json` and `tarot.json`,
@@ -1035,4 +1037,4 @@ understand:
 - An unknown `cards[]` field is ignored.
 - An unknown `files[].kind` is drawn as `file`.
 - An unknown `system.kind` is drawn as "Something happened here".
-- An unknown `chance.kind`, deck or card is drawn as `fallback`.
+- A value of an unknown kind, or with an unknown deck or card, is drawn as its text.
