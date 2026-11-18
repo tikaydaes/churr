@@ -89,6 +89,12 @@ func shareOver(t *testing.T, linked *testkit.Linked, n int, body map[string]any)
 			_, found, _ := s.Servers[i].Server.Store.Members().Get(ctx, model.ConversationID(conv[i]), s.ann.ID)
 			return found
 		})
+		// And, in a channel a hub owns, holds its history whole: until then
+		// an event about a message it lacks waits for that history, with no
+		// time limit, rather than the time any other held event waits.
+		testkit.Eventually(t, testkit.ServerName(i)+" holds the history whole", func() bool {
+			return s.link(i).TestHistoryWhole(s.stream)
+		})
 	}
 	return s
 }

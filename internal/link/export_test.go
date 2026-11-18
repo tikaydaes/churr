@@ -532,6 +532,13 @@ func SetHistoryWaitMax(d time.Duration) func() {
 	return func() { historyWaitMax.Store(old) }
 }
 
+// TestHistoryWhole reports whether this server holds a channel's earlier
+// history whole: for an instance of a channel a hub owns, that its home has
+// given it a snapshot that is not short; for any other stream, always.
+func (s *Service) TestHistoryWhole(id model.StreamID) bool {
+	return !s.historyPending(s.ctx, s.store, id)
+}
+
 // SetRetriesUntimed switches off every timer that asks or sends again: the
 // waits between asking for a channel's history again (an instance's and the
 // holder's), the wait before what was delivered is applied without the
