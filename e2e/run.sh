@@ -28,6 +28,7 @@
 #   e2e/run.sh palette      only the theme arithmetic against the Go table
 #   e2e/run.sh hub-logic    only the logic of the hub screens (needs no server)
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
+#   e2e/run.sh fair         only the ECVRF verifier against the library's vectors (needs no server)
 #   e2e/run.sh calls        setup, then only calls in the browser
 #   e2e/run.sh themes       setup, then only the theme flows in the browser
 #   e2e/run.sh privacy      setup, then only a private channel's newcomer and its announcement
@@ -131,6 +132,9 @@ fi
 if [ "$1" = "sealed-lib" ]; then
   node sealed-vectors.mjs && node sealed-transcript.mjs && exec node sealed-refusals.mjs
 fi
+if [ "$1" = "fair" ]; then
+  exec node fair.mjs
+fi
 if [ "$1" = "calls-logic" ]; then
   exec node calls.mjs
 fi
@@ -192,6 +196,7 @@ node sealed-vectors.mjs | tee -a "$tmp/out.log"
 node sealed-transcript.mjs | tee -a "$tmp/out.log"
 node sealed-refusals.mjs | tee -a "$tmp/out.log"
 node calls.mjs | tee -a "$tmp/out.log"
+node fair.mjs | tee -a "$tmp/out.log"
 node call-frames.mjs | tee -a "$tmp/out.log"
 node run.mjs "$url" "$@" | tee -a "$tmp/out.log"
 if grep -q '^FAIL' "$tmp/out.log"; then
