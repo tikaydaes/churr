@@ -41,7 +41,7 @@ func TestOpenMakesKeysWithTightModes(t *testing.T) {
 	if got := info.Mode().Perm(); got != 0o700 {
 		t.Errorf("keys directory mode = %04o, want 0700", got)
 	}
-	for name, size := range map[string]int64{"seal.key": 32, "sign.key": 32, "box.key": 32} {
+	for name, size := range map[string]int64{"seal.key": 32, "sign.key": 32, "box.key": 32, "vrf.key": 32} {
 		info, err := os.Stat(filepath.Join(dir, name))
 		if err != nil {
 			t.Errorf("%s: %v", name, err)
@@ -58,8 +58,11 @@ func TestOpenMakesKeysWithTightModes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) != 3 {
-		t.Errorf("keys directory holds %d entries, want exactly the three key files", len(entries))
+	if info, err := os.Stat(filepath.Join(dir, "vrf.history")); err != nil || info.Mode().Perm() != 0o600 {
+		t.Errorf("vrf.history: %v %v, want mode 0600", info, err)
+	}
+	if len(entries) != 5 {
+		t.Errorf("keys directory holds %d entries, want exactly the four key files and the VRF history", len(entries))
 	}
 }
 
@@ -103,7 +106,7 @@ func TestOpenMakesDifferentKeysEachTime(t *testing.T) {
 
 func TestOpenRefusesKeysOthersCanRead(t *testing.T) {
 	skipWithoutModes(t)
-	for _, name := range []string{"seal.key", "sign.key", "box.key"} {
+	for _, name := range []string{"seal.key", "sign.key", "box.key", "vrf.key"} {
 		for _, mode := range []os.FileMode{0o640, 0o604, 0o644, 0o660, 0o620} {
 			dir := filepath.Join(t.TempDir(), "keys")
 			if _, err := Open(dir); err != nil {
@@ -153,7 +156,7 @@ func TestOpenRefusesDamagedKeyFiles(t *testing.T) {
 		"too long":  bytes.Repeat([]byte{7}, 33),
 		"all zero":  make([]byte, 32),
 	}
-	for _, name := range []string{"seal.key", "sign.key", "box.key"} {
+	for _, name := range []string{"seal.key", "sign.key", "box.key", "vrf.key"} {
 		for what, content := range cases {
 			dir := filepath.Join(t.TempDir(), "keys")
 			if _, err := Open(dir); err != nil {

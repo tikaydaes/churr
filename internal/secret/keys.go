@@ -9,6 +9,7 @@
 //	seal.key   32 random bytes; the AES-256 key for sealed columns
 //	sign.key   the 32-byte seed of the server's Ed25519 signing key
 //	box.key    the server's 32-byte X25519 private key
+//	vrf.key    the server's secp256k1 VRF key, and vrf.history beside it (vrf.go)
 //
 // Nothing here logs, and no function returns key material except the two
 // public halves.
@@ -28,6 +29,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/tikaydaes/churr/internal/model"
 )
 
 // The key files, and how long each must be.
@@ -48,6 +51,10 @@ type Keys struct {
 	sealing cipher.AEAD // AES-256-GCM under seal
 	sign    ed25519.PrivateKey
 	box     *ecdh.PrivateKey
+	// vrf is the VRF secret key and vrfHistory every VRF key the server has
+	// had, the last being vrf's (vrf.go).
+	vrf        []byte
+	vrfHistory []VRFKey
 }
 
 // Open reads the keys in dir, the keys/ folder of a data directory. On first
@@ -63,7 +70,9 @@ type Keys struct {
 // as on first use. That is what an interrupted first start needs. It also
 // means that a restore which left out sign.key or box.key gives the server
 // a new identity (docs/OPERATIONS.md section 4), which is all that can be
-// done for a server whose keys are gone.
+// done for a server whose keys are gone. The VRF key is the exception: once
+// vrf.history names a key, a missing vrf.key is refused, never made afresh
+// (vrf.go).
 func Open(dir string) (*Keys, error) {
 	if dir == "" {
 		return nil, errors.New("secret: no keys directory given")
@@ -104,6 +113,11 @@ func Open(dir string) (*Keys, error) {
 		return nil, err
 	}
 
+	vrf, vrfHistory, err := openVRF(dir, model.Now())
+	if err != nil {
+		return nil, err
+	}
+
 	block, err := aes.NewCipher(seal)
 	if err != nil {
 		return nil, fmt.Errorf("secret: %s: %w", sealFile, err)
@@ -117,10 +131,12 @@ func Open(dir string) (*Keys, error) {
 		return nil, fmt.Errorf("secret: %s: %w", boxFile, err)
 	}
 	return &Keys{
-		seal:    seal,
-		sealing: gcm,
-		sign:    ed25519.NewKeyFromSeed(seed),
-		box:     box,
+		seal:       seal,
+		sealing:    gcm,
+		sign:       ed25519.NewKeyFromSeed(seed),
+		box:        box,
+		vrf:        vrf,
+		vrfHistory: vrfHistory,
 	}, nil
 }
 
