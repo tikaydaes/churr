@@ -106,23 +106,22 @@ func TestTrunkSplit(t *testing.T) {
 			l.Cluster.Cut(cut[0], cut[1])
 
 			// Both sides talk, in turn, so that each side's messages fall
-			// between the other's by time.
-			for round := 0; round < 3; round++ {
-				owner(2).Post(local[2], fmt.Sprintf("far %d", round))
-				time.Sleep(15 * time.Millisecond)
-				owner(0).Post(local[0], fmt.Sprintf("home %d", round))
-				time.Sleep(15 * time.Millisecond)
-				owner(3).Post(local[3], fmt.Sprintf("far too %d", round))
-				time.Sleep(15 * time.Millisecond)
-				owner(1).Post(local[1], fmt.Sprintf("home too %d", round))
+			// between the other's by time. Each side delivers among its own
+			// servers: a message is shown on the other server of its side
+			// before that server's next turn. A message that arrived after
+			// that server had posted is late there (it arrived below its
+			// own), which is right, and not what the marks below look for.
+			partner := map[int]int{0: 1, 1: 0, 2: 3, 3: 2}
+			turn := func(i int, text string) {
+				owner(i).Post(local[i], text)
+				owner(partner[i]).HasMessage(local[partner[i]], text)
 				time.Sleep(15 * time.Millisecond)
 			}
-			// Each side delivers among its own servers.
 			for round := 0; round < 3; round++ {
-				owner(1).HasMessage(local[1], fmt.Sprintf("home %d", round))
-				owner(0).HasMessage(local[0], fmt.Sprintf("home too %d", round))
-				owner(3).HasMessage(local[3], fmt.Sprintf("far %d", round))
-				owner(2).HasMessage(local[2], fmt.Sprintf("far too %d", round))
+				turn(2, fmt.Sprintf("far %d", round))
+				turn(0, fmt.Sprintf("home %d", round))
+				turn(3, fmt.Sprintf("far too %d", round))
+				turn(1, fmt.Sprintf("home too %d", round))
 			}
 			time.Sleep(200 * time.Millisecond)
 			if n := len(orderOf(owner(0), local[0])); n != 10 {
