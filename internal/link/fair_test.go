@@ -59,7 +59,7 @@ func TestAForgedDrawIsDroppedOnReceipt(t *testing.T) {
 	// until an outcome suited it. It arrives as its text, and is audited.
 	renumbered := roll("3d6")
 	if a.Server.Store.Dialect() == "postgres" {
-		a.Exec(`UPDATE messages SET view = replace(view::text, '"i":0', '"i":1')::jsonb WHERE id = ?`, renumbered["id"])
+		a.Exec(`UPDATE messages SET view = replace(view::text, '"i": 0', '"i": 1')::jsonb WHERE id = ?`, renumbered["id"])
 	} else {
 		a.Exec(`UPDATE messages SET view = replace(view, '"i":0', '"i":1') WHERE id = ?`, renumbered["id"])
 	}
